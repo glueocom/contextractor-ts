@@ -22,11 +22,8 @@ pytest -v
 ### 2. Main Actor (`apps/contextractor`)
 
 ```bash
-cd /Users/miroslavsekera/r/contextractor/apps/contextractor
-# Install dependencies
-pip install -r requirements.txt
-# Run tests if they exist
-pytest -v tests/ 2>/dev/null || echo "No tests found in apps/contextractor"
+cd /Users/miroslavsekera/r/contextractor
+uv run pytest apps/contextractor/tests/ -v 2>/dev/null || echo "No tests found in apps/contextractor"
 ```
 
 ## Execution Steps
