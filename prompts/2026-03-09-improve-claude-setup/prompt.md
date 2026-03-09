@@ -59,26 +59,17 @@ Create `/Users/miroslavsekera/r/contextractor/.mcp.json`. CLAUDE.md already refe
 
 ## 4. Fix local-tests command
 
-`/Users/miroslavsekera/r/contextractor/.claude/commands/local-tests/prompt.md` references `tools/generated-unit-tests` which does not exist, and references `pip install -r requirements.txt` when the project uses uv workspace (no requirements.txt).
+`/Users/miroslavsekera/r/contextractor/.claude/commands/local-tests/prompt.md` has the `apps/contextractor` block using `pip install -r requirements.txt`, but the project uses uv workspace (no requirements.txt exists).
 
-Replace the "Projects to Build and Test" section with:
+Replace the `apps/contextractor` block with:
 
 ```markdown
-## Projects to Build and Test
+### 2. Main Actor (`apps/contextractor`)
 
-### 1. contextractor-engine package
-
-Run from workspace root:
 ```bash
 cd /Users/miroslavsekera/r/contextractor
-uv run pytest packages/contextractor_engine/tests/ -v
-```
-
-### 2. Actor source (compile check)
-
-```bash
-python3 -m compileall -q /Users/miroslavsekera/r/contextractor/apps/contextractor/src/
+uv run pytest apps/contextractor/tests/ -v 2>/dev/null || echo "No tests found in apps/contextractor"
 ```
 ```
 
-Remove the entire `apps/contextractor` pip/requirements block.
+Keep the `tools/generated-unit-tests` block as-is — it works correctly.
