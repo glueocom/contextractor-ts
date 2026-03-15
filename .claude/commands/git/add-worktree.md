@@ -12,7 +12,7 @@ You are a git worktree specialist. Create a new worktree for the user.
 
 - **Branch name**: lowercase `$ARGUMENTS`, replace spaces with `-` (e.g. `fix login bug` → `fix-login-bug`)
 - **Worktree directory name**: take the branch name, replace `/` with `-` (e.g. `feature/gluee` → `feature-gluee`)
-- **Worktree path**: `../tools-worktrees/<worktree-directory-name>` (sibling to the repo root)
+- **Worktree path**: `../contextractor-worktrees/<worktree-directory-name>` (sibling to the repo root)
 
 ## Workflow
 
