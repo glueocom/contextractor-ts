@@ -4,6 +4,19 @@ import re
 from typing import Any
 
 
+def to_snake_case(key: str) -> str:
+    """Convert camelCase to snake_case. Leave snake_case unchanged."""
+    if "_" in key:
+        return key
+    return re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
+
+
+def to_camel_case(key: str) -> str:
+    """Convert snake_case to camelCase. Leave camelCase unchanged."""
+    parts = key.split("_")
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
+
+
 def normalize_config_keys(config: dict[str, Any]) -> dict[str, Any]:
     """Normalize config dictionary keys to snake_case.
 
@@ -15,23 +28,7 @@ def normalize_config_keys(config: dict[str, Any]) -> dict[str, Any]:
         {"favorPrecision": True} -> {"favor_precision": True}
         {"favor_precision": True} -> {"favor_precision": True}
         {"includeLinks": True, "fast": False} -> {"include_links": True, "fast": False}
-
-    Args:
-        config: Dictionary with config keys in either camelCase or snake_case.
-
-    Returns:
-        Dictionary with all keys normalized to snake_case.
     """
     if not config:
         return {}
-
-    def to_snake_case(key: str) -> str:
-        """Convert camelCase to snake_case. Leave snake_case unchanged."""
-        # If already contains underscore, assume it's snake_case
-        if "_" in key:
-            return key
-        # Convert camelCase to snake_case
-        # Insert underscore before uppercase letters and lowercase them
-        return re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower()
-
     return {to_snake_case(k): v for k, v in config.items()}

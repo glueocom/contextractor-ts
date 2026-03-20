@@ -14,7 +14,7 @@ Runs from the command line, takes a config file as a parameter.
 
 - Add as `apps/contextractor-standalone/` in the UV workspace
 - Reuse `contextractor-engine` workspace package for extraction (ContentExtractor, TrafilaturaConfig)
-- Use `TrafilaturaConfig.from_json_dict()` to load the `extraction` section from the config file — it handles camelCase→snake_case conversion generically
+- Use `TrafilaturaConfig.from_json_dict(data)` to build config from the `extraction` section — this is the single canonical way to create a TrafilaturaConfig from external input (JSON, YAML, API). It handles camelCase→snake_case conversion, None filtering, type coercion (lists→sets), and unknown key rejection generically via `dataclasses.fields()`. Do NOT manually call `normalize_config_keys()` + `TrafilaturaConfig(**kwargs)` — that pattern is replaced by `from_json_dict()`.
 - Use `crawlee[playwright]` for crawling (same as the Apify app)
 - Playwright browsers must be installed (`playwright install`) — document in README
 - No Apify SDK dependency — this is a standalone CLI

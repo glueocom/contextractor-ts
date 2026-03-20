@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from contextractor_engine import TrafilaturaConfig, normalize_config_keys
+from contextractor_engine import TrafilaturaConfig
 
 
 def build_trafilatura_config(raw: dict[str, Any] | None) -> TrafilaturaConfig:
@@ -12,12 +12,7 @@ def build_trafilatura_config(raw: dict[str, Any] | None) -> TrafilaturaConfig:
 
     Accepts both camelCase (from JSON API) and snake_case keys.
     """
-    if not raw:
-        return TrafilaturaConfig.balanced()
-    # Normalize keys (camelCase → snake_case) and filter out None values
-    normalized = normalize_config_keys(raw)
-    filtered = {k: v for k, v in normalized.items() if v is not None}
-    return TrafilaturaConfig(**filtered)
+    return TrafilaturaConfig.from_json_dict(raw)
 
 
 def build_crawl_config(actor_input: dict[str, Any]) -> dict[str, Any]:

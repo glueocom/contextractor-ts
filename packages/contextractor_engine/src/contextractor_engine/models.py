@@ -1,7 +1,9 @@
 """Data models for contextractor-engine."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any
+
+from .utils import normalize_config_keys, to_camel_case
 
 
 @dataclass
@@ -52,65 +54,51 @@ class TrafilaturaConfig:
         Excludes url, record_id, output_format — those are per-call.
         Only includes optional params if they are set (not None).
         """
-        kwargs: dict[str, Any] = {
-            "fast": self.fast,
-            "favor_precision": self.favor_precision,
-            "favor_recall": self.favor_recall,
-            "include_comments": self.include_comments,
-            "include_tables": self.include_tables,
-            "include_images": self.include_images,
-            "include_formatting": self.include_formatting,
-            "include_links": self.include_links,
-            "deduplicate": self.deduplicate,
-            "with_metadata": self.with_metadata,
-            "only_with_metadata": self.only_with_metadata,
-            "tei_validation": self.tei_validation,
+        return {
+            f.name: getattr(self, f.name)
+            for f in fields(self)
+            if getattr(self, f.name) is not None
         }
-        # Only include optional params if set
-        if self.target_language is not None:
-            kwargs["target_language"] = self.target_language
-        if self.prune_xpath is not None:
-            kwargs["prune_xpath"] = self.prune_xpath
-        if self.url_blacklist is not None:
-            kwargs["url_blacklist"] = self.url_blacklist
-        if self.author_blacklist is not None:
-            kwargs["author_blacklist"] = self.author_blacklist
-        if self.date_extraction_params is not None:
-            kwargs["date_extraction_params"] = self.date_extraction_params
-        return kwargs
 
     def to_json_dict(self) -> dict[str, Any]:
         """Convert config to JSON-serializable dict with camelCase keys.
 
         Used for API responses and GUI defaults.
-        Excludes None values and non-serializable types (sets converted to lists).
+        Excludes None values. Sets are converted to lists for JSON compatibility.
         """
-        result: dict[str, Any] = {
-            "fast": self.fast,
-            "favorPrecision": self.favor_precision,
-            "favorRecall": self.favor_recall,
-            "includeComments": self.include_comments,
-            "includeTables": self.include_tables,
-            "includeImages": self.include_images,
-            "includeFormatting": self.include_formatting,
-            "includeLinks": self.include_links,
-            "deduplicate": self.deduplicate,
-            "withMetadata": self.with_metadata,
-            "onlyWithMetadata": self.only_with_metadata,
-            "teiValidation": self.tei_validation,
-        }
-        # Include optional fields only if set
-        if self.target_language is not None:
-            result["targetLanguage"] = self.target_language
-        if self.prune_xpath is not None:
-            result["pruneXpath"] = self.prune_xpath
-        if self.url_blacklist is not None:
-            result["urlBlacklist"] = list(self.url_blacklist)
-        if self.author_blacklist is not None:
-            result["authorBlacklist"] = list(self.author_blacklist)
-        if self.date_extraction_params is not None:
-            result["dateExtractionParams"] = self.date_extraction_params
+        result: dict[str, Any] = {}
+        for f in fields(self):
+            value = getattr(self, f.name)
+            if value is None:
+                continue
+            if isinstance(value, set):
+                value = list(value)
+            result[to_camel_case(f.name)] = value
         return result
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any] | None) -> "TrafilaturaConfig":
+        """Create config from a camelCase (or snake_case) dict.
+
+        This is the single canonical way to build a TrafilaturaConfig from
+        external input (JSON, YAML, API). Handles key normalization, None
+        filtering, and type coercion (lists → sets for blacklist fields).
+        Unknown keys are ignored. Returns balanced defaults for empty/None input.
+        """
+        if not data:
+            return cls.balanced()
+        normalized = normalize_config_keys(data)
+        valid_fields = {f.name for f in fields(cls)}
+        kwargs: dict[str, Any] = {}
+        for key, value in normalized.items():
+            if key not in valid_fields or value is None:
+                continue
+            if isinstance(value, list):
+                f = next(f for f in fields(cls) if f.name == key)
+                if "set" in str(f.type):
+                    value = set(value)
+            kwargs[key] = value
+        return cls(**kwargs)
 
     @classmethod
     def get_default_json(cls) -> dict[str, Any]:

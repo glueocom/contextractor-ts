@@ -9,7 +9,7 @@ from typing import Any
 from apify import Actor
 from crawlee.crawlers import PlaywrightCrawlingContext
 
-from contextractor_engine import ContentExtractor, TrafilaturaConfig, normalize_config_keys
+from contextractor_engine import ContentExtractor, TrafilaturaConfig
 
 from .extraction import (
     compute_content_info,
@@ -78,13 +78,7 @@ def create_request_handler(
 
         # Build TrafilaturaConfig from raw dict
         trafilatura_config_raw = handler_config.get('trafilatura_config_raw', {})
-        if trafilatura_config_raw:
-            # Normalize keys (camelCase → snake_case) and filter None values
-            normalized = normalize_config_keys(trafilatura_config_raw)
-            filtered = {k: v for k, v in normalized.items() if v is not None}
-            trafilatura_config = TrafilaturaConfig(**filtered)
-        else:
-            trafilatura_config = TrafilaturaConfig.balanced()
+        trafilatura_config = TrafilaturaConfig.from_json_dict(trafilatura_config_raw)
 
         extractor = ContentExtractor(config=trafilatura_config)
 
