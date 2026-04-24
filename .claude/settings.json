@@ -85,4 +85,11 @@
     "editPermissions": "auto-accept",
     "writePermissions": "auto-accept"
   }
+}}}  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "apify",
+    "playwright"
+  ],
+  "enabledPlugins": {}
 }

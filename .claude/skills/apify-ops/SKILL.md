@@ -7,6 +7,25 @@ description: Apify platform operations including builds, runs, storage, and depl
 
 Comprehensive workflows for managing Actors on the Apify platform using MCP tools, CLI, and API.
 
+## Prefer mcpc for MCP tool calls
+
+Direct `mcp__apify__*` function calls load full tool schemas and are token-expensive.
+Prefer the `mcpc` CLI from Bash for any discovery or one-off tool calls:
+
+```bash
+# List all available tools (no schema loading)
+mcpc --json @apify tools-list
+
+# Get schema for a specific tool
+mcpc --json @apify tools-get get-dataset-items
+
+# Call a tool
+mcpc --json @apify tools-call get-actor-run runId:="<id>"
+```
+
+Use direct `mcp__apify__*` calls only when mcpc is unavailable or when tool results
+need to be passed directly into the agent context without shell parsing.
+
 ## Tool Selection Guide
 
 | Operation | Best Tool | Why |
@@ -93,12 +112,42 @@ Use API when:
 | Schema validation | `*_schema.json` | Check JSON Schema format |
 | Dataset schema | `dataset_schema.json` | Ensure `fields` is JSON Schema |
 | Dockerfile | `Dockerfile` | Check base image, dependencies |
-| Dependencies | `requirements.txt` | Verify versions, run `pip install -r requirements.txt` |
-| Python syntax | `src/*.py` | Fix syntax errors, run `python3 -m compileall -q src/` |
-| Import errors | `src/*.py` | Check imports and dependencies |
+| Dependencies | `package.json` | Verify versions, run `npm install` |
+| TypeScript | `src/*.ts` | Fix type errors, run `npm run build` |
 
 ## Prerequisites
 
 - `APIFY_TOKEN` environment variable must be set
 - Apify CLI installed (`npm install -g apify-cli`) for build operations
 - MCP server configured for run/storage operations
+
+### New in CLI v1.x
+
+```bash
+# Runs
+apify runs ls --actor <actorId>        # List runs
+apify runs info <runId>                # Run details
+apify runs log <runId>                 # Run logs
+apify runs abort <runId>               # Abort a run
+
+# Datasets (alias: apify ds)
+apify datasets ls                      # List datasets
+apify datasets get-items <id>          # Download items
+
+# Key-value stores (alias: apify kvs)
+apify key-value-stores ls
+apify key-value-stores get-value <id> <key>
+
+# Builds
+apify builds add-tag -b <buildId> -t latest   # Tag a build
+apify builds remove-tag -b <buildId> -t beta
+
+# Actors
+apify actors calculate-memory         # Suggest memory for Actor
+apify actors search <query>           # Search Apify Store
+
+# Misc
+apify upgrade                          # Self-update CLI
+apify auth token                       # Print current API token
+apify secrets ls                       # List stored secrets
+```

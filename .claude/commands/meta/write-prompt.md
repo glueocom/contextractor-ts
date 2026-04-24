@@ -112,6 +112,20 @@ Log each Q&A exchange as a separate file in `user-entry-log/` (e.g., `entry-qa-r
 
 Only skip if the prompt is unambiguous and every requirement has a single clear interpretation.
 
+## Step RESOLVE_TOOLS: Identify Applicable Skills and Agents
+
+Analyze the prompt's scope to determine which skills and agents are relevant.
+
+**Discovery**: Scan `@/.claude/skills/` and `@/.claude/agents/` directories. Read the frontmatter (`description` field) of each skill and agent to understand what it does and when it activates. Match against the prompt's technologies, file paths, and verification needs.
+
+**Selection criteria**:
+- Which directories does the prompt touch? (`apps/*-site`, `packages/*`, `distributed-packages/*`, etc.)
+- Which technologies are involved? (Next.js, React, TypeScript, Python, Tailwind, etc.)
+- What verification is needed? (SEO checks, type safety, smoke tests, accessibility, etc.)
+- Are there implementation agents that match the work? (frontend dev, library code, Python, etc.)
+
+**Output**: Add a "Skills and Agents" section near the top of the working file listing which skills to activate and which agents to use for implementation and verification. Only include skills/agents that are actually relevant — do not list everything.
+
 ## Step FIX: Apply Fixes to Working File
 
 Edit the working file (`{slug}.md`) applying all findings:
@@ -125,6 +139,7 @@ Edit the working file (`{slug}.md`) applying all findings:
 - Remove code examples (replace with doc references)
 - Add inline references to notes files where relevant
 - Add inline references to user-entry-log files where relevant
+- Ensure the "Skills and Agents" section from Step RESOLVE_TOOLS is present and accurate
 
 **Constraints**:
 - Use Edit tool for surgical changes on structured prompts. Use Write tool if the original is unstructured notes requiring full rewrite.
@@ -139,12 +154,14 @@ Split the fixed working file into step files inside `implementation/`. **Always 
 - Standalone executable prompt that can be run independently
 - Starts with a **TLDR** (2-5 lines) — what it does and what it touches
 - References relevant notes files and user-entry-log entries
+- Lists which skills and agents from the master "Skills and Agents" section apply to that specific step
 
 **Create `implementation/master.md`**:
 - Starts with a **TLDR** summarizing the entire prompt's goal and codebase impact
+- Includes the "Skills and Agents" section — which skills to activate and which agents to use (copied from the working file)
 - Lists all step files in execution order with one-line descriptions (including `step-review.md` as the final step)
 - Includes shared context needed across steps
-- Must be concise — only TLDR, step list, and shared context
+- Must be concise — only TLDR, skills/agents, step list, and shared context
 
 Delete the working file `{slug}.md` after splitting — the content now lives in implementation steps.
 
@@ -153,6 +170,7 @@ Delete the working file `{slug}.md` after splitting — the content now lives in
 Create `implementation/step-review.md` as the **last step** in the implementation sequence:
 
 - An executable prompt that reviews and tests all code changes from prior steps
+- Lists which review/test agents and skills to use (selected from the master "Skills and Agents" section — e.g., `typescript-reviewer` for type safety, `seo-tester` for SEO checks, `functionality-tester` for smoke tests)
 - Runs `git diff` to capture the full set of changes
 - For each prior `step-*.md`, reviews code changes against its instructions
 - Runs relevant tests and build verification
