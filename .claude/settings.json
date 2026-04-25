@@ -1,6 +1,6 @@
 {
   "permissions": {
-        "allow": [
+    "allow": [
       "Bash(mkdir:*)",
       "Bash(go:*)",
       "Write(*)",
@@ -35,7 +35,6 @@
       "Bash(poetry:*)",
       "Bash(python:*)",
       "Bash(python3:*)",
-      "Bash(npm:*)",
       "Bash(cat:*)",
       "Bash(pwd:*)",
       "Bash(wc:*)",
@@ -44,7 +43,7 @@
       "Bash(whoami:*)",
       "Bash(date:*)",
       "Bash(env:*)",
-      "Write(//Users/miroslavsekera/r/**)",
+      "Write(/Users/miroslavsekera/r/**)",
       "Edit(/Users/miroslavsekera/r/**)"
     ],
     "deny": [
@@ -82,10 +81,8 @@
       "Write(**/credentials.json)",
       "Write(**/token.json)"
     ],
-    "editPermissions": "auto-accept",
-    "writePermissions": "auto-accept"
-  }
-}}}  },
+    "defaultMode": "acceptEdits"
+  },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "apify",
