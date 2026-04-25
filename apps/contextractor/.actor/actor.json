@@ -6,8 +6,8 @@
     "version": "0.1",
     "buildTag": "latest",
     "meta": {
-        "templateId": "python-crawlee-playwright",
-        "generatedBy": "claude-opus-4-5-20251101"
+        "templateId": "rust-cli-wrapper",
+        "generatedBy": "Claude Code with Claude Opus 4.6 (1M context)"
     },
     "input": "./input_schema.json",
     "output": "./output_schema.json",

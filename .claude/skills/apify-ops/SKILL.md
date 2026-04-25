@@ -112,13 +112,17 @@ Use API when:
 | Schema validation | `*_schema.json` | Check JSON Schema format |
 | Dataset schema | `dataset_schema.json` | Ensure `fields` is JSON Schema |
 | Dockerfile | `Dockerfile` | Check base image, dependencies |
-| Dependencies | `package.json` | Verify versions, run `npm install` |
-| TypeScript | `src/*.ts` | Fix type errors, run `npm run build` |
+| Cargo dependencies | `Cargo.toml` | Verify versions, run `cargo update` and `cargo build --workspace` |
+| Rust compile error | `src/*.rs` | Read full diagnostic, fix types, run `cargo check --workspace --all-targets` |
+| Cargo lints | `src/*.rs` | Run `cargo clippy --workspace --all-targets -- -D warnings` |
+| TS dependencies | `package.json` | Verify versions, run `pnpm install` (or `npm install`) |
+| TypeScript types | `tools/**/*.ts` | Run `tsc --noEmit`, fix type errors |
+| Biome lint | `tools/**/*.ts` | Run `biome check --write tools/` |
 
 ## Prerequisites
 
 - `APIFY_TOKEN` environment variable must be set
-- Apify CLI installed (`npm install -g apify-cli`) for build operations
+- Apify CLI installed (`brew install apify-cli` on macOS, or `npm install -g apify-cli`) for build operations
 - MCP server configured for run/storage operations
 
 ### New in CLI v1.x

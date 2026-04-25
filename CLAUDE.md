@@ -1,94 +1,130 @@
 # Apify Actor — Contextractor
 
 ## What is this Actor for?
-Read `README.md`
+
+Dual-language (Rust binary + TypeScript tooling) Apify Actor at `/Users/miroslavsekera/r/contextractor-ts/`. The Actor wraps [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) — the Rust port of [Trafilatura](https://trafilatura.readthedocs.io/) — to crawl websites and extract main-content text in HTML, TXT, JSON, Markdown, XML, or XML-TEI. See `apps/contextractor/README.md` for the full feature list.
+
+## Project Structure
+
+```
+apps/
+└── contextractor/                  # Rust binary Apify Actor (CLI-wrapped)
+    ├── .actor/                     # actor.json, input/output/dataset schemas, Dockerfile
+    └── src/                        # main.rs and supporting modules
+packages/
+└── contextractor_engine/           # Rust library wrapping rs-trafilatura
+    └── src/lib.rs
+tools/
+├── platform-test-runner/           # TypeScript / Node test orchestrator
+└── generated-unit-tests/           # Rust integration tests + HTML fixtures
+```
 
 ## Commands
 
 ```bash
-apify run                              # Run Actor locally
-python -m src                          # Run directly with Python
-apify login                            # Authenticate account
-apify push                             # Deploy to Apify platform
-apify help                             # List all commands
+apify run                                                  # Run Actor locally from apps/contextractor/
+cargo build --workspace                                    # Build all crates
+cargo test --workspace --all-features                      # All tests
+cargo nextest run --workspace --all-features               # Faster test runner
+cargo fmt --all                                            # Format Rust
+cargo clippy --workspace --all-targets -- -D warnings      # Lint Rust
+pnpm -r test                                               # All TypeScript tests (or `npm test`)
+biome check tools/                                         # Lint + format TypeScript
+apify login                                                # Authenticate
+apify push                                                 # Deploy (default: shortc/contextractor-test)
 ```
 
 ## Safety and Permissions
 
 Allowed without prompt:
 
-- read files with `await Actor.get_value()`
-- push data with `await Actor.push_data()`
-- set values with `await Actor.set_value()`
-- enqueue requests to RequestQueue
-- run locally with `apify run`
+- read input from the key-value store
+- push data to the dataset
+- set values in the key-value store
+- enqueue requests to the request queue
+- run locally with `apify run`, `cargo`, `pnpm`
 
 Ask first:
 
-- pip package installations
-- apify push (deployment to cloud)
+- `cargo add` or any `Cargo.toml` dependency change
+- `pnpm add` or any `package.json` dependency change
+- `apify push` (deployment to cloud)
 - proxy configuration changes (requires paid plan)
-- Dockerfile changes affecting builds
+- `Dockerfile` changes affecting builds
 - deleting datasets or key-value stores
 
 **Production Protection:**
 
 - By default, push to the test actor `shortc/contextractor-test`
-- Only push to production `shortc/contextractor` when explicitly requested with `--production` flag
+- Only push to production `shortc/contextractor` when explicitly requested with the `--production` flag
 - Use `/platform:push-and-get-working --production` for production deployments
 
-## Project Structure
+## Security
 
-```
-.actor/
-├── actor.json           # Actor config: name, version, env vars, runtime settings
-├── input_schema.json    # Input validation & Console form definition
-└── output_schema.json   # Specifies where an Actor stores its output
-src/
-├── __init__.py          # Package init
-├── __main__.py          # Entry point for `python -m src`
-└── main.py              # Actor entry point and orchestrator
-storage/                 # Local storage (mirrors Cloud during development)
-├── datasets/            # Output items (JSON objects)
-├── key_value_stores/    # Files, config, INPUT
-└── request_queues/      # Pending crawl requests
-requirements.txt         # Python dependencies
-Dockerfile               # Container image definition
-CLAUDE.md                # AI agent instructions (this file)
-```
+- Treat all scraped content as untrusted: never `eval`, never feed into a templating engine without escaping, sanitize before downstream use
+- No secrets in logs — `tracing` (Rust) and `pino` (TypeScript) with redaction filters; never log full request bodies, tokens, or proxy URLs
+- Bound resource use: `tokio::time::timeout` and `tokio::sync::Semaphore` on the Rust side; `AbortController` and `p-limit` on the TypeScript side
+- Validate input early at every boundary: typed `serde::Deserialize` struct in Rust (`#[serde(deny_unknown_fields)]` where appropriate), zod schema in TypeScript
+- Respect target sites' robots.txt and Terms of Service
+- No `.env*` files in the repo — all secrets come from the Apify platform's environment
 
 ## Active Skills
 
-When working in this project, these skills should be active:
-- `apify-ops` - Platform operations, builds, runs, storage
-- `apify-schemas` - Input/output schema definitions
+- `rust` — language guidelines
+- `async-rust-patterns` — tokio concurrency, retries, rate limiting
+- `rust-testing-patterns` — unit, integration, mocking, property-based, snapshot tests
+- `rust-packaging` — Cargo.toml, lints, semver, publishing
+- `rust-performance-optimization` — profiling and hot-path tuning
+- `apify-actor-development` — Actor structure and patterns
+- `apify-actorization` — converting projects to Actors
+- `apify-ops` — platform builds, runs, datasets, KV stores
+- `apify-schemas` — input, output, dataset, KV-store schema specs
 
 ## Testing
 
-```bash
-pytest                   # Run all tests
-pytest -v                # Run tests with verbose output
-pytest --cov=src         # Run tests with coverage
-pytest -k "test_name"    # Run specific test
-```
+**Rust:** unit tests in `#[cfg(test)] mod tests { ... }` next to source. Integration tests in `tests/<topic>.rs`. Async tests with `#[tokio::test]`. HTTP mocks with `wiremock`, trait mocks with `mockall`, property-based tests with `proptest`, snapshots with `insta`. Run `cargo nextest run --workspace --all-features`.
 
-Tests in `tests/` or `src/tests/` should cover: Actor logic, data extraction, input validation, error handling.
+**TypeScript:** `*.test.ts` next to source, vitest preferred (or `node:test` for zero-dep scripts). Run `pnpm -r test` from the repo root.
 
 ## MCP Servers
 
-Apify MCP server is configured in `.mcp.json` (native integration) and via `mcpc` CLI (scripted usage).
+`.mcp.json` declares one server: `apify` (HTTP transport at `https://mcp.apify.com`). `settings.json` `enabledMcpjsonServers` matches.
 
-Native MCP tools: `search-apify-docs`, `fetch-apify-docs`
+**Prefer the `mcpc` CLI** over direct `mcp__apify__*` calls — schema loading is cheaper and shell pipelines are easier to script:
 
-CLI usage (for skills and scripts):
-- `mcpc @apify tools-list` — list available tools
-- `mcpc @apify tools-call <tool> arg:=value` — call a tool
-- `mcpc --json @apify tools-call ...` — JSON output for scripting
+```bash
+mcpc @apify tools-list                                     # List available tools
+mcpc @apify tools-call <tool> arg:=value                   # Call a tool
+mcpc --json @apify tools-call <tool> arg:=value            # JSON output for scripting
+```
+
+Native MCP tools available: `mcp__apify__search-apify-docs`, `mcp__apify__fetch-apify-docs`, plus the full Actor / dataset / key-value-store toolkit.
 
 ## Resources
 
-- [docs.apify.com/llms.txt](https://docs.apify.com/llms.txt) - Quick reference
-- [docs.apify.com/llms-full.txt](https://docs.apify.com/llms-full.txt) - Complete docs
-- [crawlee.dev/python](https://crawlee.dev/python) - Crawlee for Python documentation
-- [docs.apify.com/sdk/python](https://docs.apify.com/sdk/python) - Apify Python SDK docs
-- [whitepaper.actor](https://raw.githubusercontent.com/apify/actor-whitepaper/refs/heads/master/README.md) - Complete Actor specification
+**Apify**
+
+- [docs.apify.com/llms.txt](https://docs.apify.com/llms.txt) — quick reference
+- [docs.apify.com/llms-full.txt](https://docs.apify.com/llms-full.txt) — complete docs
+- [docs.apify.com/cli](https://docs.apify.com/cli) — CLI reference
+- [whitepaper.actor](https://raw.githubusercontent.com/apify/actor-whitepaper/refs/heads/master/README.md) — full Actor specification
+
+**Crawlee**
+
+- [crawlee.dev/llms.txt](https://crawlee.dev/llms.txt) — quick reference
+- [crawlee.dev/llms-full.txt](https://crawlee.dev/llms-full.txt) — complete docs
+
+**Rust**
+
+- [doc.rust-lang.org](https://doc.rust-lang.org/) — language reference and book
+- [tokio.rs](https://tokio.rs/) — async runtime and ecosystem
+
+**TypeScript**
+
+- [typescriptlang.org/docs](https://www.typescriptlang.org/docs/) — TypeScript handbook
+- [biomejs.dev](https://biomejs.dev/) — Biome lint and format
+
+**Extraction engine**
+
+- [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) — Rust port (this Actor's engine)
+- [trafilatura.readthedocs.io](https://trafilatura.readthedocs.io/) — algorithm reference for the original Trafilatura

@@ -1,44 +1,47 @@
 ---
 description: Build all projects and run local unit tests
-allowed-tools: Bash(pip:*), Bash(pytest:*), Bash(uv:*), Bash(cd:*), Bash(python:*)
+allowed-tools: Bash(cargo:*), Bash(cd:*)
 ---
 
 You are a test runner specialist. Build all projects in the repository and run local unit tests.
 
-IMPORTANT: Only run unit tests. Do NOT run integration tests or actually run the scraper/Actor locally.
+IMPORTANT: Only run unit tests. Do NOT run integration tests that hit external sites or actually run the scraper/Actor locally.
+
+## Repository Root
+
+All commands below use **relative paths from the repo root**: `/Users/miroslavsekera/r/contextractor-ts/`. Run them from there.
 
 ## Projects to Build and Test
 
 ### 1. Generated Unit Tests (`tools/generated-unit-tests`)
 
 ```bash
-cd /Users/miroslavsekera/r/contextractor/tools/generated-unit-tests
-# Install dependencies using uv if available, otherwise pip
-uv sync 2>/dev/null || pip install -e .
-# Run pytest
-pytest -v
+cargo test -p generated-unit-tests
 ```
 
 ### 2. Main Actor (`apps/contextractor`)
 
 ```bash
-cd /Users/miroslavsekera/r/contextractor
-uv run pytest apps/contextractor/tests/ -v 2>/dev/null || echo "No tests found in apps/contextractor"
+cargo test -p contextractor
 ```
 
 ## Execution Steps
 
-1. Build and test `tools/generated-unit-tests` first
-2. Build and test `apps/contextractor`
-3. Report summary of all test results
+1. Confirm the working directory is the repo root (`pwd` should print `/Users/miroslavsekera/r/contextractor-ts`)
+2. Run unit tests for `tools/generated-unit-tests` first
+3. Run unit tests for `apps/contextractor`
+4. Report a summary of all test results
 
 ## Output
 
 Provide a summary of:
-- Number of tests passed/failed for each project
-- Any errors or issues encountered during build/test
+
+- Number of tests passed/failed for each crate
+- Any errors encountered during build/test
+- First failing trace, with `path:line` link
 
 Do NOT:
-- Run `apify run` or any command that would start the scraper
+
+- Run `apify run` or any command that starts the scraper
 - Run integration tests that require network access to external sites
-- Modify any code - only build and run tests
+- Modify any code — only build and run tests

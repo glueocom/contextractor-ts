@@ -5,7 +5,7 @@ allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
 
 # Push and Get Working
 
-Automated workflow to push code to Apify platform, wait for build, fix any build errors until the build succeeds, and then run a test crawl to verify the actor works.
+Automated workflow to push code to the Apify platform, wait for build, fix any build errors until the build succeeds, then run a test crawl to verify the Actor works.
 
 **IMPORTANT:** This is a fully automated workflow. Do NOT ask for confirmation at any step. Execute all steps automatically without pausing for user input.
 
@@ -13,8 +13,8 @@ Automated workflow to push code to Apify platform, wait for build, fix any build
 
 Check `$ARGUMENTS` for the target:
 
-- If `$ARGUMENTS` contains `--production` → Push to **production** actor `glueo/apple-maps`
-- Otherwise → Push to **test** actor `glueo/apple-maps-test` (default)
+- If `$ARGUMENTS` contains `--production` → push to **production** actor `shortc/contextractor`
+- Otherwise → push to **test** actor `shortc/contextractor-test` (default)
 
 Set the target actor ID based on the argument and use it consistently throughout the workflow.
 
@@ -31,32 +31,35 @@ If not logged in, stop and inform the user to run `apify login` first.
 ### 2. Verify Actor Target
 
 ```bash
-cat .actor/actor.json | grep '"name"'
+cat apps/contextractor/.actor/actor.json | grep '"name"'
 apify info
 ```
 
-Proceed automatically with the push. Do NOT ask for confirmation - only stop if not logged in.
+Proceed automatically with the push. Do NOT ask for confirmation — only stop if not logged in.
 
 ## Workflow
 
-Execute this loop until the build succeeds:
+Execute this loop until the build succeeds.
 
 ### 1. Validate Locally First
 
 ```bash
-npm run build
+cargo check --workspace --all-targets
+cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-If local build fails, fix TypeScript errors before proceeding.
+If either fails, fix the errors before proceeding.
 
 ### 2. Push to Apify
 
 ```bash
+cd apps/contextractor
+
 # Default (test):
-apify push glueo/apple-maps-test
+apify push shortc/contextractor-test
 
 # If --production argument was provided:
-apify push glueo/apple-maps
+apify push shortc/contextractor
 ```
 
 ### 3. Wait for Build
@@ -66,81 +69,81 @@ sleep 5
 apify builds ls --limit 3
 ```
 
-Keep polling every 10-15 seconds until the latest build shows "Succeeded" or "Failed".
+Keep polling every 10–15 seconds until the latest build shows `Succeeded` or `Failed`.
 
 ### 4. Check Build Result
 
-If **SUCCEEDED**: Proceed to step 5 (Run Test Crawl).
+If **SUCCEEDED**: proceed to step 5.
 
 If **FAILED**:
+
 1. Fetch build log:
    ```bash
    apify builds log <BUILD_ID>
    ```
-
-2. Analyze the error type:
-   - Schema validation errors -> Fix `.actor/*_schema.json` files
-   - Dockerfile errors -> Fix `Dockerfile`
-   - Dependency errors -> Fix `package.json`, run `npm install`
-   - TypeScript errors -> Fix source files in `src/`
-   - Import errors -> Check dependencies in `package.json`
-
+2. Identify the error type (see reference table below)
 3. Apply fix locally
-4. **Repeat from step 1** (validate locally and push again)
+4. **Repeat from step 1**
 
 ### 5. Run Test Crawl
 
-After a successful build, run the actor with test input:
+After a successful build, run the Actor with test input:
 
 ```bash
-apify call <TARGET_ACTOR> --input '{"searchQueries": ["coffee shops in San Francisco"], "maxResultsPerQuery": 5}'
+apify call <TARGET_ACTOR> --input '{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"outputFormat":"markdown"}'
 ```
 
 Wait for the run to complete.
 
 If **RUN SUCCEEDED**:
-1. Check dataset output:
+
+1. Inspect the dataset:
    ```bash
    apify runs ls --limit 3
    ```
-2. Report success with run URL and sample output.
+2. Report success with the run URL and a sample dataset item.
 
 If **RUN FAILED**:
+
 1. Fetch run log:
    ```bash
-   apify runs ls --limit 3
    apify runs log <RUN_ID>
    ```
-2. Analyze the error and fix the source code
-3. **Repeat from step 1** (push and rebuild)
+2. Diagnose and fix the source code
+3. **Repeat from step 1**
 
 ## Arguments
 
-$ARGUMENTS - Optional arguments:
-- `--production` - Push to production actor `glueo/apple-maps` instead of test
-- `skip-validation` - Skip local build step
+`$ARGUMENTS` — optional:
+
+- `--production` — push to production actor `shortc/contextractor` instead of test
+- `skip-validation` — skip local cargo checks
 
 ## Error Type Reference
 
 | Error Pattern | Fix Location |
-|--------------|--------------|
-| `Invalid input schema` | `.actor/input_schema.json` |
-| `Invalid output schema` | `.actor/output_schema.json` |
-| `Invalid dataset schema` | `.actor/dataset_schema.json` |
-| `COPY failed` | `Dockerfile` |
-| `npm ERR` | `package.json` |
-| `TSError` / `TS2` | TypeScript source files in `src/` |
-| `Cannot find module` | Missing dependency in `package.json` |
+|---------------|--------------|
+| `Invalid input schema` | `apps/contextractor/.actor/input_schema.json` |
+| `Invalid output schema` | `apps/contextractor/.actor/output_schema.json` |
+| `Invalid dataset schema` | `apps/contextractor/.actor/dataset_schema.json` |
+| `COPY failed` | `apps/contextractor/Dockerfile` |
+| `error[E0` | Rust source files in `apps/contextractor/src/` or `packages/contextractor_engine/src/` — fix types |
+| `error: failed to resolve` | `Cargo.toml` — add or fix dependency |
+| `error: linking with` | `apps/contextractor/Dockerfile` — install missing system libs (e.g. `pkg-config`, `libssl-dev`) |
+| `clippy::` warning treated as error | Source file flagged by clippy — fix or `#[allow(...)]` with justification |
 
 ## Success Criteria
 
 The workflow completes when:
-- Local `npm run build` passes
+
+- Local `cargo check --workspace --all-targets` passes
+- Local `cargo clippy --workspace --all-targets -- -D warnings` passes
 - `apify push` succeeds
 - Build status is `SUCCEEDED`
-- Test crawl run completes successfully
-- Dataset contains at least one place result
+- Test crawl completes successfully
+- Dataset contains at least one extracted item
 
 Report the final URLs to the user:
+
 - Build: `https://console.apify.com/actors/<actorId>/builds/<buildId>`
 - Run: `https://console.apify.com/actors/<actorId>/runs/<runId>`
