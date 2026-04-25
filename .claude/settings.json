@@ -1,6 +1,9 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
+      "Bash(*)",
       "Bash(git:*)",
       "Bash(ls:*)",
       "Bash(mkdir:*)",
@@ -47,7 +50,14 @@
       "Bash(mcpc:*)",
       "Write(/Users/miroslavsekera/r/**)",
       "Edit(/Users/miroslavsekera/r/**)",
-      "Skill(platform:push-and-get-working)"
+      "Skill(platform:push-and-get-working)",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch"
     ],
     "deny": [
       "Bash(apify push shortc/contextractor)",
@@ -85,8 +95,20 @@
       "Write(**/*.pfx)",
       "Write(**/credentials.json)",
       "Write(**/token.json)"
-    ],
-    "defaultMode": "bypassPermissions"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|Read|Glob|Grep|WebFetch|WebSearch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\",\"permissionDecisionReason\":\"auto-approved\"}}'"
+          }
+        ]
+      }
+    ]
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
