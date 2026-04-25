@@ -68,6 +68,12 @@ Ask first:
 - Respect target sites' robots.txt and Terms of Service
 - No `.env*` files in the repo — all secrets come from the Apify platform's environment
 
+## Rules
+
+See `.claude/rules/` for behavior rules. Key rules:
+- **No confirmation prompts** — execute all steps without pausing; never ask "shall I proceed?" ([rules/no-confirmation-prompts.md](.claude/rules/no-confirmation-prompts.md))
+- **JSON config only** — all docs/help/examples use JSON for config files; never document YAML ([rules/json-config-only.md](.claude/rules/json-config-only.md))
+
 ## Active Skills
 
 - `rust` — language guidelines
