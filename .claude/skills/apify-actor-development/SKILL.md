@@ -168,14 +168,16 @@ See [references/dataset-schema.md](references/dataset-schema.md) for dataset sch
 See [references/key-value-store-schema.md](references/key-value-store-schema.md) for key-value store schema structure, collections, and configuration.
 
 
-## Apify MCP Tools
+## Documentation lookups via mcpc
 
-If MCP server is configured, use these tools for documentation:
+Use the persistent `@apify` session (one-time setup in the `apify-ops` skill):
 
-- `search-apify-docs` - Search documentation
-- `fetch-apify-docs` - Get full doc pages
+```bash
+mcpc --json @apify tools-call search-apify-docs query:="actor input schema" limit:=5
+mcpc --json @apify tools-call fetch-apify-docs url:="https://docs.apify.com/platform/actors/running"
+```
 
-Otherwise, the MCP Server url: `https://mcp.apify.com/?tools=docs`.
+For remote operations (Actor runs, datasets, KV stores) see the `apify-ops` skill — `mcpc` for what `mcp.apify.com` exposes, `apify` CLI elsewhere.
 
 ## Resources
 

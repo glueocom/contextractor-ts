@@ -10,9 +10,9 @@ AI-driven data extraction from 55+ Actors across all major platforms. This skill
 ## Prerequisites
 (No need to check it upfront)
 
-- `.env` file with `APIFY_TOKEN`
-- Node.js 20.6+ (for native `--env-file` support)
-- `mcpc` CLI tool (for fetching Actor schemas)
+- `mcpc` CLI with `@apify` session connected — see one-time setup in the `apify-ops` skill
+- Node.js 20.6+ for the helper script (uses native `--env-file` support)
+- `.env` with `APIFY_TOKEN` for the helper script (`reference/scripts/run_actor.js` calls the `apify-client` SDK)
 
 ## Workflow
 
@@ -149,7 +149,7 @@ For complex tasks, chain multiple Actors:
 If none of the Actors above match the user's request, search the Apify Store directly:
 
 ```bash
-export $(grep APIFY_TOKEN .env | xargs) && mcpc --json mcp.apify.com --header "Authorization: Bearer $APIFY_TOKEN" tools-call search-actors keywords:="SEARCH_KEYWORDS" limit:=10 offset:=0 category:="" | jq -r '.content[0].text'
+mcpc --json @apify tools-call search-actors keywords:="SEARCH_KEYWORDS" limit:=10 offset:=0 category:="" | jq -r '.content[0].text'
 ```
 
 Replace `SEARCH_KEYWORDS` with 1-3 simple terms (e.g., "LinkedIn profiles", "Amazon products", "Twitter").
@@ -159,7 +159,7 @@ Replace `SEARCH_KEYWORDS` with 1-3 simple terms (e.g., "LinkedIn profiles", "Ama
 Fetch the Actor's input schema and details dynamically using mcpc:
 
 ```bash
-export $(grep APIFY_TOKEN .env | xargs) && mcpc --json mcp.apify.com --header "Authorization: Bearer $APIFY_TOKEN" tools-call fetch-actor-details actor:="ACTOR_ID" | jq -r ".content"
+mcpc --json @apify tools-call fetch-actor-details actor:="ACTOR_ID" | jq -r '.content'
 ```
 
 Replace `ACTOR_ID` with the selected Actor (e.g., `compass/crawler-google-places`).
@@ -223,8 +223,9 @@ After completion, report:
 
 ## Error Handling
 
-`APIFY_TOKEN not found` - Ask user to create `.env` with `APIFY_TOKEN=your_token`
-`mcpc not found` - Ask user to install `npm install -g @apify/mcpc`
+`APIFY_TOKEN not found` - The helper script needs `.env` with `APIFY_TOKEN=your_token`
+`mcpc not found` - Run `npm install -g @apify/mcpc`
+`Session @apify has expired` / `Session @apify not found` - Run `mcpc login mcp.apify.com && mcpc connect mcp.apify.com @apify`
 `Actor not found` - Check Actor ID spelling
 `Run FAILED` - Ask user to check Apify console link in error output
 `Timeout` - Reduce input size or increase `--timeout`

@@ -5,105 +5,92 @@ description: Apify platform operations including builds, runs, storage, and depl
 
 # Apify Platform Operations
 
-Comprehensive workflows for managing Actors on the Apify platform using MCP tools, CLI, and API.
+One path per operation. `mcpc` for the operations the `mcp.apify.com` server exposes; `apify` CLI for everything else (local dev and remote ops not covered by mcpc).
 
-## Prefer mcpc for MCP tool calls
-
-Direct `mcp__apify__*` function calls load full tool schemas and are token-expensive.
-Prefer the `mcpc` CLI from Bash for any discovery or one-off tool calls:
+## One-time setup
 
 ```bash
-# List all available tools (no schema loading)
-mcpc --json @apify tools-list
-
-# Get schema for a specific tool
-mcpc --json @apify tools-get get-dataset-items
-
-# Call a tool
-mcpc --json @apify tools-call get-actor-run runId:="<id>"
+npm install -g @apify/mcpc                                 # Install mcpc (≥ v0.2.6)
+mcpc login mcp.apify.com                                   # OAuth, stores creds in OS keychain
+mcpc connect mcp.apify.com @apify                          # Persistent session named @apify
 ```
 
-Use direct `mcp__apify__*` calls only when mcpc is unavailable or when tool results
-need to be passed directly into the agent context without shell parsing.
+After this, every example below uses the short `mcpc @apify ...` form. Verify the session with `mcpc @apify` (prints server info).
 
-## Tool Selection Guide
+## Path Selection
 
-| Operation | Best Tool | Why |
-|-----------|-----------|-----|
-| Run Actors | MCP | Direct integration, structured output |
-| Monitor runs | MCP | Real-time status, logs |
-| Access datasets | MCP | Pagination, field selection |
-| Access KV stores | MCP | Direct record access |
-| Manage builds | CLI/API | No MCP build tools available |
-| Local testing | CLI | `apify run` for development |
-| Deploy | CLI | `apify push` for quick deploy |
+| Operation | Path |
+|-----------|------|
+| Search Actors, fetch Actor README/schema | `mcpc` |
+| Call an Actor (run + wait or async) | `mcpc` |
+| Get a specific run's metadata (`runId` known) | `mcpc` |
+| Get a run's output dataset items (`datasetId` known) | `mcpc` |
+| Search and fetch Apify docs | `mcpc` |
+| List recent runs / stream a run's log | `apify` CLI (`apify runs ls|log`) |
+| Builds (list, info, log, create) | `apify` CLI (`apify builds *`) |
+| Free-standing dataset / KV store inspection | `apify` CLI (`apify datasets|key-value-stores ...`) |
+| Local dev (run, push, login, info, whoami) | `apify` CLI |
+
+`mcp.apify.com` v0.9.19 currently exposes 8 tools. Anything not listed in `references/mcpc-tools.md` is not available via mcpc.
 
 ## Get Actor Identity
 
 Read actor name from `.actor/actor.json`. Use `apify whoami` to get username for full actor ID (`username/actor-name`).
 
-## MCP Tools (Preferred for Runs & Storage)
+## Remote Operations via mcpc
 
-See [references/mcp-tools.md](references/mcp-tools.md) for complete MCP tool reference.
+See [references/mcpc-tools.md](references/mcpc-tools.md) for full mcpc tool reference.
 
 **Quick reference:**
-- `call-actor` - Run any Actor (two-step: info → call)
-- `get-actor-run` / `get-actor-run-list` - Monitor runs
-- `get-actor-log` - Get run logs
-- `get-dataset*` - Dataset operations
-- `get-key-value-store*` - Key-value store operations
-- `search-actors` / `fetch-actor-details` - Discover Actors
-- `search-apify-docs` / `fetch-apify-docs` - Documentation
+- `call-actor` — run any Actor (two-step: info → call)
+- `get-actor-run` — run metadata by `runId`
+- `get-actor-output` — run output items by `datasetId`
+- `search-actors` / `fetch-actor-details` — discover Actors
+- `search-apify-docs` / `fetch-apify-docs` — documentation
 
-## CLI Commands (Preferred for Builds)
+## Local Development and Remote Ops via apify CLI
 
-See [references/cli-commands.md](references/cli-commands.md) for complete CLI reference.
+See [references/cli-commands.md](references/cli-commands.md) for full CLI reference.
 
 **Quick reference:**
 ```bash
-# Builds
-apify builds ls --limit 5
-apify builds log <buildId>
-apify builds create --tag latest --log
+# Local dev
+apify run                            # Run locally
+apify push                           # Deploy
+apify login                          # Authenticate
+apify info                           # Identity check
 
-# Development
-apify run                    # Run locally
-apify push                   # Deploy to platform
-
-# Identity
-apify whoami
+# Remote ops (no mcpc equivalent)
+apify runs ls --actor <actorId>      # List runs
+apify runs log <runId>               # Stream run log
+apify builds ls --limit 5            # List builds
+apify builds log <buildId>           # Build log
+apify datasets ls                    # List datasets
+apify datasets get-items <id>        # Download dataset items
+apify key-value-stores ls            # List KV stores
+apify key-value-stores get-value <id> <key>
 ```
-
-## API Endpoints (Alternative/Fallback)
-
-See [references/api-endpoints.md](references/api-endpoints.md) for complete API reference.
-
-Use API when:
-- CLI is not installed
-- Scripting/automation needed
-- More control over request parameters
 
 ## Common Workflows
 
 ### Fix Build Errors (Git-based)
 
-1. **Commit and push** - Stage, commit, and push changes to Git
-2. **Wait for auto-build** - Apify webhook triggers build from Git
-3. **Check build status** - Poll until build completes
-4. **If failed:** Analyze error, fix locally, repeat from step 1
+1. **Commit and push** — Stage, commit, and push changes to Git
+2. **Wait for auto-build** — Apify webhook triggers build from Git
+3. **Check build status** — `apify builds ls --limit 3` until latest is `SUCCEEDED` or `FAILED`
+4. **If failed:** `apify builds log <buildId>`, fix locally, repeat from step 1
 
 ### Diagnose Failed Run
 
-1. **Get run info** - Use `get-actor-run` with runId
-2. **Check logs** - Use `get-actor-log` for error details
-3. **Review input** - Check key-value store for INPUT record
-4. **Analyze output** - Check dataset for partial results
+1. **Get run info** — `mcpc --json @apify tools-call get-actor-run runId:="<runId>"`
+2. **Check log** — `apify runs log <runId>` (no mcpc equivalent for run logs)
+3. **Review input** — `apify key-value-stores get-value <storeId> INPUT`
+4. **Analyze output** — `mcpc --json @apify tools-call get-actor-output datasetId:="<datasetId>" limit:=20`
 
 ### Access Run Output
 
-1. **Get run details** - Obtain `datasetId` from run info
-2. **Fetch items** - Use `get-dataset-items` or `get-actor-output`
-3. **Filter fields** - Use `fields` parameter for specific data
+1. **Get run details** — `mcpc --json @apify tools-call get-actor-run runId:="<runId>"` to obtain `defaultDatasetId`
+2. **Fetch items** — `mcpc --json @apify tools-call get-actor-output datasetId:="<datasetId>" limit:=100 fields:="title,url"`
 
 ## Common Error Types
 
@@ -121,37 +108,6 @@ Use API when:
 
 ## Prerequisites
 
-- `APIFY_TOKEN` environment variable must be set
-- Apify CLI installed (`brew install apify-cli` on macOS, or `npm install -g apify-cli`) for build operations
-- MCP server configured for run/storage operations
-
-### New in CLI v1.x
-
-```bash
-# Runs
-apify runs ls --actor <actorId>        # List runs
-apify runs info <runId>                # Run details
-apify runs log <runId>                 # Run logs
-apify runs abort <runId>               # Abort a run
-
-# Datasets (alias: apify ds)
-apify datasets ls                      # List datasets
-apify datasets get-items <id>          # Download items
-
-# Key-value stores (alias: apify kvs)
-apify key-value-stores ls
-apify key-value-stores get-value <id> <key>
-
-# Builds
-apify builds add-tag -b <buildId> -t latest   # Tag a build
-apify builds remove-tag -b <buildId> -t beta
-
-# Actors
-apify actors calculate-memory         # Suggest memory for Actor
-apify actors search <query>           # Search Apify Store
-
-# Misc
-apify upgrade                          # Self-update CLI
-apify auth token                       # Print current API token
-apify secrets ls                       # List stored secrets
-```
+- `mcpc` ≥ v0.2.6 with `@apify` session connected (see one-time setup above)
+- Apify CLI installed (`brew install apify-cli` on macOS, or `npm install -g apify-cli`) for local dev and operations not exposed by mcpc
+- `APIFY_TOKEN` env var set for `apify-client` SDK and CLI fallback paths

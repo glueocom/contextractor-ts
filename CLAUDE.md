@@ -90,7 +90,13 @@ Ask first:
 
 `.mcp.json` declares one server: `apify` (HTTP transport at `https://mcp.apify.com`). `settings.json` `enabledMcpjsonServers` matches.
 
-**Prefer the `mcpc` CLI** over direct `mcp__apify__*` calls — schema loading is cheaper and shell pipelines are easier to script:
+Talk to the platform through the `mcpc` CLI — never via the native MCP tool surface. One-time setup:
+
+```bash
+mcpc login mcp.apify.com && mcpc connect mcp.apify.com @apify
+```
+
+After that:
 
 ```bash
 mcpc @apify tools-list                                     # List available tools
@@ -98,7 +104,7 @@ mcpc @apify tools-call <tool> arg:=value                   # Call a tool
 mcpc --json @apify tools-call <tool> arg:=value            # JSON output for scripting
 ```
 
-Native MCP tools available: `mcp__apify__search-apify-docs`, `mcp__apify__fetch-apify-docs`, plus the full Actor / dataset / key-value-store toolkit.
+`mcp.apify.com` v0.9.19 currently exposes 8 tools (Actor discovery, `call-actor`, `get-actor-run`, `get-actor-output`, docs search/fetch, and `apify--rag-web-browser`). For operations not covered — listing runs, build management, ad-hoc dataset/KV access — use the `apify` CLI. See the `apify-ops` skill for the full mapping.
 
 ## Resources
 

@@ -87,13 +87,16 @@ If **FAILED**:
 
 ### 5. Run Test Crawl
 
-After a successful build, run the Actor with test input:
+After a successful build, run the Actor with test input via mcpc (assumes one-time `mcpc connect mcp.apify.com @apify` already done):
 
 ```bash
-apify call <TARGET_ACTOR> --input '{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"outputFormat":"markdown"}'
+mcpc --json @apify tools-call call-actor \
+  actor:="<TARGET_ACTOR>" \
+  step:="call" \
+  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"outputFormat":"markdown"}'
 ```
 
-Wait for the run to complete.
+The call is synchronous by default — it waits for the run to complete and returns the result with `runId` and `defaultDatasetId`.
 
 If **RUN SUCCEEDED**:
 

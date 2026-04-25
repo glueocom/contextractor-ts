@@ -166,14 +166,14 @@ Other options: **Rental** (monthly subscription) or **Free** (open source).
 - [ ] `apify run` executes successfully with test input
 - [ ] `generatedBy` is set in actor.json meta section
 
-## Apify MCP Tools
+## Documentation lookups via mcpc
 
-If MCP server is configured, use these tools for documentation:
+Use the persistent `@apify` session (one-time setup in the `apify-ops` skill):
 
-- `search-apify-docs` - Search documentation
-- `fetch-apify-docs` - Get full doc pages
-
-Otherwise, the MCP Server url: `https://mcp.apify.com/?tools=docs`.
+```bash
+mcpc --json @apify tools-call search-apify-docs query:="actor input schema" limit:=5
+mcpc --json @apify tools-call fetch-apify-docs url:="https://docs.apify.com/platform/actors/running"
+```
 
 ## Resources
 
