@@ -7,7 +7,7 @@
     "buildTag": "latest",
     "meta": {
         "templateId": "rust-cli-wrapper",
-        "generatedBy": "Claude Code with Claude Opus 4.6 (1M context)"
+        "generatedBy": "Claude Code with Claude Opus 4.7 (1M context)"
     },
     "input": "./input_schema.json",
     "output": "./output_schema.json",

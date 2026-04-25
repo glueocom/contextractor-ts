@@ -74,6 +74,13 @@ See `.claude/rules/` for behavior rules. Key rules:
 - **No confirmation prompts** — execute all steps without pausing; never ask "shall I proceed?" ([rules/no-confirmation-prompts.md](.claude/rules/no-confirmation-prompts.md))
 - **JSON config only** — all docs/help/examples use JSON for config files; never document YAML ([rules/json-config-only.md](.claude/rules/json-config-only.md))
 
+## Agents
+
+- `code-reviewer` — reviews Rust and TypeScript code for correctness, hygiene, security, and performance
+- `rust-pro` — Rust 1.85+ development, async, optimization, and production patterns
+- `ts-pro` — TypeScript 5.x with strict type-checking, Biome, zod, vitest
+- `test-runner` — format, lint, unit tests, integration tests, and smoke runs
+
 ## Active Skills
 
 - `rust` — language guidelines
