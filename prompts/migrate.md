@@ -7,4 +7,7 @@
 
 - propagate all markdown files, docs (but note the Python Trafilatura is newly used in Rust form, so no Python in this target repo)
 - propagate `/Users/miroslavsekera/r/contextractor/tools` to `/Users/miroslavsekera/r/contextractor-ts/tools`
-- this prompt output will include creation of another prompt in `/Users/miroslavsekera/r/tools/prompts` that will propagate all the changes to `/Users/miroslavsekera/r/tools/apps/contextractor-site` `/Users/miroslavsekera/r/tools/apps/contextractor-api` `/Users/miroslavsekera/r/tools/distributed-packages/contextractor-engine` `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor`, run `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor/sync-all.md`
+
+- there wont be the python library deployed to Pypi anymore (`https://pypi.org/project/contextractor/`). Remove all the PyPi lib mentions in the docs from all docs in `/Users/miroslavsekera/r/contextractor-ts/`
+
+- this prompt output will include creation of another prompt in `/Users/miroslavsekera/r/tools/prompts` that will propagate all the changes to `/Users/miroslavsekera/r/tools/apps/contextractor-site` `/Users/miroslavsekera/r/tools/apps/contextractor-api` `/Users/miroslavsekera/r/tools/distributed-packages/contextractor-engine` `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor`, run `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor/sync-all.md`. Do not delete (`https://www.contextractor.com/help/pypi/` only modyfy it and tell the PyPi package is no longer supported. Remove links to `https://www.contextractor.com/help/pypi/` from any docs and .md files)
