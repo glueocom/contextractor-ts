@@ -10,4 +10,8 @@
 
 - there won't be the python library deployed to PyPI anymore (`https://pypi.org/project/contextractor/`). Remove all the PyPI lib mentions in the docs from all docs in `/Users/miroslavsekera/r/contextractor-ts/`
 
+- do all the tests, local and Apify (`glueo/contextractor-test`), but in scope in this prompt, do not deploy anything except to the Apify test actor (`glueo/contextractor-test`)
+
+- run `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/sync/docs.md` and `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/sync/gui.md`
+
 - this prompt output will include creation of another prompt in `/Users/miroslavsekera/r/tools/prompts` that will propagate all the changes to `/Users/miroslavsekera/r/tools/apps/contextractor-site` `/Users/miroslavsekera/r/tools/apps/contextractor-api` `/Users/miroslavsekera/r/tools/distributed-packages/contextractor-engine` `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor`, run `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor/sync-all.md`. Do not delete (`https://www.contextractor.com/help/pypi/` only modify it and tell the PyPI package is no longer supported. Remove links to `https://www.contextractor.com/help/pypi/` from any docs and .md files)
