@@ -73,6 +73,9 @@ Ask first:
 See `.claude/rules/` for behavior rules. Key rules:
 - **No confirmation prompts** — execute all steps without pausing; never ask "shall I proceed?" ([rules/no-confirmation-prompts.md](.claude/rules/no-confirmation-prompts.md))
 - **JSON config only** — all docs/help/examples use JSON for config files; never document YAML ([rules/json-config-only.md](.claude/rules/json-config-only.md))
+- **Minimal diff** — use Edit (not Write) on existing files; preserve formatting and unchanged content ([rules/minimal-diff.md](.claude/rules/minimal-diff.md))
+- **Formatting guidelines** — markdown headers (not bold), bullets (not numbered), descriptive step names ([rules/formatting-guidelines.md](.claude/rules/formatting-guidelines.md))
+- **Prompt engineering knowledge** — frontmatter, tool selection, and activation keywords for `.claude/` files ([rules/prompt-engineering-knowledge.md](.claude/rules/prompt-engineering-knowledge.md))
 
 ## Agents
 
@@ -80,6 +83,10 @@ See `.claude/rules/` for behavior rules. Key rules:
 - `rust-pro` — Rust 1.85+ development, async, optimization, and production patterns
 - `ts-pro` — TypeScript 5.x with strict type-checking, Biome, zod, vitest
 - `test-runner` — format, lint, unit tests, integration tests, and smoke runs
+- `prompt-writer` — creates new agents, commands, rules, skills, or general prompts
+- `prompt-modifier` — targeted edits or full rebuilds of existing prompt files
+- `prompt-formatter` — reformats prompt files to formatting guidelines without changing content
+- `web-research-specialist` — multi-source research for debugging, library issues, and comparisons
 
 ## Active Skills
 
@@ -92,6 +99,7 @@ See `.claude/rules/` for behavior rules. Key rules:
 - `apify-actorization` — converting projects to Actors
 - `apify-ops` — platform builds, runs, datasets, KV stores
 - `apify-schemas` — input, output, dataset, KV-store schema specs
+- `autonomous-task` — execute tasks end-to-end without user interaction; defer decisions to a follow-up file
 
 ## Testing
 
