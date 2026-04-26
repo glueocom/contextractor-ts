@@ -2,137 +2,209 @@
 
 ## Stack
 
-- Python 3.12+
-- uv workspace monorepo with hatchling build system
-- Crawlee for Python with PlaywrightCrawler
-- Apify SDK
-- contextractor-engine library (Trafilatura wrapper)
+- TypeScript 5.7+ on Node.js 22+
+- pnpm workspace monorepo (Cargo workspace alongside for the napi-rs crate)
+- Crawlee for TypeScript with `PlaywrightCrawler`
+- Apify SDK (Apify actor only)
+- `@contextractor/engine` (TypeScript wrapper around `rs-trafilatura` via napi-rs)
+- `commander` CLI (standalone app)
+- vitest for tests, Biome for lint/format
+- Apify Docker image for the actor; no public Docker / npm distribution for the standalone CLI in this repo
 
 ## Architecture
 
-Two-package monorepo:
-- `packages/contextractor_engine/` - Library package, depends on trafilatura only
-- `apps/contextractor/` - Actor application, depends on engine + apify + crawlee
+Three-package monorepo:
+
+- `packages/contextractor-engine/` — TypeScript engine, depends on `@contextractor/engine-native`
+- `packages/contextractor-engine/native/` — napi-rs Rust crate that wraps `rs-trafilatura` (Cargo workspace member)
+- `apps/contextractor-apify/` — Apify Actor application, depends on engine + apify + crawlee
+- `apps/contextractor-standalone/` — Standalone CLI, depends on engine + crawlee + commander (no Apify)
+
+### Apify Actor
 
 ```
-Input URLs → PlaywrightCrawler → ContentExtractor → KVS (blobs) + Dataset (metadata)
+Input URLs → PlaywrightCrawler → ContentExtractor (TS → napi → rs-trafilatura) → KVS (blobs) + Dataset (metadata)
+```
+
+### Standalone CLI
+
+```
+Config file (JSON) → PlaywrightCrawler → ContentExtractor → Output files (one per page)
 ```
 
 ## Key Implementation Details
 
-### Handler Pattern
+### Apify Actor Handler Pattern
 
-Handler must be defined inside `async with Actor:` context. Config passed via `Request.user_data`:
+`Actor.init()` / `Actor.exit()` brackets, with a request handler factory wired into `PlaywrightCrawler`:
 
-```python
-async with Actor:
-    kvs = await Actor.open_key_value_store(name='content')
-    crawler = PlaywrightCrawler(...)
+```ts
+import { Actor } from 'apify';
+import { PlaywrightCrawler } from 'crawlee';
+import { ContentExtractor } from '@contextractor/engine';
 
-    @crawler.router.default_handler
-    async def handler(ctx: PlaywrightCrawlingContext) -> None:
-        config = ctx.request.user_data.get('config', {})
-        trafilatura_config_raw = config.get('trafilatura_config_raw', {})
+await Actor.init();
+try {
+    const input = (await Actor.getInput()) ?? {};
+    const kvs = await Actor.openKeyValueStore();
+    const extractor = new ContentExtractor(input.trafilaturaConfig);
 
-        # Build TrafilaturaConfig from raw dict (JSON-serializable in user_data)
-        if trafilatura_config_raw:
-            normalized = normalize_config_keys(trafilatura_config_raw)
-            filtered = {k: v for k, v in normalized.items() if v is not None}
-            trafilatura_config = TrafilaturaConfig(**filtered)
-        else:
-            trafilatura_config = TrafilaturaConfig.balanced()
-
-        extractor = ContentExtractor(config=trafilatura_config)
-        html = await ctx.page.content()
-        # extract and save...
-
-    requests = [Request.from_url(url, user_data={'config': config}) for url in start_urls]
-    await crawler.run(requests)
+    const crawler = new PlaywrightCrawler({
+        async requestHandler(ctx) {
+            const html = await ctx.page.content();
+            const r = extractor.extract(html, { url: ctx.request.url, format: 'markdown' });
+            // save to kvs / push dataset...
+        },
+    });
+    await crawler.run(input.startUrls);
+    await Actor.exit();
+} catch (err) {
+    await Actor.exit({ exitCode: 1 });
+}
 ```
+
+### Standalone CLI
+
+CLI args / Config file (optional) → `CrawlConfig` → Crawlee `PlaywrightCrawler` → output files.
+
+```bash
+# Zero-config with URL
+contextractor https://example.com
+
+# With flags
+contextractor https://example.com --precision --save json -o ./results
+
+# With config file
+contextractor --config config.json --max-pages 10
+```
+
+Config merge order: `defaults → config file (if provided) → CLI args`
+
+All `CrawlConfig` and `TrafilaturaConfig` fields have CLI flag equivalents. URLs are positional args, config file is optional via `--config`.
 
 ### Content-Type Headers
 
-All content-type headers must include charset: `text/html; charset=utf-8`
+All content-type headers must include charset: `text/html; charset=utf-8`.
 
 ### Public URLs
 
-Use `await kvs.get_public_url(key)` to get download URLs.
+Use `kvs.getPublicUrl(key)` to get download URLs.
 
 ### TrafilaturaConfig
 
-Replaces the old `extractionMode` enum. Dataclass mapping to trafilatura.extract() parameters:
+TypeScript interface mapping to `rs-trafilatura::Options`:
 
-```python
-from contextractor_engine import ContentExtractor, TrafilaturaConfig
+```ts
+import { ContentExtractor, type TrafilaturaConfig } from '@contextractor/engine';
 
-# Factory methods for common configurations
-config = TrafilaturaConfig.balanced()   # Default balanced extraction
-config = TrafilaturaConfig.precision()  # favor_precision=True
-config = TrafilaturaConfig.recall()     # favor_recall=True
+const cfg: Partial<TrafilaturaConfig> = {
+    favorPrecision: true,
+    includeLinks: false,
+    targetLanguage: 'en',
+};
 
-# Or customize directly
-config = TrafilaturaConfig(
-    favor_precision=True,
-    include_links=False,
-    target_language="en",
-)
-
-extractor = ContentExtractor(config=config)
-result = extractor.extract(html, url=url, output_format="markdown")
-metadata = extractor.extract_metadata(html, url=url)
+const extractor = new ContentExtractor(cfg);
+const result = extractor.extract(html, { url, format: 'markdown' });
+const metadata = extractor.extractMetadata(html, url);
 ```
 
-Formats: `txt`, `json`, `markdown`, `xml`, `xmltei`
+Supported formats: `txt`, `markdown`, `json`, `html`. `xml` and `xml-tei` are temporarily unsupported pending upstream `rs-trafilatura` work.
 
 ### Key Generation
 
-MD5 hash of URL, first 16 characters: `hashlib.md5(url.encode()).hexdigest()[:16]`
+MD5 hash of URL, first 16 characters: `createHash('md5').update(url).digest('hex').slice(0, 16)`.
 
 ### Browser Context Options
 
-Custom headers and cookies are passed to the PlaywrightCrawler via `browser_new_context_options`:
+Custom headers and cookies are passed through Crawlee TS hooks:
 
-```python
-options = {}
-if initial_cookies:
-    options['storage_state'] = {'cookies': initial_cookies}
-if custom_headers:
-    options['extra_http_headers'] = custom_headers
+```ts
+preNavigationHooks: [
+    async ({ page }) => {
+        if (input.customHttpHeaders) {
+            await page.setExtraHTTPHeaders(input.customHttpHeaders);
+        }
+    },
+],
 ```
 
-This applies headers to all HTTP requests and pre-sets cookies on all browser contexts.
+This applies headers to all HTTP requests; cookies can be pre-set via the launch context's `storageState`.
 
 ## Dependencies
 
-Engine package (`packages/contextractor_engine/`):
+Engine package (`packages/contextractor-engine/`):
+
 ```
-trafilatura>=2.0.0
+@contextractor/engine-native (workspace, napi-rs binding)
 ```
 
-Actor package (`apps/contextractor/`):
+napi-rs binding (`packages/contextractor-engine/native/`):
+
 ```
-apify>=2.0.0,<4.0.0
-crawlee[playwright]>=0.4.0
-contextractor-engine (workspace)
-browserforge<1.2.4
+rs-trafilatura = "0.2"
+napi = "2"
+napi-derive = "2"
+napi-build = "2"
+serde, serde_json
+```
+
+Apify Actor (`apps/contextractor-apify/`):
+
+```
+apify
+crawlee
+playwright
+@contextractor/engine (workspace)
+```
+
+Standalone CLI (`apps/contextractor-standalone/`):
+
+```
+commander
+crawlee
+playwright
+@contextractor/engine (workspace)
 ```
 
 ## Build
 
-Build engine wheel for distribution:
+Build the napi-rs binding for the local platform:
+
 ```bash
-./scripts/build-engine.sh
-# or
-uv build --package contextractor-engine --out-dir dist/
+pnpm -F @contextractor/engine-native build
+```
+
+Build the TS engine and apps:
+
+```bash
+pnpm -r build
 ```
 
 ## Docker
 
-uv-based install with frozen lockfile:
+### Apify Actor (`apps/contextractor-apify/Dockerfile`)
+
+Base: `apify/actor-node-playwright-chrome:22`. The Dockerfile installs `pnpm`, copies workspace manifests, installs deps, builds the napi-rs binding inside the image (Rust toolchain fetched via `rustup` and removed after build), then builds the TS apps:
+
 ```dockerfile
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-COPY pyproject.toml uv.lock ./
-COPY packages/contextractor_engine/ ./packages/contextractor_engine/
-COPY apps/contextractor/ ./apps/contextractor/
-RUN uv sync --frozen --no-dev --directory apps/contextractor
+FROM apify/actor-node-playwright-chrome:22
+RUN npm install -g pnpm@10.27.0
+COPY --chown=myuser:myuser package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY --chown=myuser:myuser packages/contextractor-engine/package.json packages/contextractor-engine/
+COPY --chown=myuser:myuser packages/contextractor-engine/native/package.json packages/contextractor-engine/native/
+COPY --chown=myuser:myuser apps/contextractor-apify/package.json apps/contextractor-apify/
+RUN pnpm install --frozen-lockfile --prod=false
+COPY --chown=myuser:myuser packages/ packages/
+COPY --chown=myuser:myuser apps/contextractor-apify/ apps/contextractor-apify/
+RUN pnpm -F @contextractor/engine-native build \
+    && pnpm -F @contextractor/engine build \
+    && pnpm -F @contextractor/apify build
+WORKDIR /home/myuser/apps/contextractor-apify
+CMD ["node", "dist/main.js"]
 ```
+
+## Releases
+
+Test deployments target `glueo/contextractor-test`. Production deployments target `glueo/contextractor` and require an explicit `--production` flag in `/platform:push-and-get-working`.
+
+Versions are bumped jointly across `package.json` files (engine, native, apify, standalone) and the Cargo `Cargo.toml` for the napi-rs crate. See `/git:release`.

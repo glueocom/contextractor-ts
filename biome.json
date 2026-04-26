@@ -1,0 +1,49 @@
+{
+    "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
+    },
+    "files": {
+        "ignore": [
+            "**/dist/**",
+            "**/node_modules/**",
+            "**/target/**",
+            "**/*.node",
+            "**/fixtures/**",
+            ".claude/**",
+            "prompts/**",
+            "**/*.md",
+            "**/test-suites/**",
+            "**/test-suites-output/**",
+            "packages/contextractor-engine/native/index.js",
+            "packages/contextractor-engine/native/index.d.ts"
+        ]
+    },
+    "formatter": {
+        "enabled": true,
+        "indentStyle": "space",
+        "indentWidth": 4,
+        "lineWidth": 100
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "recommended": true,
+            "suspicious": {
+                "noExplicitAny": "error"
+            },
+            "style": {
+                "useImportType": "warn"
+            }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "quoteStyle": "single",
+            "semicolons": "always",
+            "trailingCommas": "all"
+        }
+    }
+}

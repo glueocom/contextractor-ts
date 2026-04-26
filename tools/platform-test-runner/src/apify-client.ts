@@ -1,7 +1,7 @@
 import { ApifyClient } from 'apify-client';
 import type { ActorSettings, DatasetItem } from './types.js';
 
-const ACTOR_ID = 'nXCKPalCKnRAQSG5S'; // contextractor actor
+const ACTOR_ID = process.env.CONTEXTRACTOR_ACTOR_ID ?? 'glueo/contextractor-test';
 
 let client: ApifyClient | null = null;
 
@@ -31,10 +31,7 @@ export interface ActorInput extends ActorSettings {
 /**
  * Run the Contextractor actor with given URLs and settings
  */
-export async function runActor(
-    urls: string[],
-    settings: ActorSettings
-): Promise<ActorRunResult> {
+export async function runActor(urls: string[], settings: ActorSettings): Promise<ActorRunResult> {
     const apifyClient = getClient();
 
     const input: ActorInput = {
@@ -66,9 +63,7 @@ export async function runActor(
 /**
  * Fetch all items from a dataset
  */
-export async function fetchDatasetItems(
-    datasetId: string
-): Promise<DatasetItem[]> {
+export async function fetchDatasetItems(datasetId: string): Promise<DatasetItem[]> {
     const apifyClient = getClient();
 
     const { items } = await apifyClient.dataset(datasetId).listItems();

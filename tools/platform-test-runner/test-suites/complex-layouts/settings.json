@@ -1,5 +1,5 @@
 {
-    "waitUntil": "NETWORKIDLE",
+    "waitUntil": "networkidle",
     "saveRawHtmlToKeyValueStore": true,
     "saveExtractedMarkdownToKeyValueStore": true,
     "saveExtractedTextToKeyValueStore": false,

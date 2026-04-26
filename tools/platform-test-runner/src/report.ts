@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import type { SuiteRunResult, ReportEntry } from './types.js';
 import { OUTPUT_DIR } from './runner.js';
+import type { ReportEntry, SuiteRunResult } from './types.js';
 
 /**
  * Collect all report entries from suite results
@@ -38,11 +38,10 @@ function generateMarkdownTable(entries: ReportEntry[]): string {
         const errorText = entry.errorMessage
             ? entry.errorMessage.replace(/\|/g, '\\|').slice(0, 100)
             : '-';
-        const truncatedUrl =
-            entry.url.length > 60 ? entry.url.slice(0, 57) + '...' : entry.url;
+        const truncatedUrl = entry.url.length > 60 ? `${entry.url.slice(0, 57)}...` : entry.url;
 
         lines.push(
-            `| ${entry.suiteName} | ${entry.testCaseSlug} | ${truncatedUrl} | ${statusIcon} | ${errorText} |`
+            `| ${entry.suiteName} | ${entry.testCaseSlug} | ${truncatedUrl} | ${statusIcon} | ${errorText} |`,
         );
     }
 
@@ -94,9 +93,7 @@ function generateReportContent(suiteResults: SuiteRunResult[]): string {
 /**
  * Generate and save the report.md file
  */
-export async function generateReport(
-    suiteResults: SuiteRunResult[]
-): Promise<void> {
+export async function generateReport(suiteResults: SuiteRunResult[]): Promise<void> {
     const content = generateReportContent(suiteResults);
     const reportPath = path.join(OUTPUT_DIR, 'report.md');
 
@@ -108,7 +105,7 @@ export async function generateReport(
  * Get failed test cases from suite results
  */
 export function getFailedCases(
-    suiteResults: SuiteRunResult[]
+    suiteResults: SuiteRunResult[],
 ): Array<{ suite: string; testCase: string; url: string; error: string }> {
     const failed: Array<{
         suite: string;

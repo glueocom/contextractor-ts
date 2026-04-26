@@ -1,5 +1,5 @@
 {
-    "waitUntil": "DOMCONTENTLOADED",
+    "waitUntil": "domcontentloaded",
     "saveRawHtmlToKeyValueStore": false,
     "saveExtractedMarkdownToKeyValueStore": false,
     "saveExtractedTextToKeyValueStore": false,

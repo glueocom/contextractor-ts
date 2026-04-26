@@ -1,15 +1,15 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { fetchDatasetItems, runActor } from './apify-client.js';
 import type {
-    TestSuite,
+    ActorSettings,
+    DatasetItem,
+    SuiteRunResult,
     TestCase,
     TestCaseInput,
     TestResult,
-    SuiteRunResult,
-    ActorSettings,
-    DatasetItem,
+    TestSuite,
 } from './types.js';
-import { runActor, fetchDatasetItems } from './apify-client.js';
 
 const TEST_SUITES_DIR = path.join(import.meta.dirname, '..', 'test-suites');
 const OUTPUT_DIR = path.join(import.meta.dirname, '..', 'test-suites-output');
@@ -74,20 +74,17 @@ async function saveTestCaseOutput(
     suiteSlug: string,
     testCaseSlug: string,
     result: TestResult,
-    datasetItem: DatasetItem | null
+    datasetItem: DatasetItem | null,
 ): Promise<void> {
     const caseDir = path.join(OUTPUT_DIR, suiteSlug, testCaseSlug);
     await fs.mkdir(caseDir, { recursive: true });
 
-    await fs.writeFile(
-        path.join(caseDir, 'result.json'),
-        JSON.stringify(result, null, 2)
-    );
+    await fs.writeFile(path.join(caseDir, 'result.json'), JSON.stringify(result, null, 2));
 
     if (datasetItem) {
         await fs.writeFile(
             path.join(caseDir, 'dataset-item.json'),
-            JSON.stringify(datasetItem, null, 2)
+            JSON.stringify(datasetItem, null, 2),
         );
     }
 }
@@ -95,15 +92,12 @@ async function saveTestCaseOutput(
 /**
  * Match dataset items to test cases by URL
  */
-function matchDatasetItemToUrl(
-    items: DatasetItem[],
-    url: string
-): DatasetItem | null {
+function matchDatasetItemToUrl(items: DatasetItem[], url: string): DatasetItem | null {
     return (
         items.find(
             (item) =>
                 item.loadedUrl === url ||
-                item.loadedUrl?.replace(/\/$/, '') === url.replace(/\/$/, '')
+                item.loadedUrl?.replace(/\/$/, '') === url.replace(/\/$/, ''),
         ) || null
     );
 }
@@ -149,7 +143,7 @@ export async function runSuite(suite: TestSuite): Promise<SuiteRunResult> {
                     OUTPUT_DIR,
                     suite.slug,
                     testCase.slug,
-                    'dataset-item.json'
+                    'dataset-item.json',
                 ),
             };
         } else {
@@ -161,17 +155,12 @@ export async function runSuite(suite: TestSuite): Promise<SuiteRunResult> {
                     OUTPUT_DIR,
                     suite.slug,
                     testCase.slug,
-                    'dataset-item.json'
+                    'dataset-item.json',
                 ),
             };
         }
 
-        await saveTestCaseOutput(
-            suite.slug,
-            testCase.slug,
-            result,
-            datasetItem
-        );
+        await saveTestCaseOutput(suite.slug, testCase.slug, result, datasetItem);
         results.set(testCase.slug, result);
 
         const statusIcon = result.status === 'success' ? '✅' : '❌';

@@ -1,0 +1,17 @@
+{
+    "actorSpecification": 1,
+    "name": "contextractor-test",
+    "title": "Contextractor - Web Content Extractor",
+    "description": "Crawls websites and extracts main-content text using rs-trafilatura. Supports HTML, TXT, JSON, and Markdown output formats.",
+    "version": "0.3",
+    "buildTag": "latest",
+    "meta": {
+        "templateId": "ts-crawlee-playwright"
+    },
+    "input": "./input_schema.json",
+    "output": "./output_schema.json",
+    "storages": {
+        "dataset": "./dataset_schema.json"
+    },
+    "dockerfile": "../Dockerfile"
+}
