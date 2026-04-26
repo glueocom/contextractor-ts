@@ -1,5 +1,5 @@
 ---
-description: Research, structure, and produce implementation prompts from a raw prompt idea
+description: Research, structure, and produce implementation + test prompts from a raw prompt idea
 argument-hint: <raw-meta-prompt> [--- optional instructions after separator]
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch, AskUserQuestion, Task
 model: opus
@@ -7,7 +7,7 @@ model: opus
 
 # Write Prompt
 
-Transform a raw prompt idea into structured, validated prompt files. Produces user intent capture and implementation steps (including a final review/test/autofix step). Does **not** execute the prompt.
+Transform a raw prompt idea into structured, validated prompt files. Produces user intent capture, implementation steps, and test/review/autofix steps. Does **not** execute the prompt.
 
 ## Arguments
 
@@ -32,10 +32,13 @@ All output goes to `@/prompts/{date}-{slug}/`:
 │   ├── entry-initial-prompt.md
 │   ├── entry-instructions.md
 │   └── entry-qa-*.md
-└── implementation/                # Implementation prompts
+├── implementation/                # Implementation prompts
+│   ├── master.md
+│   └── step-*.md
+└── tests/                         # Test, review, and autofix prompts
     ├── master.md
-    ├── step-*.md
-    └── step-review.md             # Final step: review, test, autofix
+    ├── step-test-*.md             # Per-step review + autofix
+    └── step-test-user-intent.md   # Final: validate against user intent + autofix
 ```
 
 ## Step CLEAN_GIT: Verify Clean Working Directory
@@ -47,7 +50,7 @@ Run `git status --porcelain`. If output is not empty, stop with error:
 ## Step SAVE: Create Directory Structure and Log Input
 
 - Derive a topic slug from the raw prompt content (kebab-case, concise)
-- Create `@/prompts/{today's date}-{slug}/` with subdirectories: `user-entry-log/`, `implementation/`
+- Create `@/prompts/{today's date}-{slug}/` with subdirectories: `user-entry-log/`, `implementation/`, `tests/`
 - If `$ARGUMENTS` is a file path that exists, **move** the original file exactly as-is to `user-entry-log/entry-initial-prompt.md` — no headers, no modifications, no reformatting
 - If `$ARGUMENTS` is raw text, save it **verbatim** as `user-entry-log/entry-initial-prompt.md`
 - Save a copy as working file `{slug}.md` at prompt root
@@ -159,23 +162,44 @@ Split the fixed working file into step files inside `implementation/`. **Always 
 **Create `implementation/master.md`**:
 - Starts with a **TLDR** summarizing the entire prompt's goal and codebase impact
 - Includes the "Skills and Agents" section — which skills to activate and which agents to use (copied from the working file)
-- Lists all step files in execution order with one-line descriptions (including `step-review.md` as the final step)
+- Lists all step files in execution order with one-line descriptions
 - Includes shared context needed across steps
 - Must be concise — only TLDR, skills/agents, step list, and shared context
 
 Delete the working file `{slug}.md` after splitting — the content now lives in implementation steps.
 
-## Step GENERATE_REVIEW: Create Final Review Step
+## Step GENERATE_TESTS: Create Test, Review, and Autofix Steps
 
-Create `implementation/step-review.md` as the **last step** in the implementation sequence:
+Create a `tests/` folder parallel to `implementation/` with its own master file and per-step test files. **All test steps automatically fix issues they find.**
 
-- An executable prompt that reviews and tests all code changes from prior steps
-- Lists which review/test agents and skills to use (selected from the master "Skills and Agents" section — e.g., `typescript-reviewer` for type safety, `seo-tester` for SEO checks, `functionality-tester` for smoke tests)
-- Runs `git diff` to capture the full set of changes
-- For each prior `step-*.md`, reviews code changes against its instructions
+### Per-step test files
+
+For each `implementation/step-{name}.md`, create a corresponding `tests/step-test-{name}.md`:
+
+- An executable prompt that reviews and tests code changes from that implementation step
+- References the corresponding `implementation/step-{name}.md`
+- Runs `git diff` to capture changes from that step
+- Reviews code changes against the step's instructions
 - Runs relevant tests and build verification
+- **Automatically fixes** all discovered issues — code quality problems, test failures, missing edge cases, and deviations from the step's instructions
+
+### User intent test file
+
+Create `tests/step-test-user-intent.md`:
+
+- Reviews the **complete implementation** against original user intent
 - References all files in `user-entry-log/` (initial prompt, instructions, Q&A entries)
 - For each requirement in `entry-initial-prompt.md`, verifies which implementation step covers it
 - Verifies all Q&A decisions from `entry-qa-*.md` are reflected in the code
 - Flags gaps (requirements not covered) and mismatches (contradictions with user intent)
-- **Automatically fixes** all discovered issues — code quality problems, test failures, missing edge cases, and deviations from user intent
+- **Automatically fixes** all gaps and mismatches found
+
+### Tests master file
+
+Create `tests/master.md`:
+
+- Starts with a **TLDR** — what it reviews and what it validates
+- Lists which review/test agents and skills to use (selected from the implementation master's "Skills and Agents" section — e.g., `code-reviewer` for correctness/hygiene, `test-runner` for build and tests)
+- Lists all test step files in order: per-step tests first, then `step-test-user-intent.md` last
+- Each entry has a one-line description
+- Must be concise — only TLDR, agents/skills, step list, and shared context
