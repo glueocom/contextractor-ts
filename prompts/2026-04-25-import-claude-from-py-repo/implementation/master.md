@@ -29,7 +29,7 @@ No language-specific reviewer needed — this work edits Markdown only.
 - Target: `/Users/miroslavsekera/r/contextractor-ts/.claude/`
 - Inventory diff: `../import-claude-from-py-repo-notes/inventory-diff.md`
 - Target source-of-truth files: `../import-claude-from-py-repo-notes/target-source-of-truth.md`
-- Target uses `shortc/contextractor` (prod) / `shortc/contextractor-test` (test). Source uses `glueo/contextractor*`. Translate actor names where they appear.
+- Target uses `glueo/contextractor` (prod) / `glueo/contextractor-test` (test). Source uses `glueo/contextractor*`. Translate actor names where they appear.
 - `.mcp.json`, `settings.json`, `settings.local.json`, all skills and agents stay untouched.
 
 ## Steps

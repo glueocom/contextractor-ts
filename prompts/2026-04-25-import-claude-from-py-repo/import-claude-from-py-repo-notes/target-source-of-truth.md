@@ -51,4 +51,4 @@ Where the source command reads a single Python file as canonical, the ported ver
 
 ## Distribution channels for `git/release.md`
 
-Target ships only to Apify (`shortc/contextractor` prod, `shortc/contextractor-test` test). No npm, no PyPI, no crates.io publishing is set up. The ported `git/release.md` is a version-bump-and-tag flow only — version sync across `Cargo.toml`s and `package.json`, then tag + push. Actual deployment remains `apify push` via `commands/platform/push-and-get-working.md`.
+Target ships only to Apify (`glueo/contextractor` prod, `glueo/contextractor-test` test). No npm, no PyPI, no crates.io publishing is set up. The ported `git/release.md` is a version-bump-and-tag flow only — version sync across `Cargo.toml`s and `package.json`, then tag + push. Actual deployment remains `apify push` via `commands/platform/push-and-get-working.md`.

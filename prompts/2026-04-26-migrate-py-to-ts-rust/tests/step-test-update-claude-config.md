@@ -15,7 +15,7 @@ Review the diff from `implementation/step-update-claude-config.md`. Verify `CLAU
 - `CLAUDE.md`:
   - No "Rust binary" claim about the actor.
   - Project Structure shows TS apps + TS engine + `native/` napi-rs crate.
-  - All `shortc/contextractor[-test]` replaced by `glueo/contextractor[-test]`.
+  - All `glueo/contextractor[-test]` replaced by `glueo/contextractor[-test]`.
   - Commands block lists both `cargo` (for napi-rs) and `pnpm`/`biome` invocations.
 - `.claude/commands/sync/{docs.md, gui.md}` source-of-truth lists name TS files for the engine config and CLI; the napi-rs crate follows the TS interface, not the other way around.
 - `.claude/commands/platform/push-and-get-working.md`: targets `glueo/contextractor-test`; no Rust binary build steps.
@@ -24,7 +24,7 @@ Review the diff from `implementation/step-update-claude-config.md`. Verify `CLAU
 
 ## Verify
 
-- `grep -rn 'shortc/contextractor' CLAUDE.md .claude/commands/` returns nothing.
+- `grep -rn 'glueo/contextractor' CLAUDE.md .claude/commands/` returns nothing.
 - `grep -rn 'Rust binary Apify' CLAUDE.md .claude/commands/` returns nothing.
 - `git diff --stat .claude/rules/` reports zero lines.
 

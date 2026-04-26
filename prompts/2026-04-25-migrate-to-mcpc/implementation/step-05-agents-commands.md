@@ -31,7 +31,7 @@ Replace remote `apify` CLI calls (`apify call`, `apify builds *`, `apify runs *`
 
    - Step "Inspect dataset / If RUN SUCCEEDED" — replace `apify runs ls --limit 3` with `mcpc --json @apify tools-call get-actor-run-list actor:="<TARGET_ACTOR>" limit:=3 desc:=true`.
    - Step "If RUN FAILED" — replace `apify runs log <RUN_ID>` with `mcpc --json @apify tools-call get-actor-log runId:="<RUN_ID>" lines:=200`.
-   - **Keep** `apify info`, `apify push`, `apify push shortc/contextractor*` exactly as-is — they are local-dev / deploy commands.
+   - **Keep** `apify info`, `apify push`, `apify push glueo/contextractor*` exactly as-is — they are local-dev / deploy commands.
 
 2. **Sweep remaining commands** — `grep -rnE "apify (call|builds|runs|datasets|key-value-stores)|mcp__apify__|api\\.apify\\.com" .claude/commands/`. For every hit, apply the same translation. Confirm `commands/run.md` and `commands/local-tests/prompt.md` and `commands/validate.md` need no edits.
 

@@ -13,7 +13,7 @@ Snapshot taken 2026-04-26. The repo name is `-ts` but the implementation is **st
 - `docs/{spec, troubleshooting, unit-test-cases, notes}` — present. Sync from source repo's docs (skip `pypi-trusted-publishing.md`).
 - Root: `pyproject.toml` (uv workspace), `uv.lock`, `Dockerfile`, `LICENSE`, `logo.*`. No `README.md`.
 - `.claude/commands/sync/{docs.md, gui.md}` — already exist and reference Rust + TS. Update them to drop Rust-binary assumption and use TS-engine + Rust-napi-rs assumption (engine source-of-truth becomes the TS types, not the Rust struct).
-- `.claude/commands/platform/push-and-get-working.md`, `.claude/commands/git/release.md` — reference `shortc/contextractor-test` and `Cargo.toml` version sync. Update per `entry-qa-test-actor.md` and per the new "no Rust binary" reality.
+- `.claude/commands/platform/push-and-get-working.md`, `.claude/commands/git/release.md` — reference `glueo/contextractor-test` and `Cargo.toml` version sync. Update per `entry-qa-test-actor.md` and per the new "no Rust binary" reality.
 
 ## CLAUDE.md drift
 
@@ -21,7 +21,7 @@ CLAUDE.md currently says:
 - "Dual-language (Rust binary + TypeScript tooling) Apify Actor" — wrong after this migration; correct description is "TypeScript Apify Actor + standalone CLI, with a `rs-trafilatura` napi-rs binding for extraction".
 - Project Structure block lists `apps/contextractor/src/main.rs`, `packages/contextractor_engine/src/lib.rs` as Rust — replace with TS paths and the napi-rs crate path.
 - Commands block lists `cargo build`, `cargo test`, `cargo nextest`, `cargo clippy` — keep (the napi-rs crate still uses cargo) but add `pnpm -r build`, `pnpm -r test`, `biome check`.
-- Production Protection block uses `shortc/contextractor[-test]` — replace with `glueo/contextractor[-test]`.
+- Production Protection block uses `glueo/contextractor[-test]` — replace with `glueo/contextractor[-test]`.
 - Active Skills block lists Rust skills — keep them; the napi-rs crate is real Rust. Add the TS skills (none yet — leave to per-step prompts to introduce as needed).
 
 ## PyPI references in target

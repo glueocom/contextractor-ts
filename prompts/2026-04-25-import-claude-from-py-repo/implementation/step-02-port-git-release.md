@@ -7,7 +7,7 @@ Create `commands/git/release.md` in target, rewriting the source's Python-keyed 
 ## Skills
 
 - `rust` for Cargo.toml conventions
-- `apify-ops` for actor-name conventions (`shortc/contextractor*`)
+- `apify-ops` for actor-name conventions (`glueo/contextractor*`)
 
 ## Inputs
 
@@ -34,7 +34,7 @@ Author the new file with this structure (read the source first to preserve its t
 
 - The command must not assume any package is published to npm / crates.io / PyPI — the target ships only to Apify.
 - Do not include the Python source's PyPI / npm / Docker logic.
-- Use the exact Apify actor name `shortc/contextractor` (not `glueo/contextractor`).
+- Use the exact Apify actor name `glueo/contextractor` (not `glueo/contextractor`).
 - No code-fence with shell heredocs that pretend a Cargo workspace exists. If `Cargo.toml` is absent, the step prints the missing files and exits cleanly. The user can re-run after the workspace is scaffolded.
 
 ## Done when
@@ -42,4 +42,4 @@ Author the new file with this structure (read the source first to preserve its t
 - File exists with valid frontmatter
 - All version-bump targets are listed by glob, not hardcoded — so the command keeps working when manifests are added
 - `grep -E "pyproject\\.toml|PyPI|pip install" .claude/commands/git/release.md` returns nothing
-- Actor name uses `shortc/contextractor`, not `glueo/contextractor`
+- Actor name uses `glueo/contextractor`, not `glueo/contextractor`

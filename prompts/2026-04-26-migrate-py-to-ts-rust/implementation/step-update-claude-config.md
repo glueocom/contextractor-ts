@@ -18,7 +18,7 @@ Update `CLAUDE.md`, `.claude/commands/sync/{docs.md, gui.md}`, `.claude/commands
 - `CLAUDE.md`:
   - Replace the "Dual-language (Rust binary + TypeScript tooling)" line with: "TypeScript Apify Actor + standalone CLI; extraction via [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) called from a `napi-rs` Node binding inside `packages/contextractor-engine/native/`."
   - Replace the Project Structure block with the new layout (TS apps, TS engine, `native/` napi-rs crate, TS `tools/`).
-  - Replace `shortc/contextractor[-test]` with `glueo/contextractor[-test]` everywhere.
+  - Replace `glueo/contextractor[-test]` with `glueo/contextractor[-test]` everywhere.
   - Update the Commands block: keep `cargo` commands for the napi-rs crate (`cargo build`, `cargo test`, `cargo clippy`); add `pnpm -r build`, `pnpm -r test`, `pnpm -r lint` (Biome); drop any "Rust binary CLI" wording.
   - Update Active Skills list: keep Rust skills (still relevant for napi-rs); the prompt does not introduce new TS-specific skills, so no addition required.
   - Testing block: replace Rust-only testing wording with "TS tests with vitest under each package; the napi-rs crate has a small `cargo test` smoke."
@@ -26,7 +26,7 @@ Update `CLAUDE.md`, `.claude/commands/sync/{docs.md, gui.md}`, `.claude/commands
   - Replace "Rust binary CLI" source-of-truth with "TypeScript CLI in `apps/contextractor-standalone/src/cli.ts`" and "TypeScript engine config in `packages/contextractor-engine/src/index.ts`".
   - The napi-rs crate config struct is no longer the canonical source — the TS interface is. The crate must follow the TS interface.
 - `.claude/commands/platform/push-and-get-working.md`:
-  - Replace `shortc/contextractor[-test]` with `glueo/contextractor[-test]`.
+  - Replace `glueo/contextractor[-test]` with `glueo/contextractor[-test]`.
   - Drop any references to building a Rust binary; the actor is a Node app.
 - `.claude/commands/git/release.md`:
   - Drop `Cargo.toml` version-bump synchronization across multiple Rust crates — the napi-rs crate is the only Rust crate and version-bump for it stays.
@@ -40,6 +40,6 @@ Update `CLAUDE.md`, `.claude/commands/sync/{docs.md, gui.md}`, `.claude/commands
 
 ## Done when
 
-- `grep -ni 'shortc/contextractor' CLAUDE.md .claude/commands/` returns nothing.
+- `grep -ni 'glueo/contextractor' CLAUDE.md .claude/commands/` returns nothing.
 - CLAUDE.md no longer claims the actor is a "Rust binary".
 - The matching `tests/step-test-update-claude-config.md` passes.
