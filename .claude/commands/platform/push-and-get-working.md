@@ -13,8 +13,8 @@ Automated workflow to push code to the Apify platform, wait for build, fix any b
 
 Check `$ARGUMENTS` for the target:
 
-- If `$ARGUMENTS` contains `--production` → push to **production** actor `glueo/contextractor`
-- Otherwise → push to **test** actor `glueo/contextractor-test` (default)
+- If `$ARGUMENTS` contains `--production` → push to **production** actor `shortc/contextractor`
+- Otherwise → push to **test** actor `shortc/contextractor-test` (default)
 
 Set the target actor ID based on the argument and use it consistently throughout the workflow.
 
@@ -31,7 +31,7 @@ If not logged in, stop and inform the user to run `apify login` first.
 ### 2. Verify Actor Target
 
 ```bash
-cat apps/contextractor-apify/.actor/actor.json | grep '"name"'
+cat apps/contextractor/.actor/actor.json | grep '"name"'
 apify info
 ```
 
@@ -44,24 +44,22 @@ Execute this loop until the build succeeds.
 ### 1. Validate Locally First
 
 ```bash
-pnpm -r build
-pnpm lint
-cargo build --workspace
+cargo check --workspace --all-targets
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-If any step fails, fix the errors before proceeding.
+If either fails, fix the errors before proceeding.
 
 ### 2. Push to Apify
 
 ```bash
-cd apps/contextractor-apify
+cd apps/contextractor
 
 # Default (test):
-apify push glueo/contextractor-test
+apify push shortc/contextractor-test
 
 # If --production argument was provided:
-apify push glueo/contextractor
+apify push shortc/contextractor
 ```
 
 ### 3. Wait for Build
@@ -95,7 +93,7 @@ After a successful build, run the Actor with test input via mcpc (assumes one-ti
 mcpc --json @apify tools-call call-actor \
   actor:="<TARGET_ACTOR>" \
   step:="call" \
-  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxPagesPerCrawl":1,"saveExtractedMarkdownToKeyValueStore":true}'
+  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"outputFormat":"markdown"}'
 ```
 
 The call is synchronous by default — it waits for the run to complete and returns the result with `runId` and `defaultDatasetId`.
@@ -121,28 +119,28 @@ If **RUN FAILED**:
 
 `$ARGUMENTS` — optional:
 
-- `--production` — push to production actor `glueo/contextractor` instead of test
-- `skip-validation` — skip local `pnpm`/`cargo` checks
+- `--production` — push to production actor `shortc/contextractor` instead of test
+- `skip-validation` — skip local cargo checks
 
 ## Error Type Reference
 
 | Error Pattern | Fix Location |
 |---------------|--------------|
-| `Invalid input schema` | `apps/contextractor-apify/.actor/input_schema.json` |
-| `Invalid output schema` | `apps/contextractor-apify/.actor/output_schema.json` |
-| `Invalid dataset schema` | `apps/contextractor-apify/.actor/dataset_schema.json` |
-| `COPY failed` | `apps/contextractor-apify/Dockerfile` |
-| TypeScript build error (`TS\d+`) | `apps/contextractor-apify/src/` or `packages/contextractor-engine/src/` |
-| `error[E0` (Rust) | `packages/contextractor-engine/native/src/lib.rs` — fix types |
-| `linking with cc` / missing system libs | `apps/contextractor-apify/Dockerfile` — install missing libs |
-| `clippy::` warning treated as error | napi-rs crate source — fix or `#[allow(...)]` with justification |
+| `Invalid input schema` | `apps/contextractor/.actor/input_schema.json` |
+| `Invalid output schema` | `apps/contextractor/.actor/output_schema.json` |
+| `Invalid dataset schema` | `apps/contextractor/.actor/dataset_schema.json` |
+| `COPY failed` | `apps/contextractor/Dockerfile` |
+| `error[E0` | Rust source files in `apps/contextractor/src/` or `packages/contextractor_engine/src/` — fix types |
+| `error: failed to resolve` | `Cargo.toml` — add or fix dependency |
+| `error: linking with` | `apps/contextractor/Dockerfile` — install missing system libs (e.g. `pkg-config`, `libssl-dev`) |
+| `clippy::` warning treated as error | Source file flagged by clippy — fix or `#[allow(...)]` with justification |
 
 ## Success Criteria
 
 The workflow completes when:
 
-- Local `pnpm -r build` passes
-- Local `cargo build --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` pass
+- Local `cargo check --workspace --all-targets` passes
+- Local `cargo clippy --workspace --all-targets -- -D warnings` passes
 - `apify push` succeeds
 - Build status is `SUCCEEDED`
 - Test crawl completes successfully

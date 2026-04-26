@@ -15,21 +15,25 @@ export interface TestCaseInput {
 /** Actor input settings from settings.json (Contextractor schema) */
 export interface ActorSettings {
     // Crawl settings
-    waitUntil?: 'networkidle' | 'load' | 'domcontentloaded';
+    waitUntil?: 'NETWORKIDLE' | 'LOAD' | 'DOMCONTENTLOADED';
     maxRequestRetries?: number;
     pageLoadTimeoutSecs?: number;
     maxConcurrency?: number;
     headless?: boolean;
-    launcher?: 'chromium' | 'firefox' | 'webkit';
+    launcher?: 'CHROMIUM' | 'FIREFOX';
     closeCookieModals?: boolean;
     maxScrollHeightPixels?: number;
     ignoreSslErrors?: boolean;
+    downloadMedia?: boolean;
+    downloadCss?: boolean;
 
     // Export options
-    saveRawHtmlToKeyValueStore?: boolean;
-    saveExtractedTextToKeyValueStore?: boolean;
-    saveExtractedJsonToKeyValueStore?: boolean;
-    saveExtractedMarkdownToKeyValueStore?: boolean;
+    exportHtml?: boolean;
+    exportText?: boolean;
+    exportJson?: boolean;
+    exportMarkdown?: boolean;
+    exportXml?: boolean;
+    exportXmlTei?: boolean;
 
     // Extraction options
     extractionMode?: 'FAVOR_PRECISION' | 'BALANCED' | 'FAVOR_RECALL';
@@ -86,6 +90,8 @@ export interface DatasetItem {
     extractedText?: ContentRef;
     extractedJson?: ContentRef;
     extractedMarkdown?: ContentRef;
+    extractedXml?: ContentRef;
+    extractedXmlTei?: ContentRef;
     '#error'?: boolean;
     '#errorMessage'?: string;
 }

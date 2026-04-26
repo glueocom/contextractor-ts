@@ -2,44 +2,36 @@
 
 ## What is this Actor for?
 
-TypeScript Apify Actor + standalone CLI; extraction via [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) called from a `napi-rs` Node binding inside `packages/contextractor-engine/native/`. Crawls websites and extracts main-content text in HTML, TXT, JSON, or Markdown. (`xml` and `xml-tei` are temporarily unsupported pending upstream `rs-trafilatura` work — the Python source supported them via Trafilatura.) See `apps/contextractor-apify/README.md` for the full Actor feature list.
+Dual-language (Rust binary + TypeScript tooling) Apify Actor at `/Users/miroslavsekera/r/contextractor-ts/`. The Actor wraps [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) — the Rust port of [Trafilatura](https://trafilatura.readthedocs.io/) — to crawl websites and extract main-content text in HTML, TXT, JSON, Markdown, XML, or XML-TEI. See `apps/contextractor/README.md` for the full feature list.
 
 ## Project Structure
 
 ```
 apps/
-├── contextractor-apify/            # Apify Actor (TypeScript + Crawlee + Playwright)
-│   ├── .actor/                     # actor.json, input/output/dataset schemas
-│   ├── Dockerfile                  # Node + Playwright base, builds napi-rs in-image
-│   └── src/                        # main.ts and supporting modules
-└── contextractor-standalone/       # Standalone TypeScript CLI (commander + Crawlee)
-    └── src/                        # cli.ts, crawler.ts, config.ts
+└── contextractor/                  # Rust binary Apify Actor (CLI-wrapped)
+    ├── .actor/                     # actor.json, input/output/dataset schemas, Dockerfile
+    └── src/                        # main.rs and supporting modules
 packages/
-└── contextractor-engine/           # TypeScript engine
-    ├── src/index.ts                # ContentExtractor + TrafilaturaConfig
-    └── native/                     # napi-rs Rust crate wrapping rs-trafilatura
-        ├── Cargo.toml
-        └── src/lib.rs
+└── contextractor_engine/           # Rust library wrapping rs-trafilatura
+    └── src/lib.rs
 tools/
 ├── platform-test-runner/           # TypeScript / Node test orchestrator
-└── generated-unit-tests/           # vitest fixture suite hitting @contextractor/engine
+└── generated-unit-tests/           # Rust integration tests + HTML fixtures
 ```
 
 ## Commands
 
 ```bash
-pnpm install                                               # Install workspace deps
-pnpm -F @contextractor/engine-native build                 # Build the napi-rs binding (per platform)
-pnpm -r build                                              # Build every TS package + app
-pnpm -r test                                               # Run vitest across the workspace
-pnpm lint                                                  # Biome lint
-pnpm format                                                # Biome format
-cargo build --workspace                                    # Build the Rust napi-rs crate
-cargo test --workspace                                     # Rust tests
-cargo clippy --workspace --all-targets -- -D warnings      # Rust lint
-apify run                                                  # Run Actor locally from apps/contextractor-apify/
+apify run                                                  # Run Actor locally from apps/contextractor/
+cargo build --workspace                                    # Build all crates
+cargo test --workspace --all-features                      # All tests
+cargo nextest run --workspace --all-features               # Faster test runner
+cargo fmt --all                                            # Format Rust
+cargo clippy --workspace --all-targets -- -D warnings      # Lint Rust
+pnpm -r test                                               # All TypeScript tests (or `npm test`)
+biome check tools/                                         # Lint + format TypeScript
 apify login                                                # Authenticate
-apify push                                                 # Deploy (default: glueo/contextractor-test)
+apify push                                                 # Deploy (default: shortc/contextractor-test)
 ```
 
 ## Safety and Permissions
@@ -63,8 +55,8 @@ Ask first:
 
 **Production Protection:**
 
-- By default, push to the test actor `glueo/contextractor-test`
-- Only push to production `glueo/contextractor` when explicitly requested with the `--production` flag
+- By default, push to the test actor `shortc/contextractor-test`
+- Only push to production `shortc/contextractor` when explicitly requested with the `--production` flag
 - Use `/platform:push-and-get-working --production` for production deployments
 
 ## Security
@@ -111,9 +103,9 @@ See `.claude/rules/` for behavior rules. Key rules:
 
 ## Testing
 
-**TypeScript:** `*.test.ts` next to source, vitest. Run `pnpm -r test` from the repo root. The `tools/generated-unit-tests/` package is a vitest fixture suite hitting `@contextractor/engine` against frozen HTML in `tools/generated-unit-tests/fixtures/`.
+**Rust:** unit tests in `#[cfg(test)] mod tests { ... }` next to source. Integration tests in `tests/<topic>.rs`. Async tests with `#[tokio::test]`. HTTP mocks with `wiremock`, trait mocks with `mockall`, property-based tests with `proptest`, snapshots with `insta`. Run `cargo nextest run --workspace --all-features`.
 
-**Rust:** the napi-rs crate (`packages/contextractor-engine/native/`) carries a small smoke `cargo test`. Run `cargo test --workspace`.
+**TypeScript:** `*.test.ts` next to source, vitest preferred (or `node:test` for zero-dep scripts). Run `pnpm -r test` from the repo root.
 
 ## MCP Servers
 

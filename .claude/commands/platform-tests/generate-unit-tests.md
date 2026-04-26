@@ -1,16 +1,16 @@
 ---
-description: Generate vitest unit tests from platform test runner results
+description: Generate cargo integration tests from platform test runner results
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch
 model: sonnet
 ---
 
 # Generate Unit Tests Command
 
-Generate self-contained vitest unit tests from platform test runner results. Tests target the TypeScript `@contextractor/engine` package.
+Generate self-contained cargo integration tests from platform test runner results.
 
 ## Process
 
-### Phase CHECK: Check Prerequisites
+### Phase 0: Check Prerequisites
 
 Verify `tools/platform-test-runner/test-suites-output/` exists and contains test results.
 
@@ -18,111 +18,139 @@ If the directory is missing or empty, **STOP** and tell the user:
 
 > Test output not found. Run `/platform-tests:run-and-fix` first to generate test results.
 
-### Phase COLLECT: Collect Test Data
+### Phase 1: Collect Test Data
 
 For each test suite under `tools/platform-test-runner/test-suites-output/`:
 
-- Read `result.json` to get the test case status
-- Read `dataset-item.json` to get:
-  - `rawHtml.url` — URL to fetch raw HTML (required for the unit test)
-  - `extractedMarkdown` — expected markdown output
-  - `metadata` — expected metadata
-- Read the matching `tools/platform-test-runner/test-suites/{suite}/settings.json` for extraction options
+1. Read `result.json` to get the test case status
+2. Read `dataset-item.json` to get:
+   - `rawHtml.url` — URL to fetch raw HTML (required for the unit test)
+   - `extractedMarkdown` — expected markdown output
+   - `metadata` — expected metadata
+3. Read the matching `tools/platform-test-runner/test-suites/{suite}/settings.json` for extraction options
 
 Skip cases that:
 
 - Have status `error`
-- Don't have `rawHtml.url` (raw HTML not saved with `saveRawHtmlToKeyValueStore: true`)
+- Don't have `rawHtml.url` (raw HTML not saved with `exportHtml: true`)
 
-### Phase SETUP: Setup Test Package
+### Phase 2: Setup Test Crate
 
-Confirm the vitest package at `tools/generated-unit-tests/`:
+Confirm the cargo crate at `tools/generated-unit-tests/`:
 
 ```
 tools/generated-unit-tests/
-├── package.json
-├── tsconfig.json
-├── vitest.config.ts
+├── Cargo.toml
+├── src/
+│   └── lib.rs
 ├── fixtures/
 │   └── {suite}/
 │       └── {test-case}.html
-└── src/
-    └── {suite}.test.ts
+└── tests/
+    └── {suite}.rs
 ```
 
-### Phase FIXTURES: Generate Fixtures
+### Phase 3: Generate Fixtures
 
 For each valid test case:
 
-- Fetch raw HTML from `rawHtml.url` using WebFetch
-- Save to `tools/generated-unit-tests/fixtures/{suite}/{test-case}.html`
+1. Fetch raw HTML from `rawHtml.url` using WebFetch
+2. Save to `tools/generated-unit-tests/fixtures/{suite}/{test-case}.html`
 
-### Phase TESTS: Generate Test Files
+### Phase 4: Generate Test Files
 
-Create `tools/generated-unit-tests/src/{suite}.test.ts`:
+Create `tools/generated-unit-tests/tests/{suite}.rs`:
 
-```ts
-import { describe, expect, it } from 'vitest';
-import { ContentExtractor } from '@contextractor/engine';
-import { loadHtmlFixture } from './fixtures.js';
+```rust
+use std::fs;
+use std::path::PathBuf;
 
-describe('{suite}', () => {
-    it('{test-case}: extracts metadata', () => {
-        const html = loadHtmlFixture('{suite}', '{test-case}');
-        const extractor = new ContentExtractor({ favorPrecision: true });
-        const meta = extractor.extractMetadata(html, '{url}');
-        expect(meta.title ?? '').not.toBe('');
-    });
+use contextractor_engine::{ExtractionConfig, ExtractionMode, extract};
 
-    it('{test-case}: extracts non-trivial markdown', () => {
-        const html = loadHtmlFixture('{suite}', '{test-case}');
-        const extractor = new ContentExtractor();
-        const r = extractor.extract(html, { url: '{url}', format: 'markdown' });
-        expect(r).not.toBeNull();
-        expect(r!.content.length).toBeGreaterThan(1000);
-    });
-});
+fn fixture(suite: &str, case: &str) -> String {
+    let path: PathBuf = ["fixtures", suite, &format!("{case}.html")].iter().collect();
+    fs::read_to_string(&path).unwrap_or_else(|e| panic!("read {path:?}: {e}"))
+}
+
+#[test]
+fn case_name_metadata() {
+    let html = fixture("{suite}", "{test-case}");
+    let cfg = ExtractionConfig {
+        mode: ExtractionMode::FavorPrecision,
+        with_metadata: true,
+        ..Default::default()
+    };
+    let result = extract(&html, "{url}", &cfg).unwrap();
+    assert_eq!(result.title.as_deref(), Some("{expected_title}"));
+}
+
+#[test]
+fn case_name_content() {
+    let html = fixture("{suite}", "{test-case}");
+    let result = extract(&html, "{url}", &ExtractionConfig::default()).unwrap();
+    let markdown = result.markdown.expect("markdown output");
+    assert!(markdown.len() > 1000, "content too short: {} chars", markdown.len());
+}
 ```
 
-### Phase MAP: Map Settings to TrafilaturaConfig
+### Phase 5: Map Settings to Extraction Options
 
-Map Actor input settings to `TrafilaturaConfig` fields:
+Map Actor input settings to `contextractor_engine::ExtractionConfig` fields:
 
 | Actor Setting | Engine Field |
 |---------------|--------------|
-| `trafilaturaConfig.favorPrecision: true` | `{ favorPrecision: true }` |
-| `trafilaturaConfig.favorRecall: true` | `{ favorRecall: true }` |
-| `trafilaturaConfig.includeTables: false` | `{ includeTables: false }` |
-| `trafilaturaConfig.targetLanguage: "en"` | `{ targetLanguage: 'en' }` |
+| `extractionMode: FAVOR_PRECISION` | `mode: ExtractionMode::FavorPrecision` |
+| `extractionMode: FAVOR_RECALL` | `mode: ExtractionMode::FavorRecall` |
+| `extractionMode: BALANCED` | `mode: ExtractionMode::Balanced` (default) |
+| `includeMetadata: true` | `with_metadata: true` |
+| `outputFormat: "markdown"` | `output_format: OutputFormat::Markdown` |
 
-Output formats are limited to `txt`, `markdown`, `json`, `html`. `xml` and `xmltei` are deferred pending upstream `rs-trafilatura` support.
+### Phase 6: Maintain `Cargo.toml`
 
-### Phase RUN: Run Tests
+Confirm `tools/generated-unit-tests/Cargo.toml` declares the engine crate as a dev-dependency:
 
-```bash
-pnpm -F @tools/generated-unit-tests test
+```toml
+[package]
+name = "generated-unit-tests"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dev-dependencies]
+contextractor_engine = { path = "../../packages/contextractor_engine" }
 ```
 
-### Phase FIX: Fix Errors
+### Phase 7: Run Tests
+
+```bash
+cargo test -p generated-unit-tests
+```
+
+### Phase 8: Fix Errors
 
 If tests fail:
 
-- Analyze failure messages
-- Adjust expected values or test logic
-- Re-run tests
+1. Analyze failure messages
+2. Adjust expected values or test logic
+3. Re-run tests
 
 ## Notes
 
-- Raw HTML lives as fixture files, not inline string constants.
-- The `rawHtml.url` has a signature that may expire — fetch during generation.
-- Focus on metadata-presence and length-threshold checks; rs-trafilatura's metadata heuristics differ from Python trafilatura, so do not assert exact title strings without verifying first.
+- Raw HTML lives as fixture files, not inline string constants
+- The `rawHtml.url` has a signature that may expire — fetch during generation
+- Focus on metadata extraction tests; full content matching is brittle
+- Use `assert_eq!(result.title.as_deref(), Some("..."))` for exact matches
+- Use `assert!(text.contains("..."))` for partial content checks
 
 ## Enabling More Test Cases
 
-Currently only suites with `saveRawHtmlToKeyValueStore: true` can generate unit tests.
+Currently only suites with `exportHtml: true` can generate unit tests.
 
 To enable more:
 
-- Add `"saveRawHtmlToKeyValueStore": true` to `tools/platform-test-runner/test-suites/{suite}/settings.json`
-- Re-run platform tests: `pnpm -F @tools/platform-test-runner test:run:all`
-- Re-run this command to regenerate from the new data
+1. Add `"exportHtml": true` to `tools/platform-test-runner/test-suites/{suite}/settings.json`
+2. Re-run platform tests: `cd tools/platform-test-runner && npm run test:run:all`
+3. Re-run this command to regenerate from the new data

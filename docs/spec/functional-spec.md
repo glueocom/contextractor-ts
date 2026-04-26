@@ -2,83 +2,9 @@
 
 ## Overview
 
-Contextractor crawls websites and extracts clean, readable content using `rs-trafilatura` (the Rust port of Trafilatura). Available as:
+Contextractor crawls websites and extracts clean, readable content using Trafilatura. Content is stored in Key-Value Store with metadata in Dataset.
 
-- **Standalone CLI** — local TypeScript tool, content saved as files to disk
-- **Apify Actor** — cloud platform, content stored in Key-Value Store + Dataset
-- **Web Playground** ([contextractor.com](https://contextractor.com)) — configure extraction settings, preview results, and generate CLI/Apify commands
-
----
-
-## Standalone CLI
-
-### Installation
-
-The CLI ships from this monorepo via `pnpm`. After `pnpm install` from the repo root:
-
-```bash
-pnpm -F @contextractor/standalone build
-node apps/contextractor-standalone/dist/cli.js https://example.com
-```
-
-### CLI Usage
-
-```bash
-contextractor [OPTIONS] [URLS...]
-```
-
-Works with zero config — just pass URLs directly:
-
-```bash
-contextractor https://example.com
-contextractor https://example.com --precision --save json -o ./results
-contextractor --config config.json --max-pages 10
-```
-
-| Option | Description |
-|--------|-------------|
-| `--config`, `-c` | Path to JSON config file (optional) |
-| `--output-dir`, `-o` | Output directory |
-| `--max-pages` | Max pages to crawl (0 = unlimited) |
-| `--crawl-depth` | Max link depth from start URLs (0 = start only) |
-| `--headless` / `--no-headless` | Browser headless mode (default: headless) |
-| `--save` | Output formats, comma-separated: markdown, html, text, json, jsonl, all (default: markdown) |
-| `--precision` | High precision mode (less noise) |
-| `--recall` | High recall mode (more content) |
-| `--fast` | Fast extraction mode (less thorough) |
-| `--no-links` | Exclude links from output |
-| `--no-comments` | Exclude comments from output |
-| `--include-tables` / `--no-tables` | Include tables (default: include) |
-| `--include-images` | Include image descriptions |
-| `--include-formatting` / `--no-formatting` | Preserve formatting (default: preserve) |
-| `--deduplicate` | Deduplicate extracted content |
-| `--target-language` | Filter by language (e.g. "en") |
-| `--with-metadata` / `--no-metadata` | Extract metadata (default: with) |
-| `--verbose`, `-v` | Enable verbose logging |
-
-### Config File (optional, JSON)
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| urls | array | [] | URLs to extract content from |
-| maxPages | integer | 0 | Max pages to crawl (0 = unlimited) |
-| outputDir | string | "./output" | Directory for extracted content |
-| crawlDepth | integer | 0 | How deep to follow links (0 = start URLs only) |
-| headless | boolean | true | Browser headless mode |
-| save | array | ["markdown"] | Output formats: markdown, html, text, json, jsonl, all |
-| trafilaturaConfig | object | {} | TrafilaturaConfig options (see below) |
-
-Config merge order: `defaults → config file (if provided) → CLI args`
-
-### Output
-
-One file per crawled page, named from URL slug (e.g. `example-com-page.md`). Metadata header (title, author, date, URL) included when available.
-
----
-
-## Apify Actor
-
-### Input
+## Input
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -87,17 +13,20 @@ One file per crawled page, named from URL slug (e.g. `example-com-page.md`). Met
 | globs | array | [] | Glob patterns to match enqueued links |
 | excludes | array | [] | Glob patterns to exclude |
 | maxPagesPerCrawl | integer | 0 | Max pages (0 = unlimited) |
-| saveRawHtmlToKeyValueStore | boolean | false | Save raw HTML |
-| saveExtractedTextToKeyValueStore | boolean | false | Extract plain text |
-| saveExtractedJsonToKeyValueStore | boolean | false | Extract JSON with metadata |
-| saveExtractedMarkdownToKeyValueStore | boolean | true | Extract Markdown |
-| trafilaturaConfig | object | {} | rs-trafilatura extraction options (see below) |
+| exportHtml | boolean | false | Save raw HTML |
+| exportText | boolean | false | Extract plain text |
+| exportJson | boolean | false | Extract JSON with metadata |
+| exportMarkdown | boolean | true | Extract Markdown |
+| exportXml | boolean | false | Extract XML |
+| exportXmlTei | boolean | false | Extract XML-TEI scholarly format |
+| trafilaturaConfig | object | {} | Trafilatura extraction options (see below) |
+| includeMetadata | boolean | true | Include title, author, date |
 | initialCookies | array | [] | Pre-set cookies for authentication (encrypted) |
 | customHttpHeaders | object | {} | Custom HTTP headers for all requests |
 
 ### trafilaturaConfig
 
-Extraction options used by both the Apify Actor and standalone CLI (`trafilaturaConfig` key in config file). When empty `{}` or omitted, uses balanced defaults.
+Optional JSON object with Trafilatura extraction options. When empty `{}` or omitted, uses balanced defaults.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -113,14 +42,19 @@ Extraction options used by both the Apify Actor and standalone CLI (`trafilatura
 | targetLanguage | string | null | Target language code |
 | withMetadata | boolean | true | Extract metadata |
 | onlyWithMetadata | boolean | false | Only return if metadata found |
-| urlBlacklist | array | null | URL patterns to skip |
-| authorBlacklist | array | null | Author names to filter out |
+| teiValidation | boolean | false | Validate TEI output |
+| pruneXpath | string/array | null | XPath expressions to prune |
 
-**Note on supported formats:** `txt`, `markdown`, `json`, `html`. `xml` and `xml-tei` are temporarily unsupported pending upstream `rs-trafilatura` work.
+**Backward compatibility:**
+- `{}` or omitted = previous `BALANCED` mode
+- `{"favorPrecision": true}` = previous `FAVOR_PRECISION` mode
+- `{"favorRecall": true}` = previous `FAVOR_RECALL` mode
 
-### Output
+**Note:** Keys accept both camelCase (JSON convention) and snake_case (Python convention). camelCase is converted to snake_case internally.
 
-#### Dataset Entry
+## Output
+
+### Dataset Entry
 
 ```json
 {
@@ -151,14 +85,16 @@ Extraction options used by both the Apify Actor and standalone CLI (`trafilatura
 ```
 
 **Rules:**
-- `rawHtml`: always has `hash` + `length`; adds `key` + `url` only if `saveRawHtmlToKeyValueStore` enabled
-- `extractedMarkdown`, `extractedText`, etc.: entire object only present if that save flag is enabled
-- `metadata`: extracted from rs-trafilatura
+- `rawHtml`: always has `hash` + `length`; adds `key` + `url` only if `exportHtml` enabled
+- `extractedMarkdown`, `extractedText`, etc.: entire object only present if that export is enabled
+- `metadata`: extracted from trafilatura
 
-#### Key-Value Store
+### Key-Value Store
 
 Named `content`. Files stored with MD5-based keys:
 - `{hash}-raw.html` - Raw HTML
 - `{hash}.txt` - Plain text
 - `{hash}.json` - JSON with metadata
 - `{hash}.md` - Markdown
+- `{hash}.xml` - XML
+- `{hash}.tei.xml` - XML-TEI

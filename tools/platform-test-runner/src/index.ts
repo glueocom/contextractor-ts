@@ -1,6 +1,11 @@
 import { parseArgs } from 'node:util';
+import {
+    runAllSuites,
+    runSingleSuite,
+    listTestSuites,
+    loadTestSuite,
+} from './runner.js';
 import { generateReport } from './report.js';
-import { listTestSuites, loadTestSuite, runAllSuites, runSingleSuite } from './runner.js';
 import type { CLIOptions } from './types.js';
 
 function printUsage(): void {
@@ -78,7 +83,7 @@ async function main(): Promise<void> {
     console.log('Contextractor Test Runner');
     console.log('='.repeat(50));
 
-    let results: import('./types.js').SuiteRunResult[];
+    let results;
 
     if (options.all) {
         results = await runAllSuites();
@@ -100,7 +105,7 @@ async function main(): Promise<void> {
         return sum + passed;
     }, 0);
 
-    console.log(`\n${'='.repeat(50)}`);
+    console.log('\n' + '='.repeat(50));
     console.log(`Total: ${passedTests}/${totalTests} test cases passed`);
 }
 
