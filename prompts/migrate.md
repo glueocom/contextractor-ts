@@ -1,0 +1,10 @@
+- there is newer functionality and schemas in `/Users/miroslavsekera/r/contextractor/`, we need to propagate into this repo `/Users/miroslavsekera/r/contextractor-ts/` we will use different stack, instead of Python, there will be used Typescript for all the app logic, and we will switch from Python Trafilatura to Trafilatura's port in Rust (`https://github.com/Murrough-Foley/rs-trafilatura` `https://crates.io/crates/rs-trafilatura`)
+- these schemas and config `/Users/miroslavsekera/r/contextractor/apps/contextractor-apify/.actor` must be propagated to `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor/.actor`
+- propagate `/Users/miroslavsekera/r/contextractor/packages/contextractor_engine` to `/Users/miroslavsekera/r/contextractor-ts/packages/contextractor_engine` and let it use the `rs-trafilatura` instead of the Python one
+
+- rename `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor` to `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-apify`, propagate new functionality from `/Users/miroslavsekera/r/contextractor/apps/contextractor-apify` to the newly renamed `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-apify`
+- propagate `/Users/miroslavsekera/r/contextractor/apps/contextractor-standalone` to `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-standalone`
+
+- propagate all markdown files, docs (but note the Python Trafilatura is newly used in Rust form, so no Python in this target repo)
+- propagate `/Users/miroslavsekera/r/contextractor/tools` to `/Users/miroslavsekera/r/contextractor-ts/tools`
+- this prompt output will include creation of another prompt in `/Users/miroslavsekera/r/tools/prompts` that will propagate all the changes to `/Users/miroslavsekera/r/tools/apps/contextractor-site` `/Users/miroslavsekera/r/tools/apps/contextractor-api` `/Users/miroslavsekera/r/tools/distributed-packages/contextractor-engine` `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor`, run `/Users/miroslavsekera/r/tools/.claude/commands/projects/contextractor/sync-all.md`
