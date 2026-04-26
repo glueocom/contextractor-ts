@@ -33,4 +33,20 @@ Test files `*.test.ts` next to source. vitest preferred for new code; `node:test
 
 ## This Project
 
-TypeScript currently lives at `/Users/miroslavsekera/r/contextractor-ts/tools/platform-test-runner/` (Node-based test orchestrator). A future TypeScript Apify Actor variant may live at `/Users/miroslavsekera/r/contextractor-ts/apps/`. Lint and format with `biome check tools/` (or scoped to the package). Workspace-wide tests: `pnpm -r test`.
+TypeScript pnpm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
+
+- `apps/contextractor-apify/` — Apify Actor (Apify SDK + Crawlee `PlaywrightCrawler`)
+- `apps/contextractor-standalone/` — CLI (`commander`/`yargs` + Crawlee + Playwright)
+- `packages/contextractor-engine/` — engine wrapping the napi-rs binding (`packages/contextractor-engine/native/`)
+- `tools/platform-test-runner/` — Node test orchestrator
+- `tools/generated-unit-tests/` — vitest tests against `@contextractor/engine` with HTML fixtures
+
+Workspace-wide commands: `pnpm -r build`, `pnpm -r test`, `pnpm -r lint`. Lint and format with `biome check .` (workspace-wide).
+
+### Project gotchas
+
+- **`exactOptionalPropertyTypes: true` is incompatible with napi-rs-generated types** — keep it off in the root tsconfig (napi-rs emits `field?: T`, not `field?: T | undefined`).
+- **`vitest run` exits 1 with zero `*.test.ts` files** — apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise `pnpm -r test` fails.
+- **Biome ignore list** — explicitly ignore `.claude/**`, `prompts/**`, `**/fixtures/**`, `**/test-suites/**`, `**/test-suites-output/**`, `**/*.node`, and `packages/contextractor-engine/native/index.{js,d.ts}` in `biome.json`.
+- **Supported output formats** are `txt | markdown | json | html` — never reintroduce `xml` or `xmltei` until upstream `rs-trafilatura` adds them.
+- **The Apify actor's `package.json` declares `"@contextractor/engine": "workspace:*"`** — no `vendor/` directory; the multi-stage Dockerfile uses `pnpm --filter @contextractor/apify deploy --prod /deploy`.

@@ -7,42 +7,45 @@ description: Modern Rust packaging with Cargo.toml, lints config, semver, and cr
 
 How to package a Rust crate for distribution or in-workspace use.
 
-## Cargo.toml
+## Cargo.toml (this project's napi-rs crate)
+
+The only Rust crate in this workspace is the napi-rs binding at `packages/contextractor-engine/native/`. It is **not** published to crates.io — it is consumed by the TypeScript engine through `@napi-rs/cli` per-platform prebuilds (`linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64`) shipped via npm `optionalDependencies`.
 
 ```toml
 [package]
-name = "contextractor_engine"
+name = "contextractor-engine-native"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
-authors = ["Shortc <hello@shortc.dev>"]
+authors = ["Glueo <hello@glueo.com>"]
 license = "Apache-2.0"
-repository = "https://github.com/shortc/contextractor-ts"
-homepage = "https://github.com/shortc/contextractor-ts"
-documentation = "https://docs.rs/contextractor_engine"
-description = "Web content extraction engine wrapping rs-trafilatura."
-keywords = ["scraping", "extraction", "trafilatura", "html"]
-categories = ["text-processing", "web-programming"]
-readme = "README.md"
+repository = "https://github.com/glueocom/contextractor-ts"
+description = "napi-rs binding for rs-trafilatura, consumed by @contextractor/engine."
 
 [lib]
-name = "contextractor_engine"
-path = "src/lib.rs"
+crate-type = ["cdylib"]
 
 [dependencies]
+napi = { version = "2", features = ["napi6"] }
+napi-derive = "2"
+rs-trafilatura = "0.2"
 serde = { version = "1", features = ["derive"] }
-thiserror = "1"
+serde_json = "1"
 
-[dev-dependencies]
-insta = "1"
+[build-dependencies]
+napi-build = "2"
 ```
 
-For a binary crate, add a `[[bin]]` section:
+For a hypothetical pure-library crate (would need its own `[lib]` section without `crate-type = ["cdylib"]`):
 
 ```toml
-[[bin]]
-name = "contextractor"
-path = "src/main.rs"
+[package]
+name = "example-lib"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+path = "src/lib.rs"
 ```
 
 ## Lints
@@ -56,11 +59,12 @@ unused_must_use = "deny"
 [lints.clippy]
 must_use_candidate = "warn"
 needless_pass_by_value = "warn"
-unwrap_used = "warn"
-expect_used = "warn"
+unwrap_used = "deny"
+expect_used = "deny"
+missing_errors_doc = "warn"
 ```
 
-These can be inherited workspace-wide via `[lints]` `workspace = true` in member crates.
+These can be inherited workspace-wide via `[lints]` `workspace = true` in member crates. **Do not relax `unwrap_used` / `expect_used` to silence napi-rs build errors** — fix the code instead, or convert the panic site to a typed error.
 
 ## Semver
 
@@ -71,36 +75,37 @@ These can be inherited workspace-wide via `[lints]` `workspace = true` in member
 
 ## Pre-Publish Check
 
+For **internal-only** crates (the napi-rs binding here is one — it ships through npm prebuilds, not crates.io):
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+pnpm -F @contextractor/engine-native build       # produces the .node prebuild
+```
+
+For a crates.io-bound crate (not this project):
+
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --all-features
-cargo publish --dry-run -p contextractor_engine
+cargo publish --dry-run -p <crate-name>
 ```
 
 ## Publishing
 
+This project does **not** publish Rust crates to crates.io. The napi-rs `.node` prebuilds are published as npm packages (`@contextractor/engine-native-{platform}-{arch}`) consumed via `optionalDependencies` from `@contextractor/engine`.
+
+For a hypothetical crates.io-bound crate:
+
 ```bash
 cargo login    # interactive — accepts CARGO_REGISTRY_TOKEN env var as well
-cargo publish -p contextractor_engine
+cargo publish -p <crate-name>
 ```
 
 For workspaces, publish dependent crates first.
 
-## CI Publishing
+## CI Publishing (this project — napi-rs prebuilds)
 
-GitHub Actions release-on-tag pattern:
-
-```yaml
-name: publish
-on:
-  push:
-    tags: ["v*"]
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo publish -p contextractor_engine --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
-```
+The CI matrix builds `.node` files for `linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64` per the `napi-rs/package-template-pnpm` template, then publishes them as npm packages so the in-image `pnpm install` picks the matching prebuild without a Rust toolchain. See `napi.rs/docs/deep-dive/release` for the canonical pipeline.

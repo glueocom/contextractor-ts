@@ -13,10 +13,10 @@ Review actor configuration, sync test cases, and run the full test suite.
 ### Phase 1: Review Actor Configuration
 
 Read and analyze:
-- `apps/contextractor/.actor/input_schema.json` - input parameters
-- `apps/contextractor/.actor/dataset_schema.json` - output schema
-- `apps/contextractor/.actor/actor.json` - actor metadata
-- `apps/contextractor/README.md` - documentation
+- `apps/contextractor-apify/.actor/input_schema.json` - input parameters
+- `apps/contextractor-apify/.actor/dataset_schema.json` - output schema
+- `apps/contextractor-apify/.actor/actor.json` - actor metadata (verify `name` matches the deploy target — `contextractor-test` or `contextractor`)
+- `apps/contextractor-apify/README.md` - documentation
 
 Identify:
 - New input parameters added
@@ -48,7 +48,7 @@ Execute the `run-and-fix` command:
 
 ### Phase 4: Generate Unit Tests (Optional)
 
-After tests pass, run `/platform-tests:generate-unit-tests` to create local cargo integration tests from the results.
+After tests pass, run `/platform-tests:generate-unit-tests` to create local vitest unit tests (TypeScript) from the results.
 
 ## Success Criteria
 

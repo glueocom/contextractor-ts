@@ -1,6 +1,6 @@
 ---
 description: Build all projects and run local unit tests
-allowed-tools: Bash(cargo:*), Bash(cd:*)
+allowed-tools: Bash(cargo:*), Bash(pnpm:*), Bash(biome:*), Bash(cd:*)
 ---
 
 You are a test runner specialist. Build all projects in the repository and run local unit tests.
@@ -11,37 +11,50 @@ IMPORTANT: Only run unit tests. Do NOT run integration tests that hit external s
 
 All commands below use **relative paths from the repo root**: `/Users/miroslavsekera/r/contextractor-ts/`. Run them from there.
 
-## Projects to Build and Test
+## Steps
 
-### 1. Generated Unit Tests (`tools/generated-unit-tests`)
-
-```bash
-cargo test -p generated-unit-tests
-```
-
-### 2. Main Actor (`apps/contextractor`)
+### Step BUILD: Build all packages
 
 ```bash
-cargo test -p contextractor
+pnpm -r build
+cargo build --workspace
 ```
 
-## Execution Steps
+### Step TEST_TS: Run TypeScript tests
 
-1. Confirm the working directory is the repo root (`pwd` should print `/Users/miroslavsekera/r/contextractor-ts`)
-2. Run unit tests for `tools/generated-unit-tests` first
-3. Run unit tests for `apps/contextractor`
-4. Report a summary of all test results
+```bash
+pnpm -r test
+```
+
+This runs vitest in `packages/contextractor-engine`, `tools/generated-unit-tests`, and any app whose `test` script is wired up. Apps without tests use `vitest run --passWithNoTests` so the recursive run does not fail.
+
+### Step TEST_RUST: Run Rust tests
+
+```bash
+cargo test --workspace
+```
+
+The only Rust crate is the napi-rs binding at `packages/contextractor-engine/native/`.
+
+### Step LINT: Lint and format check
+
+```bash
+biome check .
+cargo clippy --workspace --all-targets -- -D warnings
+```
 
 ## Output
 
 Provide a summary of:
 
-- Number of tests passed/failed for each crate
-- Any errors encountered during build/test
-- First failing trace, with `path:line` link
+- Build results (TS: pass/fail, Rust: pass/fail).
+- TS test counts (passed / failed) per package.
+- Rust test counts.
+- Lint results (Biome, clippy).
+- First failing trace, with `path:line` link.
 
 Do NOT:
 
-- Run `apify run` or any command that starts the scraper
-- Run integration tests that require network access to external sites
-- Modify any code — only build and run tests
+- Run `apify run` or any command that starts the scraper.
+- Run integration tests that require network access to external sites.
+- Modify any code — only build and run tests.

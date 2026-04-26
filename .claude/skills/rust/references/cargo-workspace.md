@@ -1,21 +1,23 @@
 # Cargo Workspace
 
-Layout and dependency management for the Contextractor cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`.
+Layout and dependency management for the Contextractor cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`. The TypeScript pnpm workspace lives alongside Cargo; the only Rust crate is the napi-rs binding.
 
 ## Layout
 
 ```
 /Users/miroslavsekera/r/contextractor-ts/
-├── Cargo.toml                     # workspace root
-├── Cargo.lock                     # committed (binary workspace)
-├── apps/
-│   └── contextractor/
-│       ├── Cargo.toml
-│       └── src/main.rs
+├── Cargo.toml                                        # workspace root
+├── Cargo.lock                                        # committed
+├── package.json                                      # pnpm workspace root
+├── pnpm-workspace.yaml
 └── packages/
-    └── contextractor_engine/
-        ├── Cargo.toml
-        └── src/lib.rs
+    └── contextractor-engine/                         # TypeScript package
+        ├── package.json
+        ├── src/index.ts
+        └── native/                                   # Rust crate (the only one)
+            ├── Cargo.toml
+            ├── build.rs
+            └── src/lib.rs
 ```
 
 ## Workspace `Cargo.toml`
@@ -23,43 +25,52 @@ Layout and dependency management for the Contextractor cargo workspace at `/User
 ```toml
 [workspace]
 resolver = "3"
-members = ["apps/contextractor", "packages/contextractor_engine"]
+members = ["packages/contextractor-engine/native"]
 
 [workspace.package]
 edition = "2024"
 rust-version = "1.85"
 license = "Apache-2.0"
-repository = "https://github.com/shortc/contextractor-ts"
+repository = "https://github.com/glueocom/contextractor-ts"
 
 [workspace.dependencies]
-anyhow = "1"
-thiserror = "1"
+napi = { version = "2", features = ["napi6"] }
+napi-derive = "2"
+napi-build = "2"
+rs-trafilatura = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["full"] }
-tracing = "0.1"
 ```
 
-## Member crate `Cargo.toml`
+## napi-rs crate `Cargo.toml`
 
 ```toml
 [package]
-name = "contextractor"
+name = "contextractor-engine-native"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
-contextractor_engine = { path = "../../packages/contextractor_engine" }
-anyhow.workspace = true
+napi.workspace = true
+napi-derive.workspace = true
+rs-trafilatura.workspace = true
 serde.workspace = true
-tokio.workspace = true
+serde_json.workspace = true
+
+[build-dependencies]
+napi-build.workspace = true
 ```
 
 ## Conventions
 
-- Inherit common dependencies via `workspace = true` to keep versions aligned across crates
-- Use `path = "..."` references for in-workspace deps (no version)
-- Run `cargo build --workspace` and `cargo test --workspace` from the root
-- Add new crates by listing them in `[workspace] members`
+- Inherit common dependencies via `workspace = true` to keep versions aligned.
+- Use `path = "..."` references for any future in-workspace deps (no version).
+- The crate is `cdylib` only — never `rlib` — because the consumer is the Node runtime.
+- Use the bare `Result<T>` from `napi::bindgen_prelude::Result` in `#[napi]` function signatures (no `as` aliases — they leak into generated `.d.ts`).
+- Run `cargo build --workspace` and `cargo test --workspace` from the root. Build the `.node` artifact via `pnpm -F @contextractor/engine-native build` (which calls `@napi-rs/cli`).
+- A virtual workspace with empty `members = []` fails `cargo metadata` — keep at least one member listed.

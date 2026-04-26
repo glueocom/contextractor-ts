@@ -1,11 +1,11 @@
 ---
-description: Sync READMEs with current Rust binary, TS tooling, and Apify schema state.
+description: Sync READMEs with the current TypeScript engine, standalone CLI, and Apify schema state.
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
 ---
 
 # Sync Contextractor Repo Documentation
 
-Ensure every README under this repo reflects the current Rust binary CLI, the TypeScript tooling configuration, and the Apify Actor schemas. CLI help, config tables, and format lists must be in sync across all three.
+Ensure every README under this repo reflects the current TypeScript engine API, the standalone CLI flags, and the Apify Actor schemas. CLI help, config tables, and format lists must be in sync across all surfaces. Every README must mention that Contextractor is built on **`rs-trafilatura` and Crawlee**.
 
 **Scope:** This command only updates files inside `/Users/miroslavsekera/r/contextractor-ts/`. The Actor ships only to Apify — there is no separate package-registry README to sync.
 
@@ -13,26 +13,28 @@ Ensure every README under this repo reflects the current Rust binary CLI, the Ty
 
 The source files are canonical for what each README must document. When they disagree with each other, surface the mismatch in **Step VERIFY** rather than silently picking a winner.
 
-- **Rust binary CLI definition** — `apps/contextractor/src/main.rs` plus any `clap` / `argh` / `bpaf` derive struct in supporting modules under `apps/contextractor/src/`.
-- **Rust engine config** — `packages/contextractor_engine/src/lib.rs` (and any sub-modules) holding the trafilatura-equivalent options struct.
-- **Rust output-format enum** — wherever the `OutputFormat` enum lives in the binary or engine crate (e.g. variants like `Txt`, `Markdown`, `Json`, `Jsonl`, `Xml`, `XmlTei`, `Html`).
-- **TypeScript tooling config** — anything under `tools/platform-test-runner/` (and any future TS package under `tools/`) that defines a config type, zod schema, or input validator that mirrors the Rust config.
+- **TypeScript engine API** — `packages/contextractor-engine/src/index.ts` (the canonical `TrafilaturaConfig` interface, `ContentExtractor` class, exported types). The TS engine drives every other surface.
+- **napi-rs binding** — `packages/contextractor-engine/native/src/lib.rs`. `#[napi(object)]` structs must mirror the TS interface field-for-field; the TS interface is canonical, not the Rust struct.
+- **Standalone CLI** — `apps/contextractor-standalone/src/cli.ts` (every `commander` / `yargs` flag with description and default) plus `apps/contextractor-standalone/src/config.ts`.
+- **Apify Actor TypeScript** — `apps/contextractor-apify/src/{main.ts, handler.ts, extraction.ts, config.ts}` and the Actor's `package.json` workspace deps.
+- **Output format set** — must equal `txt | markdown | json | html` everywhere; XML / XML-TEI are dropped pending upstream `rs-trafilatura` support.
 - **Apify Actor schemas** —
-  - `apps/contextractor/.actor/input_schema.json`
-  - `apps/contextractor/.actor/output_schema.json`
-  - `apps/contextractor/.actor/dataset_schema.json`
+  - `apps/contextractor-apify/.actor/actor.json` (description must say "built on rs-trafilatura and Crawlee")
+  - `apps/contextractor-apify/.actor/input_schema.json`
+  - `apps/contextractor-apify/.actor/output_schema.json`
+  - `apps/contextractor-apify/.actor/dataset_schema.json`
 
 ## Step EXTRACT: Extract Current State
 
-Read every source-of-truth file above and build one inventory covering all three surfaces:
+Read every source-of-truth file above and build one inventory covering all surfaces:
 
-- Every CLI flag (long name, short name if any, type, default, help text) — note that it lives in **Rust**.
-- Every Rust engine config field (name, type, default, doc comment).
+- Every TS engine config field (name, type, default, JSDoc) — note that it lives in **`packages/contextractor-engine/src/index.ts`**.
+- Every standalone CLI flag (long name, short name if any, type, default, help text) — note that it lives in **`apps/contextractor-standalone/src/cli.ts`**.
 - Every Apify input-schema property (name, type, default, description, editor type) — note that it lives in **the schema**.
-- Every TS-side type / zod field (name, type, default) — note that it lives in **TS**.
-- Every output format the binary accepts (the union of the Rust enum and the `format` enum in `input_schema.json`).
+- Every napi-rs `#[napi(object)]` field — verify it matches the TS interface.
+- Every output format the engine, CLI, and schema accept (must equal the canonical set `txt | markdown | json | html`).
 
-Each row in the inventory must record where the entry lives so mismatches between Rust, TS, and the schema are visible.
+Each row in the inventory must record where the entry lives so mismatches between TS, the napi-rs binding, the CLI, and the schema are visible.
 
 ## Step SYNC: Update READMEs
 
@@ -42,23 +44,26 @@ Enumerate READMEs at runtime so newly added ones are covered automatically:
 find . -type f -name 'README.md' \
   -not -path './node_modules/*' \
   -not -path './target/*' \
-  -not -path './.venv/*' \
-  -not -path './.git/*'
+  -not -path './.git/*' \
+  -not -path './prompts/*'
 ```
 
 At minimum the following READMEs are expected to exist:
 
 - `README.md` (repo root)
-- `apps/contextractor/README.md`
+- `apps/contextractor-apify/README.md`
+- `apps/contextractor-standalone/README.md`
+- `packages/contextractor-engine/README.md`
 
 For each README found, sync:
 
-- The CLI reference (every Rust binary flag with type, default, and help text).
-- The config-field tables (Rust engine config + Apify input-schema fields, side-by-side where they correspond).
-- The output-format list (every variant accepted by the binary).
-- Any TypeScript-tooling section referencing config types — keep in sync with the TS source.
+- The "built on" line — every README must say Contextractor is built on `rs-trafilatura` (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright).
+- The CLI reference (every standalone CLI flag with type, default, and help text). Per `.claude/rules/json-config-only.md`, document only JSON config files.
+- The TS engine config table (interface fields with type, default, description) and the matching Apify input-schema field, side-by-side where they correspond.
+- The output-format list — must be `txt | markdown | json | html`. The temporary XML / XML-TEI gap is documented once in `packages/contextractor-engine/README.md` and once in `CLAUDE.md`; do not repeat it elsewhere.
+- The local-prerequisites note (Rust toolchain via rustup, Apify CLI ≥ 1.4, Node 22+, pnpm 10+) where applicable.
 
-If a README does not yet have a section for the CLI or config, add it at the natural insertion point rather than skipping the file.
+If a README does not yet have a section for the CLI, the engine config, or the "built on" line, add it at the natural insertion point rather than skipping the file.
 
 ## Step VERSION: Update Docs Version
 
@@ -68,20 +73,21 @@ Update the "Docs version" timestamp at the end of `README.md`:
 date -u +"%Y-%m-%dT%H:%M:%SZ"
 ```
 
-If the existing slash command `/docs:update-docs-version` already covers a README (currently `apps/contextractor/README.md`), invoke it for that file instead of duplicating the logic.
+If the existing slash command `/docs:update-docs-version` already covers a README, invoke it for that file instead of duplicating the logic.
 
 ## Step VERIFY: Verify Consistency
 
-Cross-check across **all three surfaces**:
+Cross-check across all surfaces:
 
-- Every Rust-binary CLI flag appears in every README.
-- Every Apify `input_schema.json` property appears in every README.
-- TS-side types / zod schemas (where defined) match the Rust engine config field-for-field.
-- The Rust output-format enum, the `input_schema.json` `format` enum, and every README's format list agree.
+- Every TS engine config field appears in every README.
+- Every standalone CLI flag appears in every README that documents the CLI.
+- Every Apify `input_schema.json` property appears in every README that documents the Actor.
+- The napi-rs binding matches the TS engine field-for-field. If they diverge, the **TS interface wins** — the Rust struct must follow.
+- The output-format set is exactly `txt | markdown | json | html` in every surface — flag any reappearance of `xml` or `xmltei`.
+- Every README declares "built on `rs-trafilatura` and Crawlee" (or equivalent wording in the same paragraph).
 - No removed flag, field, or format is still documented.
-- Any flag named in the Rust binary but missing from the schema (or vice-versa) is flagged for human review — do not silently delete from either side.
 
-Report any inconsistencies found and fix the docs side. Mismatches between Rust and the schema are out of scope for this command — fix those via `/sync:gui`.
+Report any inconsistencies found and fix the docs side. Mismatches between source files (TS engine vs napi-rs vs schema) are out of scope for this command — fix those via `/sync:gui`.
 
 ## Step COMMIT: Commit
 

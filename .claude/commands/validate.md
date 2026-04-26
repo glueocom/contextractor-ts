@@ -7,15 +7,21 @@ Validate all Actor configuration and run static checks across the workspace.
 
 ## Validation Steps
 
-1. Check `apps/contextractor/.actor/actor.json` exists and is valid JSON
-2. Check `apps/contextractor/.actor/input_schema.json` has required fields
-3. Check `apps/contextractor/.actor/output_schema.json` if present
-4. Check `apps/contextractor/.actor/dataset_schema.json` if present
-5. Verify `meta.generatedBy` is set in `actor.json`
-6. Run `cargo check --workspace --all-targets`
-7. Run `cargo fmt --all -- --check`
-8. Run `cargo clippy --workspace --all-targets -- -D warnings`
-9. If `tools/platform-test-runner/package.json` exists, run `pnpm --filter platform-test-runner exec biome check`
+- Check `apps/contextractor-apify/.actor/actor.json` exists and is valid JSON
+- Check `apps/contextractor-apify/.actor/input_schema.json` has required fields
+- Check `apps/contextractor-apify/.actor/output_schema.json` if present
+- Check `apps/contextractor-apify/.actor/dataset_schema.json` if present
+- Verify `meta.generatedBy` is set in `actor.json`
+- Verify `actor.json.name` matches the deploy target (`contextractor-test` for test, `contextractor` for production)
+- Verify `actor.json.dockerContextDir` is `"../../.."`
+- Verify `actor.json.description` mentions "built on rs-trafilatura and Crawlee"
+- Verify `apps/contextractor-apify/package.json` declares `"@contextractor/engine": "workspace:*"` (no `vendor/` directory)
+- Run `pnpm -r build`
+- Run `pnpm -r lint` (Biome workspace-wide)
+- Run `pnpm -r test`
+- Run `cargo check --workspace --all-targets`
+- Run `cargo fmt --all -- --check`
+- Run `cargo clippy --workspace --all-targets -- -D warnings`
 
 ## Required Fields
 

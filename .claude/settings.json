@@ -60,9 +60,16 @@
       "WebFetch"
     ],
     "deny": [
+      "Bash(apify push glueo/contextractor)",
+      "Bash(apify push glueo/contextractor *)",
+      "Bash(apify push glueo/contextractor --*)",
+      "Bash(apify call glueo/contextractor)",
+      "Bash(apify call glueo/contextractor *)",
+      "Bash(apify call glueo/contextractor --*)",
       "Bash(apify push shortc/contextractor)",
       "Bash(apify push shortc/contextractor *)",
       "Bash(apify push shortc/contextractor --*)",
+      "Bash(apify call shortc/contextractor)",
       "Bash(apify call shortc/contextractor *)",
       "Bash(apify call shortc/contextractor --*)",
       "Read(.env)",

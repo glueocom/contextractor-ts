@@ -29,12 +29,26 @@ Newtype wrappers for primitive obsession (`struct UrlStr(String)`). Exhaustive e
 
 ## This Project
 
-Cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`. Library crate `packages/contextractor_engine/` wraps `rs-trafilatura`. Binary crate `apps/contextractor/` is the Apify Actor.
+Cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`. The only Rust crate is the **napi-rs binding** at `packages/contextractor-engine/native/` — it wraps [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (0.2.x) with `#[napi]` macros and emits a `cdylib` `.node` module the TypeScript engine consumes. Apps (`apps/contextractor-apify/`, `apps/contextractor-standalone/`) are TypeScript and call into the native module through `@contextractor/engine`.
+
+### napi-rs caveats
+
+- Use the bare `Result<T>` from `napi::bindgen_prelude::Result` everywhere a `#[napi]` fn returns one — `use ... as MyResult` produces broken `.d.ts` (the alias name leaks into generated TS types).
+- `#[napi(object)]` structs become TS interfaces; snake_case Rust field names auto-convert to camelCase on the TS side.
+- Emit per-platform prebuilds via `@napi-rs/cli`: `darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-gnu`. Ship them through `optionalDependencies` so the in-image `pnpm install` picks the right prebuild without a Rust toolchain in the Docker build.
+- Strict lints stay on (`expect_used`, `unwrap_used`, `missing_errors_doc`) — fix the code rather than allow them.
+
+### rs-trafilatura 0.2.x (current)
+
+- The `Options` struct has **no** `prune_xpath`, **no** `tei_validation`, **no** `with_metadata` flag — metadata is always extracted.
+- `output_markdown` defaults to `false` — set per call to populate `content_markdown`. `content_html` is always populated.
+- `Metadata` exposes `categories`, `tags`, `license`, `image`, `page_type` beyond what the Python port had.
+- No XML / XML-TEI output yet — supported formats are `txt`, `markdown`, `json`, `html`.
 
 ```bash
 cargo build --workspace
-cargo run -p contextractor
+cargo test --workspace
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
-cargo nextest run --workspace --all-features
+pnpm -F @contextractor/engine-native build       # napi-rs build for current platform
 ```

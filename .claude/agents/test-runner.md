@@ -9,31 +9,33 @@ You are the test runner for the Contextractor Apify Actor at `/Users/miroslavsek
 
 ## Steps
 
-### 1. Format and Lint
+### Step FORMAT_AND_LINT: Format and Lint
 
 ```bash
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
-biome check tools/
+biome check .
 ```
 
 If any step fails, report and stop.
 
-### 2. Unit and Integration Tests
+### Step BUILD: Build Workspace
 
 ```bash
-cargo nextest run --workspace --all-features
+pnpm -r build
+cargo build --workspace
 ```
 
-If any TypeScript package exists with a `package.json`, also run:
+### Step TEST: Unit and Integration Tests
 
 ```bash
-pnpm -r test
+cargo test --workspace                                   # napi-rs crate (the only Rust crate)
+pnpm -r test                                             # vitest across packages and apps
 ```
 
-### 3. Actor Smoke Run
+### Step SMOKE: Actor Smoke Run
 
-From `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor/`:
+From `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-apify/`:
 
 ```bash
 apify run
@@ -41,9 +43,9 @@ apify run
 
 Reads input from `storage/key_value_stores/default/INPUT.json` and writes output to `storage/datasets/default/`.
 
-### 4. Dataset Shape Check
+### Step VERIFY_DATASET: Dataset Shape Check
 
-Read one item from `storage/datasets/default/` and verify it matches the schema at `apps/contextractor/.actor/dataset_schema.json`. Flag any missing required fields, extra fields, or type mismatches.
+Read one item from `storage/datasets/default/` and verify it matches the schema at `apps/contextractor-apify/.actor/dataset_schema.json`. Flag any missing required fields, extra fields, or type mismatches. Confirm `format` values are restricted to `txt | markdown | json | html`.
 
 ## Reporting
 
