@@ -1,24 +1,25 @@
 # Unify input handling on Zod 4
 
-Collapse three drifting sources of truth (`apps/contextractor-apify/.actor/input_schema.json`, `apps/contextractor-apify/src/config.ts::ActorInput`, `apps/contextractor-standalone/src/cli.ts::CliOptions` + `apps/contextractor-standalone/src/config.ts::CrawlConfig`) into one Zod 4 schema, with `INPUT_SCHEMA.json` generated at build time. Keep Commander 12 in the standalone CLI — do not migrate the parser.
+Collapse three drifting sources of truth (`apps/contextractor-apify/.actor/input_schema.json`, `apps/contextractor-apify/src/config.ts::ActorInput`, `apps/contextractor-standalone/src/cli.ts::CliOptions` + `apps/contextractor-standalone/src/config.ts::CrawlConfig`) into one Zod 4 schema, with `INPUT_SCHEMA.json` generated at build time.
+
+The stack is **Commander 12 + Zod 4**, both first-class. Commander parses argv (POSIX flags, `--help`, `--version`, subcommands). Zod 4 validates, coerces, defaults, and types the parsed result. The same Zod schema feeds `Actor.getInput()` validation in the Apify Actor and is the source of truth from which `INPUT_SCHEMA.json` is generated. This is the boundary pattern documented in `https://zod.dev/json-schema` and is the active idiom in 2026 TypeScript CLIs (Drizzle Kit, shadcn CLI, most Vercel-adjacent tools).
 
 ## Scope
 
 In:
 
-- New shared schema package
-- Apify Actor input parsing rewired through Zod
-- Standalone CLI input parsing rewired through Zod (Commander stays)
-- Build-time generator for `INPUT_SCHEMA.json`
-- Vitest tests for the generator
-- Removal of dead code in both apps
+- New shared schema package (`@contextractor/schema`) defining `ContextractorInput` once in Zod 4
+- Standalone CLI: Commander 12 parses argv → maps to a `Partial<ContextractorInputType>` → `ContextractorInput.parse()` validates and types it
+- Apify Actor: `Actor.getInput()` raw JSON → `ContextractorInput.parse()` validates and types it (same schema, same call site shape)
+- Build-time generator that emits `INPUT_SCHEMA.json` from the Zod schema
+- Vitest tests for the generator (snapshot, Ajv meta-schema, determinism, trailing newline)
+- Removal of the hand-rolled coercion machinery in both apps (`mergeOverrides`, `fromDict`, `normalizeKeys`, `as*` helpers, the `ActorInput` interface)
 
 Out:
 
 - No changes to `packages/contextractor-engine/` runtime extraction API
 - No changes to `dataset_schema.json` or `output_schema.json`
 - No changes to the Rust napi-rs crate
-- No parser swap (Commander stays in standalone; `Actor.getInput()` stays in Apify)
 - No changes to `CrawlConfig` shape internal to `apps/contextractor-standalone/` (Phase 2 territory)
 
 ## Prerequisites — do these first
@@ -313,4 +314,6 @@ Reviewed 2026-04-27. Verified Zod 4 API claims against `https://zod.dev/json-sch
 - Standalone CLI mapping: documented the SCREAMING_SNAKE_CASE direction flip (`launcher`, `waitUntil`, `proxyRotation` — the existing `cli.ts` lowercases these; the new mapping must `.toUpperCase()` going into `parse()`). Enumerated the CLI-only flags that bypass `ContextractorInput` and feed `CrawlConfig` directly post-parse. Flagged that the standalone `buildCrawlConfig` is not identical to the Apify one — it must additionally project orchestration flags (`urls`, `outputDir`, `save`) onto `CrawlConfig`. Flagged the breaking change to `loadConfigFile` (legacy snake_case + nested `proxy.urls` shapes no longer accepted).
 - Tests: added coverage for the `required` workaround, generator determinism, and trailing-newline behaviour.
 
-Out-of-scope items left untouched: parser swap, `CrawlConfig` Phase 2 deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish. Reviewer also confirmed `@modelcontextprotocol/sdk` already accepts Zod schemas via Standard Schema (issue `modelcontextprotocol/typescript-sdk#164`), so the Phase-3 follow-up remains a small wiring exercise — current edits do not make it harder.
+Stack is settled at Commander 12 + Zod 4 — both are first-class chosen libraries, not a transitional state. Out-of-scope items left untouched: `CrawlConfig` Phase 2 deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish. Reviewer confirmed `@modelcontextprotocol/sdk` already accepts Zod schemas via Standard Schema (issue `modelcontextprotocol/typescript-sdk#164`), so the Phase-3 follow-up remains a small wiring exercise — current edits do not make it harder.
+
+**Reframing edit (2026-04-27, second pass)**: removed the earlier "do not migrate the parser" framing and reframed Commander 12 + Zod 4 as the active chosen stack. The body of the prompt was already correctly written for this — it describes Commander parsing argv into objects that flow into `ContextractorInput.parse()`, which is the boundary pattern. Only the opening paragraph, the Scope→In/Out lines, and this notes section needed to drop the "Commander stays" / "no parser swap" framing. No algorithm, schema, test, or wiring change in this pass.
