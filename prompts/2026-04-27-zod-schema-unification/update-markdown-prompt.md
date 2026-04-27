@@ -73,6 +73,25 @@ In files getting manual prose only:
 
 Outdated CLI-flag and INPUT_SCHEMA-field tables in any file are deleted by hand and replaced with a region marker pair (in contextractor-ts) or a one-line cross-link to the generated README region (in tools/).
 
+## Update sync command files
+
+Four `.claude/commands/` slash-command prompts orchestrate doc/GUI sync; each has a stale source-of-truth list that predates the schema unification. **Manual prose pass — no region markers.**
+
+In `/Users/miroslavsekera/r/contextractor-ts/`:
+
+- `.claude/commands/sync/docs.md` — add `packages/contextractor-schema/src/input.ts` to the source-of-truth list as canonical for CLI flags, INPUT_SCHEMA fields, and `ContextractorInputType`. Replace the "Step SYNC" hand-edit instructions for the CLI / INPUT_SCHEMA / enum-value tables with: "run `pnpm docs:update`; fix only the surrounding prose and the disclaimer line — never edit between `<!-- @generated:start … -->` markers." Add `packages/contextractor-schema/README.md` to the expected README list.
+- `.claude/commands/sync/gui.md` — promote `@contextractor/schema` to canonical for every input / CLI / Apify-input field; `TrafilaturaConfig` stays canonical only for extraction internals. Replace the "TS engine ⇄ Apify input schema" check with: "Zod schema ⇄ generated `INPUT_SCHEMA.json` — the `@contextractor/schema` snapshot test guards zero diff." Replace the "TS engine ⇄ standalone CLI" check with: "Zod schema ⇄ Commander program — every `ContextractorInput` field is reachable as a flag, plus the documented CLI-only orchestration flags (`--config`, `--output-dir`, `--save`, etc.)." Add a check that `pnpm docs:check` passes (no marker-region drift).
+
+In `/Users/miroslavsekera/r/tools/`:
+
+- `.claude/commands/projects/contextractor/sync-docs.md` and `.claude/commands/projects/contextractor/sync-gui.md` — both currently reference the **defunct Python repo** at `/Users/miroslavsekera/r/contextractor/`. Repoint every source path to its TypeScript replacement under `/Users/miroslavsekera/r/contextractor-ts/`:
+  - `apps/contextractor-standalone/src/contextractor_cli/main.py` → `apps/contextractor-standalone/src/cli.ts` (Commander program); canonical *field* source is `packages/contextractor-schema/src/input.ts`
+  - `apps/contextractor-standalone/src/contextractor_cli/config.py` → drop (the Zod schema replaces it)
+  - `apps/contextractor-standalone/src/contextractor_cli/crawler.py` (`FORMAT_EXTENSIONS`) → `apps/contextractor-standalone/src/config.ts`
+  - `packages/contextractor_engine/.../models.py` (`TrafilaturaConfig`) → `packages/contextractor-engine/src/index.ts`
+  - `apps/contextractor-apify/.actor/input_schema.json` keeps its path but is now a **generated artifact** — flag any "edit input schema" step in the command as obsolete
+- In `sync-gui.md` specifically, defaults no longer come from `TrafilaturaConfig.balanced()` — they come from the Zod schema's `.default(...)` calls; update the EXTRACT inventory step accordingly. The `pnpm run import:contextractor-engine` step stays, but verify the import script now targets the npm-installed `@contextractor/engine` rather than the old Python wheel; if it still pulls the wheel, flag for a separate follow-up rather than fixing here.
+
 ## Build wiring & CI drift gate
 
 In `/Users/miroslavsekera/r/contextractor-ts/` root `package.json`:
