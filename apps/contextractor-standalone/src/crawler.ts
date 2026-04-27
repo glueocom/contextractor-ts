@@ -6,12 +6,11 @@ import type { PlaywrightCrawlingContext } from 'crawlee';
 import { PlaywrightCrawler, ProxyConfiguration, Request } from 'crawlee';
 import type { CrawlConfig, SaveFormat } from './config.js';
 
-export const FORMAT_EXTENSIONS: Readonly<Record<SaveFormat, string>> = Object.freeze({
+export const FORMAT_EXTENSIONS: Readonly<Record<OutputFormat, string>> = Object.freeze({
+  txt: '.txt',
   markdown: '.md',
-  html: '.html',
-  text: '.txt',
   json: '.json',
-  jsonl: '.jsonl',
+  html: '.html',
 });
 
 export function urlToFilename(url: string): string {
@@ -154,10 +153,9 @@ async function saveFormat(
       return true;
     }
     case 'markdown':
-    case 'text':
+    case 'txt':
     case 'json': {
-      const native: OutputFormat = fmt === 'text' ? 'txt' : fmt;
-      const result = extractor.extract(html, { url, format: native });
+      const result = extractor.extract(html, { url, format: fmt });
       if (!result?.content) return false;
       const out =
         fmt === 'json' ? result.content : prependMetadataHeader(result.content, metadata, url);

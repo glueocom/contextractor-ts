@@ -2,12 +2,12 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { DEFAULT_CONFIG, normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/engine';
 
-export type SaveFormat = 'markdown' | 'html' | 'text' | 'json' | 'jsonl';
+export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl';
 
 export const VALID_SAVE_FORMATS: ReadonlySet<SaveFormat> = new Set([
   'markdown',
   'html',
-  'text',
+  'txt',
   'json',
   'jsonl',
 ]);
@@ -15,7 +15,8 @@ export const VALID_SAVE_FORMATS: ReadonlySet<SaveFormat> = new Set([
 export function validateSaveFormats(formats: string[]): SaveFormat[] {
   const out: SaveFormat[] = [];
   for (const raw of formats) {
-    const normalized = raw.trim().toLowerCase();
+    let normalized = raw.trim().toLowerCase();
+    if (normalized === 'text') normalized = 'txt';
     if (normalized === 'all') {
       return [...VALID_SAVE_FORMATS].sort() as SaveFormat[];
     }

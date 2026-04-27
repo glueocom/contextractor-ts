@@ -17,7 +17,11 @@ describe('config helpers', () => {
 
   it('validateSaveFormats expands `all`', () => {
     const formats = validateSaveFormats(['all']);
-    expect(formats.sort()).toEqual(['html', 'json', 'jsonl', 'markdown', 'text']);
+    expect(formats.sort()).toEqual(['html', 'json', 'jsonl', 'markdown', 'txt']);
+  });
+
+  it('validateSaveFormats accepts the `text` alias for `txt`', () => {
+    expect(validateSaveFormats(['text'])).toEqual(['txt']);
   });
 
   it('validateSaveFormats rejects unknown values', () => {
@@ -30,13 +34,7 @@ describe('config helpers', () => {
 
 describe('FORMAT_EXTENSIONS', () => {
   it('contains exactly the supported set', () => {
-    expect(Object.keys(FORMAT_EXTENSIONS).sort()).toEqual([
-      'html',
-      'json',
-      'jsonl',
-      'markdown',
-      'text',
-    ]);
+    expect(Object.keys(FORMAT_EXTENSIONS).sort()).toEqual(['html', 'json', 'markdown', 'txt']);
   });
 });
 

@@ -212,9 +212,7 @@ export function normalizeConfigKeys(
     if (rawValue === undefined || rawValue === null) continue;
     const camel = toCamelCase(rawKey);
     if (camel in out) {
-      // biome-ignore lint/suspicious/noExplicitAny: cross-key assignment to a typed
-      // union is the simplest working shape; runtime values come from JSON.
-      (out as any)[camel] = rawValue;
+      (out as unknown as Record<string, unknown>)[camel] = rawValue;
     }
   }
   return out;

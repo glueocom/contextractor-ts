@@ -7,10 +7,8 @@
  * Forward-compat config object accepted from the TypeScript side.
  *
  * camelCase fields (auto-converted by napi-derive) mirror the Python
- * `TrafilaturaConfig`. Two Python-only fields are intentionally absent
- * (`pruneXpath`, `dateExtractionParams`); two are accepted but ignored
- * (`teiValidation`, `withMetadata`) to keep the cross-runtime config
- * shape stable.
+ * `TrafilaturaConfig`. `teiValidation` and `withMetadata` are accepted but
+ * ignored — they keep the cross-runtime config shape stable.
  */
 export interface TrafilaturaConfig {
   fast?: boolean

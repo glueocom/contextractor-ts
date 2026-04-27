@@ -11,6 +11,7 @@
       "!**/dist",
       "!**/target",
       "!**/node_modules",
+      "!**/storage",
       "!**/*.node",
       "!packages/contextractor-engine/native/index.js",
       "!packages/contextractor-engine/native/index.d.ts",

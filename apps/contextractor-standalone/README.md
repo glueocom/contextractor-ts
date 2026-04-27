@@ -31,7 +31,9 @@ contextractor --config config.json --max-pages 10
 | `--max-pages`                       | Max pages to crawl (0 = unlimited)                             |
 | `--crawl-depth`                     | Max link depth from start URLs (0 = start only)                |
 | `--headless` / `--no-headless`      | Browser headless mode (default: headless)                      |
-| `--save`                            | Output formats: `markdown,html,text,json,jsonl,all`            |
+| `--save`                            | Output formats: `markdown,html,txt,json,jsonl,all`             |
+| `--format`                          | Single output format alias of `--save` (`txt | markdown | json | html`) |
+| `--start-url`                       | Single start URL alias of the positional `[URLS...]`           |
 | `--precision`                       | High precision mode                                            |
 | `--recall`                          | High recall mode                                               |
 | `--fast`                            | Fast extraction mode                                           |
@@ -77,6 +79,7 @@ Config merge order: `defaults → config file → CLI args`.
 ## Local prerequisites
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
+- **Apify CLI ≥ 1.4** (workspace-level; needed by the sibling Actor).
 - **Node 22+**, **pnpm 10+**.
 
 ## Local development

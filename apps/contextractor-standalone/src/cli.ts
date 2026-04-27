@@ -17,6 +17,8 @@ program
   .version('0.1.0')
   .argument('[urls...]', 'URLs to extract content from')
   .option('-c, --config <path>', 'Path to JSON config file')
+  .option('--start-url <url>', 'Start URL (alternative to positional URL)')
+  .option('--format <fmt>', 'Output format: txt | markdown | json | html (alias of --save)')
   .option('-o, --output-dir <dir>', 'Output directory')
   .option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)', toInt)
   .option('--crawl-depth <n>', 'Max link depth from start URLs (0 = start only)', toInt)
@@ -42,7 +44,7 @@ program
   .option('--max-concurrency <n>', 'Max parallel requests', toInt)
   .option('--max-retries <n>', 'Max request retries', toInt)
   .option('--max-results <n>', 'Max results per crawl (0 = unlimited)', toInt)
-  .option('--save <formats>', 'Output formats: markdown,html,text,json,jsonl,all')
+  .option('--save <formats>', 'Output formats: markdown,html,txt,json,jsonl,all')
   .option('--precision', 'High precision mode (less noise)')
   .option('--recall', 'High recall mode (more content)')
   .option('--fast', 'Fast extraction mode (less thorough)')
@@ -92,6 +94,7 @@ program
     if (opts.maxRetries !== undefined) overrides.maxRetries = opts.maxRetries;
     if (opts.maxResults !== undefined) overrides.maxResults = opts.maxResults;
     if (opts.save) overrides.save = validateSaveFormats(opts.save.split(','));
+    if (opts.format && !opts.save) overrides.save = validateSaveFormats([opts.format]);
     if (opts.fast !== undefined) overrides.fast = opts.fast;
     if (opts.precision !== undefined) overrides.favorPrecision = opts.precision;
     if (opts.recall !== undefined) overrides.favorRecall = opts.recall;
@@ -109,7 +112,9 @@ program
 
     mergeOverrides(cfg, overrides);
 
-    if (urls.length > 0) cfg.urls = urls;
+    const collectedUrls = [...urls];
+    if (opts.startUrl) collectedUrls.push(opts.startUrl);
+    if (collectedUrls.length > 0) cfg.urls = collectedUrls;
     if (cfg.urls.length === 0) {
       console.error('Error: No URLs specified. Provide URLs as arguments or via --config.');
       process.exit(1);
@@ -131,6 +136,8 @@ function toInt(value: string): number {
 
 interface CliOptions {
   config?: string;
+  startUrl?: string;
+  format?: string;
   outputDir?: string;
   maxPages?: number;
   crawlDepth?: number;
