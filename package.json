@@ -12,7 +12,9 @@
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "format": "biome format --write .",
-    "check": "biome check ."
+    "check": "biome check .",
+    "docs:update": "pnpm -F @contextractor/gen-md-regions start",
+    "docs:check": "pnpm docs:update && git diff --exit-code -- '**/*.md'"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",

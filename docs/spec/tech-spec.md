@@ -25,9 +25,16 @@ Two apps + one engine package + one Rust crate:
   `packages/contextractor-engine/native/npm/<platform>/` as workspace packages
   with `os` + `cpu` selectors.
 - `apps/contextractor-apify/` — Apify Actor; depends on
-  `@contextractor/engine` + `apify` + `crawlee` + `playwright`.
+  `@contextractor/engine` + `@contextractor/schema` + `apify` + `crawlee` +
+  `playwright`.
 - `apps/contextractor-standalone/` — Standalone CLI; depends on
-  `@contextractor/engine` + `crawlee` + `playwright` + `commander`.
+  `@contextractor/engine` + `@contextractor/schema` + `crawlee` +
+  `playwright` + `commander`.
+- `packages/contextractor-schema/` — Single Zod 4 source of truth for input.
+  Exports `ContextractorInput`, `ContextractorInputType`, the `apifyMeta()`
+  helper, and `writeApifyInputSchema()`. The Apify INPUT_SCHEMA file is
+  generated from this schema at build time by
+  `@contextractor/gen-input-schema`.
 
 ### Apify Actor
 
@@ -64,9 +71,11 @@ refreshed by `.github/workflows/build-napi.yml` on tag pushes.
 import { Actor } from 'apify';
 import { PlaywrightCrawler, Request } from 'crawlee';
 import { ContentExtractor } from '@contextractor/engine';
+import { ContextractorInput } from '@contextractor/schema';
 
 await Actor.init();
-const input = (await Actor.getInput<ActorInput>()) ?? {};
+const raw = (await Actor.getInput()) ?? {};
+const input = ContextractorInput.parse(raw);
 const config = buildCrawlConfig(input);
 const crawler = new PlaywrightCrawler({ /* ... */ });
 
@@ -104,7 +113,10 @@ All content-type headers include charset, e.g.
 ### `TrafilaturaConfig`
 
 The TS engine API mirrors the Python source. Camel-case keys; snake-case keys
-are accepted and normalized at the boundary.
+are accepted and normalized at the boundary by the engine. The Apify Actor
+and standalone CLI both feed user input through `ContextractorInput.parse()`
+in `@contextractor/schema` (Zod 4 validation at the input boundary), then
+pass the typed result into the engine.
 
 ```ts
 import { ContentExtractor } from '@contextractor/engine';
@@ -140,6 +152,7 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 - `crawlee ^3`
 - `playwright ^1.50`
 - `@contextractor/engine` (workspace)
+- `@contextractor/schema` (workspace)
 
 `apps/contextractor-standalone/`:
 
@@ -147,6 +160,11 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 - `playwright ^1.50`
 - `commander ^12`
 - `@contextractor/engine` (workspace)
+- `@contextractor/schema` (workspace)
+
+`packages/contextractor-schema/` (TS):
+
+- `zod ^4`
 
 ## Build
 

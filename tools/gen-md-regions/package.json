@@ -1,0 +1,29 @@
+{
+  "name": "@contextractor/gen-md-regions",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Build-time generator that rewrites schema-derived regions in Contextractor markdown files in place.",
+  "type": "module",
+  "bin": {
+    "gen-md-regions": "dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx src/main.ts",
+    "test": "vitest run",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@contextractor/schema": "workspace:*",
+    "@contextractor/standalone": "workspace:*",
+    "commander": "^12.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.13",
+    "@types/node": "^22.19.17",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

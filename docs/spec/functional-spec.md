@@ -35,40 +35,24 @@ contextractor https://example.com --precision --save json -o ./results
 contextractor --config config.json --max-pages 10
 ```
 
-| Option                              | Description                                                    |
-| ----------------------------------- | -------------------------------------------------------------- |
-| `--config`, `-c`                    | Path to JSON config file (optional)                            |
-| `--output-dir`, `-o`                | Output directory                                               |
-| `--max-pages`                       | Max pages to crawl (0 = unlimited)                             |
-| `--crawl-depth`                     | Max link depth from start URLs (0 = start only)                |
-| `--headless` / `--no-headless`      | Browser headless mode (default: headless)                      |
-| `--save`                            | Output formats: `markdown,html,text,json,jsonl,all`            |
-| `--precision`                       | High precision mode (less noise)                               |
-| `--recall`                          | High recall mode (more content)                                |
-| `--fast`                            | Fast extraction mode (less thorough)                           |
-| `--no-links`                        | Exclude links from output                                      |
-| `--no-comments`                     | Exclude comments from output                                   |
-| `--include-tables` / `--no-tables`  | Include tables (default: include)                              |
-| `--include-images`                  | Include image descriptions                                     |
-| `--include-formatting` / `--no-formatting` | Preserve formatting (default: preserve)                |
-| `--deduplicate`                     | Deduplicate extracted content                                  |
-| `--target-language`                 | Filter by language (e.g. `en`)                                 |
-| `--with-metadata` / `--no-metadata` | Extract metadata along with content                            |
-| `--verbose`, `-v`                   | Enable verbose logging                                         |
+The full flag list is in
+[`apps/contextractor-standalone/README.md`](../../apps/contextractor-standalone/README.md#usage)
+— the table there is generated from the Commander program in
+`apps/contextractor-standalone/src/cli.ts` by `@contextractor/gen-md-regions`,
+so it is always in sync with the binary.
 
 ### Config file (optional, JSON)
 
-| Field             | Type    | Default        | Description                                |
-| ----------------- | ------- | -------------- | ------------------------------------------ |
-| urls              | array   | `[]`           | URLs to extract content from               |
-| maxPages          | integer | `0`            | Max pages to crawl (0 = unlimited)         |
-| outputDir         | string  | `./output`     | Directory for extracted content            |
-| crawlDepth        | integer | `0`            | How deep to follow links (0 = start only)  |
-| headless          | boolean | `true`         | Browser headless mode                      |
-| save              | array   | `["markdown"]` | Output formats list                        |
-| trafilaturaConfig | object  | `{}`           | Extraction options (see below)             |
+The standalone CLI accepts a JSON config file with the same camelCase shape
+as the
+[Apify input schema](../../apps/contextractor-apify/README.md#input). The
+file is validated against the Zod 4 schema in `@contextractor/schema`;
+unknown keys are stripped by `parse()`. CLI-only orchestration flags
+(`--output-dir`, `--save`, `--proxy-urls`) are not accepted in the config
+file — pass them on the command line.
 
-Config merge order: `defaults → config file (if provided) → CLI args`.
+Config merge order: `config file → CLI args → ContextractorInput.parse()`.
+Defaults come from the Zod schema's `.default(...)` calls.
 
 YAML config files are accepted silently for backward compatibility; new
 documentation references JSON only.
@@ -83,20 +67,12 @@ author, date, URL) is prepended to text-format outputs.
 
 ### Input
 
-| Field                                 | Type    | Default    | Description                                |
-| ------------------------------------- | ------- | ---------- | ------------------------------------------ |
-| startUrls                             | array   | required   | URLs to extract content from               |
-| linkSelector                          | string  | `""`       | CSS selector for links to enqueue          |
-| globs                                 | array   | `[]`       | Glob patterns to include                   |
-| excludes                              | array   | `[]`       | Glob patterns to exclude                   |
-| maxPagesPerCrawl                      | integer | `0`        | Max pages (0 = unlimited)                  |
-| saveRawHtmlToKeyValueStore            | boolean | `false`    | Save raw HTML to KV store                  |
-| saveExtractedTextToKeyValueStore      | boolean | `false`    | Save plain text                            |
-| saveExtractedJsonToKeyValueStore      | boolean | `false`    | Save JSON with metadata                    |
-| saveExtractedMarkdownToKeyValueStore  | boolean | `true`     | Save Markdown                              |
-| trafilaturaConfig                     | object  | `{}`       | Extraction options (see below)             |
-| initialCookies                        | array   | `[]`       | Pre-set cookies (encrypted)                |
-| customHttpHeaders                     | object  | `{}`       | Custom HTTP headers                        |
+The full input surface is the Zod 4 schema in `@contextractor/schema`; it is
+generated from that schema at build time by `@contextractor/gen-input-schema`
+into `apps/contextractor-apify/.actor/input_schema.json`. The
+[`apps/contextractor-apify/README.md`](../../apps/contextractor-apify/README.md#input)
+table is auto-rebuilt from the same schema by `@contextractor/gen-md-regions`
+and is the canonical reference.
 
 ### `trafilaturaConfig`
 
