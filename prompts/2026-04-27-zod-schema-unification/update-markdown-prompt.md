@@ -1,60 +1,65 @@
 # Update Contextractor markdown across both repos
 
-Update all Contextractor-related markdown in `/Users/miroslavsekera/r/contextractor-ts/` and `/Users/miroslavsekera/r/tools/` so prose, examples, and feature lists match the post-unification state of the codebase.
+Sync prose, examples, and feature lists in all Contextractor-related markdown to the post-unification state of the codebase. **Markdown only — no code, schema, or `INPUT_SCHEMA.json` edits.**
 
-## Required reading — in this order, before editing anything
+## Read first, in this order
 
-- Commit `f53a1c9c12fbab652b22f09682422d8f2851e596` (run `git show f53a1c9c` in `/Users/miroslavsekera/r/contextractor-ts/`) — the actual code change being documented
-- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-04-27-zod-schema-unification/prompt.md` — implementation spec (Zod 4 + Commander 12 unification, INPUT_SCHEMA generator)
-- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-04-27-zod-schema-unification/markdown-region-templating-research.md` — third-party tooling option
-- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-04-27-zod-schema-unification/stack-native-markdown-generation-research.md` — verdict: ~60-line DIY beats `markdown-magic`; oclif-style markers; deferred to a later prompt
+- Commit `f53a1c9c12fbab652b22f09682422d8f2851e596` — `git show f53a1c9c` in `/Users/miroslavsekera/r/contextractor-ts/`
+- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-04-27-zod-schema-unification/prompt.md` — implementation spec
+- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-04-27-zod-schema-unification/markdown-region-templating-research.md`
+- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-04-27-zod-schema-unification/stack-native-markdown-generation-research.md`
 
-## Scope — markdown to update
+## Files in scope
 
 In `/Users/miroslavsekera/r/contextractor-ts/`:
 
-- `README.md` (root)
+- `README.md`
 - `apps/contextractor-apify/README.md`
 - `apps/contextractor-standalone/README.md`
 - `packages/contextractor-engine/README.md`
-- `packages/contextractor-schema/README.md` (new — write from scratch; one-paragraph package overview, install, the four exports `ContextractorInput`, `ContextractorInputType`, `apifyMeta`, `writeApifyInputSchema`, link to `prompt.md`)
-- `tools/gen-input-schema/README.md` (new — one paragraph, what it does, how the Apify build pipeline invokes it)
-- Anything else under `docs/` that mentions input handling, `ActorInput`, `INPUT_SCHEMA.json` editing, or hand-rolled coercion
+- `docs/spec/tech-spec.md`
+- `docs/spec/functional-spec.md`
+- `docs/troubleshooting/timeout/report.md` (only if it names removed helpers)
+- `packages/contextractor-schema/README.md` — **new**: one-paragraph overview, install, exported names (`ContextractorInput`, `ContextractorInputType`, `apifyMeta`, `writeApifyInputSchema`), link to `prompts/2026-04-27-zod-schema-unification/prompt.md`
+- `tools/gen-input-schema/README.md` — **new**: one paragraph; what it does and how the Apify build pipeline invokes it via `pnpm -F @contextractor/gen-input-schema start`
 
 In `/Users/miroslavsekera/r/tools/`:
 
-- `apps/contextractor-site/content/automatic/help/help.md` and `help-blurb.md`
+- `apps/contextractor-site/content/automatic/help/help.md`
 - `apps/contextractor-site/content/automatic/help/apify/apify.md`
-- `apps/contextractor-site/content/automatic/help/npm/npm.md` and any `docker/` / `pypi/` / `web/` siblings
-- `apps/contextractor-site/content/automatic/about/`, `formats/`, `cookie-consent-handling/`, `trafilatura/`, `extraction-vs-headless-browser/` and any other `automatic/*/` article that references CLI flags, INPUT_SCHEMA fields, or "the Python version" defaults
-- `apps/contextractor-api/` markdown if any
-- `user-docs/` and root `docs/` entries that mention Contextractor
+- `apps/contextractor-site/content/automatic/help/npm/npm.md`
+- `apps/contextractor-site/content/automatic/help/docker/docker.md`
+- `apps/contextractor-site/content/automatic/help/pypi/pypi.md`
+- `apps/contextractor-site/content/automatic/help/web/web.md`
+- `apps/contextractor-site/content/automatic/about/about.md`
+- `apps/contextractor-site/content/automatic/formats/formats.md`, `cookie-consent-handling/`, `trafilatura/`, `extraction-vs-headless-browser/`, and any other `automatic/*/` article that names CLI flags, INPUT_SCHEMA fields, or "the Python version" defaults
+- `docs/contextractor.md`
+
+Skip `apps/contextractor-site/dist-content/**` — it is build output. Skip `*-blurb.md` files unless they name CLI flags or INPUT_SCHEMA fields. Skip `packages/internal-brands/content/contextractor/**` unless `grep` shows it is the source for `contextractor-site` content.
 
 ## What to change
 
-- Replace any reference to a hand-edited `INPUT_SCHEMA.json` with "generated from `@contextractor/schema`'s Zod schema at build time"
-- Replace any reference to the deleted helpers (`mergeOverrides`, `fromDict`, `normalizeKeys`, `defaultCrawlConfig`, the `ActorInput` interface) with "Zod 4 schema validation at the input boundary"
-- Update CLI flag listings and INPUT_SCHEMA field listings only if the visible surface changed in commit `f53a1c9c`. Cosmetic JSON re-flow of `input_schema.json` is not a content change — do not call it out
-- For any feature-comparison or "how Contextractor works" article in `tools/apps/contextractor-site/content/`, add a sentence that the same Zod schema feeds the CLI and the Apify Actor input
-- Do not document `markdown-magic`, `mdast-zone`, or the README region-templating idea — those are deferred to a separate prompt and not yet implemented
-- Do not mention Phase-2/3 deferrals (`CrawlConfig` deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish) in user-facing docs; those belong in `prompt.md` only
+- Replace any reference to a hand-edited `INPUT_SCHEMA.json` with "generated from `@contextractor/schema`'s Zod 4 schema at build time by `@contextractor/gen-input-schema`"
+- Replace references to deleted helpers (`mergeOverrides`, `fromDict`, `normalizeKeys`, `defaultCrawlConfig`, the `ActorInput` interface) with "Zod 4 schema validation at the input boundary"
+- Where an article describes how Contextractor receives input, add one sentence: the same Zod schema feeds the standalone CLI (Commander 12 → `parse()`) and the Apify Actor (`Actor.getInput()` → `parse()`)
+- Update CLI flag listings and INPUT_SCHEMA field listings only where the visible surface changed in `f53a1c9c`. Cosmetic JSON re-flow of `input_schema.json` is not a content change — do not call it out
+- Note the breaking change to `loadConfigFile` in `apps/contextractor-standalone/README.md` only: legacy snake_case config and nested `proxy: { urls, rotation }` are no longer accepted; use the Apify-input camelCase shape
+
+## Do not
+
+- Document `markdown-magic`, `mdast-zone`, or README region templating — deferred to a separate prompt
+- Mention Phase-2/3 deferrals (`CrawlConfig` deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish) — those belong in `prompt.md` only
+- Touch any code, JSON schema, or `INPUT_SCHEMA.json`
+- Reformat untouched paragraphs
 
 ## Style
 
-- Match the existing voice of each file — `tools/` site articles are public-facing prose, `contextractor-ts/` READMEs are developer-facing
-- Minimal-diff per `.claude/rules/minimal-diff.md`; no reformatting of untouched paragraphs
-- JSON examples only per `.claude/rules/json-config-only.md`; no YAML
-- No confirmation prompts per `.claude/rules/no-confirmation-prompts.md`
+- Match each file's existing voice — `tools/` site articles are public-facing; `contextractor-ts/` READMEs are developer-facing
+- Minimal-diff per `.claude/rules/minimal-diff.md`; JSON examples only per `.claude/rules/json-config-only.md`; no confirmation prompts per `.claude/rules/no-confirmation-prompts.md`
 
-## Verification
+## Verify
 
 - `git diff` in both repos shows only Contextractor-related markdown changes
-- `pnpm -F contextractor-site build` (or the existing site build script) succeeds in `/Users/miroslavsekera/r/tools/`
+- `pnpm -r build` succeeds in `/Users/miroslavsekera/r/contextractor-ts/`
+- The site build script succeeds in `/Users/miroslavsekera/r/tools/` (e.g. `pnpm -F contextractor-site build`)
 - `cspell` passes if either repo runs it in CI
-- No code, schema, or `INPUT_SCHEMA.json` changes in this prompt — markdown only
-
-## Out of scope
-
-- README region templating (separate follow-up prompt; see `stack-native-markdown-generation-research.md` § "Implications for `prompt.md`")
-- Any code change in either repo
-- New articles or major restructuring of the contextractor-site
