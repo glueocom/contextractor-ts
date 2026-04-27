@@ -35,7 +35,7 @@ In `/Users/miroslavsekera/r/tools/`:
 - Replace any reference to a hand-edited `INPUT_SCHEMA.json` with "generated from `@contextractor/schema`'s Zod schema at build time"
 - Replace any reference to the deleted helpers (`mergeOverrides`, `fromDict`, `normalizeKeys`, `defaultCrawlConfig`, the `ActorInput` interface) with "Zod 4 schema validation at the input boundary"
 - Update CLI flag listings and INPUT_SCHEMA field listings only if the visible surface changed in commit `f53a1c9c`. Cosmetic JSON re-flow of `input_schema.json` is not a content change — do not call it out
-- For any feature-comparison or "how Contextractor works" article in `tools/apps/contextractor-site/content/`, add a sentence that the same Zod schema feeds the CLI, the Apify Actor input, and (forthcoming) the MCP tool surface
+- For any feature-comparison or "how Contextractor works" article in `tools/apps/contextractor-site/content/`, add a sentence that the same Zod schema feeds the CLI and the Apify Actor input
 - Do not document `markdown-magic`, `mdast-zone`, or the README region-templating idea — those are deferred to a separate prompt and not yet implemented
 - Do not mention Phase-2/3 deferrals (`CrawlConfig` deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish) in user-facing docs; those belong in `prompt.md` only
 
