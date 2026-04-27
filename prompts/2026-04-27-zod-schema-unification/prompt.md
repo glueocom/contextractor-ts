@@ -89,20 +89,29 @@ interface ApifyMeta {
   editor?:
     | 'textfield' | 'textarea' | 'number' | 'checkbox' | 'select' | 'json'
     | 'datepicker' | 'requestListSources' | 'pseudoUrls' | 'globs'
-    | 'keyValue' | 'proxy' | 'fileupload' | 'hidden' | 'resourcePicker';
+    | 'keyValue' | 'stringList' | 'proxy' | 'fileupload' | 'hidden'
+    | 'resourcePicker' | 'schemaBased' | 'javascript' | 'python';
   prefill?: unknown;
   sectionCaption?: string;
   sectionDescription?: string;
+  groupCaption?: string;
+  groupDescription?: string;
   enumTitles?: string[];
+  enumSuggestedValues?: string[];
   isSecret?: boolean;
   nullable?: boolean;
   unit?: string;
+  dateType?: string;
   resourceType?: 'dataset' | 'keyValueStore' | 'requestQueue';
+  resourcePermissions?: string[];
   patternKey?: string;
   patternValue?: string;
-  minProperties?: number;
-  maxProperties?: number;
+  placeholderKey?: string;
+  placeholderValue?: string;
+  mcpServers?: unknown;
 }
+
+// `minProperties` / `maxProperties` are vanilla JSON Schema keywords (not Apify-only) — let Zod emit them via `.min()`/`.max()` on `z.record(...)` rather than going through `apifyMeta`.
 
 export function apifyMeta<T extends ApifyMeta>(meta: T): T { return meta; }
 ```
@@ -115,21 +124,22 @@ A pure function: `toApifyInputSchema(schema: z.ZodObject, opts: { title?: string
 
 Steps:
 
-1. Call `z.toJSONSchema(schema, { target: 'draft-07', io: 'input', unrepresentable: 'any', reused: 'inline' })`.
-2. Strip JSON-Schema-only keywords Apify rejects: top-level `$schema`, `$id`, `$defs`. Walk the tree and remove every `$ref` by inlining (already handled by `reused: 'inline'` — verify on every property).
-3. Reject any top-level `oneOf`/`anyOf`/`allOf` with a clear error (Apify dialect forbids them).
+1. Call `z.toJSONSchema(schema, { target: 'draft-07', io: 'input', unrepresentable: 'any', reused: 'inline' })`. (`'draft-07'` — confirmed via `https://zod.dev/json-schema`; do not use `'draft-7'`.)
+2. Strip top-level `$id` and `$defs` (the existing `INPUT_SCHEMA.json` does not include them; Apify's meta-schema permits top-level `$schema` but the existing file omits it, so strip that too for snapshot consistency). Walk the tree and remove every `$ref` by inlining (`reused: 'inline'` should already do this — verify on every property).
+3. Reject any top-level `oneOf`/`anyOf`/`allOf` with a clear error. Apify's form editor cannot render top-level union/composition keywords; throwing prevents silent UI breakage. (`z.discriminatedUnion` emits `oneOf` and `z.union` emits `anyOf` — see `https://github.com/colinhacks/zod/issues/4089`.)
 4. Build the output envelope:
 
    ```json
    {
      "title": "...",
-     "description": "...",
      "type": "object",
      "schemaVersion": 1,
      "properties": { ... },
      "required": [ ... ]
    }
    ```
+
+   Include `description` only when `opts.description` is provided; the existing `INPUT_SCHEMA.json` has no top-level `description`, so omit by default to keep the snapshot match.
 
 5. For every property, ensure an `editor` is present. If `apifyMeta` set one, keep it. Otherwise apply per-type defaults:
 
@@ -141,16 +151,20 @@ Steps:
    | `boolean` | `checkbox` |
    | `array`, `object` | `json` |
 
-6. Copy `apifyMeta` keys (`prefill`, `sectionCaption`, `sectionDescription`, `enumTitles`, `isSecret`, `nullable`, `unit`, `resourceType`, `patternKey`, `patternValue`, `minProperties`, `maxProperties`) onto the property — Zod 4 already inlines these into the JSON Schema output, but verify and re-inline if not.
-7. Preserve `default`, `minimum`, `maximum`, `enum`, `type`, `description`, `title`, `items`, `properties`, `required` — these are vanilla JSON Schema keywords Apify accepts.
-8. Return the envelope. The function does no I/O.
+6. Copy `apifyMeta` keys (`prefill`, `sectionCaption`, `sectionDescription`, `groupCaption`, `groupDescription`, `enumTitles`, `enumSuggestedValues`, `isSecret`, `nullable`, `unit`, `dateType`, `resourceType`, `resourcePermissions`, `patternKey`, `patternValue`, `placeholderKey`, `placeholderValue`, `mcpServers`) onto the property — Zod 4 already inlines `.meta()` keys into the JSON Schema output, but verify and re-inline if not.
+7. Preserve `default`, `minimum`, `maximum`, `minLength`, `maxLength`, `minProperties`, `maxProperties`, `enum`, `type`, `description`, `title`, `items`, `properties`, `required` — these are vanilla JSON Schema keywords Apify accepts.
+8. **Workaround Zod 4 issue #4134**: walk the top-level `required` array and remove any entry whose property in `properties` has a `default` keyword. Zod's `io: 'input'` still emits defaulted fields as required (`https://github.com/colinhacks/zod/issues/4134`, open as of v4.3.x). For this schema only `startUrls` should remain in `required` after the fix.
+9. **Canonical key order** — to keep the snapshot test stable, rewrite each property object with keys in this fixed order, dropping absent keys: `sectionCaption`, `sectionDescription`, `groupCaption`, `groupDescription`, `title`, `type`, `description`, `editor`, `default`, `prefill`, `enum`, `enumTitles`, `enumSuggestedValues`, `minimum`, `maximum`, `unit`, `isSecret`, `nullable`, `resourceType`, `resourcePermissions`, `patternKey`, `patternValue`, `placeholderKey`, `placeholderValue`, `dateType`, `mcpServers`, `items`, `properties`, `required`. Apply the same idea to the envelope (`title`, `description?`, `type`, `schemaVersion`, `properties`, `required`).
+10. Return the envelope. The function does no I/O.
 
 Provide a thin `writeApifyInputSchema(schema, outPath, opts)` that calls `toApifyInputSchema` and writes to disk with `JSON.stringify(out, null, 2) + '\n'`.
+
+`JSON.stringify(_, null, 2)` will reflow short single-line arrays/objects in the existing `INPUT_SCHEMA.json` (e.g. `"prefill": [{ "url": "..." }]` → multi-line). Treat the first generator run as the new committed baseline: regenerate, commit the reformatted file, and from then on the snapshot test guards against any further drift.
 
 ## Tests (`test/to-apify-schema.test.ts`)
 
 - Validate the generated output against `apify/apify-shared-js` `input.schema.json` using Ajv (`addFormats(ajv)`). Fetch the meta-schema once at test setup via `node:fs` from a vendored copy at `packages/contextractor-schema/test/fixtures/apify-input.schema.json` (commit it; do not fetch over the network at test time).
-- Snapshot test: feed `ContextractorInput` to `toApifyInputSchema` and assert the result deep-equals the existing `apps/contextractor-apify/.actor/input_schema.json`. This is the regression boundary — any drift fails CI.
+- Snapshot test: feed `ContextractorInput` to `toApifyInputSchema` and assert the result deep-equals the on-disk `apps/contextractor-apify/.actor/input_schema.json` (the first-run reformatted baseline; see Verification step 5). This is the regression boundary — any drift fails CI.
 - Property-level assertions for at least:
   - `startUrls` has `editor: 'requestListSources'`, `prefill`, and is in `required`
   - `launcher` has `editor: 'select'`, `enum: ['CHROMIUM', 'FIREFOX']`, `enumTitles`, `default: 'CHROMIUM'`
@@ -160,6 +174,9 @@ Provide a thin `writeApifyInputSchema(schema, outPath, opts)` that calls `toApif
   - `closeCookieModals` has `default: true`
   - `maxScrollHeightPixels` has `unit: 'pixels'`, `minimum: 0`
 - Negative test: a schema with a top-level `z.discriminatedUnion(...)` throws a clear error from `toApifyInputSchema`.
+- `required` fix: a schema with `z.string().default('x')` on a non-`startUrls` field must not appear in the output's `required` array (Zod 4 #4134 workaround verification).
+- Determinism: calling `toApifyInputSchema(ContextractorInput, {...})` twice in a row produces deep-equal outputs and `JSON.stringify(_, null, 2)` of those outputs is byte-identical (key order is stable across runs).
+- Trailing newline: `writeApifyInputSchema` output ends with exactly one `\n`.
 
 ## Tests (`test/input.test.ts`)
 
@@ -193,11 +210,13 @@ Edit `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-standalone/`:
 - `src/cli.ts`: keep every `program.option(...)` line. Replace the entire `if (opts.X !== undefined) overrides.X = opts.X` block plus the trailing `mergeOverrides(cfg, overrides)` call with a single mapping step:
 
   1. Map Commander flag names to schema field names (`--max-pages` → `maxPagesPerCrawl`, etc.). Build a `Partial<ContextractorInputType>` object.
-  2. Layer order: `defaultsFromSchema → loadConfigFile() → cliOverrides`. Implement layering by spreading objects, not by mutating.
-  3. Run `ContextractorInput.parse(layered)` once. The result is the input object.
-  4. Pass it to a renamed `buildCrawlConfig(input)` (steal the implementation from `apps/contextractor-apify/src/config.ts` — they should share). For now, duplicate `buildCrawlConfig` into `apps/contextractor-standalone/src/config.ts`; deduplicating into `@contextractor/schema` is Phase 2 (note in the file with a `// TODO(phase-2)` comment).
-- `src/config.ts`: delete `defaultCrawlConfig`, `fromDict`, `normalizeKeys`, `toSnakeCase`, the `as*` coercion helpers, and `mergeOverrides` — Zod replaces all of them. Keep `loadConfigFile` (now returns `Partial<ContextractorInputType>`) and `validateSaveFormats`. Keep `CrawlConfig` and `SaveFormat` — those stay as the *internal* runtime config shape consumed by `runCrawl`.
-- `src/cli.test.ts`: update tests for the surviving helpers; add a test that `ContextractorInput.parse({ startUrls: [{ url: 'https://e.com' }] })` produces the documented defaults.
+  2. **Case conversion**: `--launcher`, `--wait-until`, `--proxy-rotation` accept user-friendly lowercase values (`chromium`, `load`, `recommended`) and the existing CLI lowercases them at line 78-79 of `cli.ts`. The Zod schema is `SCREAMING_SNAKE_CASE`, so the new mapping must `.toUpperCase()` (and `.replace(/-/g, '_')` for `--proxy-rotation`) before handing the value to `parse()`. Update the `--proxy-rotation` `program.option(...)` description to keep the lowercase user-facing form consistent.
+  3. **CLI-only flags stay outside the schema**: `--config`, `--start-url`, `--format`, `--output-dir`, `--save` (with its `jsonl`/`all` extras), `--verbose`, `--precision`, `--recall`, `--fast`, `--include-tables`/`--no-tables`, `--include-images`, `--include-formatting`/`--no-formatting`, `--deduplicate`, `--target-language`, `--with-metadata`/`--no-metadata`, `--no-links`, `--no-comments`. Trafilatura toggles fold into the `trafilaturaConfig` blob fed to `parse()`; orchestration flags (`--config`, `--verbose`, `--save`, `--output-dir`, etc.) feed `CrawlConfig` *after* `parse()` returns.
+  4. Layer order: `loadConfigFile() → cliOverrides → ContextractorInput.parse(layered)`. Defaults come from the Zod schema itself (no separate `defaultsFromSchema` layer); spread, do not mutate.
+  5. Run `ContextractorInput.parse(layered)` once. The result is the input object.
+  6. Pass it to a renamed `buildCrawlConfig(input)` (steal the implementation from `apps/contextractor-apify/src/config.ts` — they should share). For now, duplicate `buildCrawlConfig` into `apps/contextractor-standalone/src/config.ts`; deduplicating into `@contextractor/schema` is Phase 2 (note in the file with a `// TODO(phase-2)` comment). The two existing `buildCrawlConfig` implementations are **not** identical — the standalone variant must additionally project the CLI-only orchestration flags onto `CrawlConfig` (`urls`, `outputDir`, `save`, etc.) before returning.
+- `src/config.ts`: delete `defaultCrawlConfig`, `fromDict`, `normalizeKeys`, `toSnakeCase`, the `as*` coercion helpers, and `mergeOverrides` — Zod replaces all of them. Keep `loadConfigFile` (now returns `Partial<ContextractorInputType>`; **breaking change** — the legacy snake_case shape and the nested `proxy: { urls, rotation }` block are no longer accepted, only the Apify-input camelCase shape is) and `validateSaveFormats`. Keep `CrawlConfig` and `SaveFormat` — those stay as the *internal* runtime config shape consumed by `runCrawl`. The optional `yaml` loader stays per `.claude/rules/json-config-only.md` (silent backwards-compat); only the post-load `fromDict` translation is removed.
+- `src/cli.test.ts`: update tests for the surviving helpers; add a test that `ContextractorInput.parse({ startUrls: [{ url: 'https://e.com' }] })` produces the documented defaults. The existing `defaultCrawlConfig` assertions need rewriting — that helper is gone; assert against the parsed-and-projected `CrawlConfig` returned by `buildCrawlConfig(ContextractorInput.parse({ startUrls: [...] }))` instead.
 
 ## Wire the build-time generator
 
@@ -215,15 +234,25 @@ tools/gen-input-schema/
 
 ```ts
 import { writeApifyInputSchema, ContextractorInput } from '@contextractor/schema';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const out = resolve(import.meta.dirname, '../../../apps/contextractor-apify/.actor/input_schema.json');
-writeApifyInputSchema(ContextractorInput, out, {
-  title: 'Contextractor',
-  description: 'Crawls websites and extracts main-content text.',
-});
+// Resolve repo root by walking up from this file. In `src/main.ts` (run via
+// tsx) `here` is `tools/gen-input-schema/src`; in `dist/main.js` (run via
+// node) it is `tools/gen-input-schema/dist`. Either way, three levels up
+// lands on the repo root, so the script works from any cwd, including under
+// `pnpm -F @contextractor/gen-input-schema start` which cd's into the package.
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(here, '../../..');
+const out = process.argv[2]
+  ? resolve(process.cwd(), process.argv[2])
+  : resolve(repoRoot, 'apps/contextractor-apify/.actor/input_schema.json');
+
+writeApifyInputSchema(ContextractorInput, out, { title: 'Contextractor' });
 console.log(`Wrote ${out}`);
 ```
+
+Do not pass `description` — the existing `INPUT_SCHEMA.json` has no top-level description and the snapshot test will reject any addition. The optional `process.argv[2]` override exists for ad-hoc generation into a test fixture; the Apify build pipeline relies on the default repo-root path.
 
 `package.json`:
 
@@ -241,16 +270,16 @@ Run from the repo root, in order:
 
 1. `pnpm install`
 2. `pnpm -r build` — must succeed
-3. `pnpm -r test` — must succeed; the snapshot test for `INPUT_SCHEMA.json` must pass without modification (i.e. the generated output equals the existing file byte-for-byte modulo trailing newline)
+3. `pnpm -r test` — must succeed; the snapshot test for `INPUT_SCHEMA.json` deep-equals the on-disk file (after the one-time first-run reformat is committed). After step 5 below, subsequent runs must produce zero diff.
 4. `pnpm -r lint` — Biome must be clean
-5. `git diff apps/contextractor-apify/.actor/input_schema.json` — should be empty after running the generator
+5. `git diff apps/contextractor-apify/.actor/input_schema.json` — on the very first run this will show cosmetic JSON re-flow (multi-line short arrays/objects) and any field-order normalization from step 9 of the generator. Inspect the diff to confirm it is purely formatting / key-order, then commit the reformatted file as the new baseline. From the second run onward this diff must be empty.
 6. From `apps/contextractor-apify/`: `apify run` against a small test input succeeds end-to-end
 7. From `apps/contextractor-standalone/`: `tsx src/cli.ts https://example.com --max-pages 1 --headless` succeeds end-to-end and produces output
 
 ## Acceptance criteria
 
 - One Zod schema in `@contextractor/schema` is the only place input fields are declared
-- `apps/contextractor-apify/.actor/input_schema.json` is generated, not hand-edited; the file content does not change as a side effect of this prompt
+- `apps/contextractor-apify/.actor/input_schema.json` is generated, not hand-edited; the file is semantically equivalent to today's content (every field, default, enum, description, editor, and Apify-specific key preserved). Cosmetic differences from `JSON.stringify(_, null, 2)` reflow and the canonical key-order step are accepted and committed as the new baseline; no semantic field added or removed.
 - `Actor.getInput()` and Commander both feed `ContextractorInput.parse(...)` and produce identical typed outputs for equivalent inputs
 - `ActorInput` interface and `mergeOverrides`/`fromDict`/`normalizeKeys` are deleted
 - Generator output validates against the canonical Apify INPUT_SCHEMA meta-schema (Ajv test passes)
@@ -271,3 +300,17 @@ Run from the repo root, in order:
 - All enumeration values in schemas are `SCREAMING_SNAKE_CASE`
 - Absolute paths only when referring to files outside the package being edited
 - Do not modify the Rust crate, `dataset_schema.json`, `output_schema.json`, or anything under `packages/contextractor-engine/`
+
+## Review notes
+
+Reviewed 2026-04-27. Verified Zod 4 API claims against `https://zod.dev/json-schema` and the Apify INPUT_SCHEMA dialect against `apify/apify-shared-js` `packages/json_schemas/schemas/input.schema.json`. Material edits:
+
+- `ApifyMeta` interface: added editor values `stringList`, `schemaBased`, `javascript`, `python` (missing from the original list per the meta-schema). Added keys `groupCaption`, `groupDescription`, `enumSuggestedValues`, `dateType`, `resourcePermissions`, `placeholderKey`, `placeholderValue`, `mcpServers`. Removed `minProperties`/`maxProperties` from `ApifyMeta` — they are vanilla JSON Schema keywords (`z.record(...).min(...)` emits them natively).
+- Generator algorithm: corrected step 2 — Apify's meta-schema permits top-level `$schema`; only `$id`/`$defs` are non-standard. Softened step 3 wording — top-level `oneOf`/`anyOf`/`allOf` is rejected because Apify's form editor cannot render them, not because the spec explicitly forbids them. Added step 8 — workaround for the open Zod 4 bug `colinhacks/zod#4134` where `io: 'input'` still emits defaulted fields in `required`; the generator must drop them. Added step 9 — canonical property and envelope key ordering, required for the snapshot test to be stable. Renumbered the original "return the envelope" to step 10.
+- Envelope JSON: `description` is now optional and omitted unless `opts.description` is provided. The existing `INPUT_SCHEMA.json` has no top-level `description`, so the generator must not emit one by default.
+- `tools/gen-input-schema/src/main.ts`: replaced the hard-coded `import.meta.dirname`-relative path (which lands one level off when invoked via `tsx src/main.ts` vs `node dist/main.js`) with a `fileURLToPath(import.meta.url)` walk-up that resolves the repo root from either `src/` or `dist/` (both are exactly three levels deep from the repo root). Optional `process.argv[2]` override for ad-hoc test fixtures. Dropped the top-level `description` argument so the snapshot matches the existing file.
+- Snapshot expectations: relaxed "byte-for-byte equal to existing file" to "semantically equivalent + first-run reformat (single-line short arrays/objects → multi-line, canonical key order) committed as the new baseline". `JSON.stringify(_, null, 2)` cannot round-trip the existing single-line `prefill` arrays without reflow.
+- Standalone CLI mapping: documented the SCREAMING_SNAKE_CASE direction flip (`launcher`, `waitUntil`, `proxyRotation` — the existing `cli.ts` lowercases these; the new mapping must `.toUpperCase()` going into `parse()`). Enumerated the CLI-only flags that bypass `ContextractorInput` and feed `CrawlConfig` directly post-parse. Flagged that the standalone `buildCrawlConfig` is not identical to the Apify one — it must additionally project orchestration flags (`urls`, `outputDir`, `save`) onto `CrawlConfig`. Flagged the breaking change to `loadConfigFile` (legacy snake_case + nested `proxy.urls` shapes no longer accepted).
+- Tests: added coverage for the `required` workaround, generator determinism, and trailing-newline behaviour.
+
+Out-of-scope items left untouched: parser swap, `CrawlConfig` Phase 2 deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish. Reviewer also confirmed `@modelcontextprotocol/sdk` already accepts Zod schemas via Standard Schema (issue `modelcontextprotocol/typescript-sdk#164`), so the Phase-3 follow-up remains a small wiring exercise — current edits do not make it harder.
