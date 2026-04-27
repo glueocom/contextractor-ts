@@ -8,7 +8,12 @@
       "type": "array",
       "description": "URLs to extract content from",
       "editor": "requestListSources",
-      "prefill": [{ "url": "https://blog.apify.com/what-is-web-scraping/" }]
+      "prefill": [
+        {
+          "url": "https://blog.apify.com/what-is-web-scraping/"
+        }
+      ],
+      "minItems": 1
     },
     "globs": {
       "sectionCaption": "Crawler settings",
@@ -43,64 +48,76 @@
       "title": "Keep URL fragments",
       "type": "boolean",
       "description": "URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different pages.",
+      "editor": "checkbox",
       "default": false
     },
     "respectRobotsTxtFile": {
       "title": "Respect robots.txt",
       "type": "boolean",
       "description": "If enabled, the crawler will consult the robots.txt file for each domain before crawling pages.",
+      "editor": "checkbox",
       "default": false
     },
     "initialCookies": {
       "title": "Initial cookies",
       "type": "array",
       "description": "Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For example: \n\n```json\n[\n  {\n    \"name\": \"cookieName\",\n    \"value\": \"cookieValue\",\n    \"path\": \"/\",\n    \"domain\": \".example.com\"\n  }\n]\n```\n\nYou can use the [EditThisCookie](https://docs.apify.com/academy/tools/edit-this-cookie) browser extension to copy browser cookies in this format, and paste it here.\n\nNote that the value is secret and encrypted to protect your login cookies.",
-      "prefill": [],
       "editor": "json",
+      "prefill": [],
       "isSecret": true
     },
     "customHttpHeaders": {
       "title": "Custom HTTP headers",
       "type": "object",
       "description": "HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to be a JSON object with header names as keys and header values as values. For example: `{ \"Authorization\": \"Bearer token123\", \"X-Custom-Header\": \"value\" }`.",
-      "prefill": {},
-      "editor": "json"
+      "editor": "json",
+      "prefill": {}
     },
     "maxPagesPerCrawl": {
       "title": "Max pages",
       "type": "integer",
       "description": "Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited.",
+      "editor": "number",
       "default": 0,
-      "minimum": 0
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
     "maxResultsPerCrawl": {
       "title": "Max results",
       "type": "integer",
       "description": "Maximum number of results that will be saved to dataset. The scraper will terminate after reaching this number. 0 means unlimited.",
+      "editor": "number",
       "default": 0,
       "minimum": 0,
+      "maximum": 9007199254740991,
       "unit": "results"
     },
     "maxCrawlingDepth": {
       "title": "Max crawling depth",
       "type": "integer",
       "description": "Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited.",
+      "editor": "number",
       "default": 0,
-      "minimum": 0
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
     "maxConcurrency": {
       "title": "Max concurrency",
       "type": "integer",
       "description": "Maximum number of browser pages running in parallel. This setting is useful to avoid overloading target websites and getting blocked.",
+      "editor": "number",
       "default": 50,
-      "minimum": 1
+      "minimum": 1,
+      "maximum": 9007199254740991
     },
     "maxRequestRetries": {
       "title": "Max request retries",
       "type": "integer",
       "description": "Maximum number of retries for failed requests on network, proxy, or server errors.",
+      "editor": "number",
       "default": 3,
-      "minimum": 0
+      "minimum": 0,
+      "maximum": 9007199254740991
     },
     "trafilaturaConfig": {
       "sectionCaption": "Content extraction",
@@ -114,24 +131,28 @@
       "title": "Save raw HTML to key-value store",
       "type": "boolean",
       "description": "If enabled, the crawler saves the raw HTML of all pages to the default key-value store and includes the URL link in the dataset output.",
+      "editor": "checkbox",
       "default": false
     },
     "saveExtractedTextToKeyValueStore": {
       "title": "Save extracted text to key-value store",
       "type": "boolean",
       "description": "If enabled, the crawler extracts plain text from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
+      "editor": "checkbox",
       "default": false
     },
     "saveExtractedJsonToKeyValueStore": {
       "title": "Save extracted JSON to key-value store",
       "type": "boolean",
       "description": "If enabled, the crawler extracts JSON with metadata from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
+      "editor": "checkbox",
       "default": false
     },
     "saveExtractedMarkdownToKeyValueStore": {
       "title": "Save extracted Markdown to key-value store",
       "type": "boolean",
       "description": "If enabled, the crawler extracts Markdown from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
+      "editor": "checkbox",
       "default": true
     },
     "datasetName": {
@@ -163,18 +184,28 @@
       "title": "Proxy rotation",
       "type": "string",
       "description": "Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails.",
-      "default": "RECOMMENDED",
       "editor": "select",
-      "enum": ["RECOMMENDED", "PER_REQUEST", "UNTIL_FAILURE"],
-      "enumTitles": ["Recommended", "Rotate per request", "Use until failure"]
+      "default": "RECOMMENDED",
+      "enum": [
+        "RECOMMENDED",
+        "PER_REQUEST",
+        "UNTIL_FAILURE"
+      ],
+      "enumTitles": [
+        "Recommended",
+        "Rotate per request",
+        "Use until failure"
+      ]
     },
     "pageLoadTimeoutSecs": {
       "sectionCaption": "Browser",
       "title": "Page load timeout",
       "type": "integer",
       "description": "Maximum time to wait for page load in seconds",
+      "editor": "number",
       "default": 60,
       "minimum": 1,
+      "maximum": 9007199254740991,
       "unit": "seconds"
     },
     "waitUntil": {
@@ -183,8 +214,16 @@
       "description": "When to consider navigation finished",
       "editor": "select",
       "default": "LOAD",
-      "enum": ["NETWORKIDLE", "LOAD", "DOMCONTENTLOADED"],
-      "enumTitles": ["Network idle", "Load event", "DOM content loaded"]
+      "enum": [
+        "NETWORKIDLE",
+        "LOAD",
+        "DOMCONTENTLOADED"
+      ],
+      "enumTitles": [
+        "Network idle",
+        "Load event",
+        "DOM content loaded"
+      ]
     },
     "launcher": {
       "title": "Browser type",
@@ -192,33 +231,44 @@
       "description": "Browser to use for crawling",
       "editor": "select",
       "default": "CHROMIUM",
-      "enum": ["CHROMIUM", "FIREFOX"],
-      "enumTitles": ["Chromium", "Firefox"]
+      "enum": [
+        "CHROMIUM",
+        "FIREFOX"
+      ],
+      "enumTitles": [
+        "Chromium",
+        "Firefox"
+      ]
     },
     "headless": {
       "title": "Headless mode",
       "type": "boolean",
       "description": "Run browser in headless mode",
+      "editor": "checkbox",
       "default": true
     },
     "ignoreCorsAndCsp": {
       "title": "Ignore CORS and CSP",
       "type": "boolean",
       "description": "Ignore Content Security Policy and Cross-Origin Resource Sharing restrictions. Enables free XHR/Fetch requests from pages.",
+      "editor": "checkbox",
       "default": false
     },
     "closeCookieModals": {
       "title": "Close cookie modals",
       "type": "boolean",
       "description": "Automatically dismiss cookie consent modals",
+      "editor": "checkbox",
       "default": true
     },
     "maxScrollHeightPixels": {
       "title": "Max scroll height",
       "type": "integer",
       "description": "Maximum pixels to scroll down the page until all content is loaded. Setting to 0 disables scrolling.",
+      "editor": "number",
       "default": 5000,
       "minimum": 0,
+      "maximum": 9007199254740991,
       "unit": "pixels"
     },
     "userAgent": {
@@ -232,6 +282,7 @@
       "title": "Ignore SSL errors",
       "type": "boolean",
       "description": "Ignore SSL certificate errors. Use at your own risk.",
+      "editor": "checkbox",
       "default": false
     },
     "debugLog": {
@@ -239,14 +290,18 @@
       "title": "Debug log",
       "type": "boolean",
       "description": "Include debug messages in the log output.",
+      "editor": "checkbox",
       "default": false
     },
     "browserLog": {
       "title": "Browser log",
       "type": "boolean",
       "description": "Include browser console messages in the log. May flood logs with errors at high concurrency.",
+      "editor": "checkbox",
       "default": false
     }
   },
-  "required": ["startUrls"]
+  "required": [
+    "startUrls"
+  ]
 }

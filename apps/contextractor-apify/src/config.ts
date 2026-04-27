@@ -1,4 +1,5 @@
 import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/engine';
+import type { ContextractorInputType } from '@contextractor/schema';
 
 export type SaveFormat = 'markdown' | 'html' | 'text' | 'json';
 
@@ -15,46 +16,8 @@ export interface CrawlConfig {
   maxScrollHeightPixels: number;
 }
 
-export interface ActorInput {
-  startUrls?: Array<{ url: string }>;
-  trafilaturaConfig?: Record<string, unknown>;
-  globs?: Array<{ glob: string }>;
-  excludes?: Array<{ glob: string }>;
-  pseudoUrls?: Array<{ purl?: string }>;
-  linkSelector?: string;
-  keepUrlFragments?: boolean;
-  respectRobotsTxtFile?: boolean;
-  maxPagesPerCrawl?: number;
-  maxResultsPerCrawl?: number;
-  maxCrawlingDepth?: number;
-  maxConcurrency?: number;
-  maxRequestRetries?: number;
-  pageLoadTimeoutSecs?: number;
-  waitUntil?: 'NETWORKIDLE' | 'LOAD' | 'DOMCONTENTLOADED';
-  launcher?: 'CHROMIUM' | 'FIREFOX';
-  headless?: boolean;
-  ignoreCorsAndCsp?: boolean;
-  ignoreSslErrors?: boolean;
-  closeCookieModals?: boolean;
-  maxScrollHeightPixels?: number;
-  userAgent?: string;
-  initialCookies?: unknown[];
-  customHttpHeaders?: Record<string, string>;
-  saveRawHtmlToKeyValueStore?: boolean;
-  saveExtractedTextToKeyValueStore?: boolean;
-  saveExtractedJsonToKeyValueStore?: boolean;
-  saveExtractedMarkdownToKeyValueStore?: boolean;
-  datasetName?: string;
-  keyValueStoreName?: string;
-  requestQueueName?: string;
-  proxyConfiguration?: unknown;
-  proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
-  debugLog?: boolean;
-  browserLog?: boolean;
-}
-
-export function buildCrawlConfig(input: ActorInput): CrawlConfig {
-  const formatMapping: Array<[keyof ActorInput, SaveFormat]> = [
+export function buildCrawlConfig(input: ContextractorInputType): CrawlConfig {
+  const formatMapping: Array<[keyof ContextractorInputType, SaveFormat]> = [
     ['saveExtractedMarkdownToKeyValueStore', 'markdown'],
     ['saveRawHtmlToKeyValueStore', 'html'],
     ['saveExtractedTextToKeyValueStore', 'text'],
@@ -63,27 +26,24 @@ export function buildCrawlConfig(input: ActorInput): CrawlConfig {
 
   const save: SaveFormat[] = [];
   for (const [apifyKey, fmt] of formatMapping) {
-    const value = input[apifyKey];
-    const fallback = fmt === 'markdown';
-    const enabled = typeof value === 'boolean' ? value : fallback;
-    if (enabled) save.push(fmt);
+    if (input[apifyKey]) save.push(fmt);
   }
 
   return {
     save: save.length === 0 ? ['markdown'] : save,
     trafilaturaConfig: normalizeConfigKeys(input.trafilaturaConfig),
-    globs: input.globs ?? [],
-    excludes: input.excludes ?? [],
-    pseudoUrls: input.pseudoUrls ?? [],
-    linkSelector: input.linkSelector ?? '',
-    keepUrlFragments: input.keepUrlFragments ?? false,
-    maxCrawlingDepth: input.maxCrawlingDepth ?? 0,
-    closeCookieModals: input.closeCookieModals ?? true,
-    maxScrollHeightPixels: input.maxScrollHeightPixels ?? 5000,
+    globs: input.globs,
+    excludes: input.excludes,
+    pseudoUrls: input.pseudoUrls,
+    linkSelector: input.linkSelector,
+    keepUrlFragments: input.keepUrlFragments,
+    maxCrawlingDepth: input.maxCrawlingDepth,
+    closeCookieModals: input.closeCookieModals,
+    maxScrollHeightPixels: input.maxScrollHeightPixels,
   };
 }
 
-export function buildBrowserLaunchOptions(input: ActorInput): {
+export function buildBrowserLaunchOptions(input: ContextractorInputType): {
   args: string[];
   ignoreHTTPSErrors?: boolean;
 } {
@@ -94,7 +54,7 @@ export function buildBrowserLaunchOptions(input: ActorInput): {
   return options;
 }
 
-export function buildBrowserContextOptions(input: ActorInput):
+export function buildBrowserContextOptions(input: ContextractorInputType):
   | {
       bypassCSP?: boolean;
       storageState?: { cookies: unknown[] };

@@ -1,7 +1,7 @@
+import { ContextractorInput } from '@contextractor/schema';
 import { Actor, log } from 'apify';
 import { PlaywrightCrawler, Request } from 'crawlee';
 import {
-  type ActorInput,
   buildBrowserContextOptions,
   buildBrowserLaunchOptions,
   buildCrawlConfig,
@@ -10,13 +10,20 @@ import { createRequestHandler, ResultsCounter } from './handler.js';
 
 await Actor.init();
 
-const input = ((await Actor.getInput<ActorInput>()) ?? {}) as ActorInput;
+const raw = (await Actor.getInput()) ?? {};
+const parsed = ContextractorInput.safeParse(raw);
+if (!parsed.success) {
+  log.error('Invalid Actor input', { errors: parsed.error.format() });
+  await Actor.exit({ exitCode: 1 });
+  process.exit(1);
+}
+const input = parsed.data;
 
 if (input.debugLog) {
   log.setLevel(log.LEVELS.DEBUG);
 }
 
-const startUrls = (input.startUrls ?? [])
+const startUrls = input.startUrls
   .map((u) => u?.url)
   .filter((u): u is string => typeof u === 'string' && u.length > 0);
 
@@ -42,14 +49,11 @@ const proxyConfig = input.proxyConfiguration
 const browserLaunchOptions = buildBrowserLaunchOptions(input);
 const browserContextOptions = buildBrowserContextOptions(input);
 
-const maxPages = input.maxPagesPerCrawl ?? 0;
-const waitUntil = (input.waitUntil ?? 'LOAD').toLowerCase() as
-  | 'load'
-  | 'domcontentloaded'
-  | 'networkidle';
+const maxPages = input.maxPagesPerCrawl;
+const waitUntil = input.waitUntil.toLowerCase() as 'load' | 'domcontentloaded' | 'networkidle';
 
 const crawler = new PlaywrightCrawler({
-  headless: input.headless ?? true,
+  headless: input.headless,
   launchContext: {
     launcher: undefined,
     launchOptions: browserLaunchOptions,
@@ -62,9 +66,9 @@ const crawler = new PlaywrightCrawler({
       }
     : undefined,
   maxRequestsPerCrawl: maxPages > 0 ? maxPages : undefined,
-  maxRequestRetries: input.maxRequestRetries ?? 3,
-  requestHandlerTimeoutSecs: input.pageLoadTimeoutSecs ?? 60,
-  navigationTimeoutSecs: input.pageLoadTimeoutSecs ?? 60,
+  maxRequestRetries: input.maxRequestRetries,
+  requestHandlerTimeoutSecs: input.pageLoadTimeoutSecs,
+  navigationTimeoutSecs: input.pageLoadTimeoutSecs,
   proxyConfiguration: proxyConfig,
   preNavigationHooks: [
     async ({ page }) => {
@@ -84,12 +88,12 @@ const crawler = new PlaywrightCrawler({
     : {}),
 });
 
-const resultsCounter = new ResultsCounter(input.maxResultsPerCrawl ?? 0);
+const resultsCounter = new ResultsCounter(input.maxResultsPerCrawl);
 const requestHandler = createRequestHandler({
   kvs,
   dataset,
   resultsCounter,
-  browserLogEnabled: input.browserLog ?? false,
+  browserLogEnabled: input.browserLog,
 });
 
 crawler.router.addDefaultHandler(async (context) => {
@@ -102,7 +106,7 @@ const requests = startUrls.map(
     new Request({
       url,
       userData: { config, depth: 0 },
-      keepUrlFragment: input.keepUrlFragments ?? false,
+      keepUrlFragment: input.keepUrlFragments,
     }),
 );
 

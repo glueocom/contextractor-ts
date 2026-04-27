@@ -1,0 +1,26 @@
+{
+  "name": "@contextractor/gen-input-schema",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Build-time generator that emits Apify INPUT_SCHEMA.json from the @contextractor/schema Zod source of truth.",
+  "type": "module",
+  "bin": {
+    "gen-input-schema": "dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "tsx src/main.ts",
+    "test": "vitest run --passWithNoTests",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@contextractor/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.13",
+    "@types/node": "^22.19.17",
+    "tsx": "^4.20.4",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

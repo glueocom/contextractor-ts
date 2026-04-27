@@ -1,14 +1,30 @@
+import { ContextractorInput } from '@contextractor/schema';
 import { describe, expect, it } from 'vitest';
-import { defaultCrawlConfig, validateSaveFormats } from './config.js';
+import { buildCrawlConfig, validateSaveFormats } from './config.js';
 import { FORMAT_EXTENSIONS, urlToFilename } from './crawler.js';
 
 describe('config helpers', () => {
-  it('defaultCrawlConfig sets balanced defaults', () => {
-    const cfg = defaultCrawlConfig();
+  it('buildCrawlConfig produces balanced defaults from a minimal startUrls payload', () => {
+    const input = ContextractorInput.parse({ startUrls: [{ url: 'https://example.com' }] });
+    const cfg = buildCrawlConfig(input, {
+      urls: ['https://example.com'],
+      outputDir: './output',
+      save: ['markdown'],
+      proxyUrls: [],
+    });
+
     expect(cfg.save).toEqual(['markdown']);
     expect(cfg.maxConcurrency).toBe(50);
     expect(cfg.headless).toBe(true);
     expect(cfg.outputDir).toBe('./output');
+    expect(cfg.launcher).toBe('chromium');
+    expect(cfg.waitUntil).toBe('load');
+    expect(cfg.proxyRotation).toBe('recommended');
+    expect(cfg.maxPages).toBe(0);
+    expect(cfg.crawlDepth).toBe(0);
+    expect(cfg.maxScrollHeight).toBe(5000);
+    expect(cfg.closeCookieModals).toBe(true);
+    expect(cfg.urls).toEqual(['https://example.com']);
   });
 
   it('validateSaveFormats accepts the documented set', () => {

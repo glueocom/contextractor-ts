@@ -1,10 +1,11 @@
 #!/usr/bin/env node
+import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command } from 'commander';
 import {
-  type CrawlConfig,
-  defaultCrawlConfig,
+  buildCrawlConfig,
+  type CliOnlyOverrides,
   loadConfigFile,
-  mergeOverrides,
+  type SaveFormat,
   validateSaveFormats,
 } from './config.js';
 import { runCrawl } from './crawler.js';
@@ -63,62 +64,43 @@ program
   .action(async (urls: string[], opts: CliOptions) => {
     if (opts.verbose) process.env.LOG_LEVEL = 'DEBUG';
 
-    let cfg: CrawlConfig = defaultCrawlConfig();
-    if (opts.config) {
-      cfg = await loadConfigFile(opts.config);
-    }
-
-    const overrides: Record<string, unknown> = {};
-    if (opts.maxPages !== undefined) overrides.maxPages = opts.maxPages;
-    if (opts.crawlDepth !== undefined) overrides.crawlDepth = opts.crawlDepth;
-    if (opts.headless !== undefined) overrides.headless = opts.headless;
-    if (opts.outputDir) overrides.outputDir = opts.outputDir;
-    if (opts.proxyUrls) overrides.proxyUrls = opts.proxyUrls.split(',').map((s) => s.trim());
-    if (opts.proxyRotation) overrides.proxyRotation = opts.proxyRotation;
-    if (opts.launcher) overrides.launcher = opts.launcher.toLowerCase();
-    if (opts.waitUntil) overrides.waitUntil = opts.waitUntil.toLowerCase();
-    if (opts.pageLoadTimeout !== undefined) overrides.pageLoadTimeout = opts.pageLoadTimeout;
-    if (opts.ignoreCors !== undefined) overrides.ignoreCors = opts.ignoreCors;
-    if (opts.closeCookieModals !== undefined) overrides.closeCookieModals = opts.closeCookieModals;
-    if (opts.maxScrollHeight !== undefined) overrides.maxScrollHeight = opts.maxScrollHeight;
-    if (opts.ignoreSslErrors !== undefined) overrides.ignoreSslErrors = opts.ignoreSslErrors;
-    if (opts.userAgent !== undefined) overrides.userAgent = opts.userAgent;
-    if (opts.globs) overrides.globs = opts.globs.split(',').map((s) => s.trim());
-    if (opts.excludes) overrides.excludes = opts.excludes.split(',').map((s) => s.trim());
-    if (opts.linkSelector !== undefined) overrides.linkSelector = opts.linkSelector;
-    if (opts.keepUrlFragments !== undefined) overrides.keepUrlFragments = opts.keepUrlFragments;
-    if (opts.respectRobotsTxt !== undefined) overrides.respectRobotsTxt = opts.respectRobotsTxt;
-    if (opts.cookies) overrides.cookies = JSON.parse(opts.cookies);
-    if (opts.headers) overrides.headers = JSON.parse(opts.headers);
-    if (opts.maxConcurrency !== undefined) overrides.maxConcurrency = opts.maxConcurrency;
-    if (opts.maxRetries !== undefined) overrides.maxRetries = opts.maxRetries;
-    if (opts.maxResults !== undefined) overrides.maxResults = opts.maxResults;
-    if (opts.save) overrides.save = validateSaveFormats(opts.save.split(','));
-    if (opts.format && !opts.save) overrides.save = validateSaveFormats([opts.format]);
-    if (opts.fast !== undefined) overrides.fast = opts.fast;
-    if (opts.precision !== undefined) overrides.favorPrecision = opts.precision;
-    if (opts.recall !== undefined) overrides.favorRecall = opts.recall;
-    if (opts.includeTables !== undefined) overrides.includeTables = opts.includeTables;
-    if (opts.tables !== undefined) overrides.includeTables = opts.tables;
-    if (opts.includeImages !== undefined) overrides.includeImages = opts.includeImages;
-    if (opts.includeFormatting !== undefined) overrides.includeFormatting = opts.includeFormatting;
-    if (opts.formatting !== undefined) overrides.includeFormatting = opts.formatting;
-    if (opts.deduplicate !== undefined) overrides.deduplicate = opts.deduplicate;
-    if (opts.targetLanguage !== undefined) overrides.targetLanguage = opts.targetLanguage;
-    if (opts.metadata !== undefined) overrides.withMetadata = opts.metadata;
-    if (opts.withMetadata !== undefined) overrides.withMetadata = opts.withMetadata;
-    if (opts.links === false) overrides.includeLinks = false;
-    if (opts.comments === false) overrides.includeComments = false;
-
-    mergeOverrides(cfg, overrides);
+    const fromFile = opts.config ? await loadConfigFile(opts.config) : {};
+    const fromCli = buildSchemaOverrides(opts);
 
     const collectedUrls = [...urls];
     if (opts.startUrl) collectedUrls.push(opts.startUrl);
-    if (collectedUrls.length > 0) cfg.urls = collectedUrls;
-    if (cfg.urls.length === 0) {
+    if (collectedUrls.length > 0) {
+      fromCli.startUrls = collectedUrls.map((url) => ({ url }));
+    }
+
+    const layered: Record<string, unknown> = {
+      ...fromFile,
+      ...fromCli,
+    };
+    const fileTrafilatura =
+      (fromFile.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
+    const cliTrafilatura = (fromCli.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
+    if (Object.keys(fileTrafilatura).length || Object.keys(cliTrafilatura).length) {
+      layered.trafilaturaConfig = { ...fileTrafilatura, ...cliTrafilatura };
+    }
+
+    const startUrlsLayered = layered.startUrls as Array<{ url: string }> | undefined;
+    if (!startUrlsLayered || startUrlsLayered.length === 0) {
       console.error('Error: No URLs specified. Provide URLs as arguments or via --config.');
       process.exit(1);
     }
+
+    const parsed = ContextractorInput.safeParse(layered);
+    if (!parsed.success) {
+      console.error('Invalid configuration:');
+      for (const issue of parsed.error.issues) {
+        console.error(`  ${issue.path.join('.') || '(root)'}: ${issue.message}`);
+      }
+      process.exit(1);
+    }
+
+    const cliOnly = resolveCliOnly(opts, parsed.data);
+    const cfg = buildCrawlConfig(parsed.data, cliOnly);
 
     const formats = cfg.save.length > 0 ? cfg.save.join(', ') : 'markdown';
     console.log(`Extracting ${cfg.urls.length} URL(s) → ${cfg.outputDir}/ (${formats})`);
@@ -132,6 +114,87 @@ function toInt(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) throw new Error(`Expected integer, got '${value}'`);
   return parsed;
+}
+
+function buildSchemaOverrides(opts: CliOptions): Partial<ContextractorInputType> {
+  const out: Partial<ContextractorInputType> = {};
+
+  if (opts.maxPages !== undefined) out.maxPagesPerCrawl = opts.maxPages;
+  if (opts.crawlDepth !== undefined) out.maxCrawlingDepth = opts.crawlDepth;
+  if (opts.headless !== undefined) out.headless = opts.headless;
+  if (opts.launcher) {
+    out.launcher = opts.launcher.toUpperCase() as ContextractorInputType['launcher'];
+  }
+  if (opts.waitUntil) {
+    out.waitUntil = opts.waitUntil.toUpperCase() as ContextractorInputType['waitUntil'];
+  }
+  if (opts.proxyRotation) {
+    out.proxyRotation = opts.proxyRotation
+      .toUpperCase()
+      .replace(/-/g, '_') as ContextractorInputType['proxyRotation'];
+  }
+  if (opts.pageLoadTimeout !== undefined) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
+  if (opts.ignoreCors !== undefined) out.ignoreCorsAndCsp = opts.ignoreCors;
+  if (opts.closeCookieModals !== undefined) out.closeCookieModals = opts.closeCookieModals;
+  if (opts.maxScrollHeight !== undefined) out.maxScrollHeightPixels = opts.maxScrollHeight;
+  if (opts.ignoreSslErrors !== undefined) out.ignoreSslErrors = opts.ignoreSslErrors;
+  if (opts.userAgent !== undefined) out.userAgent = opts.userAgent;
+  if (opts.globs) out.globs = opts.globs.split(',').map((s) => ({ glob: s.trim() }));
+  if (opts.excludes) out.excludes = opts.excludes.split(',').map((s) => ({ glob: s.trim() }));
+  if (opts.linkSelector !== undefined) out.linkSelector = opts.linkSelector;
+  if (opts.keepUrlFragments !== undefined) out.keepUrlFragments = opts.keepUrlFragments;
+  if (opts.respectRobotsTxt !== undefined) out.respectRobotsTxtFile = opts.respectRobotsTxt;
+  if (opts.cookies) out.initialCookies = JSON.parse(opts.cookies) as unknown[];
+  if (opts.headers) out.customHttpHeaders = JSON.parse(opts.headers) as Record<string, string>;
+  if (opts.maxConcurrency !== undefined) out.maxConcurrency = opts.maxConcurrency;
+  if (opts.maxRetries !== undefined) out.maxRequestRetries = opts.maxRetries;
+  if (opts.maxResults !== undefined) out.maxResultsPerCrawl = opts.maxResults;
+
+  const tcfg: Record<string, unknown> = {};
+  if (opts.fast !== undefined) tcfg.fast = opts.fast;
+  if (opts.precision !== undefined) tcfg.favorPrecision = opts.precision;
+  if (opts.recall !== undefined) tcfg.favorRecall = opts.recall;
+  if (opts.includeTables !== undefined) tcfg.includeTables = opts.includeTables;
+  if (opts.tables !== undefined) tcfg.includeTables = opts.tables;
+  if (opts.includeImages !== undefined) tcfg.includeImages = opts.includeImages;
+  if (opts.includeFormatting !== undefined) tcfg.includeFormatting = opts.includeFormatting;
+  if (opts.formatting !== undefined) tcfg.includeFormatting = opts.formatting;
+  if (opts.deduplicate !== undefined) tcfg.deduplicate = opts.deduplicate;
+  if (opts.targetLanguage !== undefined) tcfg.targetLanguage = opts.targetLanguage;
+  if (opts.metadata !== undefined) tcfg.withMetadata = opts.metadata;
+  if (opts.withMetadata !== undefined) tcfg.withMetadata = opts.withMetadata;
+  if (opts.links === false) tcfg.includeLinks = false;
+  if (opts.comments === false) tcfg.includeComments = false;
+  if (Object.keys(tcfg).length > 0) out.trafilaturaConfig = tcfg;
+
+  return out;
+}
+
+function resolveCliOnly(opts: CliOptions, input: ContextractorInputType): CliOnlyOverrides {
+  const urls = input.startUrls
+    .map((u) => u.url)
+    .filter((u): u is string => typeof u === 'string' && u.length > 0);
+
+  let save: SaveFormat[] = ['markdown'];
+  if (opts.save) {
+    save = validateSaveFormats(opts.save.split(','));
+  } else if (opts.format) {
+    save = validateSaveFormats([opts.format]);
+  }
+
+  const proxyUrls = opts.proxyUrls
+    ? opts.proxyUrls
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
+    : [];
+
+  return {
+    urls,
+    outputDir: opts.outputDir ?? './output',
+    save,
+    proxyUrls,
+  };
 }
 
 interface CliOptions {
