@@ -1,0 +1,20 @@
+{
+  "name": "@contextractor/generated-unit-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "vitest cases for @contextractor/engine extraction with HTML fixtures.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "biome check ."
+  },
+  "dependencies": {
+    "@contextractor/engine": "workspace:*"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.13",
+    "@types/node": "^22.19.17",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.9"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@contextractor/engine-native-linux-arm64-gnu",
+  "version": "0.1.0",
+  "private": true,
+  "main": "contextractor-engine-native.linux-arm64-gnu.node",
+  "files": [
+    "contextractor-engine-native.linux-arm64-gnu.node"
+  ],
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "libc": ["glibc"]
+}

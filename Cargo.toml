@@ -1,0 +1,26 @@
+[workspace]
+resolver = "2"
+members = ["packages/contextractor-engine/native"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+repository = "https://github.com/glueo/contextractor"
+
+[workspace.lints.rust]
+unsafe_code = "warn"
+
+[workspace.lints.clippy]
+expect_used = "deny"
+unwrap_used = "deny"
+missing_errors_doc = "deny"
+panic = "warn"
+todo = "warn"
+unimplemented = "warn"
+
+[profile.release]
+lto = true
+opt-level = 3
+codegen-units = 1
+strip = "symbols"

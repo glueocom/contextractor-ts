@@ -41,13 +41,12 @@ Confirm the vitest package at `tools/generated-unit-tests/`:
 ```
 tools/generated-unit-tests/
 ├── package.json                # name: @contextractor/generated-unit-tests, deps: @contextractor/engine + vitest
-├── tsconfig.json               # extends ../../tsconfig.base.json (or root)
+├── tsconfig.json               # extends ../../tsconfig.json
 ├── vitest.config.ts
 ├── fixtures/
 │   └── {suite}/
 │       └── {test-case}.html
-└── src/
-    └── {suite}.test.ts
+└── {suite}.test.ts             # one .test.ts per suite at the package root
 ```
 
 ### Step FIXTURES: Generate Fixtures
@@ -59,36 +58,36 @@ For each valid test case:
 
 ### Step TESTS: Generate Test Files
 
-Create `tools/generated-unit-tests/src/{suite}.test.ts`:
+Create `tools/generated-unit-tests/{suite}.test.ts`:
 
 ```ts
 import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { ContentExtractor } from '@contextractor/engine';
 
-const fixturesDir = join(__dirname, '..', 'fixtures');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = path.join(__dirname, 'fixtures', '{suite}');
 
-function fixture(suite: string, caseName: string): string {
-    return readFileSync(join(fixturesDir, suite, `${caseName}.html`), 'utf-8');
+function fixture(caseName: string): string {
+    return readFileSync(path.join(FIXTURES_DIR, `${caseName}.html`), 'utf-8');
 }
 
 describe('{suite}', () => {
     it('case_name extracts metadata', () => {
-        const html = fixture('{suite}', '{test-case}');
-        const extractor = new ContentExtractor({
-            favorPrecision: true,
-        });
+        const html = fixture('{test-case}');
+        const extractor = new ContentExtractor({ favorPrecision: true });
         const meta = extractor.extractMetadata(html, '{url}');
         expect(meta.title ?? meta.description ?? '').toMatch(/{expected_title_regex}/);
     });
 
     it('case_name extracts content', () => {
-        const html = fixture('{suite}', '{test-case}');
+        const html = fixture('{test-case}');
         const extractor = new ContentExtractor();
         const result = extractor.extract(html, { url: '{url}', format: 'markdown' });
-        expect(result.content.length).toBeGreaterThan(1000);
+        expect(result?.content.length ?? 0).toBeGreaterThan(1000);
     });
 });
 ```
@@ -119,7 +118,7 @@ Confirm `tools/generated-unit-tests/package.json`:
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@contextractor/engine": "workspace:*"
@@ -129,6 +128,8 @@ Confirm `tools/generated-unit-tests/package.json`:
   }
 }
 ```
+
+The vitest package has tests, so `--passWithNoTests` is **not** used here.
 
 ### Step RUN: Run Tests
 

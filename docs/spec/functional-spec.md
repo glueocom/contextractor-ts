@@ -1,60 +1,133 @@
-# Contextractor - Functional Specification
+# Contextractor — Functional Specification
 
 ## Overview
 
-Contextractor crawls websites and extracts clean, readable content using Trafilatura. Content is stored in Key-Value Store with metadata in Dataset.
+Contextractor crawls websites and extracts clean, readable main-content text.
+Built on **`rs-trafilatura`** (Rust port of Trafilatura, accessed via a napi-rs
+binding) and **[Crawlee](https://crawlee.dev/)** (TypeScript crawler driving
+Playwright).
 
-## Input
+Available as:
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| startUrls | array | required | URLs to extract content from |
-| linkSelector | string | "" | CSS selector for links to enqueue |
-| globs | array | [] | Glob patterns to match enqueued links |
-| excludes | array | [] | Glob patterns to exclude |
-| maxPagesPerCrawl | integer | 0 | Max pages (0 = unlimited) |
-| exportHtml | boolean | false | Save raw HTML |
-| exportText | boolean | false | Extract plain text |
-| exportJson | boolean | false | Extract JSON with metadata |
-| exportMarkdown | boolean | true | Extract Markdown |
-| exportXml | boolean | false | Extract XML |
-| exportXmlTei | boolean | false | Extract XML-TEI scholarly format |
-| trafilaturaConfig | object | {} | Trafilatura extraction options (see below) |
-| includeMetadata | boolean | true | Include title, author, date |
-| initialCookies | array | [] | Pre-set cookies for authentication (encrypted) |
-| customHttpHeaders | object | {} | Custom HTTP headers for all requests |
+- **Apify Actor** — `glueo/contextractor` on the Apify platform; output saved
+  to the run's Key-Value Store + Dataset.
+- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI;
+  output written to disk as one file per page.
+- **TypeScript engine** (`@contextractor/engine`) — embedded library used by
+  both surfaces above; exposes `ContentExtractor`, `extractMetadata`, and
+  `extractAllFormats`.
 
-### trafilaturaConfig
+Supported output formats: **`txt | markdown | json | html`**. XML and XML-TEI
+are temporarily unsupported pending upstream `rs-trafilatura` work — the
+Python source supported them via Trafilatura.
 
-Optional JSON object with Trafilatura extraction options. When empty `{}` or omitted, uses balanced defaults.
+## Standalone CLI
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| fast | boolean | false | Fast mode (less thorough) |
-| favorPrecision | boolean | false | High precision, less noise |
-| favorRecall | boolean | false | High recall, more content |
-| includeComments | boolean | true | Include comments |
-| includeTables | boolean | true | Include tables |
-| includeImages | boolean | false | Include images |
-| includeFormatting | boolean | true | Preserve formatting |
-| includeLinks | boolean | true | Include links |
-| deduplicate | boolean | false | Deduplicate content |
-| targetLanguage | string | null | Target language code |
-| withMetadata | boolean | true | Extract metadata |
-| onlyWithMetadata | boolean | false | Only return if metadata found |
-| teiValidation | boolean | false | Validate TEI output |
-| pruneXpath | string/array | null | XPath expressions to prune |
+### Usage
 
-**Backward compatibility:**
-- `{}` or omitted = previous `BALANCED` mode
-- `{"favorPrecision": true}` = previous `FAVOR_PRECISION` mode
-- `{"favorRecall": true}` = previous `FAVOR_RECALL` mode
+```bash
+contextractor [OPTIONS] [URLS...]
+```
 
-**Note:** Keys accept both camelCase (JSON convention) and snake_case (Python convention). camelCase is converted to snake_case internally.
+```bash
+contextractor https://example.com
+contextractor https://example.com --precision --save json -o ./results
+contextractor --config config.json --max-pages 10
+```
 
-## Output
+| Option                              | Description                                                    |
+| ----------------------------------- | -------------------------------------------------------------- |
+| `--config`, `-c`                    | Path to JSON config file (optional)                            |
+| `--output-dir`, `-o`                | Output directory                                               |
+| `--max-pages`                       | Max pages to crawl (0 = unlimited)                             |
+| `--crawl-depth`                     | Max link depth from start URLs (0 = start only)                |
+| `--headless` / `--no-headless`      | Browser headless mode (default: headless)                      |
+| `--save`                            | Output formats: `markdown,html,text,json,jsonl,all`            |
+| `--precision`                       | High precision mode (less noise)                               |
+| `--recall`                          | High recall mode (more content)                                |
+| `--fast`                            | Fast extraction mode (less thorough)                           |
+| `--no-links`                        | Exclude links from output                                      |
+| `--no-comments`                     | Exclude comments from output                                   |
+| `--include-tables` / `--no-tables`  | Include tables (default: include)                              |
+| `--include-images`                  | Include image descriptions                                     |
+| `--include-formatting` / `--no-formatting` | Preserve formatting (default: preserve)                |
+| `--deduplicate`                     | Deduplicate extracted content                                  |
+| `--target-language`                 | Filter by language (e.g. `en`)                                 |
+| `--with-metadata` / `--no-metadata` | Extract metadata along with content                            |
+| `--verbose`, `-v`                   | Enable verbose logging                                         |
 
-### Dataset Entry
+### Config file (optional, JSON)
+
+| Field             | Type    | Default        | Description                                |
+| ----------------- | ------- | -------------- | ------------------------------------------ |
+| urls              | array   | `[]`           | URLs to extract content from               |
+| maxPages          | integer | `0`            | Max pages to crawl (0 = unlimited)         |
+| outputDir         | string  | `./output`     | Directory for extracted content            |
+| crawlDepth        | integer | `0`            | How deep to follow links (0 = start only)  |
+| headless          | boolean | `true`         | Browser headless mode                      |
+| save              | array   | `["markdown"]` | Output formats list                        |
+| trafilaturaConfig | object  | `{}`           | Extraction options (see below)             |
+
+Config merge order: `defaults → config file (if provided) → CLI args`.
+
+YAML config files are accepted silently for backward compatibility; new
+documentation references JSON only.
+
+### Output
+
+One file per crawled page, named from a URL slug
+(e.g. `example-com-page.md`). When metadata is available, a header (title,
+author, date, URL) is prepended to text-format outputs.
+
+## Apify Actor
+
+### Input
+
+| Field                                 | Type    | Default    | Description                                |
+| ------------------------------------- | ------- | ---------- | ------------------------------------------ |
+| startUrls                             | array   | required   | URLs to extract content from               |
+| linkSelector                          | string  | `""`       | CSS selector for links to enqueue          |
+| globs                                 | array   | `[]`       | Glob patterns to include                   |
+| excludes                              | array   | `[]`       | Glob patterns to exclude                   |
+| maxPagesPerCrawl                      | integer | `0`        | Max pages (0 = unlimited)                  |
+| saveRawHtmlToKeyValueStore            | boolean | `false`    | Save raw HTML to KV store                  |
+| saveExtractedTextToKeyValueStore      | boolean | `false`    | Save plain text                            |
+| saveExtractedJsonToKeyValueStore      | boolean | `false`    | Save JSON with metadata                    |
+| saveExtractedMarkdownToKeyValueStore  | boolean | `true`     | Save Markdown                              |
+| trafilaturaConfig                     | object  | `{}`       | Extraction options (see below)             |
+| initialCookies                        | array   | `[]`       | Pre-set cookies (encrypted)                |
+| customHttpHeaders                     | object  | `{}`       | Custom HTTP headers                        |
+
+### `trafilaturaConfig`
+
+| Field             | Type    | Default | Description                              |
+| ----------------- | ------- | ------- | ---------------------------------------- |
+| fast              | boolean | `false` | Fast mode (less thorough)                |
+| favorPrecision    | boolean | `false` | High precision, less noise               |
+| favorRecall       | boolean | `false` | High recall, more content                |
+| includeComments   | boolean | `true`  | Include comments                         |
+| includeTables     | boolean | `true`  | Include tables                           |
+| includeImages     | boolean | `false` | Include images                           |
+| includeFormatting | boolean | `true`  | Preserve formatting                      |
+| includeLinks      | boolean | `true`  | Include links                            |
+| deduplicate       | boolean | `false` | Deduplicate content                      |
+| targetLanguage    | string  | `null`  | Target language code                     |
+| withMetadata      | boolean | `true`  | Forward-compat — always extracted        |
+| onlyWithMetadata  | boolean | `false` | Only return if metadata found            |
+| teiValidation     | boolean | `false` | Forward-compat — accepted but ignored    |
+
+Backward compatibility:
+
+- `{}` or omitted = balanced default
+- `{"favorPrecision": true}` = high precision mode
+- `{"favorRecall": true}` = high recall mode
+
+Keys accept both camelCase (JSON convention) and snake_case (Python
+convention); snake_case is converted internally.
+
+### Output
+
+#### Dataset entry
 
 ```json
 {
@@ -71,7 +144,7 @@ Optional JSON object with Trafilatura extraction options. When empty `{}` or omi
     "hash": "...",
     "length": 6887
   },
-  "loadedAt": "2026-01-28T18:58:36.534Z",
+  "loadedAt": "2026-04-27T18:58:36Z",
   "metadata": {
     "title": "Page Title",
     "author": null,
@@ -84,17 +157,19 @@ Optional JSON object with Trafilatura extraction options. When empty `{}` or omi
 }
 ```
 
-**Rules:**
-- `rawHtml`: always has `hash` + `length`; adds `key` + `url` only if `exportHtml` enabled
-- `extractedMarkdown`, `extractedText`, etc.: entire object only present if that export is enabled
-- `metadata`: extracted from trafilatura
+Rules:
 
-### Key-Value Store
+- `rawHtml`: always has `hash` + `length`; adds `key` + `url` only if raw HTML
+  is saved.
+- `extractedMarkdown`, `extractedText`, `extractedJson`: each present only when
+  the matching input flag is enabled.
+- `metadata`: extracted via the napi-rs binding from `rs-trafilatura`.
 
-Named `content`. Files stored with MD5-based keys:
-- `{hash}-raw.html` - Raw HTML
-- `{hash}.txt` - Plain text
-- `{hash}.json` - JSON with metadata
-- `{hash}.md` - Markdown
-- `{hash}.xml` - XML
-- `{hash}.tei.xml` - XML-TEI
+#### Key-Value Store
+
+Files stored with MD5-based keys derived from the URL:
+
+- `{hash}-raw.html` — raw HTML
+- `{hash}.txt` — plain text
+- `{hash}.json` — JSON with metadata
+- `{hash}.md` — Markdown

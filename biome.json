@@ -1,0 +1,45 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.13/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!.claude",
+      "!prompts",
+      "!**/fixtures",
+      "!**/test-suites",
+      "!**/test-suites-output",
+      "!**/dist",
+      "!**/target",
+      "!**/node_modules",
+      "!**/*.node",
+      "!packages/contextractor-engine/native/index.js",
+      "!packages/contextractor-engine/native/index.d.ts",
+      "!packages/contextractor-engine/native/npm"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always",
+      "trailingCommas": "all"
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space",
+      "indentWidth": 2
+    }
+  }
+}

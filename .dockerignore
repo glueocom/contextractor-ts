@@ -1,0 +1,29 @@
+.git
+.github
+.claude
+.mcp.json
+.mise.toml
+.nvim.lua
+.vscode
+.zed
+.idea
+.DS_Store
+
+# Build / cache outputs.
+**/node_modules
+**/dist
+**/target
+**/storage
+**/test-suites-output
+**/*.tsbuildinfo
+
+# Misc.
+prompts
+LICENSE
+NOTICE
+README.md
+docs
+logo.png
+logo.src.svg
+logo.svg
+scripts

@@ -1,0 +1,18 @@
+{
+  "actorSpecification": 1,
+  "name": "contextractor-test",
+  "title": "Contextractor",
+  "description": "Crawls websites and extracts main-content text. Built on rs-trafilatura and Crawlee.",
+  "version": "0.1",
+  "buildTag": "latest",
+  "meta": {
+    "templateId": "node-playwright"
+  },
+  "dockerfile": "./Dockerfile",
+  "dockerContextDir": "../../..",
+  "input": "./input_schema.json",
+  "output": "./output_schema.json",
+  "storages": {
+    "dataset": "./dataset_schema.json"
+  }
+}

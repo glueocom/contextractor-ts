@@ -1,0 +1,35 @@
+{
+  "name": "@contextractor/engine-native",
+  "version": "0.1.0",
+  "private": true,
+  "description": "napi-rs binding around rs-trafilatura for the @contextractor/engine TypeScript package",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "napi": {
+    "name": "contextractor-engine-native",
+    "triples": {
+      "defaults": false,
+      "additional": [
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-unknown-linux-gnu",
+        "aarch64-unknown-linux-gnu"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "node -e \"if (!process.env.CARGO_HOME && !process.env.npm_config_rebuild_native) { console.log('@contextractor/engine-native: skipping build (committed prebuilds present; set CARGO_HOME or npm_config_rebuild_native=1 to rebuild).'); process.exit(0); } require('child_process').execSync('napi build --platform --release', { stdio: 'inherit' });\"",
+    "build:rebuild": "napi build --platform --release",
+    "build:debug": "napi build --platform"
+  },
+  "optionalDependencies": {
+    "@contextractor/engine-native-darwin-arm64": "workspace:*",
+    "@contextractor/engine-native-darwin-x64": "workspace:*",
+    "@contextractor/engine-native-linux-x64-gnu": "workspace:*",
+    "@contextractor/engine-native-linux-arm64-gnu": "workspace:*"
+  }
+}

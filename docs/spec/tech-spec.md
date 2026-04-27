@@ -1,138 +1,199 @@
-# Contextractor - Technical Specification
+# Contextractor — Technical Specification
 
 ## Stack
 
-- Python 3.12+
-- uv workspace monorepo with hatchling build system
-- Crawlee for Python with PlaywrightCrawler
-- Apify SDK
-- contextractor-engine library (Trafilatura wrapper)
+- **TypeScript 5.x** for all app logic.
+- **Rust 1.85+** (Edition 2024) — only the `napi-rs` wrapper around
+  `rs-trafilatura`; no other Rust crates in this workspace.
+- **`rs-trafilatura` 0.2.x** — Rust port of Trafilatura. Drives all extraction.
+- **Crawlee 3.x (TypeScript)** with `PlaywrightCrawler` for crawling.
+- **Apify SDK 3.x** (Apify Actor only).
+- **commander** for the standalone CLI.
+- **vitest** for unit tests; **cargo test** for the napi-rs crate's tests.
+- **Biome** for TS lint + format.
+- **pnpm 10** workspace + **Cargo workspace** at the repo root.
 
 ## Architecture
 
-Two-package monorepo:
-- `packages/contextractor_engine/` - Library package, depends on trafilatura only
-- `apps/contextractor/` - Actor application, depends on engine + apify + crawlee
+Two apps + one engine package + one Rust crate:
+
+- `packages/contextractor-engine/` — TypeScript engine; depends on the napi-rs
+  binding via `@contextractor/engine-native`.
+- `packages/contextractor-engine/native/` — `napi-rs` Rust crate
+  (`crate-type = "cdylib"`). Wraps `rs-trafilatura` and produces a `.node`
+  binary loaded by the TS engine. Per-platform prebuilds live under
+  `packages/contextractor-engine/native/npm/<platform>/` as workspace packages
+  with `os` + `cpu` selectors.
+- `apps/contextractor-apify/` — Apify Actor; depends on
+  `@contextractor/engine` + `apify` + `crawlee` + `playwright`.
+- `apps/contextractor-standalone/` — Standalone CLI; depends on
+  `@contextractor/engine` + `crawlee` + `playwright` + `commander`.
+
+### Apify Actor
 
 ```
-Input URLs → PlaywrightCrawler → ContentExtractor → KVS (blobs) + Dataset (metadata)
+Input URLs → PlaywrightCrawler → ContentExtractor (TS) → KVS (blobs) + Dataset (metadata)
 ```
 
-## Key Implementation Details
+### Standalone CLI
 
-### Handler Pattern
-
-Handler must be defined inside `async with Actor:` context. Config passed via `Request.user_data`:
-
-```python
-async with Actor:
-    kvs = await Actor.open_key_value_store(name='content')
-    crawler = PlaywrightCrawler(...)
-
-    @crawler.router.default_handler
-    async def handler(ctx: PlaywrightCrawlingContext) -> None:
-        config = ctx.request.user_data.get('config', {})
-        trafilatura_config_raw = config.get('trafilatura_config_raw', {})
-
-        # Build TrafilaturaConfig from raw dict (JSON-serializable in user_data)
-        if trafilatura_config_raw:
-            normalized = normalize_config_keys(trafilatura_config_raw)
-            filtered = {k: v for k, v in normalized.items() if v is not None}
-            trafilatura_config = TrafilaturaConfig(**filtered)
-        else:
-            trafilatura_config = TrafilaturaConfig.balanced()
-
-        extractor = ContentExtractor(config=trafilatura_config)
-        html = await ctx.page.content()
-        # extract and save...
-
-    requests = [Request.from_url(url, user_data={'config': config}) for url in start_urls]
-    await crawler.run(requests)
+```
+Config file (JSON) → PlaywrightCrawler → ContentExtractor (TS) → output files
 ```
 
-### Content-Type Headers
+### Native binding (`@contextractor/engine-native`)
 
-All content-type headers must include charset: `text/html; charset=utf-8`
-
-### Public URLs
-
-Use `await kvs.get_public_url(key)` to get download URLs.
-
-### TrafilaturaConfig
-
-Replaces the old `extractionMode` enum. Dataclass mapping to trafilatura.extract() parameters:
-
-```python
-from contextractor_engine import ContentExtractor, TrafilaturaConfig
-
-# Factory methods for common configurations
-config = TrafilaturaConfig.balanced()   # Default balanced extraction
-config = TrafilaturaConfig.precision()  # favor_precision=True
-config = TrafilaturaConfig.recall()     # favor_recall=True
-
-# Or customize directly
-config = TrafilaturaConfig(
-    favor_precision=True,
-    include_links=False,
-    target_language="en",
-)
-
-extractor = ContentExtractor(config=config)
-result = extractor.extract(html, url=url, output_format="markdown")
-metadata = extractor.extract_metadata(html, url=url)
+```
+TS engine → require('@contextractor/engine-native')
+         → loader picks @contextractor/engine-native-<platform>
+         → loads contextractor-engine-native.<platform>.node
+         → calls into rs-trafilatura via napi-rs
 ```
 
-Formats: `txt`, `json`, `markdown`, `xml`, `xmltei`
+The `@contextractor/engine-native` package declares each per-platform package
+in `optionalDependencies`. pnpm picks the platform-matching one via `os` +
+`cpu` resolution at install time. The `.node` files for `darwin-arm64`,
+`darwin-x64`, `linux-x64-gnu`, and `linux-arm64-gnu` are committed to git and
+refreshed by `.github/workflows/build-napi.yml` on tag pushes.
 
-### Key Generation
+## Key implementation details
 
-MD5 hash of URL, first 16 characters: `hashlib.md5(url.encode()).hexdigest()[:16]`
+### Apify Actor handler
 
-### Browser Context Options
+```ts
+import { Actor } from 'apify';
+import { PlaywrightCrawler, Request } from 'crawlee';
+import { ContentExtractor } from '@contextractor/engine';
 
-Custom headers and cookies are passed to the PlaywrightCrawler via `browser_new_context_options`:
+await Actor.init();
+const input = (await Actor.getInput<ActorInput>()) ?? {};
+const config = buildCrawlConfig(input);
+const crawler = new PlaywrightCrawler({ /* ... */ });
 
-```python
-options = {}
-if initial_cookies:
-    options['storage_state'] = {'cookies': initial_cookies}
-if custom_headers:
-    options['extra_http_headers'] = custom_headers
+crawler.router.addDefaultHandler(async (ctx) => {
+  const handlerConfig = ctx.request.userData?.config as CrawlConfig;
+  const extractor = new ContentExtractor(handlerConfig.trafilaturaConfig);
+  const html = await ctx.page.content();
+  // extract and save...
+});
+
+await crawler.run(startUrls.map((url) => new Request({ url, userData: { config } })));
+await Actor.exit();
 ```
 
-This applies headers to all HTTP requests and pre-sets cookies on all browser contexts.
+### Standalone CLI
+
+```bash
+# Zero-config with URL
+contextractor https://example.com
+
+# With flags
+contextractor https://example.com --precision --save json -o ./results
+
+# With config file
+contextractor --config config.json --max-pages 10
+```
+
+Config merge order: `defaults → config file (if provided) → CLI args`.
+
+### Content-type headers
+
+All content-type headers include charset, e.g.
+`text/html; charset=utf-8`.
+
+### `TrafilaturaConfig`
+
+The TS engine API mirrors the Python source. Camel-case keys; snake-case keys
+are accepted and normalized at the boundary.
+
+```ts
+import { ContentExtractor } from '@contextractor/engine';
+
+const extractor = new ContentExtractor({ favorPrecision: true });
+const result = extractor.extract(html, { url, format: 'markdown' });
+const metadata = extractor.extractMetadata(html, url);
+const all = extractor.extractAllFormats(html, { url });
+```
+
+Supported formats: `txt | markdown | json | html`.
+
+### Key generation
+
+Storage keys use the first 16 hex characters of an MD5 over the URL:
+`createHash('md5').update(url).digest('hex').slice(0, 16)`.
 
 ## Dependencies
 
-Engine package (`packages/contextractor_engine/`):
-```
-trafilatura>=2.0.0
-```
+`packages/contextractor-engine/` (TS):
 
-Actor package (`apps/contextractor/`):
-```
-apify>=2.0.0,<4.0.0
-crawlee[playwright]>=0.4.0
-contextractor-engine (workspace)
-browserforge<1.2.4
-```
+- `@contextractor/engine-native` (workspace)
+
+`packages/contextractor-engine/native/` (Rust):
+
+- `napi`, `napi-derive`
+- `rs-trafilatura ^0.2`
+- `serde`, `serde_json`, `chrono`
+
+`apps/contextractor-apify/`:
+
+- `apify ^3`
+- `crawlee ^3`
+- `playwright ^1.50`
+- `@contextractor/engine` (workspace)
+
+`apps/contextractor-standalone/`:
+
+- `crawlee ^3`
+- `playwright ^1.50`
+- `commander ^12`
+- `@contextractor/engine` (workspace)
 
 ## Build
 
-Build engine wheel for distribution:
+Local prebuild for the host platform:
+
 ```bash
-./scripts/build-engine.sh
-# or
-uv build --package contextractor-engine --out-dir dist/
+pnpm -F @contextractor/engine-native build
 ```
 
-## Docker
+Cross-platform prebuilds (CI runs the equivalent matrix):
 
-uv-based install with frozen lockfile:
-```dockerfile
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-COPY pyproject.toml uv.lock ./
-COPY packages/contextractor_engine/ ./packages/contextractor_engine/
-COPY apps/contextractor/ ./apps/contextractor/
-RUN uv sync --frozen --no-dev --directory apps/contextractor
+```bash
+pnpm -F @contextractor/engine-native exec napi build --platform --release --target aarch64-apple-darwin
+pnpm -F @contextractor/engine-native exec napi build --platform --release --target x86_64-apple-darwin
+pnpm -F @contextractor/engine-native exec napi build --platform --release --target x86_64-unknown-linux-gnu --zig
+pnpm -F @contextractor/engine-native exec napi build --platform --release --target aarch64-unknown-linux-gnu --zig
 ```
+
+TypeScript builds:
+
+```bash
+pnpm -r build
+```
+
+## Docker (Apify Actor)
+
+Multi-stage Node + Playwright Dockerfile at
+`apps/contextractor-apify/Dockerfile`:
+
+- Builder stage: `apify/actor-node-playwright-chrome:22 AS builder`. Runs
+  `pnpm install --frozen-lockfile`, `pnpm --filter @contextractor/apify build`,
+  `pnpm --filter @contextractor/apify --prod deploy /deploy` to produce a
+  self-contained `node_modules` (no symlinks; `pnpm.io/cli/deploy`).
+- Runtime stage: `apify/actor-node-playwright-chrome:22`. Copies `/deploy` and
+  runs `node dist/main.js`.
+
+`actor.json` sets `"dockerContextDir": "../../.."` so the Docker build context
+is the repo root, exposing `packages/contextractor-engine/`. Production
+deploys go through a **Git-connected build** in the Apify Console — `apify
+push` does not honor `dockerContextDir` for contexts above the actor dir.
+
+Reference: `github.com/apify/actor-monorepo-example`.
+
+## CI
+
+`.github/workflows/build-napi.yml` builds all four `.node` prebuilds on
+release tags (`v*`) and opens a PR refreshing
+`packages/contextractor-engine/native/npm/<platform>/`. No other CI workflows
+are in scope of the napi-rs migration; lint / test / security workflows can be
+added separately.
