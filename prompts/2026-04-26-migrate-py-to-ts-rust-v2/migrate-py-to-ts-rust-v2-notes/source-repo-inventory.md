@@ -38,5 +38,5 @@ Snapshot 2026-04-26. Source repo is read-only for this migration.
 
 - `README.md` — propagate; rewrite all "PyPI / npm / Docker / pip install" references. Keep playground link. Add the "built on rs-trafilatura and Crawlee" line.
 - `LICENSE`, `NOTICE` — already present in target; check for drift.
-- `pyproject.toml`, `uv.lock` — replaced by `package.json` + `pnpm-lock.yaml` workspace in target.
+- `pyproject.toml`, `uv.lock` — replaced by `package.json` + `package-lock.json` workspace in target.
 - `Dockerfile` at repo root — drop; per-app Dockerfiles only.

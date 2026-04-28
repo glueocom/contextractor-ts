@@ -18,7 +18,7 @@ Reviews `../implementation/step-prebuild-platforms-and-ci.md`. Verifies that the
   - The matching `contextractor-engine-native.<platform>.node` binary.
   - All four are tracked in git (`git ls-files | grep '\.node$'` lists exactly four files).
 - `packages/contextractor-engine/native/package.json` `optionalDependencies` lists all four `@contextractor/engine-native-<platform>: workspace:*`.
-- `pnpm install` keeps the lockfile minimal (no entries for unpublished `@contextractor/*` packages).
+- `npm install` keeps the lockfile minimal (no entries for unpublished `@contextractor/*` packages).
 - `node -e "require('@contextractor/engine-native')"` succeeds on the host (resolves to the matching prebuild).
 - `.github/workflows/build-napi.yml` exists. Parse-check with `actionlint` (or `python -m yaml`); verify trigger is `push: tags: ["v*"]` and `workflow_dispatch`; verify the matrix lists all four targets.
 - Workflow does **not** run lint/test/security beyond napi-rs build (per `entry-qa-ci-scope.md`).

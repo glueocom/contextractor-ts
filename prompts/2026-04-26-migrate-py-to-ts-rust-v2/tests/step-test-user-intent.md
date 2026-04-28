@@ -40,7 +40,7 @@ For each requirement below, confirm it is reflected in the code and identify whi
 - `actor.json.dockerContextDir` is `../../..`.
 - `actor.json.description` mentions `rs-trafilatura` and `Crawlee`.
 - `apps/contextractor-apify/vendor/` does not exist.
-- `apps/contextractor-apify/Dockerfile` is multi-stage with `pnpm --filter @contextractor/apify --prod deploy /deploy`.
+- `apps/contextractor-apify/Dockerfile` is multi-stage with `npm run deploy --prod -w @contextractor/apify -- /deploy`.
 - `.claude/settings.json` deny list still blocks `apify push glueo/contextractor` and `apify call glueo/contextractor`.
 - No new build was published to `glueo/contextractor` during this prompt.
 - CLAUDE.md "Production Protection" block matches the new reality.
@@ -77,7 +77,7 @@ For each requirement below, confirm it is reflected in the code and identify whi
 
 ### Local prereqs documented
 
-- Rust toolchain via `rustup`, Apify CLI ≥ 1.4, Node 22+, pnpm 10+ — present in CLAUDE.md and the engine README.
+- Rust toolchain via `rustup`, Apify CLI ≥ 1.4, Node 22+, npm 10+ — present in CLAUDE.md and the engine README.
 
 ### Sync commands
 

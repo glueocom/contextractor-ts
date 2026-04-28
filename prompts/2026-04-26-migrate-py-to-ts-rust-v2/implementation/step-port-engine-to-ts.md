@@ -67,8 +67,8 @@ Implement `packages/contextractor-engine/src/index.ts` mirroring the Python `Con
 
 ## Done when
 
-- `pnpm -F @contextractor/engine build` succeeds.
-- `pnpm -F @contextractor/engine test` passes.
+- `npm run build -w @contextractor/engine` succeeds.
+- `npm run test -w @contextractor/engine` passes.
 - `grep -ri 'xml\|xmltei\|pruneXpath\|dateExtractionParams' packages/contextractor-engine/src/` returns nothing.
 - `PYTHON_API_REFERENCE.md` deleted.
 - `packages/contextractor-engine/dist/index.d.ts` exposes the documented surface (no `any`).

@@ -12,12 +12,12 @@ Reviews `../implementation/step-port-engine-to-ts.md`. Verifies the TS engine AP
 
 ## Verification
 
-- `pnpm -F @contextractor/engine build` succeeds. `dist/index.d.ts` exposes `ContentExtractor`, `TrafilaturaConfig`, `DEFAULT_CONFIG`, `OutputFormat`, `Metadata`, `ExtractionResult`.
+- `npm run build -w @contextractor/engine` succeeds. `dist/index.d.ts` exposes `ContentExtractor`, `TrafilaturaConfig`, `DEFAULT_CONFIG`, `OutputFormat`, `Metadata`, `ExtractionResult`.
 - `OutputFormat` is exactly `'txt' | 'markdown' | 'json' | 'html'`.
 - `TrafilaturaConfig` fields: every Python field except `pruneXpath` and `dateExtractionParams`. `teiValidation` and `withMetadata` are present.
 - `DEFAULT_CONFIG` is exported as `Readonly<TrafilaturaConfig>`.
 - `Metadata` interface includes `categories?`, `tags?`, `license?`, `image?`, `pageType?` (the rs-trafilatura superset).
-- `pnpm -F @contextractor/engine test` passes. Tests assert metadata via regex/substring (not exact equality) per the rs-trafilatura title pitfall.
+- `npm run test -w @contextractor/engine` passes. Tests assert metadata via regex/substring (not exact equality) per the rs-trafilatura title pitfall.
 - `grep -ri 'xml\|xmltei\|pruneXpath\|dateExtractionParams' packages/contextractor-engine/src/` returns nothing.
 - `grep -ri ': any\b\|<any>' packages/contextractor-engine/src/index.ts` returns nothing in public exports.
 - `PYTHON_API_REFERENCE.md` is deleted.

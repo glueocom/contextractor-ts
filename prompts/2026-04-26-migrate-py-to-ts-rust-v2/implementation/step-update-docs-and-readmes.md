@@ -29,8 +29,8 @@ Propagate `docs/` from the source repo (skip `pypi-trusted-publishing.md`). Rewr
   - One-paragraph "What is this Actor for?" lead.
   - Says: "Built on `rs-trafilatura` (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright)."
   - Lists supported formats: `txt | markdown | json | html`. Notes XML / XML-TEI are unsupported pending upstream `rs-trafilatura` work.
-  - "Local prerequisites" section: Rust toolchain via `rustup`, Apify CLI ≥ 1.4, Node 22+, pnpm 10+.
-  - "Local development" section: `pnpm install`, `pnpm -F @contextractor/apify build`, `apify run`.
+  - "Local prerequisites" section: Rust toolchain via `rustup`, Apify CLI ≥ 1.4, Node 22+, npm 10+.
+  - "Local development" section: `npm install`, `npm run build -w @contextractor/apify`, `apify run`.
   - "Deploy" section: notes that production deploys are a Git-connected build in the Apify Console (not `apify push`); links to `.claude/commands/platform/push-and-get-working.md`.
 - `apps/contextractor-standalone/README.md`:
   - "Built on" line as above.
@@ -44,7 +44,7 @@ Propagate `docs/` from the source repo (skip `pypi-trusted-publishing.md`). Rewr
   - Top-level project description.
   - "Built on" line.
   - Link to each app and package README.
-  - Workspace commands list (`pnpm -r build`, `pnpm -r test`, `cargo build --workspace`, etc.).
+  - Workspace commands list (`npm run build -ws --if-present`, `npm run test -ws --if-present`, `cargo build --workspace`, etc.).
   - Local prereqs.
 
 ### PyPI / npm reference cleanup

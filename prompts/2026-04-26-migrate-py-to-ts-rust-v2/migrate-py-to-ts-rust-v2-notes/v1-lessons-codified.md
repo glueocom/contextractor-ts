@@ -34,15 +34,15 @@ Aggregated from the v2 entry prompt's "Lessons from the v1 implementation pass" 
 
 - Rust toolchain via `rustup` (`cargo`, `rustc` on `PATH` for napi build).
 - Apify CLI ≥ 1.4 (older versions reject the modern `actor.json` with "Actor is of an unknown format").
-- Node 22+, pnpm 10+.
+- Node 22+, npm 10+.
 - Document these in CLAUDE.md and `packages/contextractor-engine/README.md`.
 
 ## Drop the v1 vendor pattern
 
 - v1 vendored `apps/contextractor-apify/vendor/{engine,engine-native}/` to work around `apify push` not honoring contexts above the actor dir. v2 replaces this with:
   - Git-connected build in Apify Console (honors `dockerContextDir: "../../.."`).
-  - Multi-stage Dockerfile with `pnpm --filter @contextractor/apify --prod deploy /deploy`.
-  - Workspace-package prebuilds (committed `.node` files; CI matrix per `napi-rs/package-template-pnpm`).
+  - Multi-stage Dockerfile with `npm --filter @contextractor/apify --prod deploy /deploy`.
+  - Workspace-package prebuilds (committed `.node` files; CI matrix per `napi-rs/package-template-npm`).
 - See `apify-monorepo-deploy.md` and `napi-rs-monorepo-prebuilds.md`.
 
 ## "Built on" wording rule

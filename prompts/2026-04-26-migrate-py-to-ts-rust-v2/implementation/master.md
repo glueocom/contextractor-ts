@@ -19,7 +19,7 @@ Agents:
 - `ts-pro` — TS engine, Apify Actor, standalone CLI, vitest tests.
 - `rust-pro` — napi-rs crate wrapping `rs-trafilatura`.
 - `code-reviewer` — per-step diff review.
-- `test-runner` — `pnpm`, `cargo`, `apify` smoke per step.
+- `test-runner` — `npm`, `cargo`, `apify` smoke per step.
 - `web-research-specialist` — fallback for napi-rs / rs-trafilatura specifics.
 - `prompt-writer` — used by `step-generate-r-tools-prompt` only.
 
@@ -35,7 +35,7 @@ Read the entire `../user-entry-log/` and the entire `../migrate-py-to-ts-rust-v2
 - `../migrate-py-to-ts-rust-v2-notes/target-state-snapshot.md` — current target tree and clutter to clean.
 - `../migrate-py-to-ts-rust-v2-notes/rs-trafilatura-0.2.md` — confirmed v0.2.2 API surface.
 - `../migrate-py-to-ts-rust-v2-notes/napi-rs-monorepo-prebuilds.md` — layout, loader, pitfalls.
-- `../migrate-py-to-ts-rust-v2-notes/apify-monorepo-deploy.md` — Dockerfile, actor.json, pnpm deploy.
+- `../migrate-py-to-ts-rust-v2-notes/apify-monorepo-deploy.md` — Dockerfile, actor.json, npm deploy.
 - `../migrate-py-to-ts-rust-v2-notes/v1-lessons-codified.md` — lessons turned into per-step checks.
 - `../migrate-py-to-ts-rust-v2-notes/cross-repo-followup.md` — what the final step writes for `/r/tools/`.
 
@@ -51,7 +51,7 @@ Recurring constraints (do not regress in any step):
 
 ## Step list
 
-- `step-prepare-workspace.md` — clean v1 build leftovers; pnpm + Cargo workspace skeleton; root `package.json`, `pnpm-workspace.yaml`, `Cargo.toml`, `tsconfig.json`, `biome.json` with the required ignore set; `.gitignore` and `.npmrc`.
+- `step-prepare-workspace.md` — clean v1 build leftovers; npm + Cargo workspace skeleton; root `package.json`, `Cargo.toml`, `tsconfig.json`, `biome.json` with the required ignore set; `.gitignore` and `.npmrc`.
 - `step-build-napi-binding.md` — `packages/contextractor-engine/native/` Cargo crate wrapping `rs-trafilatura` 0.2.x with napi-rs macros. Strict Cargo lints. Bare `Result<T>`. Local `darwin-arm64` prebuild. Delete the Python `packages/contextractor_engine/` original.
 - `step-prebuild-platforms-and-ci.md` — cross-platform prebuild (`darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-gnu`); commit binaries under `packages/contextractor-engine/native/npm/<platform>/`; add `.github/workflows/build-napi.yml`.
 - `step-port-engine-to-ts.md` — TS `@contextractor/engine` package mirroring the Python API; drop `xml`, `xmltei`, `pruneXpath`, `dateExtractionParams`; vitest tests.
@@ -60,5 +60,5 @@ Recurring constraints (do not regress in any step):
 - `step-port-tools-tests.md` — `tools/generated-unit-tests/` as a vitest package; copy `fixtures/` verbatim; update `.claude/commands/platform-tests/generate-unit-tests.md` to emit vitest.
 - `step-update-docs-and-readmes.md` — propagate `docs/` (skip `pypi-trusted-publishing.md`); rewrite all READMEs with the `rs-trafilatura` + Crawlee wording; strip PyPI / npm references.
 - `step-run-sync-commands.md` — run `/sync/docs` and `/sync/gui`; fix any drift they surface.
-- `step-local-and-platform-tests.md` — full local suite (`pnpm -r build / test / lint`, `cargo test`, `cargo clippy`); `apify run` smoke; `apify push` to `glueo/contextractor-test`; platform-test-runner suite.
+- `step-local-and-platform-tests.md` — full local suite (`npm run build -ws --if-present / npm run test -ws --if-present / npm run lint -ws --if-present`, `cargo test`, `cargo clippy`); `apify run` smoke; `apify push` to `glueo/contextractor-test`; platform-test-runner suite.
 - `step-generate-r-tools-prompt.md` — emit (do not execute) a structured prompt under `/Users/miroslavsekera/r/tools/prompts/2026-04-26-propagate-contextractor-rewrite/`.

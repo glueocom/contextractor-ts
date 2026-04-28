@@ -50,7 +50,7 @@ Replace the napi-rs stub crate from `step-prepare-workspace` with the real `rs-t
 
 ### Local prebuild
 
-- `pnpm -F @contextractor/engine-native build` → produces `contextractor-engine-native.darwin-arm64.node` plus `index.js` + `index.d.ts` at the package root.
+- `npm run build -w @contextractor/engine-native` → produces `contextractor-engine-native.darwin-arm64.node` plus `index.js` + `index.d.ts` at the package root.
 - The generated `index.js` and `index.d.ts` should be committed (they are the loader). Add `*.node` to `.gitignore` for this directory only — the cross-platform prebuilds in `npm/<platform>/` are committed there in the next step, but the package-root `.node` is a local-build artifact.
 
 ### Delete the Python original
@@ -71,6 +71,6 @@ Replace the napi-rs stub crate from `step-prepare-workspace` with the real `rs-t
 - `cargo build --workspace` succeeds.
 - `cargo clippy --workspace --all-targets -- -D warnings` passes with `expect_used`, `unwrap_used`, `missing_errors_doc` denied.
 - `cargo test --workspace` passes.
-- `pnpm -F @contextractor/engine-native build` produces `*.darwin-arm64.node` plus `index.js` and `index.d.ts` at the package root.
+- `npm run build -w @contextractor/engine-native` produces `*.darwin-arm64.node` plus `index.js` and `index.d.ts` at the package root.
 - `packages/contextractor_engine/` no longer exists; `packages/contextractor-engine/PYTHON_API_REFERENCE.md` exists and lists every Python public symbol.
 - The matching `../tests/step-test-build-napi-binding.md` passes.

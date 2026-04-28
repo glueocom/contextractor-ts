@@ -20,23 +20,23 @@ Replaces the v1 `apps/contextractor-apify/vendor/{engine,engine-native}/` workar
 }
 ```
 
-`dockerContextDir` is resolved relative to the `actor.json` file itself. Three `..` segments take `apps/contextractor-apify/.actor/actor.json` to the repo root. The Dockerfile then sees `packages/`, `pnpm-workspace.yaml`, `pnpm-lock.yaml`, etc.
+`dockerContextDir` is resolved relative to the `actor.json` file itself. Three `..` segments take `apps/contextractor-apify/.actor/actor.json` to the repo root. The Dockerfile then sees `packages/`, `package.json`, `package-lock.json`, etc.
 
 `apify push` does NOT honor `dockerContextDir` for contexts above the actor dir; the deploy must be a **Git-connected build** in the Apify Console (set Git URL + branch + folder = `apps/contextractor-apify`). `/platform:push-and-get-working --production` deploys via `apify push` and is therefore reserved for production after this migration adopts Git-connected builds.
 
 ## Dockerfile (multi-stage)
 
-Pattern: builder stage runs `pnpm install` + `pnpm deploy --prod` to produce a self-contained `/deploy`; runtime stage copies `/deploy` and starts the actor.
+Pattern: builder stage runs `npm ci` + `npm deploy --prod` to produce a self-contained `/deploy`; runtime stage copies `/deploy` and starts the actor.
 
 ```dockerfile
 FROM apify/actor-node-playwright-chrome:22 AS builder
 WORKDIR /repo
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY package.json package-lock.json ./
 COPY packages/ ./packages/
 COPY apps/contextractor-apify/ ./apps/contextractor-apify/
-RUN corepack enable && pnpm install --frozen-lockfile
-RUN pnpm --filter @contextractor/apify build
-RUN pnpm --filter @contextractor/apify --prod deploy /deploy
+RUN npm ci
+RUN npm run build -w @contextractor/apify
+RUN npm run deploy --prod -w @contextractor/apify -- /deploy
 
 FROM apify/actor-node-playwright-chrome:22
 WORKDIR /usr/src/app
@@ -46,9 +46,9 @@ CMD ["node", "dist/main.js"]
 
 Notes:
 
-- `pnpm deploy --prod` materializes a self-contained `node_modules` directory at `/deploy` (no symlinks, no workspace links). This is the canonical primitive — see <https://pnpm.io/cli/deploy>.
-- The pnpm deploy includes the napi-rs platform package matching the image's arch (linux-x64-gnu or linux-arm64-gnu, depending on the base image).
-- No Rust toolchain is installed in the image. The prebuilt `.node` is shipped through the workspace and copied by `pnpm deploy`.
+- `npm deploy --prod` materializes a self-contained `node_modules` directory at `/deploy` (no symlinks, no workspace links).
+- The npm deploy includes the napi-rs platform package matching the image's arch (linux-x64-gnu or linux-arm64-gnu, depending on the base image).
+- No Rust toolchain is installed in the image. The prebuilt `.node` is shipped through the workspace and copied by `npm deploy`.
 - Apify base images: `apify/actor-node-playwright-chrome:22` is the standard Node 22 + Playwright + Chromium image as of 2026-04-26.
 
 ## What this replaces

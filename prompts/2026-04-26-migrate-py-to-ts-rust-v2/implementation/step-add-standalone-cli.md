@@ -57,8 +57,8 @@ Port `/r/contextractor/apps/contextractor-standalone/` to TypeScript at `apps/co
 
 ## Done when
 
-- `pnpm -F @contextractor/standalone build` succeeds.
-- `pnpm -F @contextractor/standalone test` passes.
+- `npm run build -w @contextractor/standalone` succeeds.
+- `npm run test -w @contextractor/standalone` passes.
 - `node apps/contextractor-standalone/dist/cli.js --start-url https://blog.apify.com/what-is-web-scraping/ --format markdown --output-dir /tmp/contextractor-smoke` writes a non-empty markdown file.
 - `grep -rni 'xml\|xmltei' apps/contextractor-standalone/src/` returns nothing.
 - `grep -rni 'pyinstaller\|.spec\b\|build\.py' apps/contextractor-standalone/` returns nothing.

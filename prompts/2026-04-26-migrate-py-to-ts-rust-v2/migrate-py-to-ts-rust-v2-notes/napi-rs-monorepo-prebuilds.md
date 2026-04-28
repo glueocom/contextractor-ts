@@ -26,17 +26,17 @@ packages/contextractor-engine/
 
 ## Key points
 
-- The platform packages are workspace members listed in `pnpm-workspace.yaml` (e.g. `packages/contextractor-engine/native/npm/*`).
-- Main native `package.json` declares each platform package in `optionalDependencies` with `"workspace:*"`. pnpm picks the matching one via `os` + `cpu` fields.
+- The platform packages are workspace members listed in the `workspaces` array in `package.json` (e.g. `packages/contextractor-engine/native/npm/*`).
+- Main native `package.json` declares each platform package in `optionalDependencies` with `"*"`. npm picks the matching one via `os` + `cpu` fields.
 - `napi build --platform --release` outputs a `.node` file at the package root and the matching `index.js` + `index.d.ts` loader. CI commits these into the appropriate `npm/<platform>/` directory.
 - The `.node` files **are committed to git** so Apify's Git-connected build resolves them without running Rust.
 - The TS engine resolves the prebuild via `require('@contextractor/engine-native')`, which dispatches to the right platform package via the loader emitted by `@napi-rs/cli`.
 
 ## Apify Dockerfile path
 
-The actor's image runs `pnpm --filter @contextractor/apify --prod deploy /deploy`. pnpm deploy materializes a self-contained `node_modules` (no symlinks, per `pnpm.io/cli/deploy`) including the platform-matching prebuild. The runtime stage copies `/deploy` and runs the actor.
+The actor's image runs `npm --filter @contextractor/apify --prod deploy /deploy`. npm deploy materializes a self-contained `node_modules` (no symlinks) including the platform-matching prebuild. The runtime stage copies `/deploy` and runs the actor.
 
-`actor.json` sets `"dockerContextDir": "../../.."` so the Docker build context is the repo root — the Dockerfile sees `packages/contextractor-engine/`. Pattern follows `github.com/apify/actor-monorepo-example` (which uses npm; we substitute pnpm + `pnpm deploy`).
+`actor.json` sets `"dockerContextDir": "../../.."` so the Docker build context is the repo root — the Dockerfile sees `packages/contextractor-engine/`. Pattern follows `github.com/apify/actor-monorepo-example`.
 
 ## Pitfall: napi-rs `Result` type alias
 
@@ -52,7 +52,7 @@ A virtual workspace with `members = []` fails `cargo metadata`. The `step-prepar
 
 ## Pitfall: `vitest run` exit code with zero tests
 
-`vitest run` exits 1 when a package has no `*.test.ts`. Apps without tests (e.g. `apps/contextractor-apify`) need `vitest run --passWithNoTests` in their `test` script, or recursive `pnpm -r test` fails the whole tree.
+`vitest run` exits 1 when a package has no `*.test.ts`. Apps without tests (e.g. `apps/contextractor-apify`) need `vitest run --passWithNoTests` in their `test` script, or recursive `npm run test -ws --if-present` fails the whole tree.
 
 ## Pitfall: Biome's default scope
 

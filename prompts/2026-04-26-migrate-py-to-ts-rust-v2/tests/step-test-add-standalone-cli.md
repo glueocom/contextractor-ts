@@ -14,8 +14,8 @@ Reviews `../implementation/step-add-standalone-cli.md`. Verifies the TS CLI port
 
 - `apps/contextractor-standalone/{package.json, tsconfig.json, src/{cli.ts, crawler.ts, config.ts, cli.test.ts}}` all exist.
 - `package.json` declares `"@contextractor/engine": "workspace:*"`, `crawlee`, `playwright`, `commander` (or `yargs`), and a `bin` entry pointing to `dist/cli.js`.
-- `pnpm -F @contextractor/standalone build` succeeds.
-- `pnpm -F @contextractor/standalone test` passes (the CLI has at least one test).
+- `npm run build -w @contextractor/standalone` succeeds.
+- `npm run test -w @contextractor/standalone` passes (the CLI has at least one test).
 - A smoke run `node apps/contextractor-standalone/dist/cli.js --start-url https://blog.apify.com/what-is-web-scraping/ --format markdown --output-dir /tmp/contextractor-smoke` writes a non-empty markdown file.
 - `FORMAT_EXTENSIONS` in `crawler.ts` is exactly `{ txt, markdown, json, html }` — no `xml`, no `xmltei`.
 - CLI help string for `--config` says "Path to JSON config file" only; YAML support stays in code (silent).

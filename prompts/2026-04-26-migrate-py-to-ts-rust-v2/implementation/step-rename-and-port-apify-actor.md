@@ -2,7 +2,7 @@
 
 ## TLDR
 
-`git mv apps/contextractor apps/contextractor-apify`. Replace Python sources with TypeScript using the `apify` SDK + `crawlee` (TS) `PlaywrightCrawler`. Propagate `.actor/{actor.json, input_schema.json, output_schema.json, dataset_schema.json}` from the source repo with PyPI/npm references stripped, XML/XML-TEI enums dropped, and `pruneXpath`/`dateExtractionParams` removed from descriptions. Multi-stage Dockerfile using `pnpm --filter @contextractor/apify --prod deploy /deploy`. `actor.json.name` = `contextractor-test`.
+`git mv apps/contextractor apps/contextractor-apify`. Replace Python sources with TypeScript using the `apify` SDK + `crawlee` (TS) `PlaywrightCrawler`. Propagate `.actor/{actor.json, input_schema.json, output_schema.json, dataset_schema.json}` from the source repo with PyPI/npm references stripped, XML/XML-TEI enums dropped, and `pruneXpath`/`dateExtractionParams` removed from descriptions. Multi-stage Dockerfile using `npm run deploy --prod -w @contextractor/apify -- /deploy`. `actor.json.name` = `contextractor-test`.
 
 ## Skills and Agents
 
@@ -12,7 +12,7 @@
 ## Reference reading
 
 - `../migrate-py-to-ts-rust-v2-notes/source-repo-inventory.md` (apify section).
-- `../migrate-py-to-ts-rust-v2-notes/apify-monorepo-deploy.md` (Dockerfile, `dockerContextDir`, `pnpm deploy`).
+- `../migrate-py-to-ts-rust-v2-notes/apify-monorepo-deploy.md` (Dockerfile, `dockerContextDir`, `npm deploy`).
 - `../migrate-py-to-ts-rust-v2-notes/v1-lessons-codified.md` (production-actor protection).
 - `../user-entry-log/entry-qa-config-field-scope.md` (no-op fields to strip from input schema description).
 - `../user-entry-log/entry-initial-prompt.md` (Crawlee + rs-trafilatura wording rule).
@@ -63,14 +63,14 @@ For each of `actor.json`, `input_schema.json`, `output_schema.json`, `dataset_sc
 ### Multi-stage Dockerfile
 
 - Replace `apps/contextractor-apify/Dockerfile` with a multi-stage Node + Playwright Dockerfile per `../migrate-py-to-ts-rust-v2-notes/apify-monorepo-deploy.md`:
-  - Builder stage: `apify/actor-node-playwright-chrome:22 AS builder`. Copy `pnpm-workspace.yaml`, `pnpm-lock.yaml`, root `package.json`, then `packages/`, then `apps/contextractor-apify/`. `corepack enable && pnpm install --frozen-lockfile`. `pnpm --filter @contextractor/apify build`. `pnpm --filter @contextractor/apify --prod deploy /deploy`.
+  - Builder stage: `apify/actor-node-playwright-chrome:22 AS builder`. Copy root `package.json`, `package-lock.json`, then `packages/`, then `apps/contextractor-apify/`. `npm ci`. `npm run build -w @contextractor/apify`. `npm run deploy --prod -w @contextractor/apify -- /deploy`.
   - Runtime stage: `apify/actor-node-playwright-chrome:22`. `WORKDIR /usr/src/app`. `COPY --from=builder /deploy ./`. `CMD ["node", "dist/main.js"]`.
 - Document the chosen base image in `apps/contextractor-apify/README.md` (created in `step-update-docs-and-readmes`).
 
 ### Local smoke
 
-- `pnpm -F @contextractor/apify build` succeeds.
-- `pnpm -F @contextractor/apify start:dev` (or `apify run` from `apps/contextractor-apify/`) crawls a single URL and writes a dataset entry. Use `https://blog.apify.com/what-is-web-scraping/` (the existing `prefill`).
+- `npm run build -w @contextractor/apify` succeeds.
+- `npm run start:dev -w @contextractor/apify` (or `apify run` from `apps/contextractor-apify/`) crawls a single URL and writes a dataset entry. Use `https://blog.apify.com/what-is-web-scraping/` (the existing `prefill`).
 
 ## Constraints
 
@@ -87,7 +87,7 @@ For each of `actor.json`, `input_schema.json`, `output_schema.json`, `dataset_sc
 - `jq -r '.name' apps/contextractor-apify/.actor/actor.json` returns `contextractor-test`.
 - `jq -r '.dockerContextDir' apps/contextractor-apify/.actor/actor.json` returns `../../..`.
 - `jq -r '.description' apps/contextractor-apify/.actor/actor.json` mentions both `rs-trafilatura` and `Crawlee`, no PyPI / npm.
-- `pnpm -F @contextractor/apify build` succeeds.
+- `npm run build -w @contextractor/apify` succeeds.
 - `apify run` performs a tiny smoke crawl using the local engine.
 - `grep -ri 'pypi\|pip install\|browserforge\|trafilatura>=' apps/contextractor-apify/` returns nothing.
 - `grep -ri 'xml\|xmltei' apps/contextractor-apify/.actor/` returns nothing.

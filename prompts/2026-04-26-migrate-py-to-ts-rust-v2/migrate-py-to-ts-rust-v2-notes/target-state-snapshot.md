@@ -37,8 +37,8 @@ These are reverted-v1 build artifacts. The `step-prepare-workspace` step is the 
 ## Currently missing files the prompt will create
 
 - `package.json` (workspace root)
-- `pnpm-workspace.yaml`
-- `pnpm-lock.yaml`
+- `workspaces` array in `package.json`
+- `package-lock.json`
 - `Cargo.toml` (workspace root with single member: the napi-rs crate)
 - `biome.json`
 - `tsconfig.json` (root)

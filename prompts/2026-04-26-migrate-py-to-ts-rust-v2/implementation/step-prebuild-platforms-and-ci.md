@@ -14,7 +14,7 @@ Build cross-platform `.node` files for `darwin-arm64`, `darwin-x64`, `linux-x64-
 - `../user-entry-log/entry-qa-prebuild-distribution.md` (workspace packages with committed binaries; no external publishing; **prebuild only the napi-rs wrapper, not the whole TS engine**).
 - `../user-entry-log/entry-qa-ci-scope.md` (only `build-napi.yml`; no other workflows).
 - `../migrate-py-to-ts-rust-v2-notes/napi-rs-monorepo-prebuilds.md` (layout, loader, ignores).
-- Templates: `napi-rs/package-template-pnpm` and `napi.rs/docs/deep-dive/release` for the GitHub Actions matrix.
+- Templates: `napi-rs/package-template-npm` and `napi.rs/docs/deep-dive/release` for the GitHub Actions matrix.
 
 ## Actions
 
@@ -33,7 +33,7 @@ For each platform in `{darwin-arm64, darwin-x64, linux-x64-gnu, linux-arm64-gnu}
 
 ### Cross-compilation
 
-- Local: `pnpm -F @contextractor/engine-native build --target aarch64-apple-darwin` and the matching `x86_64-apple-darwin`. Use Apple's universal toolchain — both targets compile on a `darwin-arm64` host without extra setup.
+- Local: `npm run build -w @contextractor/engine-native -- --target aarch64-apple-darwin` and the matching `x86_64-apple-darwin`. Use Apple's universal toolchain — both targets compile on a `darwin-arm64` host without extra setup.
 - Linux targets cross-compile via `cargo-zigbuild` (recommended by napi-rs) or via Docker images (`ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64`). Document the chosen path in the workflow.
 - Each successful build leaves `contextractor-engine-native.<platform>.node` next to the per-platform `package.json`.
 
@@ -55,14 +55,14 @@ For each platform in `{darwin-arm64, darwin-x64, linux-x64-gnu, linux-arm64-gnu}
 ### `.github/workflows/build-napi.yml`
 
 - Trigger on `push: tags: ["v*"]` and `workflow_dispatch`.
-- One job per platform target. Use `actions/setup-node@v4` with Node 22 plus `actions-rust-lang/setup-rust-toolchain@v1` and `pnpm/action-setup@v4`.
-- For each job: `pnpm install --frozen-lockfile`; `pnpm -F @contextractor/engine-native build --target <triple>`; upload the `.node` artifact.
+- One job per platform target. Use `actions/setup-node@v4` with Node 22 and `cache: 'npm'` plus `actions-rust-lang/setup-rust-toolchain@v1`.
+- For each job: `npm ci`; `npm run build -w @contextractor/engine-native -- --target <triple>`; upload the `.node` artifact.
 - Final aggregation job: download all artifacts; commit them back to `packages/contextractor-engine/native/npm/<platform>/` on a release branch and open a PR (or push directly to a release branch — pick one; document in the workflow file).
 - The workflow does not run tests, lint, or any other check — those land in a separate workflow that is **out of scope** for this prompt.
 
-### `pnpm install` sanity
+### `npm install` sanity
 
-- After committing the prebuilds, `pnpm install` should keep `pnpm-lock.yaml` minimal (no extra entries beyond the workspace links).
+- After committing the prebuilds, `npm install` should keep `package-lock.json` minimal (no extra entries beyond the workspace links).
 
 ## Constraints
 
@@ -74,7 +74,7 @@ For each platform in `{darwin-arm64, darwin-x64, linux-x64-gnu, linux-arm64-gnu}
 
 - `packages/contextractor-engine/native/npm/{darwin-arm64,darwin-x64,linux-x64-gnu,linux-arm64-gnu}/{package.json,*.node}` all exist and are tracked.
 - `packages/contextractor-engine/native/package.json` `optionalDependencies` lists all four `workspace:*` entries.
-- `pnpm install` succeeds; `pnpm-lock.yaml` updates only with workspace links (no external optional deps).
+- `npm install` succeeds; `package-lock.json` updates only with workspace links (no external optional deps).
 - `node -e "require('@contextractor/engine-native')"` succeeds on the host (resolves to the matching prebuild via the loader).
 - `.github/workflows/build-napi.yml` exists, lints cleanly with `actionlint` (or equivalent), and triggers on `v*` tags.
 - The matching `../tests/step-test-prebuild-platforms-and-ci.md` passes.

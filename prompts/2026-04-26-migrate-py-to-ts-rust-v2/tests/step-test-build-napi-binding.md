@@ -16,7 +16,7 @@ Reviews `../implementation/step-build-napi-binding.md`. Verifies the napi-rs cra
 - `cargo build --workspace` succeeds.
 - `cargo clippy --workspace --all-targets -- -D warnings` passes; verify `expect_used`, `unwrap_used`, `missing_errors_doc` are denied in `Cargo.toml` and no `#[allow(...)]` blanket overrides exist.
 - `cargo test --workspace` passes.
-- `pnpm -F @contextractor/engine-native build` produces `*.darwin-arm64.node`, `index.js`, `index.d.ts` at the package root.
+- `npm run build -w @contextractor/engine-native` produces `*.darwin-arm64.node`, `index.js`, `index.d.ts` at the package root.
 - `index.d.ts` exposes `extract`, `extractMetadata`, `extractAllFormats`, `Metadata`, `ExtractionResult`, `TrafilaturaConfig`. The `Result<T>` type is bare (no aliased name leaking into `.d.ts` — see `napi-rs-monorepo-prebuilds.md`).
 - The Rust `Options` mapping does not pass `prune_xpath`, `tei_validation`, `with_metadata`, or `date_extraction_params` into rs-trafilatura — they are accepted by the binding but not forwarded.
 - `packages/contextractor_engine/` (Python original) is gone.

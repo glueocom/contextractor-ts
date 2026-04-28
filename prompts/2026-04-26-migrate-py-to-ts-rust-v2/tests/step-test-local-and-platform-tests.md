@@ -12,7 +12,7 @@ Reviews `../implementation/step-local-and-platform-tests.md`. Verifies the full 
 
 ## Verification
 
-- Local matrix passes: `pnpm -r build`, `pnpm -r lint`, `pnpm -r test`, `cargo build --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `biome check .`, and `apify run` from `apps/contextractor-apify/`.
+- Local matrix passes: `npm run build -ws --if-present`, `npm run lint -ws --if-present`, `npm run test -ws --if-present`, `cargo build --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `biome check .`, and `apify run` from `apps/contextractor-apify/`.
 - Test-actor build status: `apify actor get glueo/contextractor-test | jq -r '.stats.lastBuildStatus'` returns `SUCCEEDED`.
 - A smoke `apify call glueo/contextractor-test --input ...` from this run produces extracted output.
 - The platform-test-runner (`tools/platform-test-runner/`) passes against `glueo/contextractor-test`.

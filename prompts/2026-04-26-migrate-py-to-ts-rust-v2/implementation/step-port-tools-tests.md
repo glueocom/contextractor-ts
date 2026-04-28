@@ -43,7 +43,7 @@ Rewrite `tools/generated-unit-tests/` as a vitest TypeScript package against `@c
 ### Refresh `.claude/commands/platform-tests/generate-unit-tests.md`
 
 - Update the command so it emits vitest test files (TypeScript, vitest's `it`/`expect`/`describe`), not pytest or cargo integration tests.
-- Update any code paths in the command that referenced Python tooling (`pytest`, `uv`, `pyproject.toml`) to their TS equivalents (`vitest`, `pnpm`, `package.json`).
+- Update any code paths in the command that referenced Python tooling (`pytest`, `uv`, `pyproject.toml`) to their TS equivalents (`vitest`, `npm`, `package.json`).
 - Update file-path examples in the command's body to reference `tools/generated-unit-tests/*.test.ts`.
 
 ## Constraints
@@ -56,7 +56,7 @@ Rewrite `tools/generated-unit-tests/` as a vitest TypeScript package against `@c
 ## Done when
 
 - `tools/generated-unit-tests/` contains `package.json`, `tsconfig.json`, `vitest.config.ts`, at least the same number of `*.test.ts` cases as the source repo's `test_*.py` files, and `fixtures/`.
-- `pnpm -F @contextractor/generated-unit-tests test` passes.
+- `npm run test -w @contextractor/generated-unit-tests` passes.
 - `.claude/commands/platform-tests/generate-unit-tests.md` references vitest only.
 - `grep -ri 'pytest\|conftest\|pyproject' tools/generated-unit-tests/` returns nothing.
 - The matching `../tests/step-test-port-tools-tests.md` passes.

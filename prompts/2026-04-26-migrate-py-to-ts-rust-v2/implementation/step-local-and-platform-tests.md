@@ -21,10 +21,10 @@ Run the full local test matrix, then deploy to **`glueo/contextractor-test` only
 
 Run in order; abort on the first failure and fix before proceeding:
 
-- `pnpm install --frozen-lockfile`
-- `pnpm -r build`
-- `pnpm -r lint`
-- `pnpm -r test`
+- `npm ci`
+- `npm run build -ws --if-present`
+- `npm run lint -ws --if-present`
+- `npm run test -ws --if-present`
 - `cargo build --workspace`
 - `cargo clippy --workspace --all-targets -- -D warnings`
 - `cargo test --workspace`
@@ -54,7 +54,7 @@ Deploy:
 - **Never push to `glueo/contextractor`** in this step. The deny list and the `Step ACTOR_NAME_GUARD` are the safety nets — do not bypass either.
 - Do not run `--production`. The flag is documented for posterity but disabled here.
 - Do not skip the local matrix in favor of "just push and see" — the local matrix catches issues that platform builds make slower to diagnose.
-- If the local matrix fails, **stop the step**, fix the failure, and re-run from `pnpm install`.
+- If the local matrix fails, **stop the step**, fix the failure, and re-run from `npm ci`.
 
 ## Done when
 

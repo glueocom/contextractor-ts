@@ -22,8 +22,8 @@ Reviews `../implementation/step-rename-and-port-apify-actor.md`. Verifies the re
 - `grep -ri 'pruneXpath\|dateExtractionParams' apps/contextractor-apify/.actor/` returns nothing.
 - `apps/contextractor-apify/package.json` declares `"@contextractor/engine": "workspace:*"`, `apify`, `crawlee`, `playwright`, plus Biome / vitest / TS dev deps.
 - `apps/contextractor-apify/package.json` `scripts.test` includes `--passWithNoTests`.
-- `apps/contextractor-apify/Dockerfile` is multi-stage, uses `apify/actor-node-playwright-chrome:22`, and runs `pnpm --filter @contextractor/apify --prod deploy /deploy`.
-- `pnpm -F @contextractor/apify build` succeeds.
+- `apps/contextractor-apify/Dockerfile` is multi-stage, uses `apify/actor-node-playwright-chrome:22`, and runs `npm run deploy --prod -w @contextractor/apify -- /deploy`.
+- `npm run build -w @contextractor/apify` succeeds.
 - `apify run` from `apps/contextractor-apify/` writes a non-empty dataset entry against the default test URL.
 - `grep -ri 'pypi\|pip install\|browserforge\|trafilatura>=' apps/contextractor-apify/` returns nothing.
 
@@ -31,7 +31,7 @@ Reviews `../implementation/step-rename-and-port-apify-actor.md`. Verifies the re
 
 - `actor.json` description missing the Crawlee mention — edit to add it.
 - `vendor/` directory present — `rm -rf` it and add `"@contextractor/engine": "workspace:*"` to `package.json`.
-- Multi-stage Dockerfile missing `pnpm deploy` — rewrite per `apify-monorepo-deploy.md`.
+- Multi-stage Dockerfile missing `npm deploy` — rewrite per `apify-monorepo-deploy.md`.
 - Stale Python imports in TS sources — replace with the TS equivalent.
 
 ## Done when
