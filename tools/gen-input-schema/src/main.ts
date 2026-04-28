@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ContextractorInput, writeApifyInputSchema } from '@contextractor/schema';
@@ -14,4 +15,8 @@ const out = process.argv[2]
   : resolve(repoRoot, 'apps/contextractor-apify/.actor/input_schema.json');
 
 writeApifyInputSchema(ContextractorInput, out, { title: 'Contextractor' });
+execFileSync('npm', ['exec', '--', 'biome', 'format', '--write', out], {
+  cwd: repoRoot,
+  stdio: 'inherit',
+});
 console.log(`Wrote ${out}`);

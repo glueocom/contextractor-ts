@@ -8,10 +8,15 @@ the Zod schema to `apps/contextractor-apify/.actor/input_schema.json`. The
 standalone CLI and the Apify Actor both feed user input through
 `ContextractorInput.parse(...)` to validate and type it.
 
+Contextractor is built on
+[`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
+(extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
+Playwright); this package defines the shared input contract for both surfaces.
+
 ## Install
 
 ```bash
-pnpm add @contextractor/schema
+npm install
 ```
 
 ## Exports

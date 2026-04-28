@@ -122,7 +122,16 @@ export function buildProgram(): Command {
 export const program = buildProgram();
 
 if (isMainEntry()) {
-  await program.parseAsync(process.argv);
+  try {
+    await program.parseAsync(process.argv);
+    // Crawlee/Playwright can keep background handles alive after the crawl has
+    // completed; exit explicitly so the standalone CLI behaves like a normal
+    // one-shot command.
+    process.exit(0);
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  }
 }
 
 function isMainEntry(): boolean {

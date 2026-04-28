@@ -16,9 +16,7 @@ This monorepo hosts:
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`. XML and XML-TEI are temporarily unsupported
-pending upstream `rs-trafilatura` work — the Python source supported them via
-Trafilatura.
+`txt`, `markdown`, `json`, `html`.
 
 ## Input schema
 
@@ -80,15 +78,15 @@ interface ContextractorInputType {
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (older versions reject the modern `actor.json` format
   with "Actor is of an unknown format").
-- **Node 22+**, **pnpm 10+**.
+- **Node 22+**, **npm 10+**.
 
 ## Workspace commands
 
 ```bash
-pnpm -r build                                          # Build all TS packages
-pnpm -r test                                           # Run all vitest suites
-pnpm -r lint                                           # Biome lint
-pnpm -F @contextractor/engine-native build             # Build the napi-rs .node
+npm run build                                          # Build all TS packages
+npm run test                                           # Run all vitest suites
+npm run lint                                           # Biome lint
+npm run build -w @contextractor/engine-native          # Build the napi-rs .node
 cargo build --workspace                                # Build the napi-rs Rust crate
 cargo test --workspace                                 # Cargo unit tests
 cargo clippy --workspace --all-targets -- -D warnings  # Strict Rust lints
@@ -113,4 +111,4 @@ tools/
 
 ## Docs version
 
-Docs version: 2026-04-27.
+Docs version: 2026-04-28T18:04:43Z.

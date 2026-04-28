@@ -29,32 +29,19 @@ COPY apps/contextractor-apify/ apps/contextractor-apify/
 COPY tools/gen-input-schema/ tools/gen-input-schema/
 COPY tools/gen-md-regions/ tools/gen-md-regions/
 
-# Build packages in dependency order, then prune dev deps.
+# Build packages in dependency order, then materialize a self-contained actor
+# bundle with no workspace symlinks.
 RUN npm run build -w @contextractor/schema \
     && npm run build -w @contextractor/engine \
     && npm run build -w @contextractor/standalone \
     && npm run build -w @contextractor/apify \
-    && npm prune --omit=dev
+    && npm prune --omit=dev \
+    && npm run deploy --prod -w @contextractor/apify -- /deploy
 
 FROM apify/actor-node-playwright-chrome:22
 
-WORKDIR /repo
+WORKDIR /usr/src/app
 
-COPY --from=builder /repo/package.json ./
-COPY --from=builder /repo/package-lock.json ./
-COPY --from=builder /repo/.npmrc ./
-COPY --from=builder /repo/node_modules ./node_modules
-COPY --from=builder /repo/packages/contextractor-schema ./packages/contextractor-schema
-COPY --from=builder /repo/packages/contextractor-engine/package.json packages/contextractor-engine/
-COPY --from=builder /repo/packages/contextractor-engine/dist packages/contextractor-engine/dist
-COPY --from=builder /repo/packages/contextractor-engine/native/package.json packages/contextractor-engine/native/
-COPY --from=builder /repo/packages/contextractor-engine/native/index.js packages/contextractor-engine/native/
-COPY --from=builder /repo/packages/contextractor-engine/native/index.d.ts packages/contextractor-engine/native/
-COPY --from=builder /repo/packages/contextractor-engine/native/npm packages/contextractor-engine/native/npm
-COPY --from=builder /repo/apps/contextractor-apify/package.json apps/contextractor-apify/
-COPY --from=builder /repo/apps/contextractor-apify/.actor apps/contextractor-apify/.actor
-COPY --from=builder /repo/apps/contextractor-apify/dist apps/contextractor-apify/dist
-
-WORKDIR /repo/apps/contextractor-apify
+COPY --from=builder /deploy ./
 
 CMD ["node", "dist/main.js"]

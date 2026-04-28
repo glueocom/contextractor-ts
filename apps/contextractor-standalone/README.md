@@ -8,9 +8,7 @@ Playwright).
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`. XML and XML-TEI are temporarily unsupported
-pending upstream `rs-trafilatura` work — the Python source supported them via
-Trafilatura.
+`txt`, `markdown`, `json`, `html`.
 
 ## Usage
 
@@ -147,12 +145,12 @@ stripped by `parse()`.
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (workspace-level; needed by the sibling Actor).
-- **Node 22+**, **pnpm 10+**.
+- **Node 22+**, **npm 10+**.
 
 ## Local development
 
 ```bash
-pnpm install
-pnpm -F @contextractor/standalone build
+npm install
+npm run build -w @contextractor/standalone
 node apps/contextractor-standalone/dist/cli.js https://example.com -o /tmp/contextractor
 ```

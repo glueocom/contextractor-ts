@@ -66,7 +66,7 @@ Trafilatura.
 ## Local prerequisites
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
-- **Node 22+**, **pnpm 10+**.
+- **Node 22+**, **npm 10+**.
 
 ## Pitfalls
 
@@ -82,7 +82,8 @@ Trafilatura.
 - **Empty Cargo workspace `members = []` fails `cargo metadata`.** The
   napi-rs crate must exist as soon as the workspace is created.
 - **`vitest run` exits 1 on zero tests.** Apps with no tests pass
-  `--passWithNoTests` so recursive `pnpm -r test` does not break.
+  `--passWithNoTests` so recursive `npm run test -ws --if-present` does not
+  break.
 
 ## XML / XML-TEI gap
 

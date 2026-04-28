@@ -11,7 +11,7 @@
 - **commander** for the standalone CLI.
 - **vitest** for unit tests; **cargo test** for the napi-rs crate's tests.
 - **Biome** for TS lint + format.
-- **pnpm 10** workspace + **Cargo workspace** at the repo root.
+- **npm 10** workspace + **Cargo workspace** at the repo root.
 
 ## Architecture
 
@@ -58,7 +58,7 @@ TS engine → require('@contextractor/engine-native')
 ```
 
 The `@contextractor/engine-native` package declares each per-platform package
-in `optionalDependencies`. pnpm picks the platform-matching one via `os` +
+in `optionalDependencies`. npm picks the platform-matching one via `os` +
 `cpu` resolution at install time. The `.node` files for `darwin-arm64`,
 `darwin-x64`, `linux-x64-gnu`, and `linux-arm64-gnu` are committed to git and
 refreshed by `.github/workflows/build-napi.yml` on tag pushes.
@@ -171,22 +171,22 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 Local prebuild for the host platform:
 
 ```bash
-pnpm -F @contextractor/engine-native build
+npm run build -w @contextractor/engine-native
 ```
 
 Cross-platform prebuilds (CI runs the equivalent matrix):
 
 ```bash
-pnpm -F @contextractor/engine-native exec napi build --platform --release --target aarch64-apple-darwin
-pnpm -F @contextractor/engine-native exec napi build --platform --release --target x86_64-apple-darwin
-pnpm -F @contextractor/engine-native exec napi build --platform --release --target x86_64-unknown-linux-gnu --zig
-pnpm -F @contextractor/engine-native exec napi build --platform --release --target aarch64-unknown-linux-gnu --zig
+npm exec -w @contextractor/engine-native -- napi build --platform --release --target aarch64-apple-darwin
+npm exec -w @contextractor/engine-native -- napi build --platform --release --target x86_64-apple-darwin
+npm exec -w @contextractor/engine-native -- napi build --platform --release --target x86_64-unknown-linux-gnu --zig
+npm exec -w @contextractor/engine-native -- napi build --platform --release --target aarch64-unknown-linux-gnu --zig
 ```
 
 TypeScript builds:
 
 ```bash
-pnpm -r build
+npm run build
 ```
 
 ## Docker (Apify Actor)
@@ -195,11 +195,11 @@ Multi-stage Node + Playwright Dockerfile at
 `apps/contextractor-apify/Dockerfile`:
 
 - Builder stage: `apify/actor-node-playwright-chrome:22 AS builder`. Runs
-  `pnpm install --frozen-lockfile`, `pnpm --filter @contextractor/apify build`,
-  `pnpm --filter @contextractor/apify --prod deploy /deploy` to produce a
-  self-contained `node_modules` (no symlinks; `pnpm.io/cli/deploy`).
-- Runtime stage: `apify/actor-node-playwright-chrome:22`. Copies `/deploy` and
-  runs `node dist/main.js`.
+  `npm ci`, `npm run build -w @contextractor/apify`, then
+  `npm run deploy --prod -w @contextractor/apify -- /deploy` to produce a
+  self-contained actor bundle with no workspace symlinks.
+- Runtime stage: `apify/actor-node-playwright-chrome:22`. Copies `/deploy` to
+  `/usr/src/app` and runs `node dist/main.js`.
 
 `actor.json` sets `"dockerContextDir": "../../.."` so the Docker build context
 is the repo root, exposing `packages/contextractor-engine/`. Production

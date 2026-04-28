@@ -186,16 +186,8 @@
       "description": "Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails.",
       "editor": "select",
       "default": "RECOMMENDED",
-      "enum": [
-        "RECOMMENDED",
-        "PER_REQUEST",
-        "UNTIL_FAILURE"
-      ],
-      "enumTitles": [
-        "Recommended",
-        "Rotate per request",
-        "Use until failure"
-      ]
+      "enum": ["RECOMMENDED", "PER_REQUEST", "UNTIL_FAILURE"],
+      "enumTitles": ["Recommended", "Rotate per request", "Use until failure"]
     },
     "pageLoadTimeoutSecs": {
       "sectionCaption": "Browser",
@@ -214,16 +206,8 @@
       "description": "When to consider navigation finished",
       "editor": "select",
       "default": "LOAD",
-      "enum": [
-        "NETWORKIDLE",
-        "LOAD",
-        "DOMCONTENTLOADED"
-      ],
-      "enumTitles": [
-        "Network idle",
-        "Load event",
-        "DOM content loaded"
-      ]
+      "enum": ["NETWORKIDLE", "LOAD", "DOMCONTENTLOADED"],
+      "enumTitles": ["Network idle", "Load event", "DOM content loaded"]
     },
     "launcher": {
       "title": "Browser type",
@@ -231,14 +215,8 @@
       "description": "Browser to use for crawling",
       "editor": "select",
       "default": "CHROMIUM",
-      "enum": [
-        "CHROMIUM",
-        "FIREFOX"
-      ],
-      "enumTitles": [
-        "Chromium",
-        "Firefox"
-      ]
+      "enum": ["CHROMIUM", "FIREFOX"],
+      "enumTitles": ["Chromium", "Firefox"]
     },
     "headless": {
       "title": "Headless mode",
@@ -301,7 +279,5 @@
       "default": false
     }
   },
-  "required": [
-    "startUrls"
-  ]
+  "required": ["startUrls"]
 }

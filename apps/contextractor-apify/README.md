@@ -8,21 +8,19 @@ Playwright).
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`. XML and XML-TEI are temporarily unsupported
-pending upstream `rs-trafilatura` work — the Python source supported them via
-Trafilatura.
+`txt`, `markdown`, `json`, `html`.
 
 ## Local prerequisites
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (older versions reject the modern `actor.json` format).
-- **Node 22+**, **pnpm 10+**.
+- **Node 22+**, **npm 10+**.
 
 ## Local development
 
 ```bash
-pnpm install
-pnpm -F @contextractor/apify build
+npm install
+npm run build -w @contextractor/apify
 apify run            # from apps/contextractor-apify/
 ```
 

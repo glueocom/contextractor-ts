@@ -39,7 +39,7 @@ Run each check below. The Zod schema is canonical for input fields; the TS engin
 - **OutputFormat union** — the TS `OutputFormat` union, the napi-rs string enum, and `FORMAT_EXTENSIONS` in the CLI must all be exactly `txt | markdown | json | html`. Any reappearance of `xml` or `xmltei` is a regression.
 - **No-op fields** — `pruneXpath` and `dateExtractionParams` are dropped (no rs-trafilatura 0.2.x backing). Flag any reappearance.
 - **Actor metadata** — `actor.json.name` is `contextractor-test` (or `contextractor` for production); `actor.json.dockerContextDir` is `"../../.."`; `actor.json.description` mentions "built on rs-trafilatura and Crawlee".
-- **Workspace deps** — the Apify Actor and the standalone CLI both declare `"@contextractor/engine": "workspace:*"` and `"@contextractor/schema": "workspace:*"` (no `vendor/` directory).
+- **Workspace deps** — the Apify Actor and the standalone CLI both declare `"@contextractor/engine": "*"` and `"@contextractor/schema": "*"` under the root npm workspaces setup (no `vendor/` directory).
 
 ## Step REPORT and AUTO-FIX
 

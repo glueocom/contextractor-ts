@@ -7,6 +7,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "npm run start -w @contextractor/gen-input-schema && npm run start -w @contextractor/gen-md-regions && tsc -p tsconfig.json",
+    "deploy": "node scripts/deploy.mjs",
     "start": "node dist/main.js",
     "start:prod": "node dist/main.js",
     "start:dev": "tsx src/main.ts",
