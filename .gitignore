@@ -27,7 +27,6 @@ packages/contextractor-engine/native/*.node
 
 # Environments
 .env
-.venv/
 env/
 venv/
 ENV/

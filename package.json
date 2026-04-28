@@ -3,16 +3,11 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "packages/contextractor-schema",
-    "packages/contextractor-engine/native",
-    "packages/contextractor-engine",
-    "apps/contextractor-standalone",
-    "apps/contextractor-apify",
-    "tools/gen-input-schema",
-    "tools/gen-md-regions",
-    "tools/generated-unit-tests",
-    "tools/opencode-sync",
-    "tools/platform-test-runner"
+    "apps/*",
+    "packages/*",
+    "packages/*/native",
+    "packages/*/native/npm/*",
+    "tools/*"
   ],
   "packageManager": "npm@10.0.0",
   "engines": {
@@ -23,8 +18,8 @@
     "build": "npm run build -ws --if-present",
     "test": "npm run test -ws --if-present",
     "lint": "npm run lint -ws --if-present",
-    "format": "biome format --write .",
-    "check": "biome check .",
+    "format": "npm run format -ws --if-present",
+    "check": "npm run check -ws --if-present",
     "docs:update": "npm run start -w @contextractor/gen-md-regions",
     "docs:check": "npm run docs:update && git diff --exit-code -- '**/*.md'",
     "opencode:sync": "npm run start -w @contextractor/opencode-sync"
