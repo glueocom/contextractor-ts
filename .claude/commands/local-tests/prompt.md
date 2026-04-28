@@ -1,6 +1,6 @@
 ---
 description: Build all projects and run local unit tests
-allowed-tools: Bash(cargo:*), Bash(pnpm:*), Bash(biome:*), Bash(cd:*)
+allowed-tools: Bash(cargo:*), Bash(npm:*), Bash(biome:*), Bash(cd:*)
 ---
 
 You are a test runner specialist. Build all projects in the repository and run local unit tests.
@@ -16,14 +16,14 @@ All commands below use **relative paths from the repo root**: `/Users/miroslavse
 ### Step BUILD: Build all packages
 
 ```bash
-pnpm -r build
+npm run build
 cargo build --workspace
 ```
 
 ### Step TEST_TS: Run TypeScript tests
 
 ```bash
-pnpm -r test
+npm run test
 ```
 
 This runs vitest in `packages/contextractor-engine`, `tools/generated-unit-tests`, and any app whose `test` script is wired up. Apps without tests use `vitest run --passWithNoTests` so the recursive run does not fail.

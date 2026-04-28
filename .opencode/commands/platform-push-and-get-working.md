@@ -50,9 +50,9 @@ Execute this loop until the build succeeds.
 ### Step VALIDATE: Validate Locally First
 
 ```bash
-pnpm -r build
-pnpm -r lint
-pnpm -r test
+npm run build
+npm run lint
+npm run test
 cargo build --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ```
@@ -61,7 +61,7 @@ If any check fails, fix the errors before proceeding. Skip with `skip-validation
 
 ### Step PUSH: Push to Apify
 
-The 2026 standard pattern is a **Git-connected build** in Apify Console — that path honors `dockerContextDir: "../../.."` in `.actor/actor.json` and gives the Dockerfile access to the workspace root (so `pnpm --filter @contextractor/apify deploy --prod /deploy` works against the entire repo). If a Git integration is configured for the target actor, prefer pushing to GitHub and triggering the build there.
+The 2026 standard pattern is a **Git-connected build** in Apify Console — that path honors `dockerContextDir: "../../.."` in `.actor/actor.json` and gives the Dockerfile access to the workspace root (so `npm run build -w @contextractor/apify` works against the entire repo). If a Git integration is configured for the target actor, prefer pushing to GitHub and triggering the build there.
 
 For CLI fallback (no Git integration on the actor), `apify push` blocks on contexts above the actor dir — use only when the Dockerfile context fits inside `apps/contextractor-apify/`.
 
@@ -135,7 +135,7 @@ If **RUN FAILED**:
 `$ARGUMENTS` — optional:
 
 - `--production` — push to production actor `glueo/contextractor` instead of test (requires the `apify push glueo/contextractor` deny rule to be overridden)
-- `skip-validation` — skip local `pnpm` and `cargo` checks
+- `skip-validation` — skip local `npm` and `cargo` checks
 
 ## Error Type Reference
 
@@ -145,7 +145,7 @@ If **RUN FAILED**:
 | `Invalid output schema` | `apps/contextractor-apify/.actor/output_schema.json` |
 | `Invalid dataset schema` | `apps/contextractor-apify/.actor/dataset_schema.json` |
 | `COPY failed` | `apps/contextractor-apify/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
-| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify deploy --prod /deploy` |
+| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
 | `error[E0` | napi-rs crate at `packages/contextractor-engine/native/src/` — fix types |
 | `error: linking with` | `apps/contextractor-apify/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
@@ -157,7 +157,7 @@ If **RUN FAILED**:
 
 The workflow completes when:
 
-- Local `pnpm -r build`, `pnpm -r lint`, `pnpm -r test` pass
+- Local `npm run build`, `npm run lint`, `npm run test` pass
 - Local `cargo build --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` pass
 - The actor build on `glueo/contextractor-test` (or `glueo/contextractor` for `--production`) is `SUCCEEDED`
 - Test crawl completes successfully

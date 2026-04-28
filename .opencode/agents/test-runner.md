@@ -20,7 +20,7 @@ If any step fails, report and stop.
 ### Step BUILD: Build Workspace
 
 ```bash
-pnpm -r build
+npm run build
 cargo build --workspace
 ```
 
@@ -28,7 +28,7 @@ cargo build --workspace
 
 ```bash
 cargo test --workspace                                   # napi-rs crate (the only Rust crate)
-pnpm -r test                                             # vitest across packages and apps
+npm run test                                             # vitest across packages and apps
 ```
 
 ### Step SMOKE: Actor Smoke Run

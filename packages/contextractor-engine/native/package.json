@@ -27,9 +27,9 @@
     "build:debug": "napi build --platform"
   },
   "optionalDependencies": {
-    "@contextractor/engine-native-darwin-arm64": "workspace:*",
-    "@contextractor/engine-native-darwin-x64": "workspace:*",
-    "@contextractor/engine-native-linux-x64-gnu": "workspace:*",
-    "@contextractor/engine-native-linux-arm64-gnu": "workspace:*"
+    "@contextractor/engine-native-darwin-arm64": "file:./npm/darwin-arm64",
+    "@contextractor/engine-native-darwin-x64": "file:./npm/darwin-x64",
+    "@contextractor/engine-native-linux-x64-gnu": "file:./npm/linux-x64-gnu",
+    "@contextractor/engine-native-linux-arm64-gnu": "file:./npm/linux-arm64-gnu"
   }
 }

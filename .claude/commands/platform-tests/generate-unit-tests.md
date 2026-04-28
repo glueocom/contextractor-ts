@@ -134,7 +134,7 @@ The vitest package has tests, so `--passWithNoTests` is **not** used here.
 ### Step RUN: Run Tests
 
 ```bash
-pnpm -F @contextractor/generated-unit-tests test
+npm run test -w @contextractor/generated-unit-tests
 ```
 
 ### Step FIX: Fix Errors

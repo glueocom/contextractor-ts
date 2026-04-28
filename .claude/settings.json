@@ -41,7 +41,7 @@
       "Bash(cargo-fmt:*)",
       "Bash(npm:*)",
       "Bash(npx:*)",
-      "Bash(pnpm:*)",
+      "Bash(npm:*)",
       "Bash(node:*)",
       "Bash(tsx:*)",
       "Bash(biome:*)",

@@ -28,10 +28,10 @@ tools/
 ## Commands
 
 ```bash
-pnpm -r build                                              # Build all TS packages
-pnpm -r test                                               # All vitest tests (apps/* and packages/*)
-pnpm -r lint                                               # Biome lint across workspace
-pnpm -F @contextractor/engine-native build                 # Build napi-rs .node for current platform
+npm run build                                              # Build all TS packages
+npm run test                                               # All vitest tests (apps/* and packages/*)
+npm run lint                                               # Biome lint across workspace
+npm run build -w @contextractor/engine-native              # Build napi-rs .node for current platform
 cargo build --workspace                                    # Build napi-rs crate (only Rust crate in workspace)
 cargo test --workspace                                     # Cargo tests for the napi-rs crate
 cargo clippy --workspace --all-targets -- -D warnings      # Lint Rust (napi-rs crate)
@@ -41,13 +41,13 @@ apify run                                                  # Run Actor locally f
 apify login                                                # Authenticate (Apify CLI ≥ 1.4 required)
 ```
 
-Production deploys go through a **Git-connected build** in Apify Console (not `apify push`) so `dockerContextDir: "../../.."` in `.actor/actor.json` resolves to the repo root and the Dockerfile sees `packages/contextractor-engine/`. The `.node` prebuilds are produced by CI (`linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64`) and shipped via `optionalDependencies` so the in-image `pnpm install` does not need a Rust toolchain. See `github.com/apify/actor-monorepo-example` for the canonical pattern.
+Production deploys go through a **Git-connected build** in Apify Console (not `apify push`) so `dockerContextDir: "../../.."` in `.actor/actor.json` resolves to the repo root and the Dockerfile sees `packages/contextractor-engine/`. The `.node` prebuilds are produced by CI (`linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64`) and shipped via `optionalDependencies` so the in-image `npm ci` does not need a Rust toolchain. See `github.com/apify/actor-monorepo-example` for the canonical pattern.
 
 ## Local Prerequisites
 
 - **Rust toolchain** via `rustup` (`cargo`, `rustc` on `PATH` for napi build)
 - **Apify CLI ≥ 1.4** (older versions reject the modern actor format with "Actor is of an unknown format")
-- **Node 22+**, **pnpm 10+**
+- **Node 22+**, **npm 10+**
 
 ## Safety and Permissions
 
@@ -57,12 +57,12 @@ Allowed without prompt:
 - push data to the dataset
 - set values in the key-value store
 - enqueue requests to the request queue
-- run locally with `apify run`, `cargo`, `pnpm`
+- run locally with `apify run`, `cargo`, `npm`
 
 Ask first:
 
 - `cargo add` or any `Cargo.toml` dependency change
-- `pnpm add` or any `package.json` dependency change
+- `npm install` or any `package.json` dependency change
 - `apify push` (deployment to cloud)
 - proxy configuration changes (requires paid plan)
 - `Dockerfile` changes affecting builds
@@ -120,7 +120,7 @@ See `.claude/rules/` for behavior rules. Key rules:
 
 ## Testing
 
-**TypeScript (primary):** `*.test.ts` next to source, vitest preferred (or `node:test` for zero-dep scripts). Run `pnpm -r test` from the repo root. `tools/generated-unit-tests/` is a vitest package against `@contextractor/engine` with HTML fixtures under `fixtures/`. Apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise the recursive `pnpm -r test` fails.
+**TypeScript (primary):** `*.test.ts` next to source, vitest preferred (or `node:test` for zero-dep scripts). Run `npm run test` from the repo root. `tools/generated-unit-tests/` is a vitest package against `@contextractor/engine` with HTML fixtures under `fixtures/`. Apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise the recursive `npm run test` fails.
 
 **Rust (napi-rs crate only):** unit tests in `#[cfg(test)] mod tests { ... }` next to source in `packages/contextractor-engine/native/src/`. Run `cargo test --workspace`. The crate is the only Rust crate in the workspace; `cargo clippy --workspace --all-targets -- -D warnings` keeps strict lints (`expect_used`, `unwrap_used`, `missing_errors_doc`) — fix the code rather than allowing them.
 

@@ -4,30 +4,57 @@ FROM apify/actor-node-playwright-chrome:22 AS builder
 
 WORKDIR /repo
 
-# Copy workspace + package manifests first so dependency install caches well.
-COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
-COPY packages/contextractor-engine/package.json ./packages/contextractor-engine/
-COPY packages/contextractor-engine/native/package.json ./packages/contextractor-engine/native/
-COPY packages/contextractor-engine/native/npm/ ./packages/contextractor-engine/native/npm/
-COPY apps/contextractor-apify/package.json ./apps/contextractor-apify/
+# Copy all workspace package.json files first so npm ci layer caches well.
+COPY package.json package-lock.json .npmrc ./
+COPY packages/contextractor-schema/package.json packages/contextractor-schema/
+COPY packages/contextractor-engine/native/npm/ packages/contextractor-engine/native/npm/
+COPY packages/contextractor-engine/native/package.json packages/contextractor-engine/native/
+COPY packages/contextractor-engine/package.json packages/contextractor-engine/
+COPY apps/contextractor-standalone/package.json apps/contextractor-standalone/
+COPY apps/contextractor-apify/package.json apps/contextractor-apify/
+COPY tools/gen-input-schema/package.json tools/gen-input-schema/
+COPY tools/gen-md-regions/package.json tools/gen-md-regions/
+COPY tools/generated-unit-tests/package.json tools/generated-unit-tests/
+COPY tools/opencode-sync/package.json tools/opencode-sync/
+COPY tools/platform-test-runner/package.json tools/platform-test-runner/
 
-RUN corepack enable \
-    && corepack prepare pnpm@10 --activate \
-    && pnpm install --frozen-lockfile
+RUN npm ci
 
-# Now copy the rest of the sources.
+# Copy sources needed for the build.
 COPY tsconfig.json ./
-COPY packages/contextractor-engine/ ./packages/contextractor-engine/
-COPY apps/contextractor-apify/ ./apps/contextractor-apify/
+COPY packages/contextractor-schema/ packages/contextractor-schema/
+COPY packages/contextractor-engine/ packages/contextractor-engine/
+COPY apps/contextractor-standalone/ apps/contextractor-standalone/
+COPY apps/contextractor-apify/ apps/contextractor-apify/
+COPY tools/gen-input-schema/ tools/gen-input-schema/
+COPY tools/gen-md-regions/ tools/gen-md-regions/
 
-RUN pnpm --filter @contextractor/engine build \
-    && pnpm --filter @contextractor/apify build \
-    && pnpm --filter @contextractor/apify --prod deploy /deploy
+# Build packages in dependency order, then prune dev deps.
+RUN npm run build -w @contextractor/schema \
+    && npm run build -w @contextractor/engine \
+    && npm run build -w @contextractor/standalone \
+    && npm run build -w @contextractor/apify \
+    && npm prune --omit=dev
 
 FROM apify/actor-node-playwright-chrome:22
 
-WORKDIR /usr/src/app
+WORKDIR /repo
 
-COPY --from=builder /deploy ./
+COPY --from=builder /repo/package.json ./
+COPY --from=builder /repo/package-lock.json ./
+COPY --from=builder /repo/.npmrc ./
+COPY --from=builder /repo/node_modules ./node_modules
+COPY --from=builder /repo/packages/contextractor-schema ./packages/contextractor-schema
+COPY --from=builder /repo/packages/contextractor-engine/package.json packages/contextractor-engine/
+COPY --from=builder /repo/packages/contextractor-engine/dist packages/contextractor-engine/dist
+COPY --from=builder /repo/packages/contextractor-engine/native/package.json packages/contextractor-engine/native/
+COPY --from=builder /repo/packages/contextractor-engine/native/index.js packages/contextractor-engine/native/
+COPY --from=builder /repo/packages/contextractor-engine/native/index.d.ts packages/contextractor-engine/native/
+COPY --from=builder /repo/packages/contextractor-engine/native/npm packages/contextractor-engine/native/npm
+COPY --from=builder /repo/apps/contextractor-apify/package.json apps/contextractor-apify/
+COPY --from=builder /repo/apps/contextractor-apify/.actor apps/contextractor-apify/.actor
+COPY --from=builder /repo/apps/contextractor-apify/dist apps/contextractor-apify/dist
+
+WORKDIR /repo/apps/contextractor-apify
 
 CMD ["node", "dist/main.js"]

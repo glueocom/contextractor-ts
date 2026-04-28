@@ -2,20 +2,32 @@
   "name": "contextractor-workspace",
   "private": true,
   "version": "0.1.0",
-  "packageManager": "pnpm@10.0.0",
+  "workspaces": [
+    "packages/contextractor-schema",
+    "packages/contextractor-engine/native",
+    "packages/contextractor-engine",
+    "apps/contextractor-standalone",
+    "apps/contextractor-apify",
+    "tools/gen-input-schema",
+    "tools/gen-md-regions",
+    "tools/generated-unit-tests",
+    "tools/opencode-sync",
+    "tools/platform-test-runner"
+  ],
+  "packageManager": "npm@10.0.0",
   "engines": {
     "node": ">=22",
-    "pnpm": ">=10"
+    "npm": ">=10"
   },
   "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "lint": "pnpm -r lint",
+    "build": "npm run build -ws --if-present",
+    "test": "npm run test -ws --if-present",
+    "lint": "npm run lint -ws --if-present",
     "format": "biome format --write .",
     "check": "biome check .",
-    "docs:update": "pnpm -F @contextractor/gen-md-regions start",
-    "docs:check": "pnpm docs:update && git diff --exit-code -- '**/*.md'",
-    "opencode:sync": "pnpm -F @contextractor/opencode-sync start"
+    "docs:update": "npm run start -w @contextractor/gen-md-regions",
+    "docs:check": "npm run docs:update && git diff --exit-code -- '**/*.md'",
+    "opencode:sync": "npm run start -w @contextractor/opencode-sync"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",

@@ -81,7 +81,7 @@ For **internal-only** crates (the napi-rs binding here is one — it ships throu
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-pnpm -F @contextractor/engine-native build       # produces the .node prebuild
+npm run build -w @contextractor/engine-native    # produces the .node prebuild
 ```
 
 For a crates.io-bound crate (not this project):
@@ -108,4 +108,4 @@ For workspaces, publish dependent crates first.
 
 ## CI Publishing (this project — napi-rs prebuilds)
 
-The CI matrix builds `.node` files for `linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64` per the `napi-rs/package-template-pnpm` template, then publishes them as npm packages so the in-image `pnpm install` picks the matching prebuild without a Rust toolchain. See `napi.rs/docs/deep-dive/release` for the canonical pipeline.
+The CI matrix builds `.node` files for `linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64`, then publishes them as npm packages so the in-image `npm ci` picks the matching prebuild without a Rust toolchain. See `napi.rs/docs/deep-dive/release` for the canonical pipeline.

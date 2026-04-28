@@ -8,8 +8,7 @@ Layout and dependency management for the Contextractor cargo workspace at `/User
 /Users/miroslavsekera/r/contextractor-ts/
 ├── Cargo.toml                                        # workspace root
 ├── Cargo.lock                                        # committed
-├── package.json                                      # pnpm workspace root
-├── pnpm-workspace.yaml
+├── package.json                                      # npm workspace root
 └── packages/
     └── contextractor-engine/                         # TypeScript package
         ├── package.json
@@ -72,5 +71,5 @@ napi-build.workspace = true
 - Use `path = "..."` references for any future in-workspace deps (no version).
 - The crate is `cdylib` only — never `rlib` — because the consumer is the Node runtime.
 - Use the bare `Result<T>` from `napi::bindgen_prelude::Result` in `#[napi]` function signatures (no `as` aliases — they leak into generated `.d.ts`).
-- Run `cargo build --workspace` and `cargo test --workspace` from the root. Build the `.node` artifact via `pnpm -F @contextractor/engine-native build` (which calls `@napi-rs/cli`).
+- Run `cargo build --workspace` and `cargo test --workspace` from the root. Build the `.node` artifact via `npm run build -w @contextractor/engine-native` (which calls `@napi-rs/cli`).
 - A virtual workspace with empty `members = []` fails `cargo metadata` — keep at least one member listed.

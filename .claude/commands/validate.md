@@ -1,5 +1,5 @@
 ---
-allowed-tools: Read, Glob, Bash(cargo:*), Bash(apify:*), Bash(npx:*), Bash(pnpm:*)
+allowed-tools: Read, Glob, Bash(cargo:*), Bash(apify:*), Bash(npx:*), Bash(npm:*)
 description: Validate Actor schemas and configuration
 ---
 
@@ -15,10 +15,10 @@ Validate all Actor configuration and run static checks across the workspace.
 - Verify `actor.json.name` matches the deploy target (`contextractor-test` for test, `contextractor` for production)
 - Verify `actor.json.dockerContextDir` is `"../../.."`
 - Verify `actor.json.description` mentions "built on rs-trafilatura and Crawlee"
-- Verify `apps/contextractor-apify/package.json` declares `"@contextractor/engine": "workspace:*"` (no `vendor/` directory)
-- Run `pnpm -r build`
-- Run `pnpm -r lint` (Biome workspace-wide)
-- Run `pnpm -r test`
+- Verify `apps/contextractor-apify/package.json` declares `"@contextractor/engine": "*"` (no `vendor/` directory)
+- Run `npm run build`
+- Run `npm run lint` (Biome workspace-wide)
+- Run `npm run test`
 - Run `cargo check --workspace --all-targets`
 - Run `cargo fmt --all -- --check`
 - Run `cargo clippy --workspace --all-targets -- -D warnings`

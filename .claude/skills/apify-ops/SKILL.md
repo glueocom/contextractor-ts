@@ -102,7 +102,7 @@ apify key-value-stores get-value <id> <key>
 | Cargo dependencies | `Cargo.toml` | Verify versions, run `cargo update` and `cargo build --workspace` |
 | Rust compile error | `src/*.rs` | Read full diagnostic, fix types, run `cargo check --workspace --all-targets` |
 | Cargo lints | `src/*.rs` | Run `cargo clippy --workspace --all-targets -- -D warnings` |
-| TS dependencies | `package.json` | Verify versions, run `pnpm install` (or `npm install`) |
+| TS dependencies | `package.json` | Verify versions, run `npm ci` |
 | TypeScript types | `tools/**/*.ts` | Run `tsc --noEmit`, fix type errors |
 | Biome lint | `tools/**/*.ts` | Run `biome check --write tools/` |
 

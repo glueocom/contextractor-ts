@@ -61,11 +61,11 @@ At minimum the following READMEs are expected to exist:
 For each README found, sync:
 
 - The "built on" line — every README must say Contextractor is built on `rs-trafilatura` (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright).
-- Run `pnpm docs:update` to regenerate every region between `<!-- @generated:start … -->` markers (CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, enum values). Fix only the surrounding prose and the disclaimer line — never edit between marker pairs by hand.
+- Run `npm run docs:update` to regenerate every region between `<!-- @generated:start … -->` markers (CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, enum values). Fix only the surrounding prose and the disclaimer line — never edit between marker pairs by hand.
 - Per `.claude/rules/json-config-only.md`, document only JSON config files.
 - The TS engine config table (interface fields with type, default, description) lives in `packages/contextractor-engine/README.md`; the matching Apify input-schema field comes from the generated region in `apps/contextractor-apify/README.md`.
 - The output-format list — must be `txt | markdown | json | html`. The temporary XML / XML-TEI gap is documented once in `packages/contextractor-engine/README.md` and once in `CLAUDE.md`; do not repeat it elsewhere.
-- The local-prerequisites note (Rust toolchain via rustup, Apify CLI ≥ 1.4, Node 22+, pnpm 10+) where applicable.
+- The local-prerequisites note (Rust toolchain via rustup, Apify CLI ≥ 1.4, Node 22+, npm 10+) where applicable.
 
 If a README does not yet have a section for the CLI, the engine config, or the "built on" line, add it at the natural insertion point rather than skipping the file.
 

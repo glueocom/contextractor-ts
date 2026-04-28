@@ -1,6 +1,0 @@
-packages:
-  - "apps/*"
-  - "packages/*"
-  - "packages/*/native"
-  - "packages/*/native/npm/*"
-  - "tools/*"
