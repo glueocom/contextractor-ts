@@ -231,6 +231,24 @@ importers:
         specifier: ^2.1.9
         version: 2.1.9(@types/node@22.19.17)(jsdom@26.1.0)
 
+  tools/opencode-sync:
+    devDependencies:
+      '@biomejs/biome':
+        specifier: ^2.2.0
+        version: 2.4.13
+      '@types/node':
+        specifier: ^22.10.0
+        version: 22.19.17
+      tsx:
+        specifier: ^4.20.4
+        version: 4.21.0
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.17)(jsdom@26.1.0)
+
   tools/platform-test-runner:
     dependencies:
       apify-client:
