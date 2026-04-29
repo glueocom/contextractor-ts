@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["packages/contextractor-engine/native"]
+members = ["packages/extraction/native"]
 
 [workspace.package]
 version = "0.1.0"

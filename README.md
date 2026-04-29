@@ -7,11 +7,11 @@ Playwright).
 
 This monorepo hosts:
 
-- **[`apps/contextractor-apify`](./apps/contextractor-apify/README.md)** —
+- **[`apps/apify-actor`](./apps/apify-actor/README.md)** —
   Apify Actor.
-- **[`apps/contextractor-standalone`](./apps/contextractor-standalone/README.md)**
+- **[`apps/standalone`](./apps/standalone/README.md)**
   — TypeScript CLI.
-- **[`packages/contextractor-engine`](./packages/contextractor-engine/README.md)**
+- **[`packages/extraction`](./packages/extraction/README.md)**
   — TypeScript engine wrapping the napi-rs binding around `rs-trafilatura`.
 
 ## Supported output formats
@@ -21,9 +21,9 @@ This monorepo hosts:
 ## Input schema
 
 The Zod 4 schema in
-[`@contextractor/schema`](./packages/contextractor-schema/README.md) is the
+[`@contextractor/schema`](./packages/schema/README.md) is the
 single source of truth for every input field. Both surfaces feed user input
-through `ContextractorInput.parse(...)`; `apps/contextractor-apify/.actor/input_schema.json`
+through `ContextractorInput.parse(...)`; `apps/apify-actor/.actor/input_schema.json`
 is generated from the schema at build time by
 [`@contextractor/gen-input-schema`](./tools/gen-input-schema/README.md).
 
@@ -83,30 +83,32 @@ interface ContextractorInputType {
 ## Workspace commands
 
 ```bash
-npm run build                                          # Build all TS packages
-npm run test                                           # Run all vitest suites
-npm run lint                                           # Biome lint
-npm run build -w @contextractor/engine-native          # Build the napi-rs .node
-cargo build --workspace                                # Build the napi-rs Rust crate
-cargo test --workspace                                 # Cargo unit tests
-cargo clippy --workspace --all-targets -- -D warnings  # Strict Rust lints
-biome check .                                          # Workspace lint + format
-apify run                                              # Run the Actor locally (from apps/contextractor-apify/)
+pnpm build                                                 # Build all TS packages
+pnpm test                                                  # Run all vitest suites
+pnpm lint                                                  # Biome lint
+pnpm --filter @contextractor/extraction-native build:rebuild  # Build the napi-rs .node
+cargo build --workspace                                    # Build the napi-rs Rust crate
+cargo test --workspace                                     # Cargo unit tests
+cargo clippy --workspace --all-targets -- -D warnings      # Strict Rust lints
+biome check .                                              # Workspace lint + format
+apify run                                                  # Run the Actor locally (from apps/apify-actor/)
 ```
 
 ## Architecture
 
 ```
 apps/
-├── contextractor-apify/        # TypeScript Apify Actor (Crawlee + Playwright + @contextractor/engine)
-└── contextractor-standalone/   # TypeScript CLI
+├── apify-actor/        # Apify Actor (Crawlee + Playwright + @contextractor/extraction)
+└── standalone/         # TypeScript CLI
 packages/
-└── contextractor-engine/       # TypeScript engine
-    └── native/                 # napi-rs Rust crate wrapping rs-trafilatura
-        └── npm/<platform>/     # Per-platform .node prebuilds (workspace packages)
+├── extraction/         # TypeScript engine (@contextractor/extraction)
+│   └── native/         # napi-rs Rust crate wrapping rs-trafilatura
+│       └── npm/<platform>/  # Per-platform .node prebuilds (workspace packages)
+├── crawler/            # Shared Playwright crawler factory (@contextractor/crawler)
+└── schema/             # Zod 4 input schema (@contextractor/schema)
 tools/
-├── platform-test-runner/       # TypeScript test orchestrator
-└── generated-unit-tests/       # vitest cases against @contextractor/engine
+├── platform-test-runner/  # TypeScript test orchestrator
+└── generated-unit-tests/  # vitest cases against @contextractor/extraction
 ```
 
 ## Docs version

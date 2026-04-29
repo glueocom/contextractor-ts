@@ -31,7 +31,7 @@ Apply DRY, KISS, and SOLID consistently. Prefer free functions over methods when
 ### Module Organization
 
 - Each module focuses on one concern with clear boundaries
-- The only Rust crate in this workspace is the napi-rs binding at `packages/contextractor-engine/native/` — it wraps `rs-trafilatura` (0.2.x) with `#[napi]` macros and emits a `cdylib` `.node` module that the TypeScript engine consumes. There are no Rust binaries.
+- The only Rust crate in this workspace is the napi-rs binding at `packages/extraction/native/` — it wraps `rs-trafilatura` (0.2.x) with `#[napi]` macros and emits a `cdylib` `.node` module that the TypeScript engine consumes. There are no Rust binaries.
 - Re-export the public API from `lib.rs` so call sites import from the crate root
 
 ### Environment Variables

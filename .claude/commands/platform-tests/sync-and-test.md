@@ -13,10 +13,10 @@ Review actor configuration, sync test cases, and run the full test suite.
 ### Phase 1: Review Actor Configuration
 
 Read and analyze:
-- `apps/contextractor-apify/.actor/input_schema.json` - input parameters
-- `apps/contextractor-apify/.actor/dataset_schema.json` - output schema
-- `apps/contextractor-apify/.actor/actor.json` - actor metadata (verify `name` matches the deploy target — `contextractor-test` or `contextractor`)
-- `apps/contextractor-apify/README.md` - documentation
+- `apps/apify-actor/.actor/input_schema.json` - input parameters
+- `apps/apify-actor/.actor/dataset_schema.json` - output schema
+- `apps/apify-actor/.actor/actor.json` - actor metadata (verify `name` matches the deploy target — `contextractor-test` or `contextractor`)
+- `apps/apify-actor/README.md` - documentation
 
 Identify:
 - New input parameters added

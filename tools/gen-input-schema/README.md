@@ -1,7 +1,7 @@
 # `@contextractor/gen-input-schema`
 
 Build-time generator that emits
-`apps/contextractor-apify/.actor/input_schema.json` from the Zod 4 schema in
+`apps/apify-actor/.actor/input_schema.json` from the Zod 4 schema in
 `@contextractor/schema`. The Apify build pipeline runs it via `npm run start -w
 @contextractor/gen-input-schema` before `tsc`; the snapshot test in
 `@contextractor/schema` guards against drift between the Zod schema and the

@@ -30,7 +30,7 @@ If not logged in, stop and inform the user to run `apify login` first. Apify CLI
 ### Step ACTOR_NAME_GUARD: Verify Actor Target Name
 
 ```bash
-jq -r '.name' apps/contextractor-apify/.actor/actor.json
+jq -r '.name' apps/apify-actor/.actor/actor.json
 apify info
 ```
 
@@ -63,10 +63,10 @@ If any check fails, fix the errors before proceeding. Skip with `skip-validation
 
 The 2026 standard pattern is a **Git-connected build** in Apify Console — that path honors `dockerContextDir: "../../.."` in `.actor/actor.json` and gives the Dockerfile access to the workspace root (so `npm run build -w @contextractor/apify` works against the entire repo). If a Git integration is configured for the target actor, prefer pushing to GitHub and triggering the build there.
 
-For CLI fallback (no Git integration on the actor), `apify push` blocks on contexts above the actor dir — use only when the Dockerfile context fits inside `apps/contextractor-apify/`.
+For CLI fallback (no Git integration on the actor), `apify push` blocks on contexts above the actor dir — use only when the Dockerfile context fits inside `apps/apify-actor/`.
 
 ```bash
-cd apps/contextractor-apify
+cd apps/apify-actor
 
 # Default (test):
 apify push glueo/contextractor-test
@@ -141,13 +141,13 @@ If **RUN FAILED**:
 
 | Error Pattern | Fix Location |
 |---------------|--------------|
-| `Invalid input schema` | `apps/contextractor-apify/.actor/input_schema.json` |
-| `Invalid output schema` | `apps/contextractor-apify/.actor/output_schema.json` |
-| `Invalid dataset schema` | `apps/contextractor-apify/.actor/dataset_schema.json` |
-| `COPY failed` | `apps/contextractor-apify/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
-| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
-| `error[E0` | napi-rs crate at `packages/contextractor-engine/native/src/` — fix types |
-| `error: linking with` | `apps/contextractor-apify/Dockerfile` — install missing system libs |
+| `Invalid input schema` | `apps/apify-actor/.actor/input_schema.json` |
+| `Invalid output schema` | `apps/apify-actor/.actor/output_schema.json` |
+| `Invalid dataset schema` | `apps/apify-actor/.actor/dataset_schema.json` |
+| `COPY failed` | `apps/apify-actor/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
+| `Cannot find module '@contextractor/extraction'` | Actor `package.json` should declare `"@contextractor/extraction": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
+| `error[E0` | napi-rs crate at `packages/extraction/native/src/` — fix types |
+| `error: linking with` | `apps/apify-actor/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
 | `napi-rs prebuild not found` | CI must publish `linux-x64-gnu` and `linux-arm64-gnu` `.node` files via `optionalDependencies` |
 | `vitest exited 1` with no tests | Add `vitest run --passWithNoTests` to that package's `test` script |

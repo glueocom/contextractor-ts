@@ -33,7 +33,7 @@ npm run test                                             # vitest across package
 
 ### Step SMOKE: Actor Smoke Run
 
-From `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-apify/`:
+From `/Users/miroslavsekera/r/contextractor-ts/apps/apify-actor/`:
 
 ```bash
 apify run
@@ -43,7 +43,7 @@ Reads input from `storage/key_value_stores/default/INPUT.json` and writes output
 
 ### Step VERIFY_DATASET: Dataset Shape Check
 
-Read one item from `storage/datasets/default/` and verify it matches the schema at `apps/contextractor-apify/.actor/dataset_schema.json`. Flag any missing required fields, extra fields, or type mismatches. Confirm `format` values are restricted to `txt | markdown | json | html`.
+Read one item from `storage/datasets/default/` and verify it matches the schema at `apps/apify-actor/.actor/dataset_schema.json`. Flag any missing required fields, extra fields, or type mismatches. Confirm `format` values are restricted to `txt | markdown | json | html`.
 
 ## Reporting
 

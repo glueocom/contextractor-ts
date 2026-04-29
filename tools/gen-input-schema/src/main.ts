@@ -12,7 +12,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../..');
 const out = process.argv[2]
   ? resolve(process.cwd(), process.argv[2])
-  : resolve(repoRoot, 'apps/contextractor-apify/.actor/input_schema.json');
+  : resolve(repoRoot, 'apps/apify-actor/.actor/input_schema.json');
 
 writeApifyInputSchema(ContextractorInput, out, { title: 'Contextractor' });
 execFileSync('npm', ['exec', '--', 'biome', 'format', '--write', out], {

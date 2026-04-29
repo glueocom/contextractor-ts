@@ -6,7 +6,7 @@ model: sonnet
 
 # Generate Unit Tests Command
 
-Generate self-contained vitest unit tests (TypeScript) from platform test runner results. Tests call `@contextractor/engine` directly — no cargo integration tests.
+Generate self-contained vitest unit tests (TypeScript) from platform test runner results. Tests call `@contextractor/extraction` directly — no cargo integration tests.
 
 ## Process
 
@@ -40,7 +40,7 @@ Confirm the vitest package at `tools/generated-unit-tests/`:
 
 ```
 tools/generated-unit-tests/
-├── package.json                # name: @contextractor/generated-unit-tests, deps: @contextractor/engine + vitest
+├── package.json                # name: @contextractor/generated-unit-tests, deps: @contextractor/extraction + vitest
 ├── tsconfig.json               # extends ../../tsconfig.json
 ├── vitest.config.ts
 ├── fixtures/
@@ -66,7 +66,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { ContentExtractor } from '@contextractor/engine';
+import { ContentExtractor } from '@contextractor/extraction';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(__dirname, 'fixtures', '{suite}');
@@ -121,7 +121,7 @@ Confirm `tools/generated-unit-tests/package.json`:
     "test": "vitest run"
   },
   "dependencies": {
-    "@contextractor/engine": "workspace:*"
+    "@contextractor/extraction": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^2"

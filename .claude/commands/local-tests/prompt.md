@@ -16,17 +16,17 @@ All commands below use **relative paths from the repo root**: `/Users/miroslavse
 ### Step BUILD: Build all packages
 
 ```bash
-npm run build
+pnpm build
 cargo build --workspace
 ```
 
 ### Step TEST_TS: Run TypeScript tests
 
 ```bash
-npm run test
+pnpm test
 ```
 
-This runs vitest in `packages/contextractor-engine`, `tools/generated-unit-tests`, and any app whose `test` script is wired up. Apps without tests use `vitest run --passWithNoTests` so the recursive run does not fail.
+This runs vitest in `packages/extraction`, `packages/crawler`, `tools/generated-unit-tests`, and any app whose `test` script is wired up. Apps without tests use `vitest run --passWithNoTests` so the recursive run does not fail.
 
 ### Step TEST_RUST: Run Rust tests
 
@@ -34,7 +34,7 @@ This runs vitest in `packages/contextractor-engine`, `tools/generated-unit-tests
 cargo test --workspace
 ```
 
-The only Rust crate is the napi-rs binding at `packages/contextractor-engine/native/`.
+The only Rust crate is the napi-rs binding at `packages/extraction/native/`.
 
 ### Step LINT: Lint and format check
 

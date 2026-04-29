@@ -1,6 +1,7 @@
 .mise.toml
 .nvim.lua
 storage
+.cache/
 .claude/settings.local.json
 autonomous-task-output/
 tools/platform-test-runner/test-suites-output/
