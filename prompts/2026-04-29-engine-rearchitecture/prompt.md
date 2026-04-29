@@ -24,7 +24,7 @@ Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` 
    - Default `useSessionPool: true` + `persistCookiesPerSession: true` for browser mode.
    - If initial-cookie diffing is still needed, inline a tiny local helper over `session.getCookies(url)`; do not add `@apify/scraper-tools`.
 
-4. **Rename**: `contextractor-apify` → `apify-actor`; `contextractor-standalone` → `standalone` (library + CLI; keep the role name, drop the project prefix). Update Apify Console git path. `pnpm-workspace.yaml` globs (`apps/*`) need no edit.
+4. **Rename**: `contextractor-apify` → `apify-actor`; `contextractor-standalone` → `standalone` (library + CLI; keep the role name, drop the project prefix); `packages/contextractor-schema` → `packages/schema` (package name `@contextractor/schema` unchanged). Update Apify Console git path. `pnpm-workspace.yaml` globs (`apps/*`, `packages/*`) need no edit.
 
 5. **Shrink entry points**: after rename, `apps/apify-actor/src/main.ts` ≤30 LOC; `apps/standalone/src/cli.ts` ≤40 LOC — pure wiring, no Playwright import.
 
@@ -32,7 +32,7 @@ Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` 
 
 ## Order
 
-Extraction → crawler → renames → autoconsent fallback (optional) → docs sweep.
+Extraction → crawler → renames → autoconsent fallback → docs sweep.
 
 ## Research
 
