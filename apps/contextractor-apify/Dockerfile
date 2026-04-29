@@ -5,7 +5,7 @@ FROM apify/actor-node-playwright-chrome:22 AS builder
 WORKDIR /repo
 
 # Copy all workspace package.json files first so npm ci layer caches well.
-COPY package.json package-lock.json .npmrc ./
+COPY package.json package-lock.json ./
 COPY packages/contextractor-schema/package.json packages/contextractor-schema/
 COPY packages/contextractor-engine/native/npm/ packages/contextractor-engine/native/npm/
 COPY packages/contextractor-engine/native/package.json packages/contextractor-engine/native/
