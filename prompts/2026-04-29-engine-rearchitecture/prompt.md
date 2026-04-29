@@ -4,14 +4,14 @@ Detailed plan in [`research-summary.md`](./research-summary.md); evidence in the
 
 ## Goal
 
-Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` and `apps/contextractor-standalone`. Split `packages/contextractor-engine` into three layered packages. Replace bespoke cookie-dismiss with `@ghostery/adblocker-playwright` plus `@duckduckgo/autoconsent` fallback.
+Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` and `apps/contextractor-standalone`. Split `packages/contextractor-engine` into two layered packages. Replace bespoke cookie-dismiss with `@ghostery/adblocker-playwright` plus `@duckduckgo/autoconsent` fallback.
 
 ## Actions
 
 1. **Split engine** ([`research-monorepo-structure.md`](./research-monorepo-structure.md)):
    - `@contextractor/extraction` — pure HTML→content; trafilatura + napi-rs Rust crate at `./native`; absorbs `computeContentInfo` + `projectMetadata`. No Crawlee/Playwright deps.
    - `@contextractor/crawler` — `PlaywrightCrawler` factory, handler, browser launch options, scroll, cookies. Exposes `Sink<T>` + `fileSink` + `memorySink`.
-   - `@contextractor/apify-runtime` — `kvsSink`, `datasetSink`.
+   - `kvsSink` + `datasetSink` stay in `apps/contextractor-apify/src/` — single consumer, no package needed.
 
 2. **Replace cookie handling** ([`research-cookie-dismissal.md`](./research-cookie-dismissal.md)):
    - Delete `COOKIE_DISMISS_SCRIPT` from both apps.
@@ -32,4 +32,4 @@ Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` 
 
 ## Order
 
-Extraction → crawler → apify-runtime → renames → tools move → autoconsent fallback (optional).
+Extraction → crawler → renames → tools move → autoconsent fallback (optional).
