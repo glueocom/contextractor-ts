@@ -7,14 +7,12 @@ import {
 } from '@contextractor/extraction';
 import type { RequestHandler } from 'crawlee';
 import type { PlaywrightCrawlingContext } from 'crawlee';
-import { installCookieDefences } from './browser/cookies.js';
 import { autoScroll, type ScrollConfig } from './browser/scroll.js';
 import type { ExtractionResult, Sink } from './sinks/types.js';
 
 export interface HandlerOpts {
   extractionConfig?: TrafilaturaConfig;
   sink: Sink<ExtractionResult>;
-  cookieStrategy: 'ghostery' | 'autoconsent' | 'none';
   scroll?: ScrollConfig;
   formats: OutputFormat[];
   maxResults?: number;
@@ -37,10 +35,6 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
     if (opts.maxResults && resultCount >= opts.maxResults) {
       log.info(`Max results (${opts.maxResults}) reached, stopping.`);
       return;
-    }
-
-    if (opts.cookieStrategy === 'ghostery') {
-      await installCookieDefences(page);
     }
 
     if (opts.scroll) {
