@@ -24,12 +24,14 @@ Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` 
    - Default `useSessionPool: true` + `persistCookiesPerSession: true` for browser mode.
    - If initial-cookie diffing is still needed, inline a tiny local helper over `session.getCookies(url)`; do not add `@apify/scraper-tools`.
 
-4. **Rename**: `contextractor-apify` → `apify-actor`; `contextractor-standalone` → `cli`. Update Apify Console git path. `pnpm-workspace.yaml` globs (`apps/*`) need no edit.
+4. **Rename**: `contextractor-apify` → `apify-actor`. Do **not** rename `contextractor-standalone` — it is a library as well as a CLI. Update Apify Console git path. `pnpm-workspace.yaml` globs (`apps/*`) need no edit.
 
 5. **Move tools**: `tools/*` → `packages/*` with `private: true`. Drop `tools/*` from workspace globs.
 
-6. **Shrink entry points**: after rename, `apps/apify-actor/src/main.ts` ≤30 LOC; `apps/cli/src/cli.ts` ≤40 LOC — pure wiring, no Playwright import.
+6. **Shrink entry points**: after rename, `apps/apify-actor/src/main.ts` ≤30 LOC; `apps/contextractor-standalone/src/cli.ts` ≤40 LOC — pure wiring, no Playwright import.
+
+7. **Update all docs**: after the refactoring, sweep every README, `.actor/` spec, `INPUT_SCHEMA.json` description strings, and any markdown in `packages/` and `apps/` — update package names, directory paths, API surface, and remove references to deleted symbols (`COOKIE_DISMISS_SCRIPT`, old scroll loop, `idcac-playwright`). Verify `CLAUDE.md` project structure section matches the new tree.
 
 ## Order
 
-Extraction → crawler → renames → tools move → autoconsent fallback (optional).
+Extraction → crawler → renames → tools move → autoconsent fallback (optional) → docs sweep.
