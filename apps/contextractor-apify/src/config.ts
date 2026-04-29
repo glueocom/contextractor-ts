@@ -1,82 +1,43 @@
-import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
+import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
+import type { ContextractorCrawlerOptions, ExtractionResult, Sink } from '@contextractor/crawler';
 import type { ContextractorInputType } from '@contextractor/schema';
+import type { ProxyConfiguration } from 'crawlee';
 
-export type SaveFormat = 'markdown' | 'html' | 'text' | 'json';
-
-export interface CrawlConfig {
-  save: SaveFormat[];
-  trafilaturaConfig: TrafilaturaConfig;
-  globs: Array<{ glob: string }>;
-  excludes: Array<{ glob: string }>;
-  linkSelector: string;
-  pseudoUrls: Array<{ purl?: string }>;
-  keepUrlFragments: boolean;
-  maxCrawlingDepth: number;
-  closeCookieModals: boolean;
-  maxScrollHeightPixels: number;
-}
-
-export function buildCrawlConfig(input: ContextractorInputType): CrawlConfig {
-  const formatMapping: Array<[keyof ContextractorInputType, SaveFormat]> = [
-    ['saveExtractedMarkdownToKeyValueStore', 'markdown'],
-    ['saveRawHtmlToKeyValueStore', 'html'],
-    ['saveExtractedTextToKeyValueStore', 'text'],
-    ['saveExtractedJsonToKeyValueStore', 'json'],
-  ];
-
-  const save: SaveFormat[] = [];
-  for (const [apifyKey, fmt] of formatMapping) {
-    if (input[apifyKey]) save.push(fmt);
-  }
+export function buildCrawlerOpts(
+  input: ContextractorInputType,
+  sink: Sink<ExtractionResult>,
+  proxyConfiguration?: ProxyConfiguration,
+): ContextractorCrawlerOptions {
+  const formats: OutputFormat[] = [];
+  if (input.saveExtractedTextToKeyValueStore) formats.push('txt');
+  if (input.saveExtractedJsonToKeyValueStore) formats.push('json');
+  if (input.saveExtractedMarkdownToKeyValueStore) formats.push('markdown');
+  if (formats.length === 0) formats.push('markdown');
 
   return {
-    save: save.length === 0 ? ['markdown'] : save,
-    trafilaturaConfig: normalizeConfigKeys(input.trafilaturaConfig),
-    globs: input.globs,
-    excludes: input.excludes,
-    pseudoUrls: input.pseudoUrls,
+    startUrls: [],
+    sink,
+    formats,
+    extractionConfig: normalizeConfigKeys(input.trafilaturaConfig),
+    cookieStrategy: input.closeCookieModals ? 'ghostery' : 'none',
+    scroll: input.maxScrollHeightPixels > 0 ? { maxScrollHeight: input.maxScrollHeightPixels } : undefined,
+    headless: input.headless,
+    launcher: input.launcher.toLowerCase() as 'chromium' | 'firefox',
+    ignoreSslErrors: input.ignoreSslErrors,
+    bypassCSP: input.ignoreCorsAndCsp,
+    initialCookies: input.initialCookies,
+    extraHTTPHeaders: input.customHttpHeaders ?? undefined,
+    userAgent: input.userAgent || undefined,
+    maxPages: input.maxPagesPerCrawl,
+    maxRetries: input.maxRequestRetries,
+    maxConcurrency: input.maxConcurrency,
+    pageLoadTimeoutSecs: input.pageLoadTimeoutSecs,
+    maxResults: input.maxResultsPerCrawl > 0 ? input.maxResultsPerCrawl : undefined,
     linkSelector: input.linkSelector,
-    keepUrlFragments: input.keepUrlFragments,
     maxCrawlingDepth: input.maxCrawlingDepth,
-    closeCookieModals: input.closeCookieModals,
-    maxScrollHeightPixels: input.maxScrollHeightPixels,
+    globs: input.globs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+    excludes: input.excludes.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+    keepUrlFragments: input.keepUrlFragments,
+    proxyConfiguration,
   };
-}
-
-export function buildBrowserLaunchOptions(input: ContextractorInputType): {
-  args: string[];
-  ignoreHTTPSErrors?: boolean;
-} {
-  const options: { args: string[]; ignoreHTTPSErrors?: boolean } = {
-    args: ['--disable-gpu', '--disable-blink-features=AutomationControlled'],
-  };
-  if (input.ignoreSslErrors) options.ignoreHTTPSErrors = true;
-  return options;
-}
-
-export function buildBrowserContextOptions(input: ContextractorInputType):
-  | {
-      bypassCSP?: boolean;
-      storageState?: { cookies: unknown[] };
-      extraHTTPHeaders?: Record<string, string>;
-      userAgent?: string;
-    }
-  | undefined {
-  const options: {
-    bypassCSP?: boolean;
-    storageState?: { cookies: unknown[] };
-    extraHTTPHeaders?: Record<string, string>;
-    userAgent?: string;
-  } = {};
-
-  if (input.ignoreCorsAndCsp) options.bypassCSP = true;
-  if (input.initialCookies && input.initialCookies.length > 0) {
-    options.storageState = { cookies: input.initialCookies };
-  }
-  if (input.customHttpHeaders && Object.keys(input.customHttpHeaders).length > 0) {
-    options.extraHTTPHeaders = input.customHttpHeaders;
-  }
-  if (input.userAgent) options.userAgent = input.userAgent;
-
-  return Object.keys(options).length > 0 ? options : undefined;
 }

@@ -1,7 +1,7 @@
+import { FORMAT_EXTENSIONS, urlToFilename } from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
 import { describe, expect, it } from 'vitest';
 import { buildCrawlConfig, validateSaveFormats } from './config.js';
-import { FORMAT_EXTENSIONS, urlToFilename } from './crawler.js';
 
 describe('config helpers', () => {
   it('buildCrawlConfig produces balanced defaults from a minimal startUrls payload', () => {
