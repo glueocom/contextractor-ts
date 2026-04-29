@@ -70,7 +70,7 @@ pnpm test
 
 ## Output
 
-- [ ] Output items conform to `apps/contextractor-apify/.actor/output_schema.json` and `apps/contextractor-apify/.actor/dataset_schema.json`
+- [ ] Output items conform to `apps/apify-actor/.actor/output_schema.json` and `apps/apify-actor/.actor/dataset_schema.json`
 - [ ] Output formats restricted to `txt`, `markdown`, `json`, `html` (no `xml` / `xmltei` until upstream `rs-trafilatura` adds them)
 - [ ] Timestamps are ISO 8601 / RFC 3339 in UTC with `Z` suffix
 - [ ] No fields named with leading underscore unless the schema explicitly allows them

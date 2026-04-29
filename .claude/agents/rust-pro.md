@@ -29,7 +29,7 @@ Newtype wrappers for primitive obsession (`struct UrlStr(String)`). Exhaustive e
 
 ## This Project
 
-Cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`. The only Rust crate is the **napi-rs binding** at `packages/contextractor-engine/native/` — it wraps [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (0.2.x) with `#[napi]` macros and emits a `cdylib` `.node` module the TypeScript engine consumes. Apps (`apps/contextractor-apify/`, `apps/contextractor-standalone/`) are TypeScript and call into the native module through `@contextractor/engine`.
+Cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`. The only Rust crate is the **napi-rs binding** at `packages/contextractor-engine/native/` — it wraps [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (0.2.x) with `#[napi]` macros and emits a `cdylib` `.node` module the TypeScript engine consumes. Apps (`apps/apify-actor/`, `apps/standalone/`) are TypeScript and call into the native module through `@contextractor/engine`.
 
 ### napi-rs caveats
 

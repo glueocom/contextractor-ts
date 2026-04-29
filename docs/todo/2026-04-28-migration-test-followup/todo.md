@@ -7,9 +7,9 @@ Finish the remaining work from the `prompts/2026-04-26-migrate-py-to-ts-rust-v2/
 ## Remaining work
 
 - [ ] Reconfigure `glueo/contextractor-test` in Apify Console to use a Git-connected build instead of `SOURCE_FILES`.
-- [ ] Point the test actor at this repository and the `apps/contextractor-apify/` folder.
+- [ ] Point the test actor at this repository and the `apps/apify-actor/` folder.
 - [ ] Verify the remote actor uses the migrated setup:
-  - `apps/contextractor-apify/.actor/actor.json`
+  - `apps/apify-actor/.actor/actor.json`
   - `dockerContextDir = "../../.."`
   - multi-stage Dockerfile
   - `npm run deploy --prod -w @contextractor/apify -- /deploy`

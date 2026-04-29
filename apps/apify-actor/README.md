@@ -21,13 +21,13 @@ Playwright).
 ```bash
 npm install
 npm run build -w @contextractor/apify
-apify run            # from apps/contextractor-apify/
+apify run            # from apps/apify-actor/
 ```
 
 ## Input
 
 The full input surface is generated from the Zod 4 schema in
-[`@contextractor/schema`](../../packages/contextractor-schema/README.md) by
+[`@contextractor/schema`](../../packages/schema/README.md) by
 [`@contextractor/gen-input-schema`](../../tools/gen-input-schema/README.md);
 the table below is auto-rebuilt from that schema by
 [`@contextractor/gen-md-regions`](../../tools/gen-md-regions/).
@@ -93,7 +93,7 @@ enabled save flag. Each save flag also writes a file to the Key-Value Store.
 Production deploys are a **Git-connected build** in the Apify Console (not
 `apify push`) so `dockerContextDir: "../../.."` in `.actor/actor.json`
 resolves to the repo root and the Dockerfile sees
-`packages/contextractor-engine/`.
+`packages/extraction/`.
 
 For test-only deploys to `glueo/contextractor-test`, see
 `.claude/commands/platform/push-and-get-working.md`. Production

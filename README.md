@@ -7,11 +7,11 @@ Playwright).
 
 This monorepo hosts:
 
-- **[`apps/contextractor-apify`](./apps/contextractor-apify/README.md)** —
+- **[`apps/apify-actor`](./apps/apify-actor/README.md)** —
   Apify Actor.
-- **[`apps/contextractor-standalone`](./apps/contextractor-standalone/README.md)**
+- **[`apps/standalone`](./apps/standalone/README.md)**
   — TypeScript CLI.
-- **[`packages/contextractor-engine`](./packages/contextractor-engine/README.md)**
+- **[`packages/extraction`](./packages/extraction/README.md)**
   — TypeScript engine wrapping the napi-rs binding around `rs-trafilatura`.
 
 ## Supported output formats
@@ -21,9 +21,9 @@ This monorepo hosts:
 ## Input schema
 
 The Zod 4 schema in
-[`@contextractor/schema`](./packages/contextractor-schema/README.md) is the
+[`@contextractor/schema`](./packages/schema/README.md) is the
 single source of truth for every input field. Both surfaces feed user input
-through `ContextractorInput.parse(...)`; `apps/contextractor-apify/.actor/input_schema.json`
+through `ContextractorInput.parse(...)`; `apps/apify-actor/.actor/input_schema.json`
 is generated from the schema at build time by
 [`@contextractor/gen-input-schema`](./tools/gen-input-schema/README.md).
 
@@ -91,7 +91,7 @@ cargo build --workspace                                # Build the napi-rs Rust 
 cargo test --workspace                                 # Cargo unit tests
 cargo clippy --workspace --all-targets -- -D warnings  # Strict Rust lints
 biome check .                                          # Workspace lint + format
-apify run                                              # Run the Actor locally (from apps/contextractor-apify/)
+apify run                                              # Run the Actor locally (from apps/apify-actor/)
 ```
 
 ## Architecture

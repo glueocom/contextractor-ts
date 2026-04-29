@@ -17,20 +17,20 @@
 
 Two apps + one engine package + one Rust crate:
 
-- `packages/contextractor-engine/` — TypeScript engine; depends on the napi-rs
+- `packages/extraction/` — TypeScript engine; depends on the napi-rs
   binding via `@contextractor/engine-native`.
-- `packages/contextractor-engine/native/` — `napi-rs` Rust crate
+- `packages/extraction/native/` — `napi-rs` Rust crate
   (`crate-type = "cdylib"`). Wraps `rs-trafilatura` and produces a `.node`
   binary loaded by the TS engine. Per-platform prebuilds live under
-  `packages/contextractor-engine/native/npm/<platform>/` as workspace packages
+  `packages/extraction/native/npm/<platform>/` as workspace packages
   with `os` + `cpu` selectors.
-- `apps/contextractor-apify/` — Apify Actor; depends on
+- `apps/apify-actor/` — Apify Actor; depends on
   `@contextractor/engine` + `@contextractor/schema` + `apify` + `crawlee` +
   `playwright`.
-- `apps/contextractor-standalone/` — Standalone CLI; depends on
+- `apps/standalone/` — Standalone CLI; depends on
   `@contextractor/engine` + `@contextractor/schema` + `crawlee` +
   `playwright` + `commander`.
-- `packages/contextractor-schema/` — Single Zod 4 source of truth for input.
+- `packages/schema/` — Single Zod 4 source of truth for input.
   Exports `ContextractorInput`, `ContextractorInputType`, the `apifyMeta()`
   helper, and `writeApifyInputSchema()`. The Apify INPUT_SCHEMA file is
   generated from this schema at build time by
@@ -136,17 +136,17 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 
 ## Dependencies
 
-`packages/contextractor-engine/` (TS):
+`packages/extraction/` (TS):
 
 - `@contextractor/engine-native` (workspace)
 
-`packages/contextractor-engine/native/` (Rust):
+`packages/extraction/native/` (Rust):
 
 - `napi`, `napi-derive`
 - `rs-trafilatura ^0.2`
 - `serde`, `serde_json`, `chrono`
 
-`apps/contextractor-apify/`:
+`apps/apify-actor/`:
 
 - `apify ^3`
 - `crawlee ^3`
@@ -154,7 +154,7 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 - `@contextractor/engine` (workspace)
 - `@contextractor/schema` (workspace)
 
-`apps/contextractor-standalone/`:
+`apps/standalone/`:
 
 - `crawlee ^3`
 - `playwright ^1.50`
@@ -162,7 +162,7 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 - `@contextractor/engine` (workspace)
 - `@contextractor/schema` (workspace)
 
-`packages/contextractor-schema/` (TS):
+`packages/schema/` (TS):
 
 - `zod ^4`
 
@@ -192,7 +192,7 @@ npm run build
 ## Docker (Apify Actor)
 
 Multi-stage Node + Playwright Dockerfile at
-`apps/contextractor-apify/Dockerfile`:
+`apps/apify-actor/Dockerfile`:
 
 - Builder stage: `apify/actor-node-playwright-chrome:22 AS builder`. Runs
   `npm ci`, `npm run build -w @contextractor/apify`, then
@@ -202,7 +202,7 @@ Multi-stage Node + Playwright Dockerfile at
   `/usr/src/app` and runs `node dist/main.js`.
 
 `actor.json` sets `"dockerContextDir": "../../.."` so the Docker build context
-is the repo root, exposing `packages/contextractor-engine/`. Production
+is the repo root, exposing `packages/extraction/`. Production
 deploys go through a **Git-connected build** in the Apify Console — `apify
 push` does not honor `dockerContextDir` for contexts above the actor dir.
 
@@ -212,6 +212,6 @@ Reference: `github.com/apify/actor-monorepo-example`.
 
 `.github/workflows/build-napi.yml` builds all four `.node` prebuilds on
 release tags (`v*`) and opens a PR refreshing
-`packages/contextractor-engine/native/npm/<platform>/`. No other CI workflows
+`packages/extraction/native/npm/<platform>/`. No other CI workflows
 are in scope of the napi-rs migration; lint / test / security workflows can be
 added separately.

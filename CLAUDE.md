@@ -1,15 +1,17 @@
 # Apify Actor — Contextractor
 
-TypeScript Apify Actor and standalone CLI built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (extraction) and [Crawlee](https://crawlee.dev/) (Playwright crawler). Extracts main-content text in `txt`, `markdown`, `json`, or `html`. See `apps/contextractor-apify/README.md` for the full feature list.
+TypeScript Apify Actor and standalone CLI built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (extraction) and [Crawlee](https://crawlee.dev/) (Playwright crawler). Extracts main-content text in `txt`, `markdown`, `json`, or `html`. See `apps/apify-actor/README.md` for the full feature list.
 
 ## Project Structure
 
 ```
 apps/
-├── contextractor-apify/       # Apify Actor (Crawlee + Playwright + @contextractor/engine)
-└── contextractor-standalone/  # CLI
+├── apify-actor/    # Apify Actor (@contextractor/apify)
+└── standalone/     # CLI (@contextractor/standalone)
 packages/
-└── contextractor-engine/      # TS engine + napi-rs Rust crate (rs-trafilatura binding)
+├── extraction/     # Pure extraction engine + napi-rs Rust crate (@contextractor/extraction)
+├── crawler/        # Shared Playwright crawler factory (@contextractor/crawler)
+└── schema/         # Zod input schema (@contextractor/schema)
 tools/
 ├── platform-test-runner/      # test orchestrator
 └── generated-unit-tests/      # vitest tests + HTML fixtures
@@ -18,10 +20,10 @@ tools/
 ## Commands
 
 ```bash
-pnpm build                                                 # Build all TS packages (via turbo)
-pnpm test                                                  # All vitest tests (via turbo)
-pnpm lint                                                  # Biome lint (via turbo)
-pnpm --filter @contextractor/engine-native build:rebuild   # Build napi-rs .node
+pnpm build                                                      # Build all TS packages (via turbo)
+pnpm test                                                       # All vitest tests (via turbo)
+pnpm lint                                                       # Biome lint (via turbo)
+pnpm --filter @contextractor/extraction-native build:rebuild   # Build napi-rs .node
 cargo build --workspace                                    # Build napi-rs crate
 cargo test --workspace                                     # Cargo tests
 cargo clippy --workspace --all-targets -- -D warnings      # Rust lint

@@ -1,6 +1,6 @@
 # Apify Actor — Contextractor
 
-TypeScript Apify Actor and standalone CLI built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (extraction) and [Crawlee](https://crawlee.dev/) (Playwright crawler). Extracts main-content text in `txt`, `markdown`, `json`, or `html`. See `apps/contextractor-apify/README.md` for the full feature list.
+TypeScript Apify Actor and standalone CLI built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (extraction) and [Crawlee](https://crawlee.dev/) (Playwright crawler). Extracts main-content text in `txt`, `markdown`, `json`, or `html`. See `apps/apify-actor/README.md` for the full feature list.
 
 ## Project Structure
 

@@ -84,7 +84,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 
 Pass `--config path/to/config.json`. The file is validated by the Zod 4
 schema in
-[`@contextractor/schema`](../../packages/contextractor-schema/README.md), so
+[`@contextractor/schema`](../../packages/schema/README.md), so
 keys use the same camelCase shape as the
 [Apify input schema](../contextractor-apify/README.md#input). Orchestration
 flags (`--output-dir`, `--save`, `--proxy-urls`) are CLI-only and must be set
@@ -152,5 +152,5 @@ stripped by `parse()`.
 ```bash
 npm install
 npm run build -w @contextractor/standalone
-node apps/contextractor-standalone/dist/cli.js https://example.com -o /tmp/contextractor
+node apps/standalone/dist/cli.js https://example.com -o /tmp/contextractor
 ```

@@ -36,16 +36,16 @@ contextractor --config config.json --max-pages 10
 ```
 
 The full flag list is in
-[`apps/contextractor-standalone/README.md`](../../apps/contextractor-standalone/README.md#usage)
+[`apps/standalone/README.md`](../../apps/standalone/README.md#usage)
 — the table there is generated from the Commander program in
-`apps/contextractor-standalone/src/cli.ts` by `@contextractor/gen-md-regions`,
+`apps/standalone/src/cli.ts` by `@contextractor/gen-md-regions`,
 so it is always in sync with the binary.
 
 ### Config file (optional, JSON)
 
 The standalone CLI accepts a JSON config file with the same camelCase shape
 as the
-[Apify input schema](../../apps/contextractor-apify/README.md#input). The
+[Apify input schema](../../apps/apify-actor/README.md#input). The
 file is validated against the Zod 4 schema in `@contextractor/schema`;
 unknown keys are stripped by `parse()`. CLI-only orchestration flags
 (`--output-dir`, `--save`, `--proxy-urls`) are not accepted in the config
@@ -69,8 +69,8 @@ author, date, URL) is prepended to text-format outputs.
 
 The full input surface is the Zod 4 schema in `@contextractor/schema`; it is
 generated from that schema at build time by `@contextractor/gen-input-schema`
-into `apps/contextractor-apify/.actor/input_schema.json`. The
-[`apps/contextractor-apify/README.md`](../../apps/contextractor-apify/README.md#input)
+into `apps/apify-actor/.actor/input_schema.json`. The
+[`apps/apify-actor/README.md`](../../apps/apify-actor/README.md#input)
 table is auto-rebuilt from the same schema by `@contextractor/gen-md-regions`
 and is the canonical reference.
 

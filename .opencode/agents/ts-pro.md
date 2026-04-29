@@ -33,8 +33,8 @@ Test files `*.test.ts` next to source. vitest preferred for new code; `node:test
 
 TypeScript npm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
 
-- `apps/contextractor-apify/` — Apify Actor (Apify SDK + Crawlee `PlaywrightCrawler`)
-- `apps/contextractor-standalone/` — CLI (`commander`/`yargs` + Crawlee + Playwright)
+- `apps/apify-actor/` — Apify Actor (Apify SDK + Crawlee `PlaywrightCrawler`)
+- `apps/standalone/` — CLI (`commander`/`yargs` + Crawlee + Playwright)
 - `packages/contextractor-engine/` — engine wrapping the napi-rs binding (`packages/contextractor-engine/native/`)
 - `tools/platform-test-runner/` — Node test orchestrator
 - `tools/generated-unit-tests/` — vitest tests against `@contextractor/engine` with HTML fixtures

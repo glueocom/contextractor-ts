@@ -7,15 +7,15 @@ Validate all Actor configuration and run static checks across the workspace.
 
 ## Validation Steps
 
-- Check `apps/contextractor-apify/.actor/actor.json` exists and is valid JSON
-- Check `apps/contextractor-apify/.actor/input_schema.json` has required fields
-- Check `apps/contextractor-apify/.actor/output_schema.json` if present
-- Check `apps/contextractor-apify/.actor/dataset_schema.json` if present
+- Check `apps/apify-actor/.actor/actor.json` exists and is valid JSON
+- Check `apps/apify-actor/.actor/input_schema.json` has required fields
+- Check `apps/apify-actor/.actor/output_schema.json` if present
+- Check `apps/apify-actor/.actor/dataset_schema.json` if present
 - Verify `meta.generatedBy` is set in `actor.json`
 - Verify `actor.json.name` matches the deploy target (`contextractor-test` for test, `contextractor` for production)
 - Verify `actor.json.dockerContextDir` is `"../../.."`
 - Verify `actor.json.description` mentions "built on rs-trafilatura and Crawlee"
-- Verify `apps/contextractor-apify/package.json` declares `"@contextractor/engine": "workspace:*"` (no `vendor/` directory)
+- Verify `apps/apify-actor/package.json` declares `"@contextractor/engine": "workspace:*"` (no `vendor/` directory)
 - Run `pnpm build`
 - Run `pnpm lint` (Biome workspace-wide)
 - Run `pnpm test`

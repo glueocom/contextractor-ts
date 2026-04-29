@@ -13,7 +13,7 @@ const repoRoot = resolve(here, '../../..');
 const apifyMetaSchemaPath = resolve(here, 'fixtures/apify-input.schema.json');
 const onDiskInputSchemaPath = resolve(
   repoRoot,
-  'apps/contextractor-apify/.actor/input_schema.json',
+  'apps/apify-actor/.actor/input_schema.json',
 );
 
 const apifyMetaSchema = JSON.parse(readFileSync(apifyMetaSchemaPath, 'utf8'));
