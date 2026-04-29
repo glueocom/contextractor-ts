@@ -4,16 +4,16 @@
 
 ## TL;DR
 
-The two `apps/` entries currently re-implement the same Playwright crawler. **Consolidate into `packages/`, but split the engine into three packages** (`@contextractor/extraction`, `@contextractor/crawler`, `@contextractor/apify-runtime`) — mirroring how [`apify/crawlee`](https://github.com/apify/crawlee) is layered. Replace the bespoke `COOKIE_DISMISS_SCRIPT` with **`@ghostery/adblocker-playwright`** (MPL-2.0) — what Apify's own Website Content Crawler migrated to in December 2025. Rename `apps/contextractor-apify` → `apps/apify-actor`, `apps/contextractor-standalone` → `apps/cli`. Move `tools/*` into `packages/*` with `private: true`. The two app entry points shrink to <40-line wrappers.
+The two `apps/` entries currently re-implement the same Playwright crawler. **Consolidate into `packages/`, but split the engine into three packages** (`@contextractor/extraction`, `@contextractor/crawler`, `@contextractor/apify-runtime`) — mirroring how [`apify/crawlee`](https://github.com/apify/crawlee) is layered. Replace the bespoke `COOKIE_DISMISS_SCRIPT` with **`@ghostery/adblocker-playwright`** (MPL-2.0) — what Apify's own Website Content Crawler migrated to in December 2025. Rename `apps/contextractor-apify` → `apps/apify-actor`, `apps/contextractor-standalone` → `apps/standalone`. The two app entry points shrink to <40-line wrappers.
 
 ## Final recommendations
 
 - **Engine packaging**: **split** into `@contextractor/extraction` (pure, no Crawlee/Playwright), `@contextractor/crawler` (Crawlee + Playwright + Ghostery, depends on extraction), `@contextractor/apify-runtime` (Apify SDK glue, sink implementations). Mirrors Crawlee's `core` ↔ `playwright-crawler` split.
 - **Cookie dismissal — primary**: **[`@ghostery/adblocker-playwright`](https://www.npmjs.com/package/@ghostery/adblocker-playwright)** (MPL-2.0, v2.14.x, last commit 28 Apr 2026). Drives EasyList Cookie + Annoyances filterlists; Apify Website Content Crawler's choice since Dec 2025 ([Apify blog](https://blog.apify.com/how-to-block-cookie-modals/)). **Drop `idcac-playwright` (GPL-3.0, [LICENSE](https://github.com/apify/idcac/blob/master/LICENSE))** — incompatible with shipping a closed CLI on npm + upstream IDCAC dead since Nov 2023.
 - **Cookie dismissal — fallback**: **[`@duckduckgo/autoconsent`](https://www.npmjs.com/package/@duckduckgo/autoconsent)** (MPL-2.0, v14.59.0 March 2026), lazy-loaded for sites needing a real Reject-All click flow.
-- **Apps naming**: `apps/apify-actor`, `apps/cli` (drops `contextractor-` prefix; matches apify/actor-scraper convention).
+- **Apps naming**: `apps/apify-actor`, `apps/standalone` (drops `contextractor-` prefix; matches apify/actor-scraper convention).
 - **Packages naming**: `@contextractor/extraction`, `@contextractor/crawler`, `@contextractor/apify-runtime`, `@contextractor/schema`.
-- **Tools dir**: move both `tools/*` packages into `packages/*` with `private: true`.
+- **Tools dir**: keep `tools/platform-test-runner` and `tools/generated-unit-tests` in `tools/`.
 - **Sink injection pattern**: crawler accepts `sink: (result) => Promise<void>`. Apify app injects KVS/Dataset sink; CLI injects file sink; tests inject memory sink. Keeps `@contextractor/crawler` 100% Apify-free.
 - **Crawlee defaults to mirror from playwright-scraper**: `useSessionPool: true`, `persistCookiesPerSession: true`, use `crawlingContext.infiniteScroll({ maxScrollHeight, scrollDownAndUp, buttonSelector, stopScrollCallback })` instead of manual `scrollBy(0, 500)`.
 
@@ -23,16 +23,17 @@ The two `apps/` entries currently re-implement the same Playwright crawler. **Co
 contextractor-ts/
 ├── apps/
 │   ├── apify-actor/        # main.ts ≤30 LOC, .actor/, Dockerfile
-│   └── cli/                # cli.ts ≤40 LOC, bin/contextractor
+│   └── standalone/         # cli.ts ≤40 LOC, bin/contextractor
 ├── packages/
 │   ├── extraction/         # @contextractor/extraction — pure (trafilatura wrapper + Rust napi-rs at ./native)
 │   ├── crawler/            # @contextractor/crawler — Crawlee/Playwright orchestration; depends on extraction
 │   ├── apify-runtime/      # @contextractor/apify-runtime — KVS / Dataset sinks; depends on apify + crawler
-│   ├── schema/             # @contextractor/schema — zod → INPUT_SCHEMA.json
-│   ├── platform-test-runner/   # private (moved from tools/)
-│   └── generated-unit-tests/   # private (moved from tools/)
+│   └── schema/             # @contextractor/schema — zod → INPUT_SCHEMA.json
+├── tools/
+│   ├── platform-test-runner/   # private, internal test infra
+│   └── generated-unit-tests/   # private, vitest fixtures
 ├── Cargo.toml              # Rust workspace; member: packages/extraction/native
-├── pnpm-workspace.yaml     # packages: ["apps/*", "packages/*"]
+├── pnpm-workspace.yaml     # packages: ["apps/*", "packages/*", "tools/*"]
 ├── turbo.json
 ├── tsconfig.base.json
 └── biome.json
@@ -119,11 +120,10 @@ export function generateApifyInputSchema(): ApifyInputSchemaJson;
    - Pull KVS save helpers out of `apps/contextractor-apify/src/extraction.ts` into `packages/apify-runtime/src/kvsSink.ts`.
    - Apify app's `main.ts` shrinks to ~25 LOC.
 4. **Week 2 — rename apps**.
-   - `apps/contextractor-apify` → `apps/apify-actor`; `apps/contextractor-standalone` → `apps/cli`.
+   - `apps/contextractor-apify` → `apps/apify-actor`; `apps/contextractor-standalone` → `apps/standalone`.
    - Update `pnpm-workspace.yaml`, Apify `actor.json` git path, CI, README.
-5. **Week 3 — move `tools/*` to `packages/*`** with `private: true`. Drop `tools/*` glob from `pnpm-workspace.yaml`. Verify `turbo run test` graph.
-6. **Week 3+ (optional)** — add `@duckduckgo/autoconsent` lazy fallback for sites needing real opt-out clicks.
-7. **Later (can wait)** — publish `@contextractor/extraction` to npm if the server-consumer use case materializes. Other packages can stay private workspace packages indefinitely.
+5. **Week 3** — add `@duckduckgo/autoconsent` lazy fallback for sites needing real opt-out clicks.
+6. **Later (can wait)** — publish `@contextractor/extraction` to npm if the server-consumer use case materializes. Other packages can stay private workspace packages indefinitely.
 
 ## Risks & tradeoffs
 
@@ -132,7 +132,6 @@ export function generateApifyInputSchema(): ApifyInputSchemaJson;
 | Split engine into 3 packages | More `package.json` files; more version bumps | Use Changesets or Turborepo's release flow; pin internal deps with `workspace:*` |
 | Sink injection pattern | Slightly more abstraction in `@contextractor/crawler` API | Provide ready-made sinks (`fileSink`, `memorySink`) in crawler; `kvsSink`/`datasetSink` in apify-runtime |
 | Rename apps directories | Stale Apify Actor git URLs in Apify Console | Update Apify Actor's git path config in Console at the same commit |
-| Move `tools/` → `packages/` | Slight loss of "internal" signalling | Use `private: true` and clear README in each package |
 | Keep Rust napi-rs in `packages/extraction/native` | Cargo workspace member path changes | Update `Cargo.toml` workspace members; CI native build script |
 | `@ghostery/adblocker-playwright` (MPL-2.0) | File-level weak copyleft on the package's own files | Don't fork; use as a regular dependency. Consumer code is unaffected. |
 | Replacing `COOKIE_DISMISS_SCRIPT` with Ghostery | Filter list cold-start (~5 MB download) at first run | Cache serialized engine to `.cache/adblock-engine.bin`; warm in CI; ~10× faster cold start |

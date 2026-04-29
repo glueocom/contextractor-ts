@@ -130,25 +130,15 @@ Internal package strategies ([Turborepo docs](https://turborepo.dev/docs/core-co
 | Current | Recommended | Reasoning |
 |---|---|---|
 | `apps/contextractor-apify` | **`apps/apify-actor`** | Drops redundant `contextractor-` prefix; matches apify/actor-scraper convention. |
-| `apps/contextractor-standalone` | **`apps/cli`** | Crisp, idiomatic, matches commander.js binary. |
+| `apps/contextractor-standalone` | **`apps/standalone`** | Drops `contextractor-` prefix; keeps the role name. |
 | `packages/contextractor-engine` | split → **`@contextractor/extraction`**, **`@contextractor/crawler`**, **`@contextractor/apify-runtime`** | See decision above. |
-| `packages/contextractor-schema` | `@contextractor/schema` | Keep semantically; verify npm scope. |
+| `packages/contextractor-schema` | **`packages/schema`** (`@contextractor/schema`) | Drop project prefix; consistent with `extraction` and `crawler`. |
 
 apify/actor-scraper precedent: directories named by role (`cheerio-scraper`, `web-scraper`, `playwright-scraper`, `scraper-tools`) — no project prefix.
 
 ## `tools/` directory
 
-`tools/platform-test-runner` and `tools/generated-unit-tests` are internal-only test infra. Conventions:
-
-- **Vercel `create-turbo` template**: only `apps/*` and `packages/*`. Internal tools live in `packages/*` with `private: true`.
-- **Larger projects** (Babel, Next.js): `tools/` or `scripts/` at root for non-package scripts.
-- apify/actor-scraper uses a top-level `scripts/` dir + `test/` dir — no `tools/` workspace.
-
-**Recommendation**: move both to `packages/` with `private: true`:
-- `packages/platform-test-runner/`
-- `packages/generated-unit-tests/`
-
-Reasons: (1) Turborepo's task graph treats them uniformly; (2) one fewer workspace glob in `pnpm-workspace.yaml`; (3) they can `dependsOn` `@contextractor/extraction` etc. naturally. `private: true` prevents accidental publish.
+`tools/platform-test-runner` and `tools/generated-unit-tests` are internal-only test infra. Keep both in `tools/` — the `tools/*` workspace glob remains in `pnpm-workspace.yaml`.
 
 ## Target tree (post-refactor)
 
@@ -162,7 +152,7 @@ contextractor-ts/
 │   │   ├── src/main.ts                    # ~30 lines: Actor.init → input → createCrawler({sink:kvsSink}) → exit
 │   │   ├── Dockerfile
 │   │   └── package.json
-│   └── cli/                               # renamed from contextractor-standalone
+│   └── standalone/                        # renamed from contextractor-standalone
 │       ├── src/cli.ts                     # ~40 lines: argv → createCrawler({sink:fileSink}) → run
 │       ├── bin/contextractor              # shebang launcher
 │       └── package.json
@@ -194,10 +184,11 @@ contextractor-ts/
 │   │   │   ├── kvsSink.ts                 # KVS save helpers as a Sink
 │   │   │   └── datasetSink.ts             # Dataset.pushData wrapper
 │   │   └── package.json                   # deps: apify, @contextractor/crawler
-│   ├── schema/                            # @contextractor/schema (zod → INPUT_SCHEMA.json)
-│   ├── platform-test-runner/              # private (moved from tools/)
-│   └── generated-unit-tests/              # private (moved from tools/)
-├── pnpm-workspace.yaml                    # packages: ["apps/*", "packages/*"]
+│   └── schema/                            # @contextractor/schema (zod → INPUT_SCHEMA.json)
+├── tools/
+│   ├── platform-test-runner/              # private, internal test infra
+│   └── generated-unit-tests/              # private, vitest fixtures
+├── pnpm-workspace.yaml                    # packages: ["apps/*", "packages/*", "tools/*"]
 ├── turbo.json
 ├── tsconfig.base.json
 ├── biome.json
