@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/engine';
+import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 
 export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl';

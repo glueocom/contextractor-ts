@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { ContentExtractor, type Metadata, type OutputFormat } from '@contextractor/engine';
+import { ContentExtractor, type Metadata, type OutputFormat } from '@contextractor/extraction';
 import type { PlaywrightCrawlingContext } from 'crawlee';
 import { PlaywrightCrawler, ProxyConfiguration, Request } from 'crawlee';
 import type { CrawlConfig, SaveFormat } from './config.js';

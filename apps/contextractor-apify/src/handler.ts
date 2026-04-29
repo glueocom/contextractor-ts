@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { ContentExtractor } from '@contextractor/engine';
+import { ContentExtractor } from '@contextractor/extraction';
 import type { Actor, Dataset } from 'apify';
 import type { PlaywrightCrawlingContext } from 'crawlee';
 import type { CrawlConfig, SaveFormat } from './config.js';
@@ -119,7 +119,7 @@ export function createRequestHandler(
       if (kvs.getPublicUrl) rawHtmlInfo.url = await kvs.getPublicUrl(htmlKey);
     }
 
-    const metadata = projectMetadata(html, url, extractor);
+    const metadata = projectMetadata(extractor.extractMetadata(html, url));
 
     const data: Record<string, unknown> = {
       loadedUrl: url,

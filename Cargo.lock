@@ -83,7 +83,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "contextractor-engine-native"
+name = "contextractor-extraction-native"
 version = "0.1.0"
 dependencies = [
  "chrono",

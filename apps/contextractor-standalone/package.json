@@ -15,7 +15,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "@contextractor/engine": "workspace:*",
+    "@contextractor/extraction": "workspace:*",
     "@contextractor/schema": "workspace:*",
     "commander": "^12.1.0",
     "crawlee": "^3.10.1",

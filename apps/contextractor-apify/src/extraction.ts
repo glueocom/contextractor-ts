@@ -1,5 +1,8 @@
-import { createHash } from 'node:crypto';
-import type { ContentExtractor, OutputFormat } from '@contextractor/engine';
+import type { ContentExtractor, OutputFormat } from '@contextractor/extraction';
+import { computeContentInfo as _computeContentInfo } from '@contextractor/extraction';
+
+export type { DatasetMetadata } from '@contextractor/extraction';
+export { projectMetadata } from '@contextractor/extraction';
 
 export interface ContentInfo {
   hash: string;
@@ -20,6 +23,10 @@ const FORMAT_TO_NATIVE: Record<'text' | 'json' | 'markdown' | 'html', OutputForm
   html: 'html',
 };
 
+export function computeContentInfo(content: string | Buffer): ContentInfo {
+  return _computeContentInfo(content);
+}
+
 export function extractFormat(
   html: string,
   format: 'text' | 'json' | 'markdown',
@@ -32,44 +39,6 @@ export function extractFormat(
   return result.content;
 }
 
-export interface DatasetMetadata {
-  title: string | null;
-  author: string | null;
-  publishedAt: string | null;
-  description: string | null;
-  siteName: string | null;
-  lang: string | null;
-}
-
-export function projectMetadata(
-  html: string,
-  url: string,
-  extractor: ContentExtractor,
-): DatasetMetadata {
-  const result = extractor.extractMetadata(html, url);
-  let lang = result.language;
-  if (!lang) {
-    const match = html.match(/<html[^>]*\slang=["']([^"']+)["']/i);
-    if (match?.[1]) lang = match[1];
-  }
-  return {
-    title: result.title,
-    author: result.author,
-    publishedAt: result.date,
-    description: result.description,
-    siteName: result.sitename,
-    lang: lang ?? null,
-  };
-}
-
-export function computeContentInfo(content: string | Buffer): ContentInfo {
-  const buf = typeof content === 'string' ? Buffer.from(content, 'utf8') : content;
-  return {
-    hash: createHash('md5').update(buf).digest('hex'),
-    length: buf.length,
-  };
-}
-
 export async function saveContentToKvs(
   kvs: KvsLike,
   key: string,
@@ -77,7 +46,7 @@ export async function saveContentToKvs(
   contentType: string,
 ): Promise<ContentInfo> {
   await kvs.setValue(key, content, { contentType });
-  const info = computeContentInfo(content);
+  const info: ContentInfo = _computeContentInfo(content);
   info.key = key;
   if (kvs.getPublicUrl) {
     info.url = await kvs.getPublicUrl(key);

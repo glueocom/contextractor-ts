@@ -1,4 +1,4 @@
-import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/engine';
+import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
 export type SaveFormat = 'markdown' | 'html' | 'text' | 'json';
