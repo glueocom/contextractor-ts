@@ -33,3 +33,12 @@ Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` 
 ## Order
 
 Extraction → crawler → renames → autoconsent fallback (optional) → docs sweep.
+
+## Research
+
+FYI only — this prompt is the source of truth. Background evidence:
+
+- [`research-summary.md`](./research-summary.md) — executive summary, target tree, migration plan, risks & license analysis.
+- [`research-cookie-dismissal.md`](./research-cookie-dismissal.md) — library comparison (`idcac-playwright` vs `closeCookieModals()` vs Ghostery vs autoconsent), route-blocking pattern, reference `cookies.ts`.
+- [`research-crawlee-pattern.md`](./research-crawlee-pattern.md) — actor-scraper layout, `PlaywrightCrawler` patterns (`useSessionPool`, `infiniteScroll`), WCC Ghostery integration.
+- [`research-monorepo-structure.md`](./research-monorepo-structure.md) — duplicated symbols audit, three-package split rationale, naming decisions, entry-point examples.
