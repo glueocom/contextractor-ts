@@ -145,7 +145,7 @@ stripped by `parse()`.
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (workspace-level; needed by the sibling Actor).
-- **Node 22+**, **npm 10+**.
+- **Node 22+**, **pnpm 10+**.
 
 ## Local development
 

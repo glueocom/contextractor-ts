@@ -14,7 +14,7 @@ Playwright).
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (older versions reject the modern `actor.json` format).
-- **Node 22+**, **npm 10+**.
+- **Node 22+**, **pnpm 10+**.
 
 ## Local development
 
