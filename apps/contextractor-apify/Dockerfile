@@ -18,7 +18,7 @@ COPY tools/generated-unit-tests/package.json tools/generated-unit-tests/
 COPY tools/opencode-sync/package.json tools/opencode-sync/
 COPY tools/platform-test-runner/package.json tools/platform-test-runner/
 
-RUN npm install
+RUN npm install --force
 
 # Copy sources needed for the build.
 COPY tsconfig.json ./
