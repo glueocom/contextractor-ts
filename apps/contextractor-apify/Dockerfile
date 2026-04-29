@@ -8,7 +8,7 @@ WORKDIR /repo
 
 # Copy workspace + package manifests for layer-cache efficiency.
 # Only copy linux prebuilds — darwin/windows dirs are not needed.
-COPY pnpm-workspace.yaml package.json ./
+COPY pnpm-workspace.yaml package.json .npmrc ./
 COPY packages/contextractor-schema/package.json packages/contextractor-schema/
 COPY packages/contextractor-engine/native/npm/linux-x64-gnu/ packages/contextractor-engine/native/npm/linux-x64-gnu/
 COPY packages/contextractor-engine/native/npm/linux-arm64-gnu/ packages/contextractor-engine/native/npm/linux-arm64-gnu/
