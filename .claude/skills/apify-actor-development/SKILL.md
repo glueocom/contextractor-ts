@@ -46,6 +46,8 @@ Then run:
 apify login -t $APIFY_TOKEN
 ```
 
+For remote ops, use `mcpc` — see `apify-ops` skill.
+
 ## Template Selection
 
 **IMPORTANT:** Before starting actor development, always ask the user which programming language they prefer:

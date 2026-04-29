@@ -52,6 +52,8 @@ If not logged in, check if `APIFY_TOKEN` environment variable is defined. If not
 apify login -t $APIFY_TOKEN
 ```
 
+For remote ops, use `mcpc` — see `apify-ops` skill.
+
 ## Actorization Checklist
 
 Copy this checklist to track progress:

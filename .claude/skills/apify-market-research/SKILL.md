@@ -12,7 +12,6 @@ Conduct market research using Apify Actors to extract data from multiple platfor
 
 - `mcpc` CLI with `@apify` session connected — see one-time setup in the `apify-ops` skill
 - Node.js 20.6+ for the helper script (uses native `--env-file` support)
-- `.env` with `APIFY_TOKEN` for the helper script (`reference/scripts/run_actor.js` calls the `apify-client` SDK)
 
 ## Workflow
 
@@ -75,6 +74,8 @@ Before running, ask:
 2. **Number of results**: Based on character of use case
 
 ### Step 4: Run the Script
+
+Helper script reads `APIFY_TOKEN` from `.env`.
 
 **Quick answer (display in chat, no file):**
 ```bash
