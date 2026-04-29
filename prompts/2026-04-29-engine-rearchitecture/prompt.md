@@ -1,12 +1,35 @@
-- we need to ensure DRY - all the logic must be in one place at /Users/miroslavsekera/r/contextractor-ts/packages/contextractor-engine , for example cookie dialog handling in `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-apify/src/handler.ts` belongs to `/Users/miroslavsekera/r/contextractor-ts/packages/contextractor-engine` or even better, investigate how cookie handling is implemented in `/Users/miroslavsekera/r/actor-scraper/packages/actor-scraper/playwright-scraper` and implement in in same way - but put the logic to `/Users/miroslavsekera/r/contextractor-ts/packages/contextractor-engine` do deep ressearch, probalby some solution on browser level is better to use for dismissing cookie modals.
+# Engine rearchitecture
 
-- we also need to review complete stucture of `/Users/miroslavsekera/r/contextractor-ts/apps` and `/Users/miroslavsekera/r/contextractor-ts/packages` are they well structured?
+Detailed plan in [`research-summary.md`](./research-summary.md); evidence in the three sibling research files.
 
-## Research
+## Goal
 
-Deep research grounded in this repo + apify/actor-scraper, apify/crawlee, and current npm/GitHub state of the cookie-dismissal libraries:
+Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` and `apps/contextractor-standalone`. Split `packages/contextractor-engine` into three layered packages. Replace bespoke cookie-dismiss with `@ghostery/adblocker-playwright`.
 
-- [`research-summary.md`](./research-summary.md) — executive summary, final recommendations, target tree, public API surface for all packages, week-by-week migration plan, risks & tradeoffs, license analysis. **Start here.**
-- [`research-cookie-dismissal.md`](./research-cookie-dismissal.md) — `idcac-playwright` (GPL-3.0, dead) vs Crawlee `closeCookieModals()` vs `@ghostery/adblocker-playwright` (MPL-2.0, primary, what Apify WCC uses since Dec 2025) vs `@duckduckgo/autoconsent` (MPL-2.0, fallback). Route-blocking, hybrid pattern, reference `cookies.ts` implementation.
-- [`research-crawlee-pattern.md`](./research-crawlee-pattern.md) — how `apify/actor-scraper` is laid out (`@apify/scraper-tools` + per-actor `crawler_setup.ts`), full `playwright-scraper` `PlaywrightCrawler` instantiation with `useSessionPool: true` / `persistCookiesPerSession: true` / `getInjectableScript()` / `infiniteScroll`, the `website-content-crawler` Ghostery integration, `infiniteScroll` API reference.
-- [`research-monorepo-structure.md`](./research-monorepo-structure.md) — duplicated symbols audit, reference layouts (`apify/actor-scraper`, `apify/crawlee`, Turborepo conventions), three-way engine split decision (`@contextractor/extraction` + `@contextractor/crawler` + `@contextractor/apify-runtime`), per-piece move-target table, naming review (`apps/apify-actor` + `apps/cli`), `tools/` → `packages/` consolidation, refactored entry-point examples.
+## Actions
+
+1. **Split engine** ([`research-monorepo-structure.md`](./research-monorepo-structure.md)):
+   - `@contextractor/extraction` — pure HTML→content; trafilatura + napi-rs Rust crate at `./native`; absorbs `computeContentInfo` + `projectMetadata`. No Crawlee/Playwright deps.
+   - `@contextractor/crawler` — `PlaywrightCrawler` factory, handler, browser launch options, scroll, cookies. Exposes `Sink<T>` + `fileSink` + `memorySink`.
+   - `@contextractor/apify-runtime` — `kvsSink`, `datasetSink`.
+
+2. **Replace cookie handling** ([`research-cookie-dismissal.md`](./research-cookie-dismissal.md)):
+   - Delete `COOKIE_DISMISS_SCRIPT` from both apps.
+   - Use `@ghostery/adblocker-playwright` (MPL-2.0) wired via `preNavigationHooks`; cache serialized engine to `.cache/adblock-engine.bin`.
+   - `@duckduckgo/autoconsent` lazy-loaded as opt-in fallback.
+   - Do **not** adopt `idcac-playwright` (GPL-3.0, dead since Nov 2023) or Crawlee's `closeCookieModals()` (still wraps it).
+
+3. **Use Crawlee built-ins** ([`research-crawlee-pattern.md`](./research-crawlee-pattern.md)):
+   - Replace manual `scrollBy(0, 500)` loop with `crawlingContext.infiniteScroll({ maxScrollHeight, scrollDownAndUp, buttonSelector, stopScrollCallback })`.
+   - Default `useSessionPool: true` + `persistCookiesPerSession: true` for browser mode.
+   - Port `getMissingCookiesFromSession` from `@apify/scraper-tools`.
+
+4. **Rename**: `contextractor-apify` → `apify-actor`; `contextractor-standalone` → `cli`. Update `pnpm-workspace.yaml`, Apify Console git path.
+
+5. **Move tools**: `tools/*` → `packages/*` with `private: true`. Drop `tools/*` from workspace globs.
+
+6. **Shrink entry points**: `apps/apify-actor/src/main.ts` ≤30 LOC; `apps/cli/src/cli.ts` ≤40 LOC — pure wiring, no Playwright import.
+
+## Order
+
+Extraction → crawler → apify-runtime → renames → tools move → autoconsent fallback (optional).
