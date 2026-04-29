@@ -35,10 +35,14 @@ All output goes to `@/prompts/{date}-{slug}/`:
 ├── implementation/                # Implementation prompts
 │   ├── master.md
 │   └── step-*.md
-└── tests/                         # Test, review, and autofix prompts
+├── review/                        # Code review + autofix prompts
+│   ├── master.md
+│   ├── step-review-*.md           # Per-step code review + autofix
+│   └── step-review-user-intent.md
+└── tests/                         # Test execution prompts
     ├── master.md
-    ├── step-test-*.md             # Per-step review + autofix
-    └── step-test-user-intent.md   # Final: validate against user intent + autofix
+    ├── step-test-*.md             # Per-step test execution
+    └── step-test-user-intent.md
 ```
 
 ## Step CLEAN_GIT: Verify Clean Working Directory
@@ -50,7 +54,7 @@ Run `git status --porcelain`. If output is not empty, stop with error:
 ## Step SAVE: Create Directory Structure and Log Input
 
 - Derive a topic slug from the raw prompt content (kebab-case, concise)
-- Create `@/prompts/{today's date}-{slug}/` with subdirectories: `user-entry-log/`, `implementation/`, `tests/`
+- Create `@/prompts/{today's date}-{slug}/` with subdirectories: `user-entry-log/`, `implementation/`, `review/`, `tests/`
 - If `$ARGUMENTS` is a file path that exists, **move** the original file exactly as-is to `user-entry-log/entry-initial-prompt.md` — no headers, no modifications, no reformatting
 - If `$ARGUMENTS` is raw text, save it **verbatim** as `user-entry-log/entry-initial-prompt.md`
 - Save a copy as working file `{slug}.md` at prompt root
@@ -168,24 +172,24 @@ Split the fixed working file into step files inside `implementation/`. **Always 
 
 Delete the working file `{slug}.md` after splitting — the content now lives in implementation steps.
 
-## Step GENERATE_TESTS: Create Test, Review, and Autofix Steps
+## Step GENERATE_REVIEW: Create Code Review and Autofix Steps
 
-Create a `tests/` folder parallel to `implementation/` with its own master file and per-step test files. **All test steps automatically fix issues they find.**
+Create a `review/` folder parallel to `implementation/` with its own master file and per-step review files. **All review steps automatically fix issues they find. No tests are executed in this step — review focuses purely on code quality, correctness, and intent alignment.**
 
-### Per-step test files
+### Per-step review files
 
-For each `implementation/step-{name}.md`, create a corresponding `tests/step-test-{name}.md`:
+For each `implementation/step-{name}.md`, create a corresponding `review/step-review-{name}.md`:
 
-- An executable prompt that reviews and tests code changes from that implementation step
+- An executable prompt that reviews code changes from that implementation step
 - References the corresponding `implementation/step-{name}.md`
-- Runs `git diff` to capture changes from that step
-- Reviews code changes against the step's instructions
-- Runs relevant tests and build verification
-- **Automatically fixes** all discovered issues — code quality problems, test failures, missing edge cases, and deviations from the step's instructions
+- Runs `git log --oneline -20` to identify recent commits, then `git diff` against commits from that step
+- Reviews code changes for quality, style, correctness, and security against the step's instructions
+- **Automatically fixes** all discovered issues — code quality problems, style violations, security concerns, and deviations from the step's instructions
+- Does **not** run any tests
 
-### User intent test file
+### User intent review file
 
-Create `tests/step-test-user-intent.md`:
+Create `review/step-review-user-intent.md`:
 
 - Reviews the **complete implementation** against original user intent
 - References all files in `user-entry-log/` (initial prompt, instructions, Q&A entries)
@@ -194,12 +198,44 @@ Create `tests/step-test-user-intent.md`:
 - Flags gaps (requirements not covered) and mismatches (contradictions with user intent)
 - **Automatically fixes** all gaps and mismatches found
 
+### Review master file
+
+Create `review/master.md`:
+
+- Starts with a **TLDR** — what it reviews and what it validates
+- Lists which review agents and skills to use (selected from the implementation master's "Skills and Agents" section — e.g., `code-reviewer` for correctness/hygiene)
+- Lists all review step files in order: per-step reviews first, then `step-review-user-intent.md` last
+- Each entry has a one-line description
+- Must be concise — only TLDR, agents/skills, step list, and shared context
+
+## Step GENERATE_TESTS: Create Test Execution Steps
+
+Create a `tests/` folder parallel to `implementation/` with its own master file and per-step test files. **All test steps automatically fix failures they find. This step focuses purely on test execution — code review lives in the `review/` folder.**
+
+### Per-step test files
+
+For each `implementation/step-{name}.md`, create a corresponding `tests/step-test-{name}.md`:
+
+- An executable prompt that runs tests for code changes from that implementation step
+- References the corresponding `implementation/step-{name}.md`
+- Runs relevant tests for the touched code (`vitest`, `cargo test`, etc.)
+- Verifies functionality works as intended per the step's instructions
+- **Automatically fixes** failing tests, missing edge cases, and broken functionality
+
+### User intent test file
+
+Create `tests/step-test-user-intent.md`:
+
+- Runs the full test suite after all implementation steps
+- Verifies no regressions across the codebase
+- **Automatically fixes** any failures found
+
 ### Tests master file
 
 Create `tests/master.md`:
 
-- Starts with a **TLDR** — what it reviews and what it validates
-- Lists which review/test agents and skills to use (selected from the implementation master's "Skills and Agents" section — e.g., `code-reviewer` for correctness/hygiene, `test-runner` for build and tests)
+- Starts with a **TLDR** — what it tests and what it validates
+- Lists which test agents and skills to use (selected from the implementation master's "Skills and Agents" section — e.g., `test-runner` for build and tests)
 - Lists all test step files in order: per-step tests first, then `step-test-user-intent.md` last
 - Each entry has a one-line description
 - Must be concise — only TLDR, agents/skills, step list, and shared context
