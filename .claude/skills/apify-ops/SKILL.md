@@ -29,13 +29,13 @@ After this, every example below uses the short `mcpc @apify ...` form. Verify th
 | List recent runs / stream a run's log | `apify` CLI (`apify runs ls|log`) |
 | Builds (list, info, log, create) | `apify` CLI (`apify builds *`) |
 | Free-standing dataset / KV store inspection | `apify` CLI (`apify datasets|key-value-stores ...`) |
-| Local dev (run, push, login, info, whoami) | `apify` CLI |
+| Local dev (run, push, login, info) | `apify` CLI |
 
-`mcp.apify.com` v0.9.19 currently exposes 8 tools. Anything not listed in `references/mcpc-tools.md` is not available via mcpc.
+`mcp.apify.com` v0.9.20 currently exposes 8 tools. Anything not listed in `references/mcpc-tools.md` is not available via mcpc.
 
 ## Get Actor Identity
 
-Read actor name from `.actor/actor.json`. Use `apify whoami` to get username for full actor ID (`username/actor-name`).
+Read actor name from `.actor/actor.json`. Use `apify info` to get username for the full actor ID (`username/actor-name`).
 
 ## Remote Operations via mcpc
 
@@ -61,7 +61,7 @@ apify login                          # Authenticate
 apify info                           # Identity check
 
 # Remote ops (no mcpc equivalent)
-apify runs ls --actor <actorId>      # List runs
+apify runs ls <actorId>              # List runs
 apify runs log <runId>               # Stream run log
 apify builds ls --limit 5            # List builds
 apify builds log <buildId>           # Build log

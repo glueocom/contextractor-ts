@@ -2,7 +2,7 @@
 
 Use the persistent `@apify` session — see the one-time setup in `../SKILL.md`. Every example assumes `mcpc connect mcp.apify.com @apify` has been run.
 
-The live server (`apify-mcp-server` v0.9.19) exposes 8 tools. Anything not listed below is not available via mcpc — fall back to `apify` CLI (`references/cli-commands.md`) or the `apify-client` SDK.
+The live server (`apify-mcp-server` v0.9.20) exposes 8 tools. Anything not listed below is not available via mcpc — fall back to `apify` CLI (`references/cli-commands.md`) or the `apify-client` SDK.
 
 ## Argument syntax
 
@@ -32,20 +32,13 @@ mcpc --json @apify tools-call fetch-actor-details actor:="apify/rag-web-browser"
 
 ## Running Actors
 
-### call-actor (two-step)
+### call-actor
 
-**Step 1 — info** (required first; shows input schema and pricing):
-
-```bash
-mcpc @apify tools-call call-actor actor:="apify/rag-web-browser" step:="info"
-```
-
-**Step 2 — call** (synchronous by default; waits for completion and returns results):
+Synchronous by default — waits for completion and returns results. Use `fetch-actor-details` first to check the Actor's input schema.
 
 ```bash
 mcpc --json @apify tools-call call-actor \
   actor:="apify/rag-web-browser" \
-  step:="call" \
   input:='{"query":"example search","maxResults":5}'
 ```
 
@@ -54,7 +47,6 @@ mcpc --json @apify tools-call call-actor \
 ```bash
 mcpc --json @apify tools-call call-actor \
   actor:="apify/instagram-scraper" \
-  step:="call" \
   async:=true \
   input:='{"username":"example"}'
 ```
@@ -114,7 +106,7 @@ A general web-scraping tool exposed directly. Prefer `search-actors` + `call-act
 mcpc @apify tools-call apify--rag-web-browser query:="apify documentation"
 ```
 
-## Limitations of `mcp.apify.com` v0.9.19
+## Limitations of `mcp.apify.com` v0.9.20
 
 Not exposed (use `apify` CLI or `apify-client` SDK):
 

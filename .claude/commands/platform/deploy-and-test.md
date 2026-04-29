@@ -108,7 +108,6 @@ After a successful build, run the Actor with test input via mcpc (assumes one-ti
 ```bash
 mcpc --json @apify tools-call call-actor \
   actor:="<TARGET_ACTOR>" \
-  step:="call" \
   input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"outputFormat":"markdown"}'
 ```
 

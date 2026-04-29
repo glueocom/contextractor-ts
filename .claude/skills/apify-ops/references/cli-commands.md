@@ -7,7 +7,7 @@ CLI commands for local development and for remote operations not exposed by `mcp
 ```bash
 npm install -g apify-cli                                   # Install
 apify login                                                # Authenticate
-apify whoami                                               # Verify
+apify info                                                 # Verify
 ```
 
 ## Local Development
@@ -31,7 +31,6 @@ apify push --no-build                                      # Deploy without rebu
 
 ```bash
 apify info                                                 # Current Actor + user info
-apify whoami                                               # Username only
 apify auth token                                           # Print stored API token
 ```
 
@@ -40,7 +39,7 @@ apify auth token                                           # Print stored API to
 ### Runs
 
 ```bash
-apify runs ls --actor <actorId>                            # List runs
+apify runs ls <actorId>                                    # List runs
 apify runs info <runId>                                    # Run details
 apify runs log <runId>                                     # Stream run log
 apify runs abort <runId>                                   # Abort a running run
