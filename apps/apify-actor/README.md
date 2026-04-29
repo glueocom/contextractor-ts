@@ -67,7 +67,7 @@ the table below is auto-rebuilt from that schema by
 | `launcher` | enum (`CHROMIUM` \| `FIREFOX`) | `"CHROMIUM"` | Browser to use for crawling |
 | `headless` | boolean | `true` | Run browser in headless mode |
 | `ignoreCorsAndCsp` | boolean | `false` | Ignore Content Security Policy and Cross-Origin Resource Sharing restrictions. Enables free XHR/Fetch requests from pages. |
-| `closeCookieModals` | boolean | `true` | Automatically dismiss cookie consent modals |
+| `closeCookieModals` | boolean | `true` | Automatically dismiss cookie consent modals with Ghostery-based blocking. |
 | `maxScrollHeightPixels` | integer | `5000` | Maximum pixels to scroll down the page until all content is loaded. Setting to 0 disables scrolling. |
 | `userAgent` | string | `""` | Custom User-Agent string for the browser. Leave empty to use the default browser User-Agent. |
 | `ignoreSslErrors` | boolean | `false` | Ignore SSL certificate errors. Use at your own risk. |
