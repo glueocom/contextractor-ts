@@ -37,7 +37,7 @@ RUN npm run build -w @contextractor/schema \
     && npm run build -w @contextractor/engine \
     && npm run build -w @contextractor/standalone \
     && npm run build -w @contextractor/apify \
-    && npm prune --omit=dev \
+    && npm prune --omit=dev --force \
     && npm run deploy --prod -w @contextractor/apify -- /deploy
 
 FROM apify/actor-node-playwright-chrome:22
