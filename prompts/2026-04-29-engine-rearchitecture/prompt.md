@@ -4,7 +4,7 @@ Detailed plan in [`research-summary.md`](./research-summary.md); evidence in the
 
 ## Goal
 
-Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` and `apps/contextractor-standalone`. Split `packages/contextractor-engine` into three layered packages. Replace bespoke cookie-dismiss with `@ghostery/adblocker-playwright`.
+Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` and `apps/contextractor-standalone`. Split `packages/contextractor-engine` into three layered packages. Replace bespoke cookie-dismiss with `@ghostery/adblocker-playwright` plus `@duckduckgo/autoconsent` fallback.
 
 ## Actions
 
@@ -15,20 +15,20 @@ Drop duplicated browser/crawler/cookie logic between `apps/contextractor-apify` 
 
 2. **Replace cookie handling** ([`research-cookie-dismissal.md`](./research-cookie-dismissal.md)):
    - Delete `COOKIE_DISMISS_SCRIPT` from both apps.
-   - Use `@ghostery/adblocker-playwright` (MPL-2.0) wired via `preNavigationHooks`; cache serialized engine to `.cache/adblock-engine.bin`.
-   - `@duckduckgo/autoconsent` lazy-loaded as opt-in fallback.
-   - Do **not** adopt `idcac-playwright` (GPL-3.0, dead since Nov 2023) or Crawlee's `closeCookieModals()` (still wraps it).
+   - Use `@ghostery/adblocker-playwright` (MPL-2.0) as the primary first-pass blocker, wired via `preNavigationHooks`; cache serialized engine to `.cache/adblock-engine.bin`.
+   - `@duckduckgo/autoconsent` lazy-loaded as fallback for real reject-click flows.
+   - Do **not** adopt GPL-3.0 `idcac-playwright` or Crawlee's `closeCookieModals()` (it still depends on `idcac-playwright`).
 
 3. **Use Crawlee built-ins** ([`research-crawlee-pattern.md`](./research-crawlee-pattern.md)):
    - Replace manual `scrollBy(0, 500)` loop with `crawlingContext.infiniteScroll({ maxScrollHeight, scrollDownAndUp, buttonSelector, stopScrollCallback })`.
    - Default `useSessionPool: true` + `persistCookiesPerSession: true` for browser mode.
-   - Port `getMissingCookiesFromSession` from `@apify/scraper-tools`.
+   - If initial-cookie diffing is still needed, inline a tiny local helper over `session.getCookies(url)`; do not add `@apify/scraper-tools`.
 
 4. **Rename**: `contextractor-apify` → `apify-actor`; `contextractor-standalone` → `cli`. Update `pnpm-workspace.yaml`, Apify Console git path.
 
 5. **Move tools**: `tools/*` → `packages/*` with `private: true`. Drop `tools/*` from workspace globs.
 
-6. **Shrink entry points**: `apps/apify-actor/src/main.ts` ≤30 LOC; `apps/cli/src/cli.ts` ≤40 LOC — pure wiring, no Playwright import.
+6. **Shrink entry points**: after rename, `apps/apify-actor/src/main.ts` ≤30 LOC; `apps/cli/src/cli.ts` ≤40 LOC — pure wiring, no Playwright import.
 
 ## Order
 
