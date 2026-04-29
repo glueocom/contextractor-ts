@@ -1,7 +1,7 @@
 import type { OutputFormat, TrafilaturaConfig } from '@contextractor/extraction';
 import type { ProxyConfiguration, SessionPoolOptions } from 'crawlee';
 import { PlaywrightCrawler, Request } from 'crawlee';
-import { rejectViaAutoconsent } from './browser/cookies.js';
+import { installCookieDefences, rejectViaAutoconsent } from './browser/cookies.js';
 import { buildBrowserLaunchOptions } from './browser/launchOptions.js';
 import type { ScrollConfig } from './browser/scroll.js';
 import { createHandler } from './handler.js';
@@ -60,7 +60,6 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
   const handler = createHandler({
     extractionConfig: opts.extractionConfig,
     sink: opts.sink,
-    cookieStrategy,
     scroll: opts.scroll,
     formats,
     maxResults: opts.maxResults,
@@ -90,6 +89,15 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
         }
       : {}),
     proxyConfiguration: opts.proxyConfiguration,
+    ...(cookieStrategy === 'ghostery'
+      ? {
+          preNavigationHooks: [
+            async ({ page }: { page: import('playwright').Page }) => {
+              await installCookieDefences(page);
+            },
+          ],
+        }
+      : {}),
     ...(cookieStrategy === 'autoconsent'
       ? {
           postNavigationHooks: [
