@@ -7,7 +7,7 @@ if yes, write a prompt to set up '/Users/miroslavsekera/r/contextractor-ts/.clau
 
 **Direct MCP**: Strip every `mcp__apify__*` example and reference. Agents use `mcpc` from Bash only. `.mcp.json` stays (it configures the `apify` MCP server; `mcpc connect mcp.apify.com @apify` makes `@apify` discoverable).
 
-**Scope**: Use `mcpc` for remote ops that the live `@apify` session exposes. Keep `apify` CLI for local dev: `run`, `push`, `login`, `info`, `create`, `validate-schema`. Replace `mcp__apify__*`, `apify call`, and raw API curl with `mcpc` where a real equivalent exists. Keep `apify builds`, `apify runs`, `apify datasets`, and `apify key-value-stores` where the live `@apify` session does not expose equivalents.
+**Scope**: Use `mcpc` for remote ops that the live `@apify` session exposes. Keep `apify` CLI for local dev: `run`, `push`, `login`, `info`, `create`, `validate-schema`. Replace `mcp__apify__*`, `apify call`, and raw API curl with `mcpc` where a real equivalent exists. Keep `apify builds`, `apify runs`, `apify datasets`, and `apify key-value-stores` where the live `@apify` session does not expose equivalents. Do not touch the `apify call glueo/contextractor` deny-list entries in `.claude/settings.json` — they are production guards per `.claude/rules/apify-production.md`.
 
 **Pivot**: The current live `@apify` session exposes only 8 tools. Docs mention more optional/dynamic tools (`add-actor`, run-list, run-log, dataset/KV ops), but they are NOT exposed in this live session. Use `mcpc` where a real equivalent exists; keep `apify` CLI elsewhere.
 
