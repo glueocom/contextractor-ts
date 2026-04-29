@@ -16,8 +16,8 @@ The source files are canonical for what each README must document. When they dis
 - **Input schema (canonical for CLI flags, INPUT_SCHEMA fields, and the `ContextractorInputType` interface)** — `packages/schema/src/input.ts`. The Zod 4 schema is the single source of truth for every input field; both the Apify `input_schema.json` and the markdown reference tables are generated from it.
 - **TypeScript engine API** — `packages/extraction/src/index.ts` (the canonical `TrafilaturaConfig` interface, `ContentExtractor` class, exported types). The TS engine drives every output-format and extraction surface.
 - **napi-rs binding** — `packages/extraction/native/src/lib.rs`. `#[napi(object)]` structs must mirror the TS interface field-for-field; the TS interface is canonical, not the Rust struct.
-- **Standalone CLI** — `apps/standalone/src/cli.ts` (every `commander` flag with description and default) plus `apps/standalone/src/config.ts`. The Commander program is exported and walked by `@contextractor/gen-md-regions` into the `cli-flags` table.
-- **Apify Actor TypeScript** — `apps/apify-actor/src/{main.ts, handler.ts, extraction.ts, config.ts}` and the Actor's `package.json` workspace deps.
+- **Standalone CLI** — `apps/standalone/src/cli.ts` (entry export for the generator) plus `apps/standalone/src/cliProgram.ts` (every `commander` flag with description and default) and `apps/standalone/src/config.ts`.
+- **Apify Actor TypeScript** — `apps/apify-actor/src/{main.ts, run.ts, extraction.ts, sinks.ts, config.ts}` and the Actor's `package.json` workspace deps.
 - **Engine/public output format set** — must equal `txt | markdown | json | html` everywhere it describes engine or extracted-content formats; XML / XML-TEI are dropped pending upstream `rs-trafilatura` support. CLI-only orchestration shorthands such as `--save jsonl` or `--save all` are evaluated separately and are not part of the engine `OutputFormat` set.
 - **Apify Actor schemas** —
   - `apps/apify-actor/.actor/actor.json` (description must say "built on rs-trafilatura and Crawlee")
@@ -30,7 +30,7 @@ The source files are canonical for what each README must document. When they dis
 Read every source-of-truth file above and build one inventory covering all surfaces:
 
 - Every TS engine config field (name, type, default, JSDoc) — note that it lives in **`packages/extraction/src/index.ts`**.
-- Every standalone CLI flag (long name, short name if any, type, default, help text) — note that it lives in **`apps/standalone/src/cli.ts`**.
+- Every standalone CLI flag (long name, short name if any, type, default, help text) — note that it lives in **`apps/standalone/src/cliProgram.ts`**.
 - Every Apify input-schema property (name, type, default, description, editor type) — note that it lives in **the schema**.
 - Every napi-rs `#[napi(object)]` field — verify it matches the TS interface.
 - Every output format the engine, CLI, and schema accept (must equal the canonical set `txt | markdown | json | html`).

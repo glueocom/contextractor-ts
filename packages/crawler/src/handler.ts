@@ -1,20 +1,17 @@
 import {
   ContentExtractor,
   computeContentInfo,
+  type OutputFormat,
   projectMetadata,
   type TrafilaturaConfig,
-  type OutputFormat,
 } from '@contextractor/extraction';
-import type { RequestHandler } from 'crawlee';
-import type { PlaywrightCrawlingContext } from 'crawlee';
-import { installCookieDefences } from './browser/cookies.js';
+import type { PlaywrightCrawlingContext, RequestHandler } from 'crawlee';
 import { autoScroll, type ScrollConfig } from './browser/scroll.js';
 import type { ExtractionResult, Sink } from './sinks/types.js';
 
 export interface HandlerOpts {
   extractionConfig?: TrafilaturaConfig;
   sink: Sink<ExtractionResult>;
-  cookieStrategy: 'ghostery' | 'autoconsent' | 'none';
   scroll?: ScrollConfig;
   formats: OutputFormat[];
   maxResults?: number;
@@ -37,10 +34,6 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
     if (opts.maxResults && resultCount >= opts.maxResults) {
       log.info(`Max results (${opts.maxResults}) reached, stopping.`);
       return;
-    }
-
-    if (opts.cookieStrategy === 'ghostery') {
-      await installCookieDefences(page);
     }
 
     if (opts.scroll) {
@@ -75,12 +68,13 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
   };
 }
 
-async function enqueueLinks(
-  context: PlaywrightCrawlingContext,
-  opts: HandlerOpts,
-): Promise<void> {
+async function enqueueLinks(context: PlaywrightCrawlingContext, opts: HandlerOpts): Promise<void> {
   const currentDepth = (context.request.userData?.depth as number | undefined) ?? 0;
-  if (opts.maxCrawlingDepth !== undefined && opts.maxCrawlingDepth !== 0 && currentDepth >= opts.maxCrawlingDepth) {
+  if (
+    opts.maxCrawlingDepth !== undefined &&
+    opts.maxCrawlingDepth !== 0 &&
+    currentDepth >= opts.maxCrawlingDepth
+  ) {
     return;
   }
   const newDepth = currentDepth + 1;

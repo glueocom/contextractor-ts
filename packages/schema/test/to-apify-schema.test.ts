@@ -11,10 +11,7 @@ import { ContextractorInput, toApifyInputSchema, writeApifyInputSchema } from '.
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../..');
 const apifyMetaSchemaPath = resolve(here, 'fixtures/apify-input.schema.json');
-const onDiskInputSchemaPath = resolve(
-  repoRoot,
-  'apps/apify-actor/.actor/input_schema.json',
-);
+const onDiskInputSchemaPath = resolve(repoRoot, 'apps/apify-actor/.actor/input_schema.json');
 
 const apifyMetaSchema = JSON.parse(readFileSync(apifyMetaSchemaPath, 'utf8'));
 

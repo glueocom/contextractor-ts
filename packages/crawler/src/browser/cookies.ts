@@ -11,7 +11,9 @@ const FILTER_LISTS = [
 
 let blockerPromise: Promise<PlaywrightBlocker> | undefined;
 
-export async function getBlocker(cachePath = '.cache/adblock-engine.bin'): Promise<PlaywrightBlocker> {
+export async function getBlocker(
+  cachePath = '.cache/adblock-engine.bin',
+): Promise<PlaywrightBlocker> {
   if (!blockerPromise) {
     blockerPromise = PlaywrightBlocker.fromLists(globalThis.fetch, FILTER_LISTS, undefined, {
       path: cachePath,
@@ -57,7 +59,8 @@ export async function rejectViaAutoconsent(
   return page.evaluate(() => {
     return new Promise<{ cmp?: string; success: boolean }>((resolve) => {
       window.addEventListener('message', (e) => {
-        const msg = (e as MessageEvent<{ __autoconsentMsg?: { type: string; cmp?: string } }>).data?.__autoconsentMsg;
+        const msg = (e as MessageEvent<{ __autoconsentMsg?: { type: string; cmp?: string } }>).data
+          ?.__autoconsentMsg;
         if (!msg) return;
         if (msg.type === 'autoconsentDone') resolve({ cmp: msg.cmp, success: true });
         if (msg.type === 'autoconsentError') resolve({ success: false });
