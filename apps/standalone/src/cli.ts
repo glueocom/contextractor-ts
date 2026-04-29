@@ -2,8 +2,8 @@
 import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { buildRequests, createContextractorCrawler, fileSink } from '@contextractor/crawler';
+import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command } from 'commander';
 import {
   buildCrawlConfig,
@@ -30,7 +30,10 @@ export function buildProgram(): Command {
     .option('--headless', 'Run browser in headless mode')
     .option('--no-headless', 'Run browser with UI')
     .option('--proxy-urls <urls>', 'Comma-separated proxy URLs')
-    .option('--proxy-rotation <strategy>', 'Proxy rotation: recommended, per_request, until_failure')
+    .option(
+      '--proxy-rotation <strategy>',
+      'Proxy rotation: recommended, per_request, until_failure',
+    )
     .option('--launcher <type>', 'Browser engine: chromium, firefox')
     .option('--wait-until <event>', 'Page load event: networkidle, load, domcontentloaded')
     .option('--page-load-timeout <secs>', 'Page load timeout in seconds', toInt)
@@ -76,8 +79,10 @@ export function buildProgram(): Command {
       if (collectedUrls.length > 0) fromCli.startUrls = collectedUrls.map((url) => ({ url }));
 
       const layered: Record<string, unknown> = { ...fromFile, ...fromCli };
-      const fileTrafilatura = (fromFile.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
-      const cliTrafilatura = (fromCli.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
+      const fileTrafilatura =
+        (fromFile.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
+      const cliTrafilatura =
+        (fromCli.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
       if (Object.keys(fileTrafilatura).length || Object.keys(cliTrafilatura).length) {
         layered.trafilaturaConfig = { ...fileTrafilatura, ...cliTrafilatura };
       }
@@ -103,7 +108,10 @@ export function buildProgram(): Command {
       const formats = cfg.save.length > 0 ? cfg.save.join(', ') : 'markdown';
       console.log(`Extracting ${cfg.urls.length} URL(s) → ${cfg.outputDir}/ (${formats})`);
 
-      const sink = fileSink({ outDir: cfg.outputDir, formats: cfg.save.filter((f): f is Exclude<SaveFormat, 'jsonl'> => f !== 'jsonl') });
+      const sink = fileSink({
+        outDir: cfg.outputDir,
+        formats: cfg.save.filter((f): f is Exclude<SaveFormat, 'jsonl'> => f !== 'jsonl'),
+      });
       const crawler = createContextractorCrawler({
         startUrls: cfg.urls,
         sink,
@@ -171,9 +179,14 @@ function buildSchemaOverrides(opts: CliOptions): Partial<ContextractorInputType>
   if (opts.maxPages !== undefined) out.maxPagesPerCrawl = opts.maxPages;
   if (opts.crawlDepth !== undefined) out.maxCrawlingDepth = opts.crawlDepth;
   if (opts.headless !== undefined) out.headless = opts.headless;
-  if (opts.launcher) out.launcher = opts.launcher.toUpperCase() as ContextractorInputType['launcher'];
-  if (opts.waitUntil) out.waitUntil = opts.waitUntil.toUpperCase() as ContextractorInputType['waitUntil'];
-  if (opts.proxyRotation) out.proxyRotation = opts.proxyRotation.toUpperCase().replace(/-/g, '_') as ContextractorInputType['proxyRotation'];
+  if (opts.launcher)
+    out.launcher = opts.launcher.toUpperCase() as ContextractorInputType['launcher'];
+  if (opts.waitUntil)
+    out.waitUntil = opts.waitUntil.toUpperCase() as ContextractorInputType['waitUntil'];
+  if (opts.proxyRotation)
+    out.proxyRotation = opts.proxyRotation
+      .toUpperCase()
+      .replace(/-/g, '_') as ContextractorInputType['proxyRotation'];
   if (opts.pageLoadTimeout !== undefined) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
   if (opts.ignoreCors !== undefined) out.ignoreCorsAndCsp = opts.ignoreCors;
   if (opts.closeCookieModals !== undefined) out.closeCookieModals = opts.closeCookieModals;
@@ -224,7 +237,10 @@ function resolveCliOnly(opts: CliOptions, input: ContextractorInputType): CliOnl
   }
 
   const proxyUrls = opts.proxyUrls
-    ? opts.proxyUrls.split(',').map((s) => s.trim()).filter((s) => s.length > 0)
+    ? opts.proxyUrls
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0)
     : [];
 
   return { urls, outputDir: opts.outputDir ?? './output', save, proxyUrls };

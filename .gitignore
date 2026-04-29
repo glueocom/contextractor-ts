@@ -17,8 +17,8 @@ dist/
 target/
 
 # napi-rs local prebuild artifacts (cross-platform prebuilds under
-# packages/contextractor-engine/native/npm/<platform>/ are tracked).
-packages/contextractor-engine/native/*.node
+# packages/extraction/native/npm/<platform>/ are tracked).
+packages/extraction/native/*.node
 
 # OS
 .DS_Store

@@ -9,13 +9,14 @@ WORKDIR /repo
 # Copy workspace + package manifests for layer-cache efficiency.
 # Only copy linux prebuilds — darwin/windows dirs are not needed.
 COPY pnpm-workspace.yaml package.json .npmrc ./
-COPY packages/contextractor-schema/package.json packages/contextractor-schema/
-COPY packages/contextractor-engine/native/npm/linux-x64-gnu/ packages/contextractor-engine/native/npm/linux-x64-gnu/
-COPY packages/contextractor-engine/native/npm/linux-arm64-gnu/ packages/contextractor-engine/native/npm/linux-arm64-gnu/
-COPY packages/contextractor-engine/native/package.json packages/contextractor-engine/native/
-COPY packages/contextractor-engine/package.json packages/contextractor-engine/
-COPY apps/contextractor-standalone/package.json apps/contextractor-standalone/
-COPY apps/contextractor-apify/package.json apps/contextractor-apify/
+COPY packages/schema/package.json packages/schema/
+COPY packages/extraction/native/npm/linux-x64-gnu/ packages/extraction/native/npm/linux-x64-gnu/
+COPY packages/extraction/native/npm/linux-arm64-gnu/ packages/extraction/native/npm/linux-arm64-gnu/
+COPY packages/extraction/native/package.json packages/extraction/native/
+COPY packages/extraction/package.json packages/extraction/
+COPY packages/crawler/package.json packages/crawler/
+COPY apps/standalone/package.json apps/standalone/
+COPY apps/apify-actor/package.json apps/apify-actor/
 COPY tools/gen-input-schema/package.json tools/gen-input-schema/
 COPY tools/gen-md-regions/package.json tools/gen-md-regions/
 COPY tools/generated-unit-tests/package.json tools/generated-unit-tests/
@@ -26,16 +27,18 @@ RUN corepack enable && pnpm install
 
 # Copy sources needed for the build.
 COPY tsconfig.json ./
-COPY packages/contextractor-schema/ packages/contextractor-schema/
-COPY packages/contextractor-engine/ packages/contextractor-engine/
-COPY apps/contextractor-standalone/ apps/contextractor-standalone/
-COPY apps/contextractor-apify/ apps/contextractor-apify/
+COPY packages/schema/ packages/schema/
+COPY packages/extraction/ packages/extraction/
+COPY packages/crawler/ packages/crawler/
+COPY apps/standalone/ apps/standalone/
+COPY apps/apify-actor/ apps/apify-actor/
 COPY tools/gen-input-schema/ tools/gen-input-schema/
 COPY tools/gen-md-regions/ tools/gen-md-regions/
 
 # Build packages in dependency order, then deploy a self-contained bundle.
 RUN pnpm --filter @contextractor/schema build \
-    && pnpm --filter @contextractor/engine build \
+    && pnpm --filter @contextractor/extraction build \
+    && pnpm --filter @contextractor/crawler build \
     && pnpm --filter @contextractor/standalone build \
     && pnpm --filter @contextractor/apify build \
     && pnpm --filter @contextractor/apify --prod deploy /deploy

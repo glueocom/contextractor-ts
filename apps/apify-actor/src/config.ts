@@ -1,5 +1,5 @@
-import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
 import type { ContextractorCrawlerOptions, ExtractionResult, Sink } from '@contextractor/crawler';
+import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 import type { ProxyConfiguration } from 'crawlee';
 
@@ -20,7 +20,10 @@ export function buildCrawlerOpts(
     formats,
     extractionConfig: normalizeConfigKeys(input.trafilaturaConfig),
     cookieStrategy: input.closeCookieModals ? 'ghostery' : 'none',
-    scroll: input.maxScrollHeightPixels > 0 ? { maxScrollHeight: input.maxScrollHeightPixels } : undefined,
+    scroll:
+      input.maxScrollHeightPixels > 0
+        ? { maxScrollHeight: input.maxScrollHeightPixels }
+        : undefined,
     headless: input.headless,
     launcher: input.launcher.toLowerCase() as 'chromium' | 'firefox',
     ignoreSslErrors: input.ignoreSslErrors,

@@ -96,8 +96,8 @@ pub fn extract(html: String, options: Option<ExtractOptions>) -> Result<Extracti
         rs_opts.output_markdown = true;
     }
 
-    let result =
-        extract_with_options(&html, &rs_opts).map_err(|e| napi::Error::from_reason(e.to_string()))?;
+    let result = extract_with_options(&html, &rs_opts)
+        .map_err(|e| napi::Error::from_reason(e.to_string()))?;
 
     let content = render_format(&result, format)?;
     Ok(ExtractionResult {
@@ -118,8 +118,8 @@ pub fn extract_metadata(html: String, url: Option<String>) -> Result<Metadata> {
     if let Some(u) = url {
         rs_opts.url = Some(u);
     }
-    let result =
-        extract_with_options(&html, &rs_opts).map_err(|e| napi::Error::from_reason(e.to_string()))?;
+    let result = extract_with_options(&html, &rs_opts)
+        .map_err(|e| napi::Error::from_reason(e.to_string()))?;
     Ok(metadata_to_napi(&result.metadata))
 }
 
@@ -138,8 +138,8 @@ pub fn extract_all_formats(
     let mut rs_opts = build_rs_options(opts.config.as_ref(), opts.url.as_deref());
     rs_opts.output_markdown = true;
 
-    let result =
-        extract_with_options(&html, &rs_opts).map_err(|e| napi::Error::from_reason(e.to_string()))?;
+    let result = extract_with_options(&html, &rs_opts)
+        .map_err(|e| napi::Error::from_reason(e.to_string()))?;
 
     let formats = if let Some(fmt) = opts.format {
         vec![normalize_format(&fmt)?]
@@ -252,10 +252,7 @@ fn build_rs_options(config: Option<&TrafilaturaConfig>, url: Option<&str>) -> Rs
     rs
 }
 
-fn render_format(
-    result: &rs_trafilatura::ExtractResult,
-    format: OutputFormat,
-) -> Result<String> {
+fn render_format(result: &rs_trafilatura::ExtractResult, format: OutputFormat) -> Result<String> {
     match format {
         OutputFormat::Txt => Ok(result.content_text.clone()),
         OutputFormat::Markdown => Ok(result.content_markdown.clone().unwrap_or_default()),
