@@ -18,9 +18,7 @@
     "@contextractor/crawler": "workspace:*",
     "@contextractor/extraction": "workspace:*",
     "@contextractor/schema": "workspace:*",
-    "commander": "^12.1.0",
-    "crawlee": "^3.10.1",
-    "playwright": "^1.50.1"
+    "commander": "^12.1.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",

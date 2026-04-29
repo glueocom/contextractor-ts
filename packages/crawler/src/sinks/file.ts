@@ -28,7 +28,8 @@ export function fileSink(opts: {
   const { outDir, formats } = opts;
 
   return async (result: ExtractionResult): Promise<void> => {
-    await mkdir(path.resolve(outDir), { recursive: true });
+    const resolvedOutDir = path.resolve(outDir);
+    await mkdir(resolvedOutDir, { recursive: true });
     const slug = urlToFilename(result.url);
 
     const fmts = formats ?? (Object.keys(result.formats) as OutputFormat[]);
@@ -40,7 +41,7 @@ export function fileSink(opts: {
         fmt === 'json' || fmt === 'html'
           ? content
           : prependMetadataHeader(content, result.metadata, result.url);
-      await writeFile(path.join(path.resolve(outDir), `${slug}${ext}`), out, 'utf8');
+      await writeFile(path.join(resolvedOutDir, `${slug}${ext}`), out, 'utf8');
     }
   };
 }

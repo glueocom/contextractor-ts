@@ -42,5 +42,7 @@ export function buildCrawlerOpts(
     excludes: input.excludes.map((g) => g.glob).filter((g): g is string => Boolean(g)),
     keepUrlFragments: input.keepUrlFragments,
     proxyConfiguration,
+    browserLog: input.browserLog,
+    respectRobotsTxt: input.respectRobotsTxtFile,
   };
 }

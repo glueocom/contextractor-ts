@@ -6,9 +6,9 @@ export interface MemorySink<T> extends Sink<T> {
 
 export function memorySink<T>(): MemorySink<T> {
   const results: T[] = [];
-  const sink = async (result: T): Promise<void> => {
+  const sink: MemorySink<T> = async (result) => {
     results.push(result);
   };
-  (sink as MemorySink<T>).results = results;
-  return sink as MemorySink<T>;
+  sink.results = results;
+  return sink;
 }

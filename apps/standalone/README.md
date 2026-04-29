@@ -150,7 +150,7 @@ stripped by `parse()`.
 ## Local development
 
 ```bash
-npm install
-npm run build -w @contextractor/standalone
+pnpm install
+pnpm --filter @contextractor/standalone build
 node apps/standalone/dist/cli.js https://example.com -o /tmp/contextractor
 ```

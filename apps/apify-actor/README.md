@@ -19,8 +19,8 @@ Playwright).
 ## Local development
 
 ```bash
-npm install
-npm run build -w @contextractor/apify
+pnpm install
+pnpm --filter @contextractor/apify build
 apify run            # from apps/apify-actor/
 ```
 
@@ -93,7 +93,7 @@ enabled save flag. Each save flag also writes a file to the Key-Value Store.
 Production deploys are a **Git-connected build** in the Apify Console (not
 `apify push`) so `dockerContextDir: "../../.."` in `.actor/actor.json`
 resolves to the repo root and the Dockerfile sees
-`packages/extraction/`.
+`packages/extraction/`, `packages/crawler/`, and `packages/schema/`.
 
 After the app rename, update the Apify Console git-connected source path to
 `apps/apify-actor` if it still points at the pre-rename app directory.

@@ -1,7 +1,7 @@
 import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildRequests, createContextractorCrawler, fileSink } from '@contextractor/crawler';
+import { buildRequests, createContextractorCrawler } from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command } from 'commander';
 import {
@@ -11,6 +11,7 @@ import {
   type SaveFormat,
   validateSaveFormats,
 } from './config.js';
+import { createCliSink } from './sinks.js';
 
 export function buildProgram(): Command {
   const program = new Command();
@@ -107,14 +108,15 @@ export function buildProgram(): Command {
       const formats = cfg.save.length > 0 ? cfg.save.join(', ') : 'markdown';
       console.log(`Extracting ${cfg.urls.length} URL(s) → ${cfg.outputDir}/ (${formats})`);
 
-      const sink = fileSink({
+      const sink = createCliSink({
         outDir: cfg.outputDir,
-        formats: cfg.save.filter((f): f is Exclude<SaveFormat, 'jsonl'> => f !== 'jsonl'),
+        formats: cfg.save,
       });
+
       const crawler = createContextractorCrawler({
         startUrls: cfg.urls,
         sink,
-        formats: cfg.save.filter((f): f is Exclude<SaveFormat, 'jsonl'> => f !== 'jsonl'),
+        formats: cfg.save.filter((format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl'),
         extractionConfig: cfg.trafilaturaConfig,
         cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',
         scroll: cfg.maxScrollHeight > 0 ? { maxScrollHeight: cfg.maxScrollHeight } : undefined,
@@ -135,6 +137,7 @@ export function buildProgram(): Command {
         globs: cfg.globs,
         excludes: cfg.excludes,
         keepUrlFragments: cfg.keepUrlFragments,
+        respectRobotsTxt: cfg.respectRobotsTxt,
       });
 
       await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));

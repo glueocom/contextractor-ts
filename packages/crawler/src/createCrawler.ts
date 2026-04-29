@@ -34,6 +34,7 @@ export interface ContextractorCrawlerOptions {
   keepUrlFragments?: boolean;
   proxyConfiguration?: ProxyConfiguration;
   browserLog?: boolean;
+  respectRobotsTxt?: boolean;
 }
 
 export function createContextractorCrawler(opts: ContextractorCrawlerOptions): PlaywrightCrawler {
@@ -49,7 +50,12 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
   const useSessionPool = opts.sessionPool !== false;
   const sessionPoolOptions = typeof opts.sessionPool === 'object' ? opts.sessionPool : undefined;
 
-  const contextOptions: Record<string, unknown> = {};
+  const contextOptions: {
+    bypassCSP?: boolean;
+    storageState?: { cookies: unknown[] };
+    extraHTTPHeaders?: Record<string, string>;
+    userAgent?: string;
+  } = {};
   if (opts.bypassCSP) contextOptions.bypassCSP = true;
   if (opts.initialCookies && opts.initialCookies.length > 0) {
     contextOptions.storageState = { cookies: opts.initialCookies };
@@ -68,6 +74,7 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
     globs: opts.globs,
     excludes: opts.excludes,
     keepUrlFragments: opts.keepUrlFragments,
+    browserLog: opts.browserLog,
   });
 
   const crawler = new PlaywrightCrawler({
@@ -87,6 +94,9 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
           requestHandlerTimeoutSecs: opts.pageLoadTimeoutSecs,
           navigationTimeoutSecs: opts.pageLoadTimeoutSecs,
         }
+      : {}),
+    ...(opts.respectRobotsTxt !== undefined
+      ? { respectRobotsTxtFile: opts.respectRobotsTxt }
       : {}),
     proxyConfiguration: opts.proxyConfiguration,
     ...(cookieStrategy === 'ghostery'
@@ -111,7 +121,6 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
   });
 
   crawler.router.addDefaultHandler(handler);
-
   return crawler;
 }
 

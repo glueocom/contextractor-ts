@@ -30,7 +30,7 @@ export async function runActor(): Promise<void> {
   const kvs = input.keyValueStoreName
     ? await Actor.openKeyValueStore(input.keyValueStoreName)
     : await Actor.openKeyValueStore();
-  const dataset = input.datasetName ? await Actor.openDataset(input.datasetName) : null;
+  const dataset = await Actor.openDataset(input.datasetName);
   const proxyConfig = input.proxyConfiguration
     ? // biome-ignore lint/suspicious/noExplicitAny: Apify Actor proxy input is loosely typed.
       await Actor.createProxyConfiguration(input.proxyConfiguration as any)

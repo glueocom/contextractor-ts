@@ -3,7 +3,7 @@
 
 //! napi-rs wrapper around rs-trafilatura 0.2.x.
 //!
-//! Exposes three Node entry points to the `@contextractor/engine` TypeScript
+//! Exposes three Node entry points to the `@contextractor/extraction` TypeScript
 //! package: [`extract`], [`extract_metadata`], [`extract_all_formats`].
 
 use std::collections::HashMap;

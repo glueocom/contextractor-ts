@@ -2,7 +2,7 @@
   "name": "@contextractor/extraction",
   "version": "0.1.0",
   "private": true,
-  "description": "Pure TypeScript extraction engine. Built on rs-trafilatura via napi-rs.",
+  "description": "Pure TypeScript content-extraction package backed by rs-trafilatura via napi-rs.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

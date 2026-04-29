@@ -11,8 +11,10 @@ This monorepo hosts:
   Apify Actor.
 - **[`apps/standalone`](./apps/standalone/README.md)**
   — TypeScript CLI.
-- **[`packages/extraction`](./packages/extraction/README.md)**
-  — TypeScript engine wrapping the napi-rs binding around `rs-trafilatura`.
+- **[`packages/extraction`](./packages/extraction/README.md)** — Pure
+  extraction package wrapping the napi-rs binding around `rs-trafilatura`.
+- **[`packages/crawler`](./packages/crawler/README.md)** — Shared Crawlee +
+  Playwright crawler package.
 
 ## Supported output formats
 
@@ -78,37 +80,37 @@ interface ContextractorInputType {
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (older versions reject the modern `actor.json` format
   with "Actor is of an unknown format").
-- **Node 22+**, **npm 10+**.
+- **Node 22+**, **pnpm 10+**.
 
 ## Workspace commands
 
 ```bash
-pnpm build                                                 # Build all TS packages
-pnpm test                                                  # Run all vitest suites
-pnpm lint                                                  # Biome lint
-pnpm --filter @contextractor/extraction-native build:rebuild  # Build the napi-rs .node
-cargo build --workspace                                    # Build the napi-rs Rust crate
-cargo test --workspace                                     # Cargo unit tests
-cargo clippy --workspace --all-targets -- -D warnings      # Strict Rust lints
-biome check .                                              # Workspace lint + format
-apify run                                                  # Run the Actor locally (from apps/apify-actor/)
+pnpm build                                              # Build all TS packages
+pnpm test                                               # Run all vitest suites
+pnpm lint                                               # Biome lint
+pnpm --filter @contextractor/extraction-native build:rebuild # Build the napi-rs .node
+cargo build --workspace                                 # Build the napi-rs Rust crate
+cargo test --workspace                                  # Cargo unit tests
+cargo clippy --workspace --all-targets -- -D warnings   # Strict Rust lints
+biome check .                                           # Workspace lint + format
+apify run                                               # Run the Actor locally (from apps/apify-actor/)
 ```
 
 ## Architecture
 
 ```
 apps/
-├── apify-actor/        # Apify Actor (Crawlee + Playwright + @contextractor/extraction)
-└── standalone/         # TypeScript CLI
+├── apify-actor/                # Apify Actor
+└── standalone/                 # TypeScript CLI
 packages/
-├── extraction/         # TypeScript engine (@contextractor/extraction)
-│   └── native/         # napi-rs Rust crate wrapping rs-trafilatura
-│       └── npm/<platform>/  # Per-platform .node prebuilds (workspace packages)
-├── crawler/            # Shared Playwright crawler factory (@contextractor/crawler)
-└── schema/             # Zod 4 input schema (@contextractor/schema)
+├── extraction/                 # Pure extraction package + napi-rs binding
+│   └── native/                 # napi-rs Rust crate wrapping rs-trafilatura
+│       └── npm/<platform>/     # Per-platform .node prebuilds (workspace packages)
+├── crawler/                    # Shared Crawlee + Playwright crawler package
+└── schema/                     # Shared Zod input schema package
 tools/
-├── platform-test-runner/  # TypeScript test orchestrator
-└── generated-unit-tests/  # vitest cases against @contextractor/extraction
+├── platform-test-runner/       # TypeScript test orchestrator
+└── generated-unit-tests/       # vitest cases against @contextractor/extraction
 ```
 
 ## Docs version

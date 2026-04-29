@@ -30,7 +30,7 @@ const FORMAT_SPECS: readonly FormatSpec[] = [
 
 export interface ApifySinkOpts {
   kvs: KvsLike;
-  dataset: Dataset | null;
+  dataset: Dataset;
   saveHtml: boolean;
 }
 
@@ -63,8 +63,6 @@ export function createApifySink(opts: ApifySinkOpts): Sink<ExtractionResult> {
       data[spec.dataKey] = await saveContentToKvs(kvs, key, content, spec.contentType);
     }
 
-    if (dataset) {
-      await dataset.pushData(data);
-    }
+    await dataset.pushData(data);
   };
 }

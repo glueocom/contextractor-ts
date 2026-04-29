@@ -20,6 +20,7 @@ export interface HandlerOpts {
   globs?: string[];
   excludes?: string[];
   keepUrlFragments?: boolean;
+  browserLog?: boolean;
 }
 
 export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawlingContext> {
@@ -36,15 +37,19 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
       return;
     }
 
+    if (opts.browserLog) {
+      page.on('console', (message) => {
+        log.info(`[Browser] ${message.type()}: ${message.text()}`);
+      });
+    }
+
     if (opts.scroll) {
       await autoScroll(context, opts.scroll);
     }
 
     const html = await page.content();
     const { hash: rawHtmlHash, length: rawHtmlLength } = computeContentInfo(html);
-
-    const meta = extractor.extractMetadata(html, url);
-    const metadata = projectMetadata(meta);
+    const metadata = projectMetadata(extractor.extractMetadata(html, url));
 
     const formats: Partial<Record<OutputFormat, string>> = {};
     for (const fmt of opts.formats) {
@@ -52,8 +57,14 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
       if (extracted?.content) formats[fmt] = extracted.content;
     }
 
-    const result: ExtractionResult = { url, html, metadata, formats, rawHtmlHash, rawHtmlLength };
-    await opts.sink(result);
+    await opts.sink({
+      url,
+      html,
+      metadata,
+      formats,
+      rawHtmlHash,
+      rawHtmlLength,
+    });
 
     resultCount += 1;
 
@@ -85,9 +96,9 @@ async function enqueueLinks(context: PlaywrightCrawlingContext, opts: HandlerOpt
     ...(globs.length > 0 ? { globs } : {}),
     ...(excludes.length > 0 ? { exclude: excludes } : {}),
     userData: { depth: newDepth },
-    transformRequestFunction: (req) => {
-      req.keepUrlFragment = opts.keepUrlFragments ?? false;
-      return req;
+    transformRequestFunction: (request) => {
+      request.keepUrlFragment = opts.keepUrlFragments ?? false;
+      return request;
     },
   });
 }

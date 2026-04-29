@@ -2,7 +2,7 @@
   "name": "@contextractor/crawler",
   "version": "0.1.0",
   "private": true,
-  "description": "Shared Playwright crawler for Contextractor. Wires Ghostery adblocker, infiniteScroll, and extraction into a reusable factory.",
+  "description": "Shared Crawlee + Playwright crawler package for Contextractor.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -23,12 +23,12 @@
   },
   "dependencies": {
     "@contextractor/extraction": "workspace:*",
-    "@ghostery/adblocker-playwright": "^2.14.0",
+    "@ghostery/adblocker-playwright": "^2.14.3",
     "crawlee": "^3.13.10",
     "playwright": "^1.50.1"
   },
   "optionalDependencies": {
-    "@duckduckgo/autoconsent": "^14.0.0"
+    "@duckduckgo/autoconsent": "^14.75.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",

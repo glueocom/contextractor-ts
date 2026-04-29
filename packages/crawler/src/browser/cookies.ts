@@ -15,15 +15,14 @@ let blockerPromise: Promise<PlaywrightBlocker> | undefined;
 export async function getBlocker(
   cachePath = '.cache/adblock-engine.bin',
 ): Promise<PlaywrightBlocker> {
-  if (!blockerPromise) {
-    blockerPromise = mkdir(dirname(cachePath), { recursive: true }).then(() =>
-      PlaywrightBlocker.fromLists(globalThis.fetch, FILTER_LISTS, undefined, {
-        path: cachePath,
-        read: readFile,
-        write: writeFile,
-      }),
-    );
-  }
+  blockerPromise ??= mkdir(dirname(cachePath), { recursive: true }).then(() =>
+    PlaywrightBlocker.fromLists(globalThis.fetch, FILTER_LISTS, undefined, {
+      path: cachePath,
+      read: readFile,
+      write: writeFile,
+    }),
+  );
+
   return blockerPromise;
 }
 
@@ -32,15 +31,32 @@ export async function installCookieDefences(page: Page): Promise<void> {
   await blocker.enableBlockingInPage(page);
 }
 
-export async function rejectViaAutoconsent(
-  page: Page,
-): Promise<{ cmp?: string; success: boolean }> {
+interface AutoconsentResult {
+  cmp?: string;
+  success: boolean;
+}
+
+type AutoconsentCtor = new (
+  sendMessage: (message: unknown) => void,
+  options: {
+    enabled: boolean;
+    autoAction: 'optOut';
+    enableCosmeticRules: boolean;
+    detectRetries: number;
+  },
+  rules: unknown,
+) => {
+  receiveMessageCallback(message: unknown): void;
+};
+
+export async function rejectViaAutoconsent(page: Page): Promise<AutoconsentResult> {
   const mod = await import('@duckduckgo/autoconsent');
-  const rulesModule = await import('@duckduckgo/autoconsent/rules/rules.json', {
+  const rulesModule = (await import('@duckduckgo/autoconsent/rules/rules.json', {
     with: { type: 'json' },
-  });
-  const AutoConsent = (mod as { default: unknown }).default ?? mod;
-  const rules = (rulesModule as { default: unknown }).default ?? rulesModule;
+  })) as { default?: unknown };
+
+  const AutoConsent = (mod.default ?? mod) as unknown as AutoconsentCtor;
+  const rules = rulesModule.default ?? rulesModule;
 
   const scriptContent = `(function(AutoConsentClass, rulesJson) {
     const ac = new AutoConsentClass(
@@ -59,16 +75,18 @@ export async function rejectViaAutoconsent(
 
   await page.addInitScript({ content: scriptContent });
 
-  return page.evaluate(() => {
-    return new Promise<{ cmp?: string; success: boolean }>((resolve) => {
-      window.addEventListener('message', (e) => {
-        const msg = (e as MessageEvent<{ __autoconsentMsg?: { type: string; cmp?: string } }>).data
+  return page.evaluate<AutoconsentResult>(() => {
+    return new Promise((resolve) => {
+      window.addEventListener('message', (event) => {
+        const message = (event.data as { __autoconsentMsg?: { cmp?: string; type?: string } } | null)
           ?.__autoconsentMsg;
-        if (!msg) return;
-        if (msg.type === 'autoconsentDone') resolve({ cmp: msg.cmp, success: true });
-        if (msg.type === 'autoconsentError') resolve({ success: false });
+
+        if (!message) return;
+        if (message.type === 'autoconsentDone') resolve({ cmp: message.cmp, success: true });
+        if (message.type === 'autoconsentError') resolve({ success: false });
       });
-      setTimeout(() => resolve({ success: false }), 8000);
+
+      setTimeout(() => resolve({ success: false }), 8_000);
     });
   });
 }

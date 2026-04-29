@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   ContentExtractor,
   DEFAULT_CONFIG,
+  computeContentInfo,
   getDefaultConfig,
   normalizeConfigKeys,
+  projectMetadata,
 } from './index.js';
 
 const SAMPLE_HTML = `<!doctype html>
@@ -75,5 +77,39 @@ describe('config helpers', () => {
   it('normalizeConfigKeys ignores unknown and null values', () => {
     const out = normalizeConfigKeys({ unknownField: 'ignored', includeLinks: null });
     expect(out.includeLinks).toBe(DEFAULT_CONFIG.includeLinks);
+  });
+
+  it('computeContentInfo returns a stable hash and byte length', () => {
+    expect(computeContentInfo('hello')).toEqual({
+      hash: '5d41402abc4b2a76b9719d911017c592',
+      length: 5,
+    });
+  });
+
+  it('projectMetadata flattens extraction metadata for sinks', () => {
+    expect(
+      projectMetadata({
+        title: 'Title',
+        author: 'Author',
+        date: '2026-01-01T00:00:00Z',
+        description: 'Desc',
+        sitename: 'Site',
+        language: 'en',
+        hostname: null,
+        url: null,
+        categories: null,
+        tags: null,
+        license: null,
+        image: null,
+        pageType: null,
+      }),
+    ).toEqual({
+      title: 'Title',
+      author: 'Author',
+      publishedAt: '2026-01-01T00:00:00Z',
+      description: 'Desc',
+      siteName: 'Site',
+      lang: 'en',
+    });
   });
 });

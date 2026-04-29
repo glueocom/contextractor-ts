@@ -6,12 +6,12 @@ TypeScript Apify Actor and standalone CLI built on [`rs-trafilatura`](https://gi
 
 ```
 apps/
-├── apify-actor/       # Apify Actor (Crawlee + Playwright + @contextractor/extraction)
-└── standalone/        # CLI
+├── apify-actor/               # Apify Actor
+└── standalone/                # CLI
 packages/
-├── extraction/        # TS engine + napi-rs Rust crate (rs-trafilatura binding)
-├── crawler/           # Shared Playwright crawler factory (@contextractor/crawler)
-└── schema/            # Zod 4 input schema (@contextractor/schema)
+├── extraction/                # Pure extraction package + napi-rs Rust crate
+├── crawler/                   # Shared Crawlee + Playwright crawler package
+└── schema/                    # Shared input schema package
 tools/
 ├── platform-test-runner/  # test orchestrator
 └── generated-unit-tests/  # vitest tests + HTML fixtures
@@ -20,10 +20,10 @@ tools/
 ## Commands
 
 ```bash
-pnpm build                                                 # Build all TS packages (via turbo)
-pnpm test                                                  # All vitest tests (via turbo)
-pnpm lint                                                  # Biome lint (via turbo)
-pnpm --filter @contextractor/extraction-native build:rebuild   # Build napi-rs .node
+pnpm build                                                 # Build all TS packages
+pnpm test                                                  # All vitest tests
+pnpm lint                                                  # Biome lint
+pnpm --filter @contextractor/extraction-native build:rebuild # Build napi-rs .node
 cargo build --workspace                                    # Build napi-rs crate
 cargo test --workspace                                     # Cargo tests
 cargo clippy --workspace --all-targets -- -D warnings      # Rust lint
@@ -37,7 +37,7 @@ Production deploys go through a **Git-connected build** in Apify Console (not `a
 
 - **Rust toolchain** via `rustup`
 - **Apify CLI ≥ 1.4**
-- **Node 22+**, **npm 10+**
+- **Node 22+**, **pnpm 10+**
 
 ## MCP
 

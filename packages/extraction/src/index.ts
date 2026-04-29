@@ -1,5 +1,5 @@
 /**
- * `@contextractor/extraction` — TypeScript content-extraction engine.
+ * `@contextractor/extraction` — TypeScript content-extraction package.
  *
  * Built on `rs-trafilatura` (Rust port of Trafilatura) via the napi-rs
  * binding in `@contextractor/extraction-native`, and consumed by the

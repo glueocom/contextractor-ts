@@ -1,11 +1,11 @@
 # `@contextractor/extraction`
 
-TypeScript content-extraction engine.
+Pure TypeScript content-extraction package.
 
 Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
-(Rust port of Trafilatura, accessed via a napi-rs binding). Consumed by
-`@contextractor/crawler`, the `@contextractor/apify` Actor, and the
-`@contextractor/standalone` CLI.
+(Rust port of Trafilatura, accessed via a napi-rs binding). Browser crawling
+lives separately in `@contextractor/crawler`, while this package stays focused
+on HTML-to-content extraction plus small pure helpers.
 
 ## Public API
 
@@ -43,6 +43,8 @@ const meta = projectMetadata(extractor.extractMetadata(html, url));
 - `extractAllFormats(html, opts: { url?: string; formats?: OutputFormat[] })`
   — all four formats keyed by name.
 - `getConfig()` — read-only view of the resolved config.
+- `computeContentInfo(content)` — stable hash + byte length helper.
+- `projectMetadata(meta)` — dataset-oriented metadata projection.
 
 ## Supported output formats
 
@@ -95,6 +97,6 @@ Trafilatura.
 
 The Python `contextractor_engine` exposed `xml` and `xmltei` through
 Trafilatura. `rs-trafilatura` 0.2.x does not yet have those formats; the TS
-engine drops them from the public API rather than emitting empty content.
+package drops them from the public API rather than emitting empty content.
 When upstream support lands, both formats can return without breaking the
 existing surface.
