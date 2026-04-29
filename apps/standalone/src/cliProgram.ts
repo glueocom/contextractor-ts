@@ -116,7 +116,9 @@ export function buildProgram(): Command {
       const crawler = createContextractorCrawler({
         startUrls: cfg.urls,
         sink,
-        formats: cfg.save.filter((format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl'),
+        formats: cfg.save.filter(
+          (format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl',
+        ),
         extractionConfig: cfg.trafilaturaConfig,
         cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',
         scroll: cfg.maxScrollHeight > 0 ? { maxScrollHeight: cfg.maxScrollHeight } : undefined,

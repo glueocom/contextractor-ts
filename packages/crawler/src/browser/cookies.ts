@@ -78,8 +78,9 @@ export async function rejectViaAutoconsent(page: Page): Promise<AutoconsentResul
   return page.evaluate<AutoconsentResult>(() => {
     return new Promise((resolve) => {
       window.addEventListener('message', (event) => {
-        const message = (event.data as { __autoconsentMsg?: { cmp?: string; type?: string } } | null)
-          ?.__autoconsentMsg;
+        const message = (
+          event.data as { __autoconsentMsg?: { cmp?: string; type?: string } } | null
+        )?.__autoconsentMsg;
 
         if (!message) return;
         if (message.type === 'autoconsentDone') resolve({ cmp: message.cmp, success: true });

@@ -95,9 +95,7 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
           navigationTimeoutSecs: opts.pageLoadTimeoutSecs,
         }
       : {}),
-    ...(opts.respectRobotsTxt !== undefined
-      ? { respectRobotsTxtFile: opts.respectRobotsTxt }
-      : {}),
+    ...(opts.respectRobotsTxt !== undefined ? { respectRobotsTxtFile: opts.respectRobotsTxt } : {}),
     proxyConfiguration: opts.proxyConfiguration,
     ...(cookieStrategy === 'ghostery'
       ? {

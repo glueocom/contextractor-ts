@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   ContentExtractor,
-  DEFAULT_CONFIG,
   computeContentInfo,
+  DEFAULT_CONFIG,
   getDefaultConfig,
   normalizeConfigKeys,
   projectMetadata,

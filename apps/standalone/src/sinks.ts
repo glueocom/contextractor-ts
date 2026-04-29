@@ -1,13 +1,18 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
-import { fileSink, type ExtractionResult, type Sink } from '@contextractor/crawler';
+import { type ExtractionResult, fileSink, type Sink } from '@contextractor/crawler';
 import type { SaveFormat } from './config.js';
 
-export function createCliSink(opts: { outDir: string; formats: SaveFormat[] }): Sink<ExtractionResult> {
+export function createCliSink(opts: {
+  outDir: string;
+  formats: SaveFormat[];
+}): Sink<ExtractionResult> {
   const { outDir, formats } = opts;
   const sinks: Array<Sink<ExtractionResult>> = [];
 
-  const fileFormats = formats.filter((format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl');
+  const fileFormats = formats.filter(
+    (format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl',
+  );
   if (fileFormats.length > 0) {
     sinks.push(fileSink({ outDir, formats: fileFormats }));
   }
