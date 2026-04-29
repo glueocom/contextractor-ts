@@ -27,6 +27,9 @@
     "crawlee": "^3.13.10",
     "playwright": "^1.50.1"
   },
+  "optionalDependencies": {
+    "@duckduckgo/autoconsent": "^14.0.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",
     "@types/node": "^22.19.17",

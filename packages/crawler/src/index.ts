@@ -5,4 +5,4 @@ export { fileSink, urlToFilename, FORMAT_EXTENSIONS } from './sinks/file.js';
 export { memorySink } from './sinks/memory.js';
 export { autoScroll } from './browser/scroll.js';
 export type { ScrollConfig } from './browser/scroll.js';
-export { installCookieDefences, getBlocker } from './browser/cookies.js';
+export { installCookieDefences, getBlocker, rejectViaAutoconsent } from './browser/cookies.js';
