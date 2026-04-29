@@ -28,21 +28,20 @@ apify info
 
 If not logged in, stop and inform the user to run `apify login` first. Apify CLI must be ≥ 1.4 — older versions reject the modern actor format with "Actor is of an unknown format".
 
-### Step ACTOR_NAME_GUARD: Verify Actor Target Name
+### Step BRANCH_GUARD: Verify Current Branch
 
 ```bash
-jq -r '.name' apps/contextractor-apify/.actor/actor.json
-apify info
+git branch --show-current
 ```
 
-The `.actor/actor.json` `name` field MUST be:
+Builds are triggered by pushing to the Git-connected branch in Apify Console:
 
-- `contextractor-test` for the default test push (resolves to `glueo/contextractor-test`)
-- `contextractor` only for `--production`
+- `dev` → `glueo/contextractor-test`
+- `main` → `glueo/contextractor` (production)
 
-`apify push` deploys to whatever actor name is in this file under the logged-in org. If the value disagrees with the chosen target, **stop** and abort the push — do not auto-correct without user input. The v1 migration accidentally pushed to production because this guard was missing.
+For the default (test) push, ensure you are on `dev` or a branch that can be pushed to `dev`. For `--production`, you must be on `main` or a branch intended to merge there.
 
-Proceed automatically with the push only after the name matches the target. Do NOT ask for confirmation — only stop if not logged in or if the name guard fails.
+Stop and abort if the branch does not match the target. Do NOT auto-push to the wrong branch.
 
 ## Workflow
 
@@ -62,19 +61,20 @@ If any check fails, fix the errors before proceeding. Skip with `skip-validation
 
 ### Step PUSH: Push to Apify
 
-The 2026 standard pattern is a **Git-connected build** in Apify Console — that path honors `dockerContextDir: "../../.."` in `.actor/actor.json` and gives the Dockerfile access to the workspace root (so `npm run build -w @contextractor/apify` works against the entire repo). If a Git integration is configured for the target actor, prefer pushing to GitHub and triggering the build there.
+Both actors use a **Git-connected build** in Apify Console (`git@github.com:glueocom/contextractor-ts.git`). This path honors `dockerContextDir: "../../.."` in `.actor/actor.json`, giving the Dockerfile access to the workspace root. Push to the appropriate branch to trigger the build:
 
-For CLI fallback (no Git integration on the actor), `apify push` blocks on contexts above the actor dir — use only when the Dockerfile context fits inside `apps/contextractor-apify/`.
+- `glueo/contextractor-test` watches the **`dev`** branch
+- `glueo/contextractor` (production) watches the **`main`** branch
 
 ```bash
-cd apps/contextractor-apify
+# Default (test) — push current branch to dev:
+git push origin HEAD:dev
 
-# Default (test):
-apify push glueo/contextractor-test
-
-# If --production argument was provided (deny rule must be temporarily overridden):
-apify push glueo/contextractor
+# If --production argument was provided:
+git push origin HEAD:main
 ```
+
+After pushing, Apify Console picks up the commit and starts a build automatically.
 
 ### Step WAIT_BUILD: Wait for Build
 
