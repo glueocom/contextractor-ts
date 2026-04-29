@@ -1,3 +1,12 @@
 - we need to ensure DRY - all the logic must be in one place at /Users/miroslavsekera/r/contextractor-ts/packages/contextractor-engine , for example cookie dialog handling in `/Users/miroslavsekera/r/contextractor-ts/apps/contextractor-apify/src/handler.ts` belongs to `/Users/miroslavsekera/r/contextractor-ts/packages/contextractor-engine` or even better, investigate how cookie handling is implemented in `/Users/miroslavsekera/r/actor-scraper/packages/actor-scraper/playwright-scraper` and implement in in same way - but put the logic to `/Users/miroslavsekera/r/contextractor-ts/packages/contextractor-engine` do deep ressearch, probalby some solution on browser level is better to use for dismissing cookie modals.
 
 - we also need to review complete stucture of `/Users/miroslavsekera/r/contextractor-ts/apps` and `/Users/miroslavsekera/r/contextractor-ts/packages` are they well structured?
+
+## Research
+
+Deep research grounded in this repo + apify/actor-scraper, apify/crawlee, and current npm/GitHub state of the cookie-dismissal libraries:
+
+- [`research-summary.md`](./research-summary.md) — executive summary, final recommendations, target tree, public API surface for all packages, week-by-week migration plan, risks & tradeoffs, license analysis. **Start here.**
+- [`research-cookie-dismissal.md`](./research-cookie-dismissal.md) — `idcac-playwright` (GPL-3.0, dead) vs Crawlee `closeCookieModals()` vs `@ghostery/adblocker-playwright` (MPL-2.0, primary, what Apify WCC uses since Dec 2025) vs `@duckduckgo/autoconsent` (MPL-2.0, fallback). Route-blocking, hybrid pattern, reference `cookies.ts` implementation.
+- [`research-crawlee-pattern.md`](./research-crawlee-pattern.md) — how `apify/actor-scraper` is laid out (`@apify/scraper-tools` + per-actor `crawler_setup.ts`), full `playwright-scraper` `PlaywrightCrawler` instantiation with `useSessionPool: true` / `persistCookiesPerSession: true` / `getInjectableScript()` / `infiniteScroll`, the `website-content-crawler` Ghostery integration, `infiniteScroll` API reference.
+- [`research-monorepo-structure.md`](./research-monorepo-structure.md) — duplicated symbols audit, reference layouts (`apify/actor-scraper`, `apify/crawlee`, Turborepo conventions), three-way engine split decision (`@contextractor/extraction` + `@contextractor/crawler` + `@contextractor/apify-runtime`), per-piece move-target table, naming review (`apps/apify-actor` + `apps/cli`), `tools/` → `packages/` consolidation, refactored entry-point examples.
