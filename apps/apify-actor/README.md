@@ -95,6 +95,9 @@ Production deploys are a **Git-connected build** in the Apify Console (not
 resolves to the repo root and the Dockerfile sees
 `packages/extraction/`.
 
+After the app rename, update the Apify Console git-connected source path to
+`apps/apify-actor` if it still points at the pre-rename app directory.
+
 For test-only deploys to `glueo/contextractor-test`, see
 `.claude/commands/platform/push-and-get-working.md`. Production
 (`glueo/contextractor`) requires the explicit `--production` flag.
