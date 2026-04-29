@@ -307,7 +307,7 @@ export const ContextractorInput = z.object({
   closeCookieModals: z
     .boolean()
     .default(true)
-    .describe('Automatically dismiss cookie consent modals')
+    .describe('Automatically dismiss cookie consent modals with Ghostery-based blocking.')
     .meta({ title: 'Close cookie modals' }),
 
   maxScrollHeightPixels: z

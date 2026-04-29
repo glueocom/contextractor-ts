@@ -38,7 +38,8 @@ contextractor --config config.json --max-pages 10
 The full flag list is in
 [`apps/standalone/README.md`](../../apps/standalone/README.md#usage)
 — the table there is generated from the Commander program in
-`apps/standalone/src/cli.ts` by `@contextractor/gen-md-regions`,
+`apps/standalone/src/cli.ts` (with flag definitions in
+`apps/standalone/src/cliProgram.ts`) by `@contextractor/gen-md-regions`,
 so it is always in sync with the binary.
 
 ### Config file (optional, JSON)

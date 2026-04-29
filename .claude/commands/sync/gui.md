@@ -20,13 +20,13 @@ Read every file below before making any change:
 - **Input schema (canonical for input fields)** — `packages/schema/src/input.ts` (the `ContextractorInput` Zod schema with every field's type, `.default(...)`, `.describe(...)`, and `apifyMeta(...)`). Capture every field, default, and enum.
 - **TS engine (canonical for extraction internals)** — `packages/extraction/src/index.ts` (the `TrafilaturaConfig` interface, `ContentExtractor` class, `OutputFormat` union, `DEFAULT_CONFIG`). Capture every field with type and default.
 - **napi-rs binding** — `packages/extraction/native/src/lib.rs`. Capture every `#[napi(object)]` field and the function signatures.
-- **Standalone CLI** — `apps/standalone/src/cli.ts` (`buildProgram()` exports the configured Commander program; the generator imports it). Plus `apps/standalone/src/config.ts` for `CrawlConfig` and `loadConfigFile`.
+- **Standalone CLI** — `apps/standalone/src/cli.ts` (re-exports `buildProgram()` for the generator) and `apps/standalone/src/cliProgram.ts` (owns the Commander flag definitions). Plus `apps/standalone/src/config.ts` for `CrawlConfig` and `loadConfigFile`.
 - **Apify schemas** —
   - `apps/apify-actor/.actor/input_schema.json` — generated from `packages/schema/src/input.ts` by `@contextractor/gen-input-schema`; never hand-edit
   - `apps/apify-actor/.actor/output_schema.json`
   - `apps/apify-actor/.actor/dataset_schema.json`
   - `apps/apify-actor/.actor/actor.json`
-- **Apify Actor TS** — `apps/apify-actor/src/{main.ts, handler.ts, extraction.ts, config.ts}` (consumes `ContextractorInput.parse()` and `@contextractor/extraction`).
+- **Apify Actor TS** — `apps/apify-actor/src/{main.ts, run.ts, extraction.ts, sinks.ts, config.ts}` (consumes `ContextractorInput.parse()` and `@contextractor/extraction`).
 
 ## Step VERIFY: Cross-Check Internal Consistency
 
@@ -47,8 +47,8 @@ Run each check below. The Zod schema is canonical for input fields; the TS engin
 For each inconsistency:
 
 - **`input_schema.json` drifted from the Zod schema** → re-run `pnpm --filter @contextractor/gen-input-schema start` and commit the regenerated file. Never hand-edit `input_schema.json`. If the snapshot test still fails, the fix belongs in `packages/schema/src/input.ts`.
-- **CLI missing a `ContextractorInput` field** → add a `program.option(...)` in `apps/standalone/src/cli.ts` with sensible kebab-case name; map it through `buildSchemaOverrides` so it reaches `ContextractorInput.parse()`.
-- **Markdown region drift (`npm run docs:check` fails)** → run `npm run docs:update`, inspect the diff (the marker block was hand-edited and the rebuild reverted), and pull the desired fact into the canonical source (`packages/schema/src/input.ts` for input fields, `apps/standalone/src/cli.ts` for CLI flags) before regenerating.
+- **CLI missing a `ContextractorInput` field** → add a `program.option(...)` in `apps/standalone/src/cliProgram.ts` with sensible kebab-case name; map it through `buildSchemaOverrides` so it reaches `ContextractorInput.parse()`.
+- **Markdown region drift (`npm run docs:check` fails)** → run `npm run docs:update`, inspect the diff (the marker block was hand-edited and the rebuild reverted), and pull the desired fact into the canonical source (`packages/schema/src/input.ts` for input fields, `apps/standalone/src/cliProgram.ts` for CLI flags) before regenerating.
 - **napi-rs binding missing a TS engine field** → list it for the implementer; the Rust struct must follow the TS interface, but adding it requires implementing the underlying call into `rs-trafilatura`.
 - **napi-rs binding has a field absent from TS engine** → flag it. The TS engine should expose what the binding offers, unless the field maps to a field that has no `rs-trafilatura` 0.2.x backing (e.g. `pruneXpath`) — in which case drop the napi-rs field too.
 - **Default disagreement** → list each surface's value; do **not** auto-pick. The fix for input-side defaults belongs in the Zod schema; the fix for engine-side defaults belongs in the TS engine.

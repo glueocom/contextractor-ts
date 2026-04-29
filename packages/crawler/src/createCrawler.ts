@@ -91,23 +91,13 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
     proxyConfiguration: opts.proxyConfiguration,
     ...(cookieStrategy === 'ghostery'
       ? {
-          preNavigationHooks: [
-            async ({ page }: { page: import('playwright').Page }) => {
-              await installCookieDefences(page);
-            },
-          ],
+          preNavigationHooks: [async ({ page }) => installCookieDefences(page)],
         }
       : {}),
     ...(cookieStrategy === 'autoconsent'
       ? {
           postNavigationHooks: [
-            async ({
-              page,
-              log,
-            }: {
-              page: import('playwright').Page;
-              log: { info: (msg: string) => void };
-            }) => {
+            async ({ page, log }) => {
               const result = await rejectViaAutoconsent(page);
               log.info(
                 result.success

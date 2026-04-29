@@ -1,4 +1,5 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
 import { PlaywrightBlocker } from '@ghostery/adblocker-playwright';
 import type { Page } from 'playwright';
 
@@ -15,11 +16,13 @@ export async function getBlocker(
   cachePath = '.cache/adblock-engine.bin',
 ): Promise<PlaywrightBlocker> {
   if (!blockerPromise) {
-    blockerPromise = PlaywrightBlocker.fromLists(globalThis.fetch, FILTER_LISTS, undefined, {
-      path: cachePath,
-      read: readFile,
-      write: writeFile,
-    });
+    blockerPromise = mkdir(dirname(cachePath), { recursive: true }).then(() =>
+      PlaywrightBlocker.fromLists(globalThis.fetch, FILTER_LISTS, undefined, {
+        path: cachePath,
+        read: readFile,
+        write: writeFile,
+      }),
+    );
   }
   return blockerPromise;
 }
