@@ -1,12 +1,11 @@
-# `@contextractor/engine`
+# `@contextractor/extraction`
 
 TypeScript content-extraction engine.
 
 Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
-(Rust port of Trafilatura, accessed via a napi-rs binding) and consumed by
-the `@contextractor/apify` Actor and the `@contextractor/standalone` CLI,
-which drive crawling with [Crawlee](https://crawlee.dev/) (TypeScript) +
-Playwright.
+(Rust port of Trafilatura, accessed via a napi-rs binding). Consumed by
+`@contextractor/crawler`, the `@contextractor/apify` Actor, and the
+`@contextractor/standalone` CLI.
 
 ## Public API
 
@@ -20,12 +19,20 @@ import {
   type TrafilaturaConfig,
   getDefaultConfig,
   normalizeConfigKeys,
-} from '@contextractor/engine';
+  computeContentInfo,
+  projectMetadata,
+} from '@contextractor/extraction';
 
 const extractor = new ContentExtractor({ favorPrecision: true });
 const result = extractor.extract(html, { url, format: 'markdown' });
 const metadata = extractor.extractMetadata(html, url);
 const all = extractor.extractAllFormats(html, { url });
+
+// Content hash and byte length (MD5 over UTF-8)
+const info = computeContentInfo(html); // { hash: string, length: number }
+
+// Project raw Metadata to a flat DatasetMetadata shape
+const meta = projectMetadata(extractor.extractMetadata(html, url));
 ```
 
 `ContentExtractor` methods:
@@ -66,7 +73,7 @@ Trafilatura.
 ## Local prerequisites
 
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
-- **Node 22+**, **npm 10+**.
+- **Node 22+**, **pnpm 10+**.
 
 ## Pitfalls
 
@@ -82,8 +89,7 @@ Trafilatura.
 - **Empty Cargo workspace `members = []` fails `cargo metadata`.** The
   napi-rs crate must exist as soon as the workspace is created.
 - **`vitest run` exits 1 on zero tests.** Apps with no tests pass
-  `--passWithNoTests` so recursive `npm run test -ws --if-present` does not
-  break.
+  `--passWithNoTests` so recursive `pnpm test` does not break.
 
 ## XML / XML-TEI gap
 

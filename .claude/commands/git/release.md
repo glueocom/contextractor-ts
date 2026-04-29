@@ -11,7 +11,7 @@ Cut a release of contextractor by syncing the version across every TypeScript `p
 
 - Canonical manifest order:
   - Workspace root `package.json` (private, version-bearing) if it pins one.
-  - Otherwise the per-package `package.json` files under `apps/` and `packages/` plus the single Rust crate at `packages/contextractor-engine/native/Cargo.toml`.
+  - Otherwise the per-package `package.json` files under `apps/` and `packages/` plus the single Rust crate at `packages/extraction/native/Cargo.toml`.
 - If `$ARGUMENTS` is a version string (`X.Y.Z` or `vX.Y.Z`), use it (strip any leading `v`).
 - Otherwise read the current version from the canonical TS manifest and bump the patch component (`0.1.0` → `0.1.1`).
 - If no manifest exists yet, **stop** with a clear message listing the missing files and exit cleanly. Do not guess a starting version.

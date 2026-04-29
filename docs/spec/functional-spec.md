@@ -13,7 +13,7 @@ Available as:
   to the run's Key-Value Store + Dataset.
 - **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI;
   output written to disk as one file per page.
-- **TypeScript engine** (`@contextractor/engine`) — embedded library used by
+- **TypeScript engine** (`@contextractor/extraction`) — embedded library used by
   both surfaces above; exposes `ContentExtractor`, `extractMetadata`, and
   `extractAllFormats`.
 

@@ -4,7 +4,7 @@ Single source of truth for Contextractor input. The package exports a Zod 4
 schema (`ContextractorInput`), the inferred TypeScript type
 (`ContextractorInputType`), the typed `apifyMeta` helper for Apify-only UI
 hints, and `writeApifyInputSchema` — the build-time generator that compiles
-the Zod schema to `apps/contextractor-apify/.actor/input_schema.json`. The
+the Zod schema to `apps/apify-actor/.actor/input_schema.json`. The
 standalone CLI and the Apify Actor both feed user input through
 `ContextractorInput.parse(...)` to validate and type it.
 

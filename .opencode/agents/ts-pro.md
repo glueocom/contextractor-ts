@@ -35,9 +35,9 @@ TypeScript npm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
 
 - `apps/apify-actor/` — Apify Actor (Apify SDK + Crawlee `PlaywrightCrawler`)
 - `apps/standalone/` — CLI (`commander`/`yargs` + Crawlee + Playwright)
-- `packages/contextractor-engine/` — engine wrapping the napi-rs binding (`packages/contextractor-engine/native/`)
+- `packages/extraction/` — engine wrapping the napi-rs binding (`packages/extraction/native/`)
 - `tools/platform-test-runner/` — Node test orchestrator
-- `tools/generated-unit-tests/` — vitest tests against `@contextractor/engine` with HTML fixtures
+- `tools/generated-unit-tests/` — vitest tests against `@contextractor/extraction` with HTML fixtures
 
 Workspace-wide commands: `npm run build`, `npm run test`, `npm run lint`. Lint and format with `biome check .` (workspace-wide).
 
@@ -45,6 +45,6 @@ Workspace-wide commands: `npm run build`, `npm run test`, `npm run lint`. Lint a
 
 - **`exactOptionalPropertyTypes: true` is incompatible with napi-rs-generated types** — keep it off in the root tsconfig (napi-rs emits `field?: T`, not `field?: T | undefined`).
 - **`vitest run` exits 1 with zero `*.test.ts` files** — apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise `npm run test` fails.
-- **Biome ignore list** — explicitly ignore `.claude/**`, `prompts/**`, `**/fixtures/**`, `**/test-suites/**`, `**/test-suites-output/**`, `**/*.node`, and `packages/contextractor-engine/native/index.{js,d.ts}` in `biome.json`.
+- **Biome ignore list** — explicitly ignore `.claude/**`, `prompts/**`, `**/fixtures/**`, `**/test-suites/**`, `**/test-suites-output/**`, `**/*.node`, and `packages/extraction/native/index.{js,d.ts}` in `biome.json`.
 - **Supported output formats** are `txt | markdown | json | html` — never reintroduce `xml` or `xmltei` until upstream `rs-trafilatura` adds them.
-- **The Apify actor's `package.json` declares `"@contextractor/engine": "*"`** — no `vendor/` directory; the multi-stage Dockerfile builds with `npm run build -w @contextractor/apify` and copies the built workspace into the final image.
+- **The Apify actor's `package.json` declares `"@contextractor/extraction": "*"`** — no `vendor/` directory; the multi-stage Dockerfile builds with `npm run build -w @contextractor/apify` and copies the built workspace into the final image.

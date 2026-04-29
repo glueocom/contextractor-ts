@@ -151,8 +151,8 @@ If **RUN FAILED**:
 | `EBADPLATFORM` | Dockerfile copies a non-linux platform package; only `linux-x64-gnu` and `linux-arm64-gnu` should be COPYed |
 | `EACCES: permission denied` | Builder stage running as non-root; add `USER root` before `RUN pnpm install` |
 | `tsc: not found` | Base image sets `NODE_ENV=production`, skipping devDeps; add `ENV NODE_ENV=development` in builder stage |
-| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify --prod deploy /deploy` |
-| `error[E0` | napi-rs crate at `packages/contextractor-engine/native/src/` — fix types |
+| `Cannot find module '@contextractor/extraction'` | Actor `package.json` should declare `"@contextractor/crawler": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify --prod deploy /deploy` |
+| `error[E0` | napi-rs crate at `packages/extraction/native/src/` — fix types |
 | `error: linking with` | `apps/apify-actor/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
 | `napi-rs prebuild not found` | CI must publish `linux-x64-gnu` and `linux-arm64-gnu` `.node` files via `optionalDependencies` |

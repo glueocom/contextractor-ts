@@ -9,18 +9,18 @@ How to package a Rust crate for distribution or in-workspace use.
 
 ## Cargo.toml (this project's napi-rs crate)
 
-The only Rust crate in this workspace is the napi-rs binding at `packages/contextractor-engine/native/`. It is **not** published to crates.io — it is consumed by the TypeScript engine through `@napi-rs/cli` per-platform prebuilds (`linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64`) shipped via npm `optionalDependencies`.
+The only Rust crate in this workspace is the napi-rs binding at `packages/extraction/native/`. It is **not** published to crates.io — it is consumed by the TypeScript engine through `@napi-rs/cli` per-platform prebuilds (`linux-x64-gnu`, `linux-arm64-gnu`, `darwin-arm64`, `darwin-x64`) shipped via npm `optionalDependencies`.
 
 ```toml
 [package]
-name = "contextractor-engine-native"
+name = "contextractor-extraction-native"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Glueo <hello@glueo.com>"]
 license = "Apache-2.0"
 repository = "https://github.com/glueocom/contextractor-ts"
-description = "napi-rs binding for rs-trafilatura, consumed by @contextractor/engine."
+description = "napi-rs binding for rs-trafilatura, consumed by @contextractor/extraction."
 
 [lib]
 crate-type = ["cdylib"]
@@ -81,7 +81,7 @@ For **internal-only** crates (the napi-rs binding here is one — it ships throu
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-npm run build -w @contextractor/engine-native    # produces the .node prebuild
+pnpm --filter @contextractor/extraction-native build:rebuild    # produces the .node prebuild
 ```
 
 For a crates.io-bound crate (not this project):
@@ -95,7 +95,7 @@ cargo publish --dry-run -p <crate-name>
 
 ## Publishing
 
-This project does **not** publish Rust crates to crates.io. The napi-rs `.node` prebuilds are published as npm packages (`@contextractor/engine-native-{platform}-{arch}`) consumed via `optionalDependencies` from `@contextractor/engine`.
+This project does **not** publish Rust crates to crates.io. The napi-rs `.node` prebuilds are published as npm packages (`@contextractor/extraction-native-{platform}-{arch}`) consumed via `optionalDependencies` from `@contextractor/extraction`.
 
 For a hypothetical crates.io-bound crate:
 

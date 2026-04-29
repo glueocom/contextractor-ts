@@ -6,7 +6,7 @@ description: Verify internal consistency of contextractor config across the TS e
 
 Verify that the contextractor internals agree across **four** surfaces: the TypeScript engine API, the napi-rs binding (Rust), the standalone CLI flags, and the Apify Actor schemas. Auto-fix conservatively where the canonical source is unambiguous; surface anything ambiguous for human review.
 
-The **`@contextractor/schema` Zod 4 schema** is canonical for every input field — CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, and enum values. The **TypeScript engine API** (`@contextractor/engine`'s `TrafilaturaConfig`) is canonical for the extraction internals — the napi-rs binding follows it. The standalone CLI and the Apify Actor are projections of these two canonical sources.
+The **`@contextractor/schema` Zod 4 schema** is canonical for every input field — CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, and enum values. The **TypeScript engine API** (`@contextractor/extraction`'s `TrafilaturaConfig`) is canonical for the extraction internals — the napi-rs binding follows it. The standalone CLI and the Apify Actor are projections of these two canonical sources.
 
 ## Scope
 
@@ -17,15 +17,15 @@ This command only verifies and fixes files inside `/Users/miroslavsekera/r/conte
 Read every file below before making any change:
 
 - **Input schema (canonical for input fields)** — `packages/schema/src/input.ts` (the `ContextractorInput` Zod schema with every field's type, `.default(...)`, `.describe(...)`, and `apifyMeta(...)`). Capture every field, default, and enum.
-- **TS engine (canonical for extraction internals)** — `packages/contextractor-engine/src/index.ts` (the `TrafilaturaConfig` interface, `ContentExtractor` class, `OutputFormat` union, `DEFAULT_CONFIG`). Capture every field with type and default.
-- **napi-rs binding** — `packages/contextractor-engine/native/src/lib.rs`. Capture every `#[napi(object)]` field and the function signatures.
+- **TS engine (canonical for extraction internals)** — `packages/extraction/src/index.ts` (the `TrafilaturaConfig` interface, `ContentExtractor` class, `OutputFormat` union, `DEFAULT_CONFIG`). Capture every field with type and default.
+- **napi-rs binding** — `packages/extraction/native/src/lib.rs`. Capture every `#[napi(object)]` field and the function signatures.
 - **Standalone CLI** — `apps/standalone/src/cli.ts` (`buildProgram()` exports the configured Commander program; the generator imports it). Plus `apps/standalone/src/config.ts` for `CrawlConfig` and `loadConfigFile`.
 - **Apify schemas** —
   - `apps/apify-actor/.actor/input_schema.json` — generated from `packages/schema/src/input.ts` by `@contextractor/gen-input-schema`; never hand-edit
   - `apps/apify-actor/.actor/output_schema.json`
   - `apps/apify-actor/.actor/dataset_schema.json`
   - `apps/apify-actor/.actor/actor.json`
-- **Apify Actor TS** — `apps/apify-actor/src/{main.ts, handler.ts, extraction.ts, config.ts}` (consumes `ContextractorInput.parse()` and `@contextractor/engine`).
+- **Apify Actor TS** — `apps/apify-actor/src/{main.ts, handler.ts, extraction.ts, config.ts}` (consumes `ContextractorInput.parse()` and `@contextractor/extraction`).
 
 ## Step VERIFY: Cross-Check Internal Consistency
 
@@ -39,7 +39,7 @@ Run each check below. The Zod schema is canonical for input fields; the TS engin
 - **OutputFormat union** — the TS `OutputFormat` union, the napi-rs string enum, and `FORMAT_EXTENSIONS` in the CLI must all be exactly `txt | markdown | json | html`. Any reappearance of `xml` or `xmltei` is a regression.
 - **No-op fields** — `pruneXpath` and `dateExtractionParams` are dropped (no rs-trafilatura 0.2.x backing). Flag any reappearance.
 - **Actor metadata** — `actor.json.name` is `contextractor-test` (or `contextractor` for production); `actor.json.dockerContextDir` is `"../../.."`; `actor.json.description` mentions "built on rs-trafilatura and Crawlee".
-- **Workspace deps** — the Apify Actor and the standalone CLI both declare `"@contextractor/engine": "*"` and `"@contextractor/schema": "*"` under the root npm workspaces setup (no `vendor/` directory).
+- **Workspace deps** — the Apify Actor and the standalone CLI both declare `"@contextractor/extraction": "*"` and `"@contextractor/schema": "*"` under the root npm workspaces setup (no `vendor/` directory).
 
 ## Step REPORT and AUTO-FIX
 
@@ -67,4 +67,4 @@ git commit -m "Fix internal package consistency"
 git push
 ```
 
-Stage only the schema files, the standalone CLI, and the napi-rs binding files modified by Step REPORT. Do not stage `packages/contextractor-engine/src/index.ts` — the TS engine is canonical and must change via deliberate edits, not by this command.
+Stage only the schema files, the standalone CLI, and the napi-rs binding files modified by Step REPORT. Do not stage `packages/extraction/src/index.ts` — the TS engine is canonical and must change via deliberate edits, not by this command.

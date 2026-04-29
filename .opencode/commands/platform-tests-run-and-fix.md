@@ -30,7 +30,7 @@ For each failed test case:
 ### Phase 3: Fix Code
 
 If failures are due to actor code:
-1. Read relevant code in `apps/apify-actor/src/` (TypeScript) or `packages/contextractor-engine/{src,native/src}/`
+1. Read relevant code in `apps/apify-actor/src/` (TypeScript) or `packages/extraction/{src,native/src}/`
 2. Fix the issue
 3. Re-run test suites to verify fix
 

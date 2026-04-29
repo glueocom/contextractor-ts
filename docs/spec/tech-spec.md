@@ -18,18 +18,22 @@
 Two apps + one engine package + one Rust crate:
 
 - `packages/extraction/` — TypeScript engine; depends on the napi-rs
-  binding via `@contextractor/engine-native`.
+  binding via `@contextractor/extraction-native`.
 - `packages/extraction/native/` — `napi-rs` Rust crate
   (`crate-type = "cdylib"`). Wraps `rs-trafilatura` and produces a `.node`
   binary loaded by the TS engine. Per-platform prebuilds live under
   `packages/extraction/native/npm/<platform>/` as workspace packages
   with `os` + `cpu` selectors.
+- `packages/crawler/` — Shared Playwright crawler factory; depends on
+  `@contextractor/extraction` + `crawlee` + `playwright` +
+  `@ghostery/adblocker-playwright`. Cookie-consent handled by Ghostery
+  (default) or `@duckduckgo/autoconsent` (optional lazy import).
 - `apps/apify-actor/` — Apify Actor; depends on
-  `@contextractor/engine` + `@contextractor/schema` + `apify` + `crawlee` +
-  `playwright`.
+  `@contextractor/extraction` + `@contextractor/crawler` +
+  `@contextractor/schema` + `apify`.
 - `apps/standalone/` — Standalone CLI; depends on
-  `@contextractor/engine` + `@contextractor/schema` + `crawlee` +
-  `playwright` + `commander`.
+  `@contextractor/extraction` + `@contextractor/crawler` +
+  `@contextractor/schema` + `commander`.
 - `packages/schema/` — Single Zod 4 source of truth for input.
   Exports `ContextractorInput`, `ContextractorInputType`, the `apifyMeta()`
   helper, and `writeApifyInputSchema()`. The Apify INPUT_SCHEMA file is
@@ -48,18 +52,18 @@ Input URLs → PlaywrightCrawler → ContentExtractor (TS) → KVS (blobs) + Dat
 Config file (JSON) → PlaywrightCrawler → ContentExtractor (TS) → output files
 ```
 
-### Native binding (`@contextractor/engine-native`)
+### Native binding (`@contextractor/extraction-native`)
 
 ```
-TS engine → require('@contextractor/engine-native')
-         → loader picks @contextractor/engine-native-<platform>
-         → loads contextractor-engine-native.<platform>.node
+TS engine → require('@contextractor/extraction-native')
+         → loader picks @contextractor/extraction-native-<platform>
+         → loads contextractor-extraction-native.<platform>.node
          → calls into rs-trafilatura via napi-rs
 ```
 
-The `@contextractor/engine-native` package declares each per-platform package
-in `optionalDependencies`. npm picks the platform-matching one via `os` +
-`cpu` resolution at install time. The `.node` files for `darwin-arm64`,
+The `@contextractor/extraction-native` package declares each per-platform
+package in `optionalDependencies`. pnpm picks the platform-matching one via
+`os` + `cpu` resolution at install time. The `.node` files for `darwin-arm64`,
 `darwin-x64`, `linux-x64-gnu`, and `linux-arm64-gnu` are committed to git and
 refreshed by `.github/workflows/build-napi.yml` on tag pushes.
 
@@ -69,8 +73,7 @@ refreshed by `.github/workflows/build-napi.yml` on tag pushes.
 
 ```ts
 import { Actor } from 'apify';
-import { PlaywrightCrawler, Request } from 'crawlee';
-import { ContentExtractor } from '@contextractor/engine';
+import { createContextractorCrawler, buildRequests } from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
 
 await Actor.init();
@@ -119,7 +122,7 @@ in `@contextractor/schema` (Zod 4 validation at the input boundary), then
 pass the typed result into the engine.
 
 ```ts
-import { ContentExtractor } from '@contextractor/engine';
+import { ContentExtractor } from '@contextractor/extraction';
 
 const extractor = new ContentExtractor({ favorPrecision: true });
 const result = extractor.extract(html, { url, format: 'markdown' });
@@ -138,7 +141,7 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 
 `packages/extraction/` (TS):
 
-- `@contextractor/engine-native` (workspace)
+- `@contextractor/extraction-native` (workspace)
 
 `packages/extraction/native/` (Rust):
 
@@ -146,20 +149,26 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 - `rs-trafilatura ^0.2`
 - `serde`, `serde_json`, `chrono`
 
+`packages/crawler/` (TS):
+
+- `@contextractor/extraction` (workspace)
+- `crawlee ^3`
+- `playwright ^1.50`
+- `@ghostery/adblocker-playwright ^2`
+- `@duckduckgo/autoconsent ^14` (optional)
+
 `apps/apify-actor/`:
 
 - `apify ^3`
-- `crawlee ^3`
-- `playwright ^1.50`
-- `@contextractor/engine` (workspace)
+- `@contextractor/extraction` (workspace)
+- `@contextractor/crawler` (workspace)
 - `@contextractor/schema` (workspace)
 
 `apps/standalone/`:
 
-- `crawlee ^3`
-- `playwright ^1.50`
 - `commander ^12`
-- `@contextractor/engine` (workspace)
+- `@contextractor/extraction` (workspace)
+- `@contextractor/crawler` (workspace)
 - `@contextractor/schema` (workspace)
 
 `packages/schema/` (TS):
@@ -171,22 +180,22 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 Local prebuild for the host platform:
 
 ```bash
-npm run build -w @contextractor/engine-native
+pnpm --filter @contextractor/extraction-native build:rebuild
 ```
 
 Cross-platform prebuilds (CI runs the equivalent matrix):
 
 ```bash
-npm exec -w @contextractor/engine-native -- napi build --platform --release --target aarch64-apple-darwin
-npm exec -w @contextractor/engine-native -- napi build --platform --release --target x86_64-apple-darwin
-npm exec -w @contextractor/engine-native -- napi build --platform --release --target x86_64-unknown-linux-gnu --zig
-npm exec -w @contextractor/engine-native -- napi build --platform --release --target aarch64-unknown-linux-gnu --zig
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target aarch64-apple-darwin
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target x86_64-apple-darwin
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target x86_64-unknown-linux-gnu --zig
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target aarch64-unknown-linux-gnu --zig
 ```
 
 TypeScript builds:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ## Docker (Apify Actor)
@@ -195,8 +204,8 @@ Multi-stage Node + Playwright Dockerfile at
 `apps/apify-actor/Dockerfile`:
 
 - Builder stage: `apify/actor-node-playwright-chrome:22 AS builder`. Runs
-  `npm ci`, `npm run build -w @contextractor/apify`, then
-  `npm run deploy --prod -w @contextractor/apify -- /deploy` to produce a
+  `pnpm install`, `pnpm --filter @contextractor/apify build`, then
+  `pnpm --filter @contextractor/apify --prod deploy /deploy` to produce a
   self-contained actor bundle with no workspace symlinks.
 - Runtime stage: `apify/actor-node-playwright-chrome:22`. Copies `/deploy` to
   `/usr/src/app` and runs `node dist/main.js`.

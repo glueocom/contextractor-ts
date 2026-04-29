@@ -83,30 +83,32 @@ interface ContextractorInputType {
 ## Workspace commands
 
 ```bash
-npm run build                                          # Build all TS packages
-npm run test                                           # Run all vitest suites
-npm run lint                                           # Biome lint
-npm run build -w @contextractor/engine-native          # Build the napi-rs .node
-cargo build --workspace                                # Build the napi-rs Rust crate
-cargo test --workspace                                 # Cargo unit tests
-cargo clippy --workspace --all-targets -- -D warnings  # Strict Rust lints
-biome check .                                          # Workspace lint + format
-apify run                                              # Run the Actor locally (from apps/apify-actor/)
+pnpm build                                                 # Build all TS packages
+pnpm test                                                  # Run all vitest suites
+pnpm lint                                                  # Biome lint
+pnpm --filter @contextractor/extraction-native build:rebuild  # Build the napi-rs .node
+cargo build --workspace                                    # Build the napi-rs Rust crate
+cargo test --workspace                                     # Cargo unit tests
+cargo clippy --workspace --all-targets -- -D warnings      # Strict Rust lints
+biome check .                                              # Workspace lint + format
+apify run                                                  # Run the Actor locally (from apps/apify-actor/)
 ```
 
 ## Architecture
 
 ```
 apps/
-├── contextractor-apify/        # TypeScript Apify Actor (Crawlee + Playwright + @contextractor/engine)
-└── contextractor-standalone/   # TypeScript CLI
+├── apify-actor/        # Apify Actor (Crawlee + Playwright + @contextractor/extraction)
+└── standalone/         # TypeScript CLI
 packages/
-└── contextractor-engine/       # TypeScript engine
-    └── native/                 # napi-rs Rust crate wrapping rs-trafilatura
-        └── npm/<platform>/     # Per-platform .node prebuilds (workspace packages)
+├── extraction/         # TypeScript engine (@contextractor/extraction)
+│   └── native/         # napi-rs Rust crate wrapping rs-trafilatura
+│       └── npm/<platform>/  # Per-platform .node prebuilds (workspace packages)
+├── crawler/            # Shared Playwright crawler factory (@contextractor/crawler)
+└── schema/             # Zod 4 input schema (@contextractor/schema)
 tools/
-├── platform-test-runner/       # TypeScript test orchestrator
-└── generated-unit-tests/       # vitest cases against @contextractor/engine
+├── platform-test-runner/  # TypeScript test orchestrator
+└── generated-unit-tests/  # vitest cases against @contextractor/extraction
 ```
 
 ## Docs version

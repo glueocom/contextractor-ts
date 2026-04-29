@@ -86,7 +86,7 @@ Pass `--config path/to/config.json`. The file is validated by the Zod 4
 schema in
 [`@contextractor/schema`](../../packages/schema/README.md), so
 keys use the same camelCase shape as the
-[Apify input schema](../contextractor-apify/README.md#input). Orchestration
+[Apify input schema](../apify-actor/README.md#input). Orchestration
 flags (`--output-dir`, `--save`, `--proxy-urls`) are CLI-only and must be set
 on the command line.
 

@@ -25,7 +25,7 @@ cargo build --workspace
 npm run test
 ```
 
-This runs vitest in `packages/contextractor-engine`, `tools/generated-unit-tests`, and any app whose `test` script is wired up. Apps without tests use `vitest run --passWithNoTests` so the recursive run does not fail.
+This runs vitest in `packages/extraction`, `tools/generated-unit-tests`, and any app whose `test` script is wired up. Apps without tests use `vitest run --passWithNoTests` so the recursive run does not fail.
 
 ### Step TEST_RUST: Run Rust tests
 
@@ -33,7 +33,7 @@ This runs vitest in `packages/contextractor-engine`, `tools/generated-unit-tests
 cargo test --workspace
 ```
 
-The only Rust crate is the napi-rs binding at `packages/contextractor-engine/native/`.
+The only Rust crate is the napi-rs binding at `packages/extraction/native/`.
 
 ### Step LINT: Lint and format check
 

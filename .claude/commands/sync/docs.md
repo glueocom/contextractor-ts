@@ -14,8 +14,8 @@ Ensure every README under this repo reflects the current TypeScript engine API, 
 The source files are canonical for what each README must document. When they disagree with each other, surface the mismatch in **Step VERIFY** rather than silently picking a winner.
 
 - **Input schema (canonical for CLI flags, INPUT_SCHEMA fields, and the `ContextractorInputType` interface)** — `packages/schema/src/input.ts`. The Zod 4 schema is the single source of truth for every input field; both the Apify `input_schema.json` and the markdown reference tables are generated from it.
-- **TypeScript engine API** — `packages/contextractor-engine/src/index.ts` (the canonical `TrafilaturaConfig` interface, `ContentExtractor` class, exported types). The TS engine drives every output-format and extraction surface.
-- **napi-rs binding** — `packages/contextractor-engine/native/src/lib.rs`. `#[napi(object)]` structs must mirror the TS interface field-for-field; the TS interface is canonical, not the Rust struct.
+- **TypeScript engine API** — `packages/extraction/src/index.ts` (the canonical `TrafilaturaConfig` interface, `ContentExtractor` class, exported types). The TS engine drives every output-format and extraction surface.
+- **napi-rs binding** — `packages/extraction/native/src/lib.rs`. `#[napi(object)]` structs must mirror the TS interface field-for-field; the TS interface is canonical, not the Rust struct.
 - **Standalone CLI** — `apps/standalone/src/cli.ts` (every `commander` flag with description and default) plus `apps/standalone/src/config.ts`. The Commander program is exported and walked by `@contextractor/gen-md-regions` into the `cli-flags` table.
 - **Apify Actor TypeScript** — `apps/apify-actor/src/{main.ts, handler.ts, extraction.ts, config.ts}` and the Actor's `package.json` workspace deps.
 - **Engine/public output format set** — must equal `txt | markdown | json | html` everywhere it describes engine or extracted-content formats; XML / XML-TEI are dropped pending upstream `rs-trafilatura` support. CLI-only orchestration shorthands such as `--save jsonl` or `--save all` are evaluated separately and are not part of the engine `OutputFormat` set.
@@ -29,7 +29,7 @@ The source files are canonical for what each README must document. When they dis
 
 Read every source-of-truth file above and build one inventory covering all surfaces:
 
-- Every TS engine config field (name, type, default, JSDoc) — note that it lives in **`packages/contextractor-engine/src/index.ts`**.
+- Every TS engine config field (name, type, default, JSDoc) — note that it lives in **`packages/extraction/src/index.ts`**.
 - Every standalone CLI flag (long name, short name if any, type, default, help text) — note that it lives in **`apps/standalone/src/cli.ts`**.
 - Every Apify input-schema property (name, type, default, description, editor type) — note that it lives in **the schema**.
 - Every napi-rs `#[napi(object)]` field — verify it matches the TS interface.
@@ -54,7 +54,7 @@ At minimum the following READMEs are expected to exist:
 - `README.md` (repo root)
 - `apps/apify-actor/README.md`
 - `apps/standalone/README.md`
-- `packages/contextractor-engine/README.md`
+- `packages/extraction/README.md`
 - `packages/schema/README.md`
 - `tools/gen-input-schema/README.md`
 
@@ -63,8 +63,8 @@ For each README found, sync:
 - The "built on" line — every README must say Contextractor is built on `rs-trafilatura` (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright).
 - Run `npm run docs:update` to regenerate every region between `<!-- @generated:start … -->` markers (CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, enum values). Fix only the surrounding prose and the disclaimer line — never edit between marker pairs by hand.
 - Per `.claude/rules/json-config-only.md`, document only JSON config files.
-- The TS engine config table (interface fields with type, default, description) lives in `packages/contextractor-engine/README.md`; the matching Apify input-schema field comes from the generated region in `apps/apify-actor/README.md`.
-- The engine/public output-format list — must be `txt | markdown | json | html`. The temporary XML / XML-TEI gap is documented once in `packages/contextractor-engine/README.md` and once in `CLAUDE.md`; do not repeat it elsewhere. CLI-only `--save` helpers such as `jsonl` or `all` may still appear where the README is documenting CLI orchestration rather than engine formats.
+- The TS engine config table (interface fields with type, default, description) lives in `packages/extraction/README.md`; the matching Apify input-schema field comes from the generated region in `apps/apify-actor/README.md`.
+- The engine/public output-format list — must be `txt | markdown | json | html`. The temporary XML / XML-TEI gap is documented once in `packages/extraction/README.md` and once in `CLAUDE.md`; do not repeat it elsewhere. CLI-only `--save` helpers such as `jsonl` or `all` may still appear where the README is documenting CLI orchestration rather than engine formats.
 - The local-prerequisites note (Rust toolchain via rustup, Apify CLI ≥ 1.4, Node 22+, npm 10+) where applicable.
 
 If a README does not yet have a section for the CLI, the engine config, or the "built on" line, add it at the natural insertion point rather than skipping the file.

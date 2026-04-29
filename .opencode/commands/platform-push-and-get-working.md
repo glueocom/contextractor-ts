@@ -145,8 +145,8 @@ If **RUN FAILED**:
 | `Invalid output schema` | `apps/apify-actor/.actor/output_schema.json` |
 | `Invalid dataset schema` | `apps/apify-actor/.actor/dataset_schema.json` |
 | `COPY failed` | `apps/apify-actor/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
-| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
-| `error[E0` | napi-rs crate at `packages/contextractor-engine/native/src/` — fix types |
+| `Cannot find module '@contextractor/extraction'` | Actor `package.json` should declare `"@contextractor/extraction": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
+| `error[E0` | napi-rs crate at `packages/extraction/native/src/` — fix types |
 | `error: linking with` | `apps/apify-actor/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
 | `napi-rs prebuild not found` | CI must publish `linux-x64-gnu` and `linux-arm64-gnu` `.node` files via `optionalDependencies` |

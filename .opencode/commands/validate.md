@@ -14,7 +14,7 @@ Validate all Actor configuration and run static checks across the workspace.
 - Verify `actor.json.name` matches the deploy target (`contextractor-test` for test, `contextractor` for production)
 - Verify `actor.json.dockerContextDir` is `"../../.."`
 - Verify `actor.json.description` mentions "built on rs-trafilatura and Crawlee"
-- Verify `apps/apify-actor/package.json` declares `"@contextractor/engine": "*"` (no `vendor/` directory)
+- Verify `apps/apify-actor/package.json` declares `"@contextractor/extraction": "*"` (no `vendor/` directory)
 - Run `npm run build`
 - Run `npm run lint` (Biome workspace-wide)
 - Run `npm run test`

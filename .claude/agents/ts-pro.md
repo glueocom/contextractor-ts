@@ -35,11 +35,13 @@ Test files `*.test.ts` next to source. vitest preferred for new code; `node:test
 
 TypeScript pnpm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
 
-- `apps/apify-actor/` — Apify Actor (Apify SDK + Crawlee `PlaywrightCrawler`)
-- `apps/standalone/` — CLI (`commander`/`yargs` + Crawlee + Playwright)
-- `packages/contextractor-engine/` — engine wrapping the napi-rs binding (`packages/contextractor-engine/native/`)
+- `apps/apify-actor/` — Apify Actor (Apify SDK + `@contextractor/crawler`)
+- `apps/standalone/` — CLI (`commander` + `@contextractor/crawler`)
+- `packages/extraction/` — engine wrapping the napi-rs binding (`packages/extraction/native/`)
+- `packages/crawler/` — shared Playwright crawler factory (`@contextractor/crawler`)
+- `packages/schema/` — Zod 4 input schema (`@contextractor/schema`)
 - `tools/platform-test-runner/` — Node test orchestrator
-- `tools/generated-unit-tests/` — vitest tests against `@contextractor/engine` with HTML fixtures
+- `tools/generated-unit-tests/` — vitest tests against `@contextractor/extraction` with HTML fixtures
 
 Workspace-wide commands: `pnpm build`, `pnpm test`, `pnpm lint` (via Turborepo). Lint and format with `biome check .` (workspace-wide).
 
@@ -47,6 +49,6 @@ Workspace-wide commands: `pnpm build`, `pnpm test`, `pnpm lint` (via Turborepo).
 
 - **`exactOptionalPropertyTypes: true` is incompatible with napi-rs-generated types** — keep it off in the root tsconfig (napi-rs emits `field?: T`, not `field?: T | undefined`).
 - **`vitest run` exits 1 with zero `*.test.ts` files** — apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise `pnpm test` fails.
-- **Biome ignore list** — explicitly ignore `.claude/**`, `prompts/**`, `**/fixtures/**`, `**/test-suites/**`, `**/test-suites-output/**`, `**/*.node`, and `packages/contextractor-engine/native/index.{js,d.ts}` in `biome.json`.
+- **Biome ignore list** — explicitly ignore `.claude/**`, `prompts/**`, `**/fixtures/**`, `**/test-suites/**`, `**/test-suites-output/**`, `**/*.node`, and `packages/extraction/native/index.{js,d.ts}` in `biome.json`.
 - **Supported output formats** are `txt | markdown | json | html` — never reintroduce `xml` or `xmltei` until upstream `rs-trafilatura` adds them.
-- **The Apify actor's `package.json` declares `"@contextractor/engine": "workspace:*"`** — no `vendor/` directory; the multi-stage Dockerfile builds with `pnpm --filter @contextractor/apify build` and deploys via `pnpm --filter @contextractor/apify --prod deploy /deploy`.
+- **The Apify actor's `package.json` declares `"@contextractor/crawler": "workspace:*"`** — no `vendor/` directory; the multi-stage Dockerfile builds with `pnpm --filter @contextractor/apify build` and deploys via `pnpm --filter @contextractor/apify --prod deploy /deploy`.

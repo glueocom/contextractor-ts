@@ -13,9 +13,9 @@
       "!**/node_modules",
       "!**/storage",
       "!**/*.node",
-      "!packages/contextractor-engine/native/index.js",
-      "!packages/contextractor-engine/native/index.d.ts",
-      "!packages/contextractor-engine/native/npm"
+      "!packages/extraction/native/index.js",
+      "!packages/extraction/native/index.d.ts",
+      "!packages/extraction/native/npm"
     ]
   },
   "formatter": {
