@@ -3,7 +3,7 @@ description: Push to Apify test actor, wait for build, fix errors, and run a tes
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
 ---
 
-# Push and Get Working
+# Deploy and Test
 
 Automated workflow to push code to the Apify platform, wait for build, fix any build errors until the build succeeds, then run a test crawl to verify the Actor works.
 
@@ -49,6 +49,8 @@ Execute this loop until the build succeeds.
 
 ### Step VALIDATE: Validate Locally First
 
+pnpm must be available in `$PATH`. If `which pnpm` fails, run `sudo corepack enable pnpm` once, then retry. Alternatively use `corepack pnpm` as a drop-in replacement.
+
 ```bash
 pnpm build
 pnpm lint
@@ -79,11 +81,11 @@ After pushing, Apify Console picks up the commit and starts a build automaticall
 ### Step WAIT_BUILD: Wait for Build
 
 ```bash
-sleep 5
-apify builds ls --limit 3
+sleep 10
+apify builds ls glueo/contextractor-test --limit 3
 ```
 
-Keep polling every 10–15 seconds until the latest build shows `Succeeded` or `Failed`.
+Use `glueo/contextractor` instead if `--production` was specified. Keep polling every 15 seconds until the latest build shows `SUCCEEDED` or `FAILED`.
 
 ### Step CHECK_BUILD: Check Build Result
 
@@ -118,7 +120,7 @@ If **RUN SUCCEEDED**:
 
 - Inspect the dataset:
   ```bash
-  apify runs ls --limit 3
+  apify runs ls glueo/contextractor-test --limit 3
   ```
 - Report success with the run URL and a sample dataset item.
 
@@ -136,7 +138,7 @@ If **RUN FAILED**:
 `$ARGUMENTS` — optional:
 
 - `--production` — push to production actor `glueo/contextractor` instead of test (requires the `apify push glueo/contextractor` deny rule to be overridden)
-- `skip-validation` — skip local `npm` and `cargo` checks
+- `skip-validation` — skip local `pnpm` and `cargo` checks
 
 ## Error Type Reference
 
@@ -146,7 +148,11 @@ If **RUN FAILED**:
 | `Invalid output schema` | `apps/contextractor-apify/.actor/output_schema.json` |
 | `Invalid dataset schema` | `apps/contextractor-apify/.actor/dataset_schema.json` |
 | `COPY failed` | `apps/contextractor-apify/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
-| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify build` (multi-stage pnpm workspace build) |
+| `pnpm: not found` | Dockerfile missing `corepack enable` before `pnpm install`; add `RUN corepack enable && pnpm install` |
+| `EBADPLATFORM` | Dockerfile copies a non-linux platform package; only `linux-x64-gnu` and `linux-arm64-gnu` should be COPYed |
+| `EACCES: permission denied` | Builder stage running as non-root; add `USER root` before `RUN pnpm install` |
+| `tsc: not found` | Base image sets `NODE_ENV=production`, skipping devDeps; add `ENV NODE_ENV=development` in builder stage |
+| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify --prod deploy /deploy` |
 | `error[E0` | napi-rs crate at `packages/contextractor-engine/native/src/` — fix types |
 | `error: linking with` | `apps/contextractor-apify/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
