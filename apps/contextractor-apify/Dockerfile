@@ -2,6 +2,7 @@
 
 FROM apify/actor-node-playwright-chrome:22 AS builder
 
+USER root
 WORKDIR /repo
 
 # Copy all workspace package.json files first so npm ci layer caches well.
