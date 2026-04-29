@@ -9,7 +9,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "@contextractor/engine": "*"
+    "@contextractor/engine": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",

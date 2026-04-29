@@ -2,32 +2,26 @@
   "name": "contextractor-workspace",
   "private": true,
   "version": "0.1.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*",
-    "packages/*/native",
-    "packages/*/native/npm/*",
-    "tools/*"
-  ],
-  "packageManager": "npm@10.0.0",
+  "packageManager": "pnpm@10.0.0",
   "engines": {
     "node": ">=22",
-    "npm": ">=10"
+    "pnpm": ">=10"
   },
   "scripts": {
-    "build": "npm run build -ws --if-present",
-    "test": "npm run test -ws --if-present",
-    "lint": "npm run lint -ws --if-present",
-    "format": "npm run format -ws --if-present",
-    "check": "npm run check -ws --if-present",
-    "docs:update": "npm run start -w @contextractor/gen-md-regions",
-    "docs:check": "npm run docs:update && git diff --exit-code -- '**/*.md'",
-    "opencode:sync": "npm run start -w @contextractor/opencode-sync"
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "biome format --write .",
+    "check": "biome check .",
+    "docs:update": "pnpm -F @contextractor/gen-md-regions start",
+    "docs:check": "pnpm docs:update && git diff --exit-code -- '**/*.md'",
+    "opencode:sync": "pnpm -F @contextractor/opencode-sync start"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@napi-rs/cli": "^2.18.4",
     "@types/node": "^22.10.0",
+    "turbo": "^2.5.4",
     "typescript": "^5.6.3",
     "vitest": "^4.1.5"
   }

@@ -30,7 +30,7 @@ If any expected manifest is unreadable or malformed, list it and **stop** rather
 ### Step COMMIT: Commit the version bump
 
 - Stage **only** the manifest files changed in Step UPDATE (`git add <paths>`).
-- Also stage `package-lock.json` if `npm install` updated it during the bump.
+- Also stage `pnpm-lock.yaml` if `pnpm install` updated it during the bump.
 - Commit subject: `Release vX.Y.Z`.
 - Do **not** add a `Co-Authored-By` footer (per `.claude/rules/no-confirmation-prompts.md` and the existing project convention in `.claude/commands/git/commit.md`).
 

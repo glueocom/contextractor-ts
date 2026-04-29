@@ -50,9 +50,9 @@ Execute this loop until the build succeeds.
 ### Step VALIDATE: Validate Locally First
 
 ```bash
-npm run build
-npm run lint
-npm run test
+pnpm build
+pnpm lint
+pnpm test
 cargo build --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ```
@@ -146,7 +146,7 @@ If **RUN FAILED**:
 | `Invalid output schema` | `apps/contextractor-apify/.actor/output_schema.json` |
 | `Invalid dataset schema` | `apps/contextractor-apify/.actor/dataset_schema.json` |
 | `COPY failed` | `apps/contextractor-apify/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
-| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
+| `Cannot find module '@contextractor/engine'` | Actor `package.json` should declare `"@contextractor/engine": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify build` (multi-stage pnpm workspace build) |
 | `error[E0` | napi-rs crate at `packages/contextractor-engine/native/src/` — fix types |
 | `error: linking with` | `apps/contextractor-apify/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
@@ -158,7 +158,7 @@ If **RUN FAILED**:
 
 The workflow completes when:
 
-- Local `npm run build`, `npm run lint`, `npm run test` pass
+- Local `pnpm build`, `pnpm lint`, `pnpm test` pass
 - Local `cargo build --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` pass
 - The actor build on `glueo/contextractor-test` (or `glueo/contextractor` for `--production`) is `SUCCEEDED`
 - Test crawl completes successfully

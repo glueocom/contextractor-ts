@@ -8,6 +8,7 @@ tools/platform-test-runner/test-suites-output/
 # Node
 node_modules/
 package-lock.json
+pnpm-lock.yaml
 *.tsbuildinfo
 .turbo/
 dist/

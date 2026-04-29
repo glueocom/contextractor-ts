@@ -21,7 +21,7 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "@contextractor/engine-native": "*"
+    "@contextractor/engine-native": "workspace:*"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.13",

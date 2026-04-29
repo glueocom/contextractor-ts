@@ -18,10 +18,10 @@ tools/
 ## Commands
 
 ```bash
-npm run build                                              # Build all TS packages
-npm run test                                               # All vitest tests
-npm run lint                                               # Biome lint
-npm run build -w @contextractor/engine-native              # Build napi-rs .node
+pnpm build                                                 # Build all TS packages (via turbo)
+pnpm test                                                  # All vitest tests (via turbo)
+pnpm lint                                                  # Biome lint (via turbo)
+pnpm --filter @contextractor/engine-native build:rebuild   # Build napi-rs .node
 cargo build --workspace                                    # Build napi-rs crate
 cargo test --workspace                                     # Cargo tests
 cargo clippy --workspace --all-targets -- -D warnings      # Rust lint
@@ -35,7 +35,7 @@ Production deploys go through a **Git-connected build** in Apify Console (not `a
 
 - **Rust toolchain** via `rustup`
 - **Apify CLI ≥ 1.4**
-- **Node 22+**, **npm 10+**
+- **Node 22+**, **pnpm 10+**
 
 ## MCP
 

@@ -14,8 +14,8 @@
     "lint": "biome check ."
   },
   "dependencies": {
-    "@contextractor/schema": "*",
-    "@contextractor/standalone": "*",
+    "@contextractor/schema": "workspace:*",
+    "@contextractor/standalone": "workspace:*",
     "commander": "^12.1.0",
     "zod": "^4.3.6"
   },
