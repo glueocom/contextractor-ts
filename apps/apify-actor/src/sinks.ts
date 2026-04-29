@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import type { OutputFormat } from '@contextractor/extraction';
 import type { ExtractionResult, Sink } from '@contextractor/crawler';
+import type { OutputFormat } from '@contextractor/extraction';
 import type { Dataset } from 'apify';
 import type { ContentInfo, KvsLike } from './extraction.js';
 import { saveContentToKvs } from './extraction.js';
@@ -14,8 +14,18 @@ interface FormatSpec {
 
 const FORMAT_SPECS: readonly FormatSpec[] = [
   { format: 'txt', dataKey: 'extractedText', contentType: 'text/plain; charset=utf-8', ext: 'txt' },
-  { format: 'json', dataKey: 'extractedJson', contentType: 'application/json; charset=utf-8', ext: 'json' },
-  { format: 'markdown', dataKey: 'extractedMarkdown', contentType: 'text/markdown; charset=utf-8', ext: 'md' },
+  {
+    format: 'json',
+    dataKey: 'extractedJson',
+    contentType: 'application/json; charset=utf-8',
+    ext: 'json',
+  },
+  {
+    format: 'markdown',
+    dataKey: 'extractedMarkdown',
+    contentType: 'text/markdown; charset=utf-8',
+    ext: 'md',
+  },
 ];
 
 export interface ApifySinkOpts {

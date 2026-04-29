@@ -1,12 +1,11 @@
 import {
   ContentExtractor,
   computeContentInfo,
+  type OutputFormat,
   projectMetadata,
   type TrafilaturaConfig,
-  type OutputFormat,
 } from '@contextractor/extraction';
-import type { RequestHandler } from 'crawlee';
-import type { PlaywrightCrawlingContext } from 'crawlee';
+import type { PlaywrightCrawlingContext, RequestHandler } from 'crawlee';
 import { installCookieDefences } from './browser/cookies.js';
 import { autoScroll, type ScrollConfig } from './browser/scroll.js';
 import type { ExtractionResult, Sink } from './sinks/types.js';
@@ -75,12 +74,13 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
   };
 }
 
-async function enqueueLinks(
-  context: PlaywrightCrawlingContext,
-  opts: HandlerOpts,
-): Promise<void> {
+async function enqueueLinks(context: PlaywrightCrawlingContext, opts: HandlerOpts): Promise<void> {
   const currentDepth = (context.request.userData?.depth as number | undefined) ?? 0;
-  if (opts.maxCrawlingDepth !== undefined && opts.maxCrawlingDepth !== 0 && currentDepth >= opts.maxCrawlingDepth) {
+  if (
+    opts.maxCrawlingDepth !== undefined &&
+    opts.maxCrawlingDepth !== 0 &&
+    currentDepth >= opts.maxCrawlingDepth
+  ) {
     return;
   }
   const newDepth = currentDepth + 1;
