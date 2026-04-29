@@ -15,7 +15,7 @@ const out = process.argv[2]
   : resolve(repoRoot, 'apps/apify-actor/.actor/input_schema.json');
 
 writeApifyInputSchema(ContextractorInput, out, { title: 'Contextractor' });
-execFileSync('npm', ['exec', '--', 'biome', 'format', '--write', out], {
+execFileSync('pnpm', ['exec', 'biome', 'format', '--write', out], {
   cwd: repoRoot,
   stdio: 'inherit',
 });

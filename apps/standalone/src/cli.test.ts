@@ -1,7 +1,6 @@
 import { FORMAT_EXTENSIONS, urlToFilename } from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
 import { describe, expect, it } from 'vitest';
-import { FORMAT_EXTENSIONS, urlToFilename } from '@contextractor/crawler';
 import { buildCrawlConfig, validateSaveFormats } from './config.js';
 
 describe('config helpers', () => {
