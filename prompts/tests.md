@@ -3,7 +3,7 @@
 
 - create unit tests for files in  `/Users/miroslavsekera/r/contextractor-ts/apps` and `/Users/miroslavsekera/r/contextractor-ts/packages`.
 
-- merge those files in `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/test-later/apify-platform` plus `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/platform/deploy-and-test.md`  into one file and place the file as one command into `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/test/apify-platform.md`. The new command must not generate unit tests tests in a separate package (`/Users/miroslavsekera/r/contextractor-ts/tools/generated-unit-tests`) instead, it must update existing unit tests at `/Users/miroslavsekera/r/contextractor-ts/apps` and `/Users/miroslavsekera/r/contextractor-ts/packages`.
+- merge those files in `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/test-later/apify-platform` plus `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/platform/deploy-and-test.md`  into one file and place the file as one command into `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/test/apify-platform.md`. The new command must not generate unit tests tests in a separate package (`/Users/miroslavsekera/r/contextractor-ts/tools/generated-unit-tests`) instead, it must update existing unit tests at `/Users/miroslavsekera/r/contextractor-ts/apps` and `/Users/miroslavsekera/r/contextractor-ts/packages`. (in other words, at a propper subfolder of `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` create a slash command to call `/Users/miroslavsekera/r/contextractor-ts/tools/platform-test-runner`). DRY, keep using `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/platform/deploy-and-test.md` if appropriate
 
 - convert  (`/Users/miroslavsekera/r/contextractor-ts/tools/generated-unit-tests`) andt merge into unit tests at `/Users/miroslavsekera/r/contextractor-ts/apps` and `/Users/miroslavsekera/r/contextractor-ts/packages`.
 
@@ -13,10 +13,21 @@ move `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/sync` to `/Users
 
 - make everything in `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` to run autonomously. produce repots and prompts to a separate folder like the `/Users/miroslavsekera/r/tools/.claude/commands/autonomous` is doing. make all the commands run by `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/maintenance.md` 
 
+- all slash commands (except `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/maintenance.md` ) msut have subfolder under `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance`
+
 - move `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/validate.md` into propar place at `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` 
 
 - delete the empoty folders left after moving files
 
 - update docuentation accordi gly, update rules accordingly, update `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/meta/setup.md`
+
+- at a propper subfolder of `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` create a slash command to call `/Users/miroslavsekera/r/contextractor-ts/tools/gen-input-schema`
+
+
+- at a propper subfolder of `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` create a slash command to call `/Users/miroslavsekera/r/contextractor-ts/tools/gen-md-regions`
+- at a propper subfolder of `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` create a slash command to call `/Users/miroslavsekera/r/contextractor-ts/tools/opencode-sync`
+
+- at a propper subfolder of `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` create a slash command to call ``
+- at a propper subfolder of `/Users/miroslavsekera/r/contextractor-ts/.claude/commands/autonomous-maintenance/` create a slash command to call ``
 
 - investigate on the internet which skils and agents are required for all ot hose, and install them, reference them in the commands as required
