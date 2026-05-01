@@ -10,7 +10,9 @@ claude_run() {
   local cmd="$1"
   if [[ "${STUB_MODE:-}" == "1" ]]; then
     echo "[STUB] running hello-world for: $cmd"
+    echo "[STUB:claude] --- output start ---"
     claude -p "ok"
+    echo "[STUB:claude] --- output end ---"
     return 0
   fi
   echo ""

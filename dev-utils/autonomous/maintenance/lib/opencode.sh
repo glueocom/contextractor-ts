@@ -10,7 +10,9 @@ opencode_run() {
   local cmd="$1"
   if [[ "${STUB_MODE:-}" == "1" ]]; then
     echo "[STUB] running hello-world for: $cmd"
+    echo "[STUB:opencode] --- output start ---"
     opencode run --model opencode/gpt-5-nano "ok"
+    echo "[STUB:opencode] --- output end ---"
     return 0
   fi
   echo ""
