@@ -15,5 +15,5 @@ claude_run() {
   fi
   echo ""
   echo "[claude] Running $cmd ..."
-  claude -p "$cmd"
+  claude --effort max -p "$cmd"
 }
