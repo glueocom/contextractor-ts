@@ -17,6 +17,7 @@ pnpm opencode:sync
 rm -rf autonomous-task-output
 mkdir -p autonomous-task-output
 
+opencode_run "/autonomous-maintenance-deps-update"
 opencode_run "/autonomous-maintenance-schema-gen-input-schema"
 opencode_run "/autonomous-maintenance-docs-gen-md-regions"
 opencode_run "/autonomous-maintenance-sync-gui"

@@ -14,6 +14,7 @@ source "$SCRIPT_DIR/lib/claude.sh"
 rm -rf autonomous-task-output
 mkdir -p autonomous-task-output
 
+claude_run "/autonomous:maintenance:deps/update"
 claude_run "/autonomous:maintenance:schema/gen-input-schema"
 claude_run "/autonomous:maintenance:docs/gen-md-regions"
 claude_run "/autonomous:maintenance:sync/gui"
