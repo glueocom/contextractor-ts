@@ -1,5 +1,5 @@
 ---
-description: Verify internal consistency of contextractor config across the TS engine, the napi-rs binding, the standalone CLI, and Apify schemas.
+description: Verify internal consistency of contextractor config across the TS engine, the napi-rs binding, the standalone CLI, and Apify schemas
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
 ---
 
@@ -57,15 +57,9 @@ For each inconsistency:
 
 The auto-fix is conservative: regenerate the JSON schema and the markdown regions from canonical sources; never hand-shrink them.
 
-## Step COMMIT: Commit if Changed
+## Step REPORT: Save Report
 
-```bash
-cd /Users/miroslavsekera/r/contextractor-ts
-git diff --stat
-# Only commit if there are changes from this command:
-git add <only the schema, CLI, and napi-rs files modified above>
-git commit -m "Fix internal package consistency"
-git push
-```
-
-Stage only the schema files, the standalone CLI, and the napi-rs binding files modified by Step REPORT. Do not stage `packages/extraction/src/index.ts` — the TS engine is canonical and must change via deliberate edits, not by this command.
+Save `autonomous-task-output/sync-gui-report.md` with:
+- Inconsistencies found per surface
+- Auto-fixes applied
+- Issues requiring human review (save to `autonomous-task-output/sync-gui-prompt.md`)

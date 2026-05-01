@@ -212,15 +212,10 @@ async function readMcp(): Promise<Record<string, McpEntry>> {
 // ---------------------------------------------------------------------------
 
 async function syncOpencodeJson(instructionPaths: string[]): Promise<void> {
-  let existing: Record<string, unknown> = {};
-  if (existsSync(opencodeJson)) {
-    existing = JSON.parse(await readFile(opencodeJson, 'utf8')) as Record<string, unknown>;
-  }
-
   const mcp = await readMcp();
 
-  // Preserve any user edits to model/provider config; always refresh mcp + instructions.
-  const config = { ...DEFAULT_MODEL_CONFIG, ...existing, mcp, instructions: instructionPaths };
+  // .claude/ is the master; always regenerate opencode.json from scratch.
+  const config = { ...DEFAULT_MODEL_CONFIG, mcp, instructions: instructionPaths };
   await writeFile(opencodeJson, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
   console.log('  opencode.json');
 }

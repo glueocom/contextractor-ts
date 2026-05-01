@@ -1,5 +1,5 @@
 ---
-description: Sync READMEs with the current TypeScript engine, standalone CLI, and Apify schema state.
+description: Sync READMEs with the current TypeScript engine, standalone CLI, and Apify schema state
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
 ---
 
@@ -65,17 +65,13 @@ For each README found, sync:
 - Per `.claude/rules/json-config-only.md`, document only JSON config files.
 - The TS engine config table (interface fields with type, default, description) lives in `packages/extraction/README.md`; the matching Apify input-schema field comes from the generated region in `apps/apify-actor/README.md`.
 - The engine/public output-format list — must be `txt | markdown | json | html`. The temporary XML / XML-TEI gap is documented once in `packages/extraction/README.md` and once in `CLAUDE.md`; do not repeat it elsewhere. CLI-only `--save` helpers such as `jsonl` or `all` may still appear where the README is documenting CLI orchestration rather than engine formats.
-- The local-prerequisites note (Rust toolchain via rustup, Apify CLI ≥ 1.4, Node 22+, npm 10+) where applicable.
+- The local-prerequisites note (Rust toolchain via rustup, Apify CLI ≥ 1.4, Node 22+, pnpm 10+) where applicable.
 
 If a README does not yet have a section for the CLI, the engine config, or the "built on" line, add it at the natural insertion point rather than skipping the file.
 
 ## Step VERSION: Update Docs Version
 
-Update the "Docs version" timestamp at the end of the repo-root `README.md`
-**only if** Step SYNC regenerated markdown regions or you edited README prose in
-this command run. If `npm run docs:update` reports `0 file(s) updated` and you
-did not edit any README content, leave the existing timestamp unchanged so a
-clean rerun stays clean.
+Run `/docs:update-docs-version` to update the "Docs version" timestamp at the end of the repo-root `README.md` **only if** Step SYNC regenerated markdown regions or you edited README prose in this command run. If `npm run docs:update` reports `0 file(s) updated` and you did not edit any README content, leave the existing timestamp unchanged so a clean rerun stays clean.
 
 ## Step VERIFY: Verify Consistency
 
@@ -89,15 +85,12 @@ Cross-check across all surfaces:
 - Every README declares "built on `rs-trafilatura` and Crawlee" (or equivalent wording in the same paragraph).
 - No removed flag, field, or format is still documented.
 
-Report any inconsistencies found and fix the docs side. Mismatches between source files (TS engine vs napi-rs vs schema) are out of scope for this command — fix those via `/sync:gui`.
+Report any inconsistencies found and fix the docs side. Mismatches between source files (TS engine vs napi-rs vs schema) are out of scope for this command — fix those via `/autonomous-maintenance:sync/gui`.
 
-## Step COMMIT: Commit
+## Step REPORT: Save Report
 
-```bash
-cd /Users/miroslavsekera/r/contextractor-ts
-git add <each README touched in Step SYNC>
-git commit -m "Sync documentation with current Rust + TS state and Apify schema"
-git push
-```
-
-Stage only README files; do **not** stage Rust source, TS source, or schema files in this command.
+Save `autonomous-task-output/sync-docs-report.md` with:
+- READMEs updated
+- Markdown regions regenerated
+- Inconsistencies found and fixed
+- Any issues requiring human review (save to `autonomous-task-output/sync-docs-prompt.md`)

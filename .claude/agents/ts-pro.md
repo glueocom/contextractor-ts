@@ -41,7 +41,7 @@ TypeScript pnpm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
 - `packages/crawler/` — shared Playwright crawler factory (`@contextractor/crawler`)
 - `packages/schema/` — Zod 4 input schema (`@contextractor/schema`)
 - `tools/platform-test-runner/` — Node test orchestrator
-- `tools/generated-unit-tests/` — vitest tests against `@contextractor/extraction` with HTML fixtures
+- `packages/extraction/test/` — HTML fixture-based vitest tests against `@contextractor/extraction`
 
 Workspace-wide commands: `pnpm build`, `pnpm test`, `pnpm lint` (via Turborepo). Lint and format with `biome check .` (workspace-wide).
 

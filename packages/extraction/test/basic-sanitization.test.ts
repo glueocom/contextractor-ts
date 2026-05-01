@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ContentExtractor } from '@contextractor/extraction';
 import { describe, expect, it } from 'vitest';
+
+import { ContentExtractor } from '../src/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES_DIR = path.join(__dirname, 'fixtures', 'basic-sanitization');

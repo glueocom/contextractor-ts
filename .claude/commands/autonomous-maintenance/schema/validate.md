@@ -1,9 +1,9 @@
 ---
-allowed-tools: Read, Glob, Bash(cargo:*), Bash(apify:*), Bash(npx:*), Bash(npm:*)
+allowed-tools: Read, Glob, Bash(cargo:*), Bash(apify:*), Bash(npx:*), Bash(npm:*), Bash(pnpm:*)
 description: Validate Actor schemas and configuration
 ---
 
-Validate all Actor configuration and run static checks across the workspace.
+Validate all Actor configuration and run static checks across the workspace. Save a report to `autonomous-task-output/`.
 
 ## Validation Steps
 
@@ -40,6 +40,9 @@ Validate all Actor configuration and run static checks across the workspace.
 - `schemaVersion`: 1
 - `properties`
 
-## Report
+## Step REPORT: Save Report
 
-List any validation errors or warnings found, grouped by file with `path:line` references.
+Save `autonomous-task-output/schema-validate-report.md` with:
+- Validation errors or warnings found, grouped by file with `path:line` references
+- Build and test results
+- Any issues requiring human review (save to `autonomous-task-output/schema-validate-prompt.md`)
