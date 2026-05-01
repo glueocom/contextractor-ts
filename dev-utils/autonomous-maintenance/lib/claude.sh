@@ -8,6 +8,10 @@ _AM_CLAUDE_LIB=1
 # Streams all output to stdout so it appears live in the terminal.
 claude_run() {
   local cmd="$1"
+  if [[ "${STUB_MODE:-}" == "1" ]]; then
+    echo "[STUB] would run: $cmd"
+    return 0
+  fi
   echo ""
   echo "[claude] Running $cmd ..."
   claude -p "$cmd"
