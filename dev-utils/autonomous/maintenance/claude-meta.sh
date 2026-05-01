@@ -4,7 +4,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 # shellcheck source=lib/claude.sh
@@ -13,10 +13,10 @@ source "$SCRIPT_DIR/lib/claude.sh"
 rm -rf autonomous-task-output
 mkdir -p autonomous-task-output
 
-claude_run "/autonomous-maintenance:meta/setup"
+claude_run "/autonomous:maintenance:meta/setup"
 
 echo ""
-echo "[autonomous-maintenance:claude-meta] Committing results..."
+echo "[autonomous:maintenance:claude-meta] Committing results..."
 claude_run "/git:commit"
 
-echo "[autonomous-maintenance:claude-meta] Done."
+echo "[autonomous:maintenance:claude-meta] Done."

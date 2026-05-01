@@ -1,13 +1,13 @@
 # Stub Autonomous Maintenance for Dry-Run Testing
 
-Add `STUB_MODE=1` env var support to `dev-utils/autonomous-maintenance/lib/claude.sh` and `lib/opencode.sh`. When set, `claude_run` and `opencode_run` print `[STUB] would run: <cmd>` and return immediately — no LLM processes launched. All other orchestration logic (sequencing, directory cleanup, echo output) runs unchanged.
+Add `STUB_MODE=1` env var support to `dev-utils/autonomous/maintenance/lib/claude.sh` and `lib/opencode.sh`. When set, `claude_run` and `opencode_run` print `[STUB] would run: <cmd>` and return immediately — no LLM processes launched. All other orchestration logic (sequencing, directory cleanup, echo output) runs unchanged.
 
 ## Step READ: Confirm current state
 
 Read before editing:
 
-- `dev-utils/autonomous-maintenance/lib/claude.sh`
-- `dev-utils/autonomous-maintenance/lib/opencode.sh`
+- `dev-utils/autonomous/maintenance/lib/claude.sh`
+- `dev-utils/autonomous/maintenance/lib/opencode.sh`
 
 ## Step PATCH: Add STUB_MODE guard
 
@@ -39,7 +39,7 @@ After patching, check each item — autofix any that fail:
 From repo root:
 
 ```bash
-STUB_MODE=1 bash dev-utils/autonomous-maintenance/run-all.sh 2>&1 | tee /tmp/stub-run-output.txt
+STUB_MODE=1 bash dev-utils/autonomous/maintenance/run-all.sh 2>&1 | tee /tmp/stub-run-output.txt
 echo "Exit: $?"
 ```
 
@@ -54,7 +54,7 @@ Also run an isolated unit test of the gate:
 
 ```bash
 STUB_MODE=1 bash -c '
-  source dev-utils/autonomous-maintenance/lib/claude.sh
+  source dev-utils/autonomous/maintenance/lib/claude.sh
   output=$(claude_run "/test-cmd" 2>&1)
   [[ "$output" == "[STUB] would run: /test-cmd" ]] && echo "PASS" || echo "FAIL: got: $output"
 '

@@ -8,20 +8,20 @@ set -euo pipefail
 
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "[autonomous-maintenance:all] === Meta setup audit (Claude) ==="
+echo "[autonomous:maintenance:all] === Meta setup audit (Claude) ==="
 bash "$SCRIPTS_DIR/claude-meta.sh"
 
 echo ""
-echo "[autonomous-maintenance:all] === Meta setup audit (opencode) ==="
+echo "[autonomous:maintenance:all] === Meta setup audit (opencode) ==="
 bash "$SCRIPTS_DIR/opencode-meta.sh"
 
 echo ""
-echo "[autonomous-maintenance:all] === Claude pass ==="
+echo "[autonomous:maintenance:all] === Claude pass ==="
 bash "$SCRIPTS_DIR/claude.sh"
 
 echo ""
-echo "[autonomous-maintenance:all] === opencode pass ==="
+echo "[autonomous:maintenance:all] === opencode pass ==="
 bash "$SCRIPTS_DIR/opencode.sh"
 
 echo ""
-echo "[autonomous-maintenance:all] All done."
+echo "[autonomous:maintenance:all] All done."

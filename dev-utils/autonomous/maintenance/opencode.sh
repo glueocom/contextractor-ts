@@ -5,13 +5,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
 # shellcheck source=lib/opencode.sh
 source "$SCRIPT_DIR/lib/opencode.sh"
 
-echo "[autonomous-maintenance:opencode] Syncing .claude/ -> .opencode/..."
+echo "[autonomous:maintenance:opencode] Syncing .claude/ -> .opencode/..."
 pnpm opencode:sync
 
 rm -rf autonomous-task-output
@@ -30,7 +30,7 @@ opencode_run "/autonomous-maintenance-test-spelling-autofix"
 opencode_run "/autonomous-maintenance-schema-validate"
 
 echo ""
-echo "[autonomous-maintenance:opencode] Committing results..."
+echo "[autonomous:maintenance:opencode] Committing results..."
 opencode_run "/git-commit"
 
-echo "[autonomous-maintenance:opencode] Done."
+echo "[autonomous:maintenance:opencode] Done."
