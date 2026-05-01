@@ -15,7 +15,7 @@ claude_run() {
   fi
   echo ""
   echo "[claude] Running $cmd ..."
-  claude --effort max -p "$cmd" --output-format stream-json 2>&1 | \
+  claude --effort max -p "$cmd" --output-format stream-json | \
     jq -r --unbuffered '
       if .type == "assistant" then
         .message.content[]? |
