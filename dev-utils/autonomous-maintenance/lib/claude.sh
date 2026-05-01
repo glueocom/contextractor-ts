@@ -9,7 +9,8 @@ _AM_CLAUDE_LIB=1
 claude_run() {
   local cmd="$1"
   if [[ "${STUB_MODE:-}" == "1" ]]; then
-    echo "[STUB] would run: $cmd"
+    echo "[STUB] running hello-world for: $cmd"
+    claude -p "ok"
     return 0
   fi
   echo ""
