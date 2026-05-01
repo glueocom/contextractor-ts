@@ -15,5 +15,18 @@ claude_run() {
   fi
   echo ""
   echo "[claude] Running $cmd ..."
-  claude --effort max -p "$cmd"
+  claude --effort max -p "$cmd" --output-format stream-json 2>&1 | \
+    jq -r --unbuffered '
+      if .type == "assistant" then
+        .message.content[]? |
+        if .type == "text" and (.text | length > 0) then .text
+        elif .type == "tool_use" then
+          "  [\(.name)] \(.input | to_entries | first | "\(.key): \(.value | tostring | .[0:120])")"
+        else empty
+        end
+      elif .type == "result" then
+        "[done:\(.subtype) \(.duration_ms // 0)ms]"
+      else empty
+      end
+    '
 }
