@@ -2,7 +2,7 @@
 
 ## TypeScript
 
-`*.test.ts` next to source, vitest preferred (or `node:test` for zero-dep scripts). Run `npm run test` from the repo root. `tools/generated-unit-tests/` is a vitest package against `@contextractor/extraction` with HTML fixtures under `fixtures/`. Apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise the recursive `npm run test` fails.
+`*.test.ts` next to source, vitest preferred (or `node:test` for zero-dep scripts). Run `npm run test` from the repo root. HTML fixture-based tests for `@contextractor/extraction` live in `packages/extraction/test/` with fixtures under `packages/extraction/test/fixtures/`. Apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise the recursive `npm run test` fails.
 
 ## Rust
 

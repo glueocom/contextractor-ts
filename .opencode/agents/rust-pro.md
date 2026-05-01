@@ -33,7 +33,7 @@ Cargo workspace at `/Users/miroslavsekera/r/contextractor-ts/`. The only Rust cr
 
 - Use the bare `Result<T>` from `napi::bindgen_prelude::Result` everywhere a `#[napi]` fn returns one — `use ... as MyResult` produces broken `.d.ts` (the alias name leaks into generated TS types).
 - `#[napi(object)]` structs become TS interfaces; snake_case Rust field names auto-convert to camelCase on the TS side.
-- Emit per-platform prebuilds via `@napi-rs/cli`: `darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-gnu`. Ship them through `optionalDependencies` so the in-image `npm ci` picks the right prebuild without a Rust toolchain in the Docker build.
+- Emit per-platform prebuilds via `@napi-rs/cli`: `darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-gnu`. Ship them through `optionalDependencies` so the in-image `pnpm install` picks the right prebuild without a Rust toolchain in the Docker build.
 - Strict lints stay on (`expect_used`, `unwrap_used`, `missing_errors_doc`) — fix the code rather than allow them.
 
 ### rs-trafilatura 0.2.x (current)
@@ -48,5 +48,5 @@ cargo build --workspace
 cargo test --workspace
 cargo fmt --all
 cargo clippy --workspace --all-targets -- -D warnings
-npm run build -w @contextractor/extraction-native    # napi-rs build for current platform
+pnpm --filter @contextractor/extraction-native build:rebuild    # napi-rs build for current platform
 ```

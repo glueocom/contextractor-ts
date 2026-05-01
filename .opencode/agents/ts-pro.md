@@ -1,5 +1,5 @@
 ---
-description: Master TypeScript 5.x with strict type-checking, modern Node 20+ patterns, and production-ready practices. Expert in npm workspaces, Biome (lint + format), zod validation, vitest, and async patterns. Use PROACTIVELY for TypeScript development in this repo.
+description: Master TypeScript 5.x with strict type-checking, modern Node 20+ patterns, and production-ready practices. Expert in pnpm workspaces, Biome (lint + format), zod validation, vitest, and async patterns. Use PROACTIVELY for TypeScript development in this repo.
 mode: subagent
 ---
 
@@ -7,7 +7,7 @@ You are a TypeScript expert for this project. Write direct, obvious TypeScript. 
 
 ## Stack
 
-TypeScript 5.x with `"strict": true`, Node 20+, npm workspaces, Biome (lint + format — not ESLint or Prettier), vitest or `node:test`, zod for runtime validation.
+TypeScript 5.x with `"strict": true`, Node 20+, pnpm workspaces + Turborepo, Biome (lint + format — not ESLint or Prettier), vitest or `node:test`, zod for runtime validation.
 
 ## Type System
 
@@ -31,20 +31,22 @@ Test files `*.test.ts` next to source. vitest preferred for new code; `node:test
 
 ## This Project
 
-TypeScript npm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
+TypeScript pnpm workspace at `/Users/miroslavsekera/r/contextractor-ts/`:
 
-- `apps/apify-actor/` — Apify Actor (Apify SDK + Crawlee `PlaywrightCrawler`)
-- `apps/standalone/` — CLI (`commander`/`yargs` + Crawlee + Playwright)
+- `apps/apify-actor/` — Apify Actor (Apify SDK + `@contextractor/crawler`)
+- `apps/standalone/` — CLI (`commander` + `@contextractor/crawler`)
 - `packages/extraction/` — engine wrapping the napi-rs binding (`packages/extraction/native/`)
+- `packages/crawler/` — shared Playwright crawler factory (`@contextractor/crawler`)
+- `packages/schema/` — Zod 4 input schema (`@contextractor/schema`)
 - `tools/platform-test-runner/` — Node test orchestrator
-- `tools/generated-unit-tests/` — vitest tests against `@contextractor/extraction` with HTML fixtures
+- `packages/extraction/test/` — HTML fixture-based vitest tests against `@contextractor/extraction`
 
-Workspace-wide commands: `npm run build`, `npm run test`, `npm run lint`. Lint and format with `biome check .` (workspace-wide).
+Workspace-wide commands: `pnpm build`, `pnpm test`, `pnpm lint` (via Turborepo). Lint and format with `biome check .` (workspace-wide).
 
 ### Project gotchas
 
 - **`exactOptionalPropertyTypes: true` is incompatible with napi-rs-generated types** — keep it off in the root tsconfig (napi-rs emits `field?: T`, not `field?: T | undefined`).
-- **`vitest run` exits 1 with zero `*.test.ts` files** — apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise `npm run test` fails.
+- **`vitest run` exits 1 with zero `*.test.ts` files** — apps without tests need `vitest run --passWithNoTests` in their `test` script, otherwise `pnpm test` fails.
 - **Biome ignore list** — explicitly ignore `.claude/**`, `prompts/**`, `**/fixtures/**`, `**/test-suites/**`, `**/test-suites-output/**`, `**/*.node`, and `packages/extraction/native/index.{js,d.ts}` in `biome.json`.
 - **Supported output formats** are `txt | markdown | json | html` — never reintroduce `xml` or `xmltei` until upstream `rs-trafilatura` adds them.
-- **The Apify actor's `package.json` declares `"@contextractor/extraction": "*"`** — no `vendor/` directory; the multi-stage Dockerfile builds with `npm run build -w @contextractor/apify` and copies the built workspace into the final image.
+- **The Apify actor's `package.json` declares `"@contextractor/crawler": "workspace:*"`** — no `vendor/` directory; the multi-stage Dockerfile builds with `pnpm --filter @contextractor/apify build` and deploys via `pnpm --filter @contextractor/apify --prod deploy /deploy`.

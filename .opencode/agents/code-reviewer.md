@@ -20,8 +20,8 @@ git diff
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 biome check .
-npm run build
-npm run test
+pnpm build
+pnpm test
 ```
 
 ## Cargo Hygiene
@@ -76,7 +76,7 @@ npm run test
 ## Tests
 
 - [ ] `cargo test --workspace` passes (only the napi-rs crate)
-- [ ] `npm run test` passes across the workspace (vitest)
+- [ ] `pnpm test` passes across the workspace (vitest)
 - [ ] Apps without tests have `vitest run --passWithNoTests` in their `test` script
 - [ ] New behavior has at least one test
 
@@ -84,5 +84,5 @@ npm run test
 
 - [ ] `.actor/actor.json` `name` is `contextractor-test` for test deploys (never `contextractor` outside an explicit production push)
 - [ ] `.actor/actor.json` has `dockerContextDir: "../../.."` so the Dockerfile sees the repo root
-- [ ] `package.json` declares `"@contextractor/extraction": "*"` — no `vendor/` directory
-- [ ] Dockerfile builds with `npm run build -w @contextractor/apify` (multi-stage), not a Rust toolchain
+- [ ] `package.json` declares `"@contextractor/crawler": "workspace:*"` — no `vendor/` directory
+- [ ] Dockerfile builds with `pnpm --filter @contextractor/apify build` (multi-stage), not a Rust toolchain

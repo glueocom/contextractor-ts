@@ -1,5 +1,5 @@
 ---
-description: Verify internal consistency of contextractor config across the TS engine, the napi-rs binding, the standalone CLI, and Apify schemas.
+description: Verify internal consistency of contextractor config across the TS engine, the napi-rs binding, the standalone CLI, and Apify schemas
 ---
 
 # Verify Package Consistency
@@ -31,7 +31,7 @@ Read every file below before making any change:
 
 Run each check below. The Zod schema is canonical for input fields; the TS engine is canonical for extraction internals.
 
-- **Zod schema ⇄ generated `INPUT_SCHEMA.json`** — the `@contextractor/schema` snapshot test (`packages/schema/test/to-apify-schema.test.ts`) guards zero diff between `toApifyInputSchema(ContextractorInput)` and `apps/apify-actor/.actor/input_schema.json`. Run it via `npm run test -w @contextractor/schema`. If it fails, regenerate via `npm run start -w @contextractor/gen-input-schema` and commit the result; never hand-edit the JSON.
+- **Zod schema ⇄ generated `INPUT_SCHEMA.json`** — the `@contextractor/schema` snapshot test (`packages/schema/test/to-apify-schema.test.ts`) guards zero diff between `toApifyInputSchema(ContextractorInput)` and `apps/apify-actor/.actor/input_schema.json`. Run it via `pnpm --filter @contextractor/schema test`. If it fails, regenerate via `pnpm --filter @contextractor/gen-input-schema start` and commit the result; never hand-edit the JSON.
 - **Zod schema ⇄ Commander program** — every `ContextractorInput` field is reachable as a flag (kebab-case `--max-pages` ↔ camelCase `maxPagesPerCrawl`) or as a JSON config key (camelCase). The standalone CLI also exposes the documented CLI-only orchestration flags (`--config`, `--output-dir`, `--save`, `--start-url`, `--format`, `--proxy-urls`, `--verbose`, plus `trafilaturaConfig` shorthands like `--precision`, `--recall`, `--fast`, `--no-links`, `--no-comments`, etc.).
 - **`npm run docs:check` passes** — running `npm run docs:update` followed by `git diff --exit-code -- '**/*.md'` must be clean. Drift here means a marker region was hand-edited and the rebuild reverted the change; pull the relevant fact into the canonical source instead.
 - **TS engine ⇄ napi-rs binding** — every `TrafilaturaConfig` field has a matching `#[napi(object)]` field. Names compare in camelCase (napi-rs auto-converts snake_case → camelCase in generated `.d.ts`). Function signatures match (`extract`, `extractMetadata`, `extractAllFormats`).
@@ -45,7 +45,7 @@ Run each check below. The Zod schema is canonical for input fields; the TS engin
 
 For each inconsistency:
 
-- **`input_schema.json` drifted from the Zod schema** → re-run `npm run start -w @contextractor/gen-input-schema` and commit the regenerated file. Never hand-edit `input_schema.json`. If the snapshot test still fails, the fix belongs in `packages/schema/src/input.ts`.
+- **`input_schema.json` drifted from the Zod schema** → re-run `pnpm --filter @contextractor/gen-input-schema start` and commit the regenerated file. Never hand-edit `input_schema.json`. If the snapshot test still fails, the fix belongs in `packages/schema/src/input.ts`.
 - **CLI missing a `ContextractorInput` field** → add a `program.option(...)` in `apps/standalone/src/cliProgram.ts` with sensible kebab-case name; map it through `buildSchemaOverrides` so it reaches `ContextractorInput.parse()`.
 - **Markdown region drift (`npm run docs:check` fails)** → run `npm run docs:update`, inspect the diff (the marker block was hand-edited and the rebuild reverted), and pull the desired fact into the canonical source (`packages/schema/src/input.ts` for input fields, `apps/standalone/src/cliProgram.ts` for CLI flags) before regenerating.
 - **napi-rs binding missing a TS engine field** → list it for the implementer; the Rust struct must follow the TS interface, but adding it requires implementing the underlying call into `rs-trafilatura`.
@@ -56,15 +56,9 @@ For each inconsistency:
 
 The auto-fix is conservative: regenerate the JSON schema and the markdown regions from canonical sources; never hand-shrink them.
 
-## Step COMMIT: Commit if Changed
+## Step REPORT: Save Report
 
-```bash
-cd /Users/miroslavsekera/r/contextractor-ts
-git diff --stat
-# Only commit if there are changes from this command:
-git add <only the schema, CLI, and napi-rs files modified above>
-git commit -m "Fix internal package consistency"
-git push
-```
-
-Stage only the schema files, the standalone CLI, and the napi-rs binding files modified by Step REPORT. Do not stage `packages/extraction/src/index.ts` — the TS engine is canonical and must change via deliberate edits, not by this command.
+Save `autonomous-task-output/sync-gui-report.md` with:
+- Inconsistencies found per surface
+- Auto-fixes applied
+- Issues requiring human review (save to `autonomous-task-output/sync-gui-prompt.md`)

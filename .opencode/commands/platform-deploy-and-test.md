@@ -2,7 +2,7 @@
 description: Push to Apify test actor, wait for build, fix errors, and run a test crawl
 ---
 
-# Push and Get Working
+# Deploy and Test
 
 Automated workflow to push code to the Apify platform, wait for build, fix any build errors until the build succeeds, then run a test crawl to verify the Actor works.
 
@@ -27,21 +27,20 @@ apify info
 
 If not logged in, stop and inform the user to run `apify login` first. Apify CLI must be ≥ 1.4 — older versions reject the modern actor format with "Actor is of an unknown format".
 
-### Step ACTOR_NAME_GUARD: Verify Actor Target Name
+### Step BRANCH_GUARD: Verify Current Branch
 
 ```bash
-jq -r '.name' apps/apify-actor/.actor/actor.json
-apify info
+git branch --show-current
 ```
 
-The `.actor/actor.json` `name` field MUST be:
+Builds are triggered by pushing to the Git-connected branch in Apify Console:
 
-- `contextractor-test` for the default test push (resolves to `glueo/contextractor-test`)
-- `contextractor` only for `--production`
+- `dev` → `glueo/contextractor-test`
+- `main` → `glueo/contextractor` (production)
 
-`apify push` deploys to whatever actor name is in this file under the logged-in org. If the value disagrees with the chosen target, **stop** and abort the push — do not auto-correct without user input. The v1 migration accidentally pushed to production because this guard was missing.
+For the default (test) push, ensure you are on `dev` or a branch that can be pushed to `dev`. For `--production`, you must be on `main` or a branch intended to merge there.
 
-Proceed automatically with the push only after the name matches the target. Do NOT ask for confirmation — only stop if not logged in or if the name guard fails.
+Stop and abort if the branch does not match the target. Do NOT auto-push to the wrong branch.
 
 ## Workflow
 
@@ -49,10 +48,12 @@ Execute this loop until the build succeeds.
 
 ### Step VALIDATE: Validate Locally First
 
+pnpm must be available in `$PATH`. If `which pnpm` fails, run `sudo corepack enable pnpm` once, then retry. Alternatively use `corepack pnpm` as a drop-in replacement.
+
 ```bash
-npm run build
-npm run lint
-npm run test
+pnpm build
+pnpm lint
+pnpm test
 cargo build --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 ```
@@ -61,28 +62,29 @@ If any check fails, fix the errors before proceeding. Skip with `skip-validation
 
 ### Step PUSH: Push to Apify
 
-The 2026 standard pattern is a **Git-connected build** in Apify Console — that path honors `dockerContextDir: "../../.."` in `.actor/actor.json` and gives the Dockerfile access to the workspace root (so `npm run build -w @contextractor/apify` works against the entire repo). If a Git integration is configured for the target actor, prefer pushing to GitHub and triggering the build there.
+Both actors use a **Git-connected build** in Apify Console (`git@github.com:glueocom/contextractor-ts.git`). This path honors `dockerContextDir: "../../.."` in `.actor/actor.json`, giving the Dockerfile access to the workspace root. Push to the appropriate branch to trigger the build:
 
-For CLI fallback (no Git integration on the actor), `apify push` blocks on contexts above the actor dir — use only when the Dockerfile context fits inside `apps/apify-actor/`.
+- `glueo/contextractor-test` watches the **`dev`** branch
+- `glueo/contextractor` (production) watches the **`main`** branch
 
 ```bash
-cd apps/apify-actor
+# Default (test) — push current branch to dev:
+git push origin HEAD:dev
 
-# Default (test):
-apify push glueo/contextractor-test
-
-# If --production argument was provided (deny rule must be temporarily overridden):
-apify push glueo/contextractor
+# If --production argument was provided:
+git push origin HEAD:main
 ```
+
+After pushing, Apify Console picks up the commit and starts a build automatically.
 
 ### Step WAIT_BUILD: Wait for Build
 
 ```bash
-sleep 5
-apify builds ls --limit 3
+sleep 10
+apify builds ls glueo/contextractor-test --limit 3
 ```
 
-Keep polling every 10–15 seconds until the latest build shows `Succeeded` or `Failed`.
+Use `glueo/contextractor` instead if `--production` was specified. Keep polling every 15 seconds until the latest build shows `SUCCEEDED` or `FAILED`.
 
 ### Step CHECK_BUILD: Check Build Result
 
@@ -105,7 +107,6 @@ After a successful build, run the Actor with test input via mcpc (assumes one-ti
 ```bash
 mcpc --json @apify tools-call call-actor \
   actor:="<TARGET_ACTOR>" \
-  step:="call" \
   input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"outputFormat":"markdown"}'
 ```
 
@@ -117,7 +118,7 @@ If **RUN SUCCEEDED**:
 
 - Inspect the dataset:
   ```bash
-  apify runs ls --limit 3
+  apify runs ls glueo/contextractor-test --limit 3
   ```
 - Report success with the run URL and a sample dataset item.
 
@@ -135,7 +136,7 @@ If **RUN FAILED**:
 `$ARGUMENTS` — optional:
 
 - `--production` — push to production actor `glueo/contextractor` instead of test (requires the `apify push glueo/contextractor` deny rule to be overridden)
-- `skip-validation` — skip local `npm` and `cargo` checks
+- `skip-validation` — skip local `pnpm` and `cargo` checks
 
 ## Error Type Reference
 
@@ -145,7 +146,11 @@ If **RUN FAILED**:
 | `Invalid output schema` | `apps/apify-actor/.actor/output_schema.json` |
 | `Invalid dataset schema` | `apps/apify-actor/.actor/dataset_schema.json` |
 | `COPY failed` | `apps/apify-actor/Dockerfile` (check `dockerContextDir` and multi-stage layout) |
-| `Cannot find module '@contextractor/extraction'` | Actor `package.json` should declare `"@contextractor/extraction": "*"` and the Dockerfile must run `npm run build -w @contextractor/apify` (multi-stage npm workspace build) |
+| `pnpm: not found` | Dockerfile missing `corepack enable` before `pnpm install`; add `RUN corepack enable && pnpm install` |
+| `EBADPLATFORM` | Dockerfile copies a non-linux platform package; only `linux-x64-gnu` and `linux-arm64-gnu` should be COPYed |
+| `EACCES: permission denied` | Builder stage running as non-root; add `USER root` before `RUN pnpm install` |
+| `tsc: not found` | Base image sets `NODE_ENV=production`, skipping devDeps; add `ENV NODE_ENV=development` in builder stage |
+| `Cannot find module '@contextractor/extraction'` | Actor `package.json` should declare `"@contextractor/crawler": "workspace:*"` and the Dockerfile must run `pnpm --filter @contextractor/apify --prod deploy /deploy` |
 | `error[E0` | napi-rs crate at `packages/extraction/native/src/` — fix types |
 | `error: linking with` | `apps/apify-actor/Dockerfile` — install missing system libs |
 | `clippy::` warning treated as error | napi-rs crate source — fix the code rather than allow the lint |
@@ -157,7 +162,7 @@ If **RUN FAILED**:
 
 The workflow completes when:
 
-- Local `npm run build`, `npm run lint`, `npm run test` pass
+- Local `pnpm build`, `pnpm lint`, `pnpm test` pass
 - Local `cargo build --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` pass
 - The actor build on `glueo/contextractor-test` (or `glueo/contextractor` for `--production`) is `SUCCEEDED`
 - Test crawl completes successfully

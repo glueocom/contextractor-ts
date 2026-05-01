@@ -2,7 +2,7 @@
 description: Validate Actor schemas and configuration
 ---
 
-Validate all Actor configuration and run static checks across the workspace.
+Validate all Actor configuration and run static checks across the workspace. Save a report to `autonomous-task-output/`.
 
 ## Validation Steps
 
@@ -14,10 +14,10 @@ Validate all Actor configuration and run static checks across the workspace.
 - Verify `actor.json.name` matches the deploy target (`contextractor-test` for test, `contextractor` for production)
 - Verify `actor.json.dockerContextDir` is `"../../.."`
 - Verify `actor.json.description` mentions "built on rs-trafilatura and Crawlee"
-- Verify `apps/apify-actor/package.json` declares `"@contextractor/extraction": "*"` (no `vendor/` directory)
-- Run `npm run build`
-- Run `npm run lint` (Biome workspace-wide)
-- Run `npm run test`
+- Verify `apps/apify-actor/package.json` declares `"@contextractor/crawler": "workspace:*"` (no `vendor/` directory)
+- Run `pnpm build`
+- Run `pnpm lint` (Biome workspace-wide)
+- Run `pnpm test`
 - Run `cargo check --workspace --all-targets`
 - Run `cargo fmt --all -- --check`
 - Run `cargo clippy --workspace --all-targets -- -D warnings`
@@ -39,6 +39,9 @@ Validate all Actor configuration and run static checks across the workspace.
 - `schemaVersion`: 1
 - `properties`
 
-## Report
+## Step REPORT: Save Report
 
-List any validation errors or warnings found, grouped by file with `path:line` references.
+Save `autonomous-task-output/schema-validate-report.md` with:
+- Validation errors or warnings found, grouped by file with `path:line` references
+- Build and test results
+- Any issues requiring human review (save to `autonomous-task-output/schema-validate-prompt.md`)

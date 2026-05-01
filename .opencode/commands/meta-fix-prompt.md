@@ -13,7 +13,8 @@ Deep-research a prompt file, find outdated or wrong approaches, fix them.
 ## Principles
 
 - **Preserve original intent** — fix the prompt, don't rewrite its purpose
-- **Preserve original structure** — no new headings, no rephrasing for style. Keep the author's wording wherever it is correct. Reorder items only when the original order is logically broken (e.g. a step references state created by a later step)
+- **Preserve original structure** — no new headings, no rephrasing for style. Keep the author's wording wherever it is correct. 
+- Reorder items, parts of the text when the original order is logically broken (e.g. a step references state created by a later step)
 - **Minimum-touch fixes only** — grammar, typos, factual errors, broken URLs/paths/versions, mistakes uncovered in research. Nothing else
 - **Keep it a prompt** — never convert to a slash command, redirect, or stub
 - **Super concise** — no filler, no fluff
