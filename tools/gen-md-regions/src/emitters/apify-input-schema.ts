@@ -24,7 +24,7 @@ function formatType(prop: Record<string, unknown>): string {
   const t = typeof prop.type === 'string' ? prop.type : 'any';
   const editor = typeof prop.editor === 'string' ? prop.editor : undefined;
   if (editor === 'select' && Array.isArray(prop.enum)) {
-    const values = (prop.enum as unknown[]).map((v) => `\`${String(v)}\``).join(' \\| ');
+    const values = prop.enum.map((v) => `\`${String(v)}\``).join(' \\| ');
     return `enum (${values})`;
   }
   if (t === 'integer') return 'integer';
