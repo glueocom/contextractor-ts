@@ -1,6 +1,7 @@
 ---
 description: Audit, cleanup, and update the .claude/ setup — agents, skills, commands, rules, MCP servers, settings. No args = full audit. With path = fix specific file/folder.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
+model: opus
 argument-hint: [path to .md file or folder in .claude/]
 ---
 

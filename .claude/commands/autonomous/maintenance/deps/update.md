@@ -1,6 +1,7 @@
 ---
 description: Update all packages to latest — pnpm workspaces and Rust (cargo update)
 allowed-tools: Bash(pnpm:*), Bash(cargo:*)
+model: haiku
 ---
 
 Update all dependencies to their latest compatible versions.
