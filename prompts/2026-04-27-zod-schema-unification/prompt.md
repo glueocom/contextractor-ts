@@ -65,7 +65,7 @@ Add the package to `pnpm-workspace.yaml` if the existing glob `packages/*` does 
 
 Mirror every field currently in `apps/contextractor-apify/.actor/input_schema.json`. Field names, defaults, enums, descriptions, and titles must match exactly — this is a translation, not a redesign. Use `.describe()` for the human description and `.meta({...})` only for Apify-specific UI hints. Use `apifyMeta({...})` (defined in `apify-meta.ts`) instead of raw `.meta()` so the keys are type-checked.
 
-Required behaviour:
+Required behavior:
 
 - `startUrls` is required and non-empty (`z.array(...).min(1)`); description and `editor: 'requestListSources'` and `prefill` come from the existing JSON
 - All `editor: 'select'` enums use `SCREAMING_SNAKE_CASE` values (`CHROMIUM`, `FIREFOX`, `LOAD`, `DOMCONTENTLOADED`, `NETWORKIDLE`, `RECOMMENDED`, `PER_REQUEST`, `UNTIL_FAILURE`) — match the existing `input_schema.json`
@@ -312,7 +312,7 @@ Reviewed 2026-04-27. Verified Zod 4 API claims against `https://zod.dev/json-sch
 - `tools/gen-input-schema/src/main.ts`: replaced the hard-coded `import.meta.dirname`-relative path (which lands one level off when invoked via `tsx src/main.ts` vs `node dist/main.js`) with a `fileURLToPath(import.meta.url)` walk-up that resolves the repo root from either `src/` or `dist/` (both are exactly three levels deep from the repo root). Optional `process.argv[2]` override for ad-hoc test fixtures. Dropped the top-level `description` argument so the snapshot matches the existing file.
 - Snapshot expectations: relaxed "byte-for-byte equal to existing file" to "semantically equivalent + first-run reformat (single-line short arrays/objects → multi-line, canonical key order) committed as the new baseline". `JSON.stringify(_, null, 2)` cannot round-trip the existing single-line `prefill` arrays without reflow.
 - Standalone CLI mapping: documented the SCREAMING_SNAKE_CASE direction flip (`launcher`, `waitUntil`, `proxyRotation` — the existing `cli.ts` lowercases these; the new mapping must `.toUpperCase()` going into `parse()`). Enumerated the CLI-only flags that bypass `ContextractorInput` and feed `CrawlConfig` directly post-parse. Flagged that the standalone `buildCrawlConfig` is not identical to the Apify one — it must additionally project orchestration flags (`urls`, `outputDir`, `save`) onto `CrawlConfig`. Flagged the breaking change to `loadConfigFile` (legacy snake_case + nested `proxy.urls` shapes no longer accepted).
-- Tests: added coverage for the `required` workaround, generator determinism, and trailing-newline behaviour.
+- Tests: added coverage for the `required` workaround, generator determinism, and trailing-newline behavior.
 
 Stack is settled at Commander 12 + Zod 4 — both are first-class chosen libraries, not a transitional state. Out-of-scope items left untouched: `CrawlConfig` Phase 2 deduplication, MCP wiring, `zod-to-apify-input-schema` npm publish. Reviewer confirmed `@modelcontextprotocol/sdk` already accepts Zod schemas via Standard Schema (issue `modelcontextprotocol/typescript-sdk#164`), so the Phase-3 follow-up remains a small wiring exercise — current edits do not make it harder.
 

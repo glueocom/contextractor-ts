@@ -1,7 +1,11 @@
-import type { ContextractorCrawlerOptions, ExtractionResult, Sink } from '@contextractor/crawler';
+import type {
+  ContextractorCrawlerOptions,
+  ExtractionResult,
+  ProxyConfiguration,
+  Sink,
+} from '@contextractor/crawler';
 import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
-import type { ProxyConfiguration } from 'crawlee';
 
 export function buildCrawlerOpts(
   input: ContextractorInputType,
