@@ -11,7 +11,7 @@ Run the full autonomous/maintenance pipeline (`dev-utils/autonomous/run-all.sh`)
 ## Step PREPARE: Set up output directory
 
 ```bash
-mkdir -p autonomous-task-output/claude-run-all/reports autonomous-task-output/claude-run-all/prompts
+mkdir -p autonomous-task-output/claude-maintenance-all-shell/reports autonomous-task-output/claude-maintenance-all-shell/prompts
 ```
 
 ## Step RUN: Execute the full pipeline
@@ -46,14 +46,14 @@ Read the failing file, apply the minimal fix using Edit. Return to Step RUN. Fix
 
 ## Step REPORT: Save report and fix prompt
 
-Save `autonomous-task-output/claude-run-all/reports/run-all-report.md` with:
+Save `autonomous-task-output/claude-maintenance-all-shell/reports/run-all-report.md` with:
 - Date/time of run
 - Total iterations needed
 - Each sub-script result (claude-meta, opencode-meta, claude, opencode): pass / fail / skipped
 - All fixes applied (file path, what changed, why)
 - Final exit status
 
-If any issues could not be auto-fixed, also save `autonomous-task-output/claude-run-all/prompts/run-all-fixup-prompt.md` with:
+If any issues could not be auto-fixed, also save `autonomous-task-output/claude-maintenance-all-shell/prompts/run-all-fixup-prompt.md` with:
 - Summary of each unresolved failure
 - Relevant file paths and error excerpts
 - Suggested manual steps to resolve them
