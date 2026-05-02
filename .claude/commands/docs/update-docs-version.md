@@ -1,6 +1,7 @@
 ---
 description: Update the docs version timestamp in README.md
 allowed-tools: Bash(date:*), Read, Edit
+model: haiku
 ---
 
 Update the docs version timestamp in the repo-root Contextractor `README.md`

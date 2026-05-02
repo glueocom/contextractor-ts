@@ -1,6 +1,7 @@
 ---
 allowed-tools: Bash(apify:*), Bash(cargo:*)
 description: Run Actor locally for testing
+model: haiku
 ---
 
 Run the Actor locally with optional input.

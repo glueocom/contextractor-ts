@@ -1,6 +1,7 @@
 ---
 name: rust-scaffold
 description: Scaffold production-ready Rust projects with modern tooling. Creates project structure with Cargo workspace, Edition 2024, clippy, rustfmt, and Apify Actor patterns. Use for axum microservices, CLI tools, libraries, data pipelines, and Rust-based Apify Actors.
+model: sonnet
 ---
 
 # Rust Project Scaffold

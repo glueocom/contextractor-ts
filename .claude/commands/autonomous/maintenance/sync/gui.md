@@ -1,6 +1,7 @@
 ---
 description: Verify internal consistency of contextractor config across the TS engine, the napi-rs binding, the standalone CLI, and Apify schemas
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
+model: sonnet
 ---
 
 # Verify Package Consistency

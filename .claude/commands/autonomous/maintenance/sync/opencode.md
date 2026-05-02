@@ -1,6 +1,7 @@
 ---
 description: Sync the .claude/ config to .opencode/ — agents, commands, rules, MCP servers
 allowed-tools: Bash(pnpm:*), Read
+model: haiku
 ---
 
 Sync the Claude Code config (`.claude/`) to opencode (`.opencode/`) so opencode reflects the same agents, commands, rules, and MCP servers. The `.claude/` config is the master; `.opencode/` is a mirror.

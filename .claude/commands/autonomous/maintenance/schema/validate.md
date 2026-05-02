@@ -1,6 +1,7 @@
 ---
 allowed-tools: Read, Glob, Bash(cargo:*), Bash(apify:*), Bash(npx:*), Bash(npm:*), Bash(pnpm:*)
 description: Validate Actor schemas and configuration
+model: haiku
 ---
 
 Validate all Actor configuration and run static checks across the workspace. Save a report to `autonomous-task-output/{agent}/`.

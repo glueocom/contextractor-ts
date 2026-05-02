@@ -1,6 +1,7 @@
 ---
 description: Run the full autonomous/maintenance pipeline in STUB_MODE and autofix any failures, iterating until it passes
 allowed-tools: Bash(bash:*), Read, Edit
+model: sonnet
 ---
 
 Run the autonomous/maintenance pipeline in STUB_MODE. If it fails, diagnose and fix the root cause, then re-run. Repeat until all steps pass or 5 iterations are exhausted.

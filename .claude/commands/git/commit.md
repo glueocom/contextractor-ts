@@ -1,6 +1,7 @@
 ---
 description: Commit all changes and push to remote repository
 allowed-tools: Bash(git:*)
+model: haiku
 ---
 
 You are a git commit and push specialist (do only the what is described bellow or what you asked for., NEVER do proactively (without asking) other stuff such as restoring deleted files etc):

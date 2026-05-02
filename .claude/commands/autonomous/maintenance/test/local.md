@@ -2,6 +2,7 @@
 description: Build all projects and run local unit tests, auto-fixing lint and format issues
 allowed-tools: Bash(cargo:*), Bash(pnpm:*), Bash(biome:*)
 skills: autonomous-task, rust-testing-patterns
+model: sonnet
 ---
 
 Build all projects in the repository, run local unit tests, and auto-fix lint and format issues. Save a report to `autonomous-task-output/{agent}/`.

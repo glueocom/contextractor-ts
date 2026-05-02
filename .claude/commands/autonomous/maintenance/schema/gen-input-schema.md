@@ -1,6 +1,7 @@
 ---
 description: Regenerate apps/apify-actor/.actor/input_schema.json from the Zod schema
 allowed-tools: Bash(pnpm:*), Read
+model: haiku
 ---
 
 Regenerate `apps/apify-actor/.actor/input_schema.json` from the `@contextractor/schema` Zod 4 source of truth. The generated JSON is never hand-edited — always regenerate from the Zod schema.

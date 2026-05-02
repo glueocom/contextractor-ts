@@ -1,6 +1,7 @@
 ---
 description: Push to Apify test actor, wait for build, fix errors, and run a test crawl
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
+model: sonnet
 ---
 
 # Deploy and Test

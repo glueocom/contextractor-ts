@@ -2,6 +2,7 @@
 description: Create a git worktree for parallel work on a separate branch
 argument-hint: <description>
 allowed-tools: Bash(git:*)
+model: haiku
 ---
 
 You are a git worktree specialist. Create a new worktree for the user.

@@ -1,6 +1,7 @@
 ---
 description: Regenerate @generated markdown regions in all READMEs from the Zod schema and CLI
 allowed-tools: Bash(pnpm:*), Read
+model: haiku
 ---
 
 Regenerate all `<!-- @generated:start … -->` / `<!-- @generated:end -->` regions in every markdown file in the repo. These regions contain CLI flags, Apify INPUT_SCHEMA fields, enum values, and the `ContextractorInputType` interface — all derived from `packages/schema/src/input.ts` and `apps/standalone/src/cliProgram.ts`.

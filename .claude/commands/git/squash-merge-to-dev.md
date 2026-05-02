@@ -1,6 +1,7 @@
 ---
 description: Squash merge current branch into dev and push
 allowed-tools: Bash(git:*)
+model: haiku
 ---
 
 You are a git merge specialist. Perform the following workflow exactly. Stop immediately on any error.

@@ -32,13 +32,26 @@ Shared knowledge for all prompt engineering agents in this repo.
 - **description**: Clear one-line purpose
 - **argument-hint**: `<required> [optional]` (when the command takes args)
 - **allowed-tools**: Only necessary tools (e.g. `Bash(git:*)`, `Bash(cargo:*)`, `Read`)
-- **model**: Usually `opus` or `haiku`
+- **model**: See Model Assignment below
 
 ### Rules
 
 - No frontmatter
 - Plain markdown with clear headers
 - Keep under ~80 lines
+
+## Model Assignment
+
+Use aliases (`haiku`, `sonnet`) — not full model IDs. Omit `model:` entirely for opus-tier tasks (unspecified defaults to the best available model).
+
+- **haiku** — mechanical execution: run a fixed command, apply git ops, format text, validate JSON, update a timestamp, regenerate a file from a script
+- **sonnet** — reasoning tasks: interpret errors and fix code, audit files for consistency, sync docs across surfaces, scaffold projects, write prompts from existing examples, orchestrate sub-tasks
+- **unspecified (opus)** — complex creative or analytical work: deep code review (security + correctness across two languages), prompt design from raw ideas, novel code generation from open-ended requirements
+
+**Agents in this repo:**
+- haiku: `prompt-formatter`, `test-runner`
+- sonnet: `rust-pro`, `ts-pro`, `web-research-specialist`, `prompt-modifier`
+- unspecified: `code-reviewer`, `prompt-writer`
 
 ## Activation Keywords
 

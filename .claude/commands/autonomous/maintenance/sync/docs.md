@@ -1,6 +1,7 @@
 ---
 description: Sync READMEs with the current TypeScript engine, standalone CLI, and Apify schema state
 allowed-tools: Bash(*), Read(*), Edit(*), Write(*), Glob(*), Grep(*)
+model: sonnet
 ---
 
 # Sync Contextractor Repo Documentation

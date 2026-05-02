@@ -1,6 +1,7 @@
 ---
 description: Synchronized version bump across Rust + TypeScript packages, then tag and push (no publishing — Apify deploy is separate).
 allowed-tools: Bash(git:*), Bash(cargo:*), Bash(find:*), Bash(jq:*), Bash(grep:*), Bash(rg:*), Bash(awk:*), Bash(sed:*), Read, Edit, Write, Glob, Grep
+model: sonnet
 ---
 
 Cut a release of contextractor by syncing the version across every TypeScript `package.json` and the napi-rs `Cargo.toml`, then tagging and pushing. **No publishing.** This Actor ships only to Apify (`glueo/contextractor` prod, `glueo/contextractor-test` test) — deployment is a separate step via `/platform:push-and-get-working`.
