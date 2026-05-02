@@ -1,5 +1,6 @@
 import { buildRequests, createContextractorCrawler } from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
+import type { ProxyConfigurationOptions } from 'apify';
 import { Actor, log } from 'apify';
 import { buildCrawlerOpts } from './config.js';
 import { createApifySink } from './sinks.js';
@@ -31,13 +32,19 @@ export async function runActor(): Promise<void> {
     ? await Actor.openKeyValueStore(input.keyValueStoreName)
     : await Actor.openKeyValueStore();
   const dataset = await Actor.openDataset(input.datasetName);
+  const requestQueue = input.requestQueueName
+    ? await Actor.openRequestQueue(input.requestQueueName)
+    : undefined;
   const proxyConfig = input.proxyConfiguration
-    ? // biome-ignore lint/suspicious/noExplicitAny: Apify Actor proxy input is loosely typed.
-      await Actor.createProxyConfiguration(input.proxyConfiguration as any)
+    ? await Actor.createProxyConfiguration(
+        input.proxyConfiguration as ProxyConfigurationOptions,
+      )
     : undefined;
 
   const sink = createApifySink({ kvs, dataset, saveHtml: input.saveRawHtmlToKeyValueStore });
-  const crawler = createContextractorCrawler(buildCrawlerOpts(input, sink, proxyConfig));
+  const crawler = createContextractorCrawler(
+    buildCrawlerOpts(input, sink, proxyConfig, requestQueue),
+  );
   await crawler.run(buildRequests(startUrls, input.keepUrlFragments));
   await Actor.exit();
 }

@@ -2,15 +2,22 @@ import type {
   ContextractorCrawlerOptions,
   ExtractionResult,
   ProxyConfiguration,
+  RequestProvider,
   Sink,
 } from '@contextractor/crawler';
 import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
+const LAUNCHER_MAP = {
+  CHROMIUM: 'chromium',
+  FIREFOX: 'firefox',
+} as const;
+
 export function buildCrawlerOpts(
   input: ContextractorInputType,
   sink: Sink<ExtractionResult>,
   proxyConfiguration?: ProxyConfiguration,
+  requestQueue?: RequestProvider,
 ): ContextractorCrawlerOptions {
   const formats: OutputFormat[] = [];
   if (input.saveExtractedTextToKeyValueStore) formats.push('txt');
@@ -29,7 +36,7 @@ export function buildCrawlerOpts(
         ? { maxScrollHeight: input.maxScrollHeightPixels }
         : undefined,
     headless: input.headless,
-    launcher: input.launcher.toLowerCase() as 'chromium' | 'firefox',
+    launcher: LAUNCHER_MAP[input.launcher],
     ignoreSslErrors: input.ignoreSslErrors,
     bypassCSP: input.ignoreCorsAndCsp,
     initialCookies: input.initialCookies,
@@ -46,6 +53,7 @@ export function buildCrawlerOpts(
     excludes: input.excludes.map((g) => g.glob).filter((g): g is string => Boolean(g)),
     keepUrlFragments: input.keepUrlFragments,
     proxyConfiguration,
+    requestQueue,
     browserLog: input.browserLog,
     respectRobotsTxt: input.respectRobotsTxtFile,
   };

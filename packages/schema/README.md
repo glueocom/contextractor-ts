@@ -13,10 +13,15 @@ Contextractor is built on
 (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
 Playwright); this package defines the shared input contract for both surfaces.
 
-## Install
+## Local prerequisites
+
+- **Node 22+**, **pnpm 10+**.
+
+## Local development
 
 ```bash
-npm install
+pnpm install
+pnpm --filter @contextractor/schema build
 ```
 
 ## Exports

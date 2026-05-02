@@ -1,5 +1,5 @@
 import type { OutputFormat, TrafilaturaConfig } from '@contextractor/extraction';
-import type { ProxyConfiguration, SessionPoolOptions } from 'crawlee';
+import type { ProxyConfiguration, RequestProvider, SessionPoolOptions } from 'crawlee';
 import { PlaywrightCrawler, Request } from 'crawlee';
 import { installCookieDefences, rejectViaAutoconsent } from './browser/cookies.js';
 import { buildBrowserLaunchOptions } from './browser/launchOptions.js';
@@ -33,6 +33,7 @@ export interface ContextractorCrawlerOptions {
   excludes?: string[];
   keepUrlFragments?: boolean;
   proxyConfiguration?: ProxyConfiguration;
+  requestQueue?: RequestProvider;
   browserLog?: boolean;
   respectRobotsTxt?: boolean;
 }
@@ -97,6 +98,7 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
       : {}),
     ...(opts.respectRobotsTxt !== undefined ? { respectRobotsTxtFile: opts.respectRobotsTxt } : {}),
     proxyConfiguration: opts.proxyConfiguration,
+    requestQueue: opts.requestQueue,
     ...(cookieStrategy === 'ghostery'
       ? {
           preNavigationHooks: [async ({ page }) => installCookieDefences(page)],

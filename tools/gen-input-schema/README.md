@@ -2,8 +2,8 @@
 
 Build-time generator that emits
 `apps/apify-actor/.actor/input_schema.json` from the Zod 4 schema in
-`@contextractor/schema`. The Apify build pipeline runs it via `npm run start -w
-@contextractor/gen-input-schema` before `tsc`; the snapshot test in
+`@contextractor/schema`. The Apify build pipeline runs it via
+`pnpm --filter @contextractor/gen-input-schema start` before `tsc`; the snapshot test in
 `@contextractor/schema` guards against drift between the Zod schema and the
 emitted JSON.
 
@@ -15,8 +15,10 @@ shared input contract.
 
 ## Manual run
 
+- **Node 22+**, **pnpm 10+**.
+
 ```bash
-npm run start -w @contextractor/gen-input-schema
+pnpm --filter @contextractor/gen-input-schema start
 # optional: write to a custom path instead of the canonical one
-npm run start -w @contextractor/gen-input-schema -- path/to/input_schema.json
+pnpm --filter @contextractor/gen-input-schema start -- path/to/input_schema.json
 ```

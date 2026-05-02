@@ -88,6 +88,7 @@ interface ContextractorInputType {
 pnpm build                                              # Build all TS packages
 pnpm test                                               # Run all vitest suites
 pnpm lint                                               # Biome lint
+pnpm docs:update                                        # Regenerate generated README regions
 pnpm --filter @contextractor/extraction-native build:rebuild # Build the napi-rs .node
 cargo build --workspace                                 # Build the napi-rs Rust crate
 cargo test --workspace                                  # Cargo unit tests
@@ -117,4 +118,4 @@ tools/
 
 ## Docs version
 
-2026-05-02T18:47:43Z
+2026-05-02T19:42:16Z
