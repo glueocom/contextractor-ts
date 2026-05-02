@@ -10,37 +10,6 @@ const claudeDir = join(repoRoot, '.claude');
 const opencodeDir = join(repoRoot, '.opencode');
 const claudeMd = join(repoRoot, 'CLAUDE.md');
 const agentsMd = join(repoRoot, 'AGENTS.md');
-const opencodeJson = join(repoRoot, 'opencode.json');
-const mcpJson = join(repoRoot, '.mcp.json');
-
-// Default config written to opencode.json on first run.
-// On subsequent runs existing fields are preserved; only mcp + instructions are updated.
-const DEFAULT_MODEL_CONFIG = {
-  $schema: 'https://opencode.ai/config.json',
-  model: 'azure/gpt-5.4',
-  small_model: 'azure/gpt-5.4-mini',
-  provider: {
-    azure: {
-      options: {
-        apiKey: '{env:AZURE_OPENAI_KEY}',
-        baseURL: 'https://glueo-se.openai.azure.com/openai',
-        resourceName: 'glueo-se',
-        apiVersion: 'preview',
-      },
-      models: {
-        'gpt-5.4': {
-          name: 'GPT-5.4',
-          limit: { context: 272000, output: 32000 },
-          reasoningEffort: 'high',
-        },
-        'gpt-5.4-mini': {
-          name: 'GPT-5.4 mini',
-          limit: { context: 272000, output: 32000 },
-        },
-      },
-    },
-  },
-};
 
 // ---------------------------------------------------------------------------
 // Frontmatter helpers
@@ -152,23 +121,20 @@ async function syncCommands(): Promise<void> {
   }
 }
 
-async function syncRules(): Promise<string[]> {
+async function syncRules(): Promise<void> {
   const srcDir = join(claudeDir, 'rules');
-  if (!existsSync(srcDir)) return [];
+  if (!existsSync(srcDir)) return;
   const destDir = join(opencodeDir, 'rules');
   await mkdir(destDir, { recursive: true });
 
-  const instructionPaths: string[] = [];
   for await (const [srcPath, rel] of walk(srcDir)) {
     if (!srcPath.endsWith('.md')) continue;
     const content = await readFile(srcPath, 'utf8');
     const destPath = join(destDir, rel);
     await mkdir(dirname(destPath), { recursive: true });
     await writeFile(destPath, content, 'utf8');
-    instructionPaths.push(`.opencode/rules/${rel}`);
     console.log(`  rule    ${rel}`);
   }
-  return instructionPaths;
 }
 
 async function syncAgentsMd(): Promise<void> {
@@ -176,48 +142,6 @@ async function syncAgentsMd(): Promise<void> {
   const content = await readFile(claudeMd, 'utf8');
   await writeFile(agentsMd, content, 'utf8');
   console.log('  AGENTS.md');
-}
-
-// ---------------------------------------------------------------------------
-// MCP conversion: Claude .mcp.json → opencode mcp block
-// ---------------------------------------------------------------------------
-
-interface McpEntry {
-  type: string;
-  url?: string;
-  command?: string[];
-  enabled?: boolean;
-  timeout?: number;
-  environment?: Record<string, string>;
-  headers?: Record<string, string>;
-  [key: string]: unknown;
-}
-
-async function readMcp(): Promise<Record<string, McpEntry>> {
-  if (!existsSync(mcpJson)) return {};
-  const raw = await readFile(mcpJson, 'utf8');
-  const parsed = JSON.parse(raw) as { mcpServers?: Record<string, McpEntry> };
-  if (!parsed.mcpServers) return {};
-
-  const result: Record<string, McpEntry> = {};
-  for (const [name, server] of Object.entries(parsed.mcpServers)) {
-    // Claude uses type "http" for remote HTTP servers; opencode uses "remote"
-    result[name] = { ...server, type: server.type === 'http' ? 'remote' : server.type };
-  }
-  return result;
-}
-
-// ---------------------------------------------------------------------------
-// opencode.json generation
-// ---------------------------------------------------------------------------
-
-async function syncOpencodeJson(instructionPaths: string[]): Promise<void> {
-  const mcp = await readMcp();
-
-  // .claude/ is the master; always regenerate opencode.json from scratch.
-  const config = { ...DEFAULT_MODEL_CONFIG, mcp, instructions: instructionPaths };
-  await writeFile(opencodeJson, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
-  console.log('  opencode.json');
 }
 
 // ---------------------------------------------------------------------------
@@ -233,11 +157,10 @@ async function main(): Promise<void> {
 
   await syncAgents();
   await syncCommands();
-  const instructionPaths = await syncRules();
+  await syncRules();
 
   console.log('');
   await syncAgentsMd();
-  await syncOpencodeJson(instructionPaths);
 
   console.log('\nDone.');
 }
