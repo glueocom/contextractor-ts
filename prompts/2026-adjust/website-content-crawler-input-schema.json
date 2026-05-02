@@ -382,7 +382,7 @@
       "minimum": 0,
       "default": 9999999
     },
-    "texcontextractortor": {
+    "textExtractor": {
       "title": "Text extractor (deprecated)",
       "type": "string",
       "description": "Removed in favor of the `htmlTransformer` option. Will be removed soon.",

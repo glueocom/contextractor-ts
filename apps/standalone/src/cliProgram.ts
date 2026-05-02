@@ -172,20 +172,56 @@ function toInt(value: string): number {
   return parsed;
 }
 
+function parseLauncher(value: string): ContextractorInputType['launcher'] {
+  switch (value.trim().toLowerCase()) {
+    case 'chromium':
+      return 'CHROMIUM';
+    case 'firefox':
+      return 'FIREFOX';
+    default:
+      throw new Error(`Unsupported --launcher value: '${value}'. Use chromium or firefox.`);
+  }
+}
+
+function parseWaitUntil(value: string): ContextractorInputType['waitUntil'] {
+  switch (value.trim().toLowerCase()) {
+    case 'networkidle':
+      return 'NETWORKIDLE';
+    case 'load':
+      return 'LOAD';
+    case 'domcontentloaded':
+      return 'DOMCONTENTLOADED';
+    default:
+      throw new Error(
+        `Unsupported --wait-until value: '${value}'. Use networkidle, load, or domcontentloaded.`,
+      );
+  }
+}
+
+function parseProxyRotation(value: string): ContextractorInputType['proxyRotation'] {
+  switch (value.trim().toLowerCase().replace(/-/g, '_')) {
+    case 'recommended':
+      return 'RECOMMENDED';
+    case 'per_request':
+      return 'PER_REQUEST';
+    case 'until_failure':
+      return 'UNTIL_FAILURE';
+    default:
+      throw new Error(
+        `Unsupported --proxy-rotation value: '${value}'. Use recommended, per_request, or until_failure.`,
+      );
+  }
+}
+
 function buildSchemaOverrides(opts: CliOptions): Partial<ContextractorInputType> {
   const out: Partial<ContextractorInputType> = {};
 
   if (opts.maxPages !== undefined) out.maxPagesPerCrawl = opts.maxPages;
   if (opts.crawlDepth !== undefined) out.maxCrawlingDepth = opts.crawlDepth;
   if (opts.headless !== undefined) out.headless = opts.headless;
-  if (opts.launcher)
-    out.launcher = opts.launcher.toUpperCase() as ContextractorInputType['launcher'];
-  if (opts.waitUntil)
-    out.waitUntil = opts.waitUntil.toUpperCase() as ContextractorInputType['waitUntil'];
-  if (opts.proxyRotation)
-    out.proxyRotation = opts.proxyRotation
-      .toUpperCase()
-      .replace(/-/g, '_') as ContextractorInputType['proxyRotation'];
+  if (opts.launcher) out.launcher = parseLauncher(opts.launcher);
+  if (opts.waitUntil) out.waitUntil = parseWaitUntil(opts.waitUntil);
+  if (opts.proxyRotation) out.proxyRotation = parseProxyRotation(opts.proxyRotation);
   if (opts.pageLoadTimeout !== undefined) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
   if (opts.ignoreCors !== undefined) out.ignoreCorsAndCsp = opts.ignoreCors;
   if (opts.closeCookieModals !== undefined) out.closeCookieModals = opts.closeCookieModals;

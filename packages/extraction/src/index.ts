@@ -167,7 +167,7 @@ export class ContentExtractor {
     opts: { url?: string; formats?: OutputFormat[] } = {},
   ): Record<OutputFormat, ExtractionResult> {
     const formats = opts.formats ?? DEFAULT_FORMATS;
-    const out: Partial<Record<OutputFormat, ExtractionResult>> = {};
+    const out = createEmptyResultMap();
 
     try {
       const native = nativeExtractAllFormats(html, this.buildNativeOptions(opts.url));
@@ -175,17 +175,11 @@ export class ContentExtractor {
         const value = native[fmt];
         if (value) {
           out[fmt] = toResult(value);
-        } else {
-          out[fmt] = { content: '', format: fmt };
         }
       }
-    } catch {
-      for (const fmt of formats) {
-        out[fmt] = { content: '', format: fmt };
-      }
-    }
+    } catch {}
 
-    return out as Record<OutputFormat, ExtractionResult>;
+    return out;
   }
 
   private buildNativeOptions(url: string | undefined, format?: OutputFormat): NativeExtractOptions {
@@ -261,6 +255,15 @@ function toResult(value: NativeExtractionResult): ExtractionResult {
   return {
     content: value.content,
     format: isOutputFormat(value.format) ? value.format : 'txt',
+  };
+}
+
+function createEmptyResultMap(): Record<OutputFormat, ExtractionResult> {
+  return {
+    txt: { content: '', format: 'txt' },
+    markdown: { content: '', format: 'markdown' },
+    json: { content: '', format: 'json' },
+    html: { content: '', format: 'html' },
   };
 }
 
