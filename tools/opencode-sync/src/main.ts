@@ -88,6 +88,16 @@ async function* walk(dir: string, base: string = dir): AsyncIterable<[string, st
 }
 
 // ---------------------------------------------------------------------------
+// Exclusions — commands that must not be copied to .opencode/
+// Paths are relative to .claude/commands/ and use forward slashes.
+// ---------------------------------------------------------------------------
+
+const EXCLUDED_COMMANDS = new Set([
+  // Syncs .claude/ → .opencode/ — circular if run inside opencode itself
+  'autonomous/maintenance/sync/opencode.md',
+]);
+
+// ---------------------------------------------------------------------------
 // Sync steps
 // ---------------------------------------------------------------------------
 
@@ -113,6 +123,7 @@ async function syncCommands(): Promise<void> {
 
   for await (const [srcPath, rel] of walk(srcDir)) {
     if (!srcPath.endsWith('.md')) continue;
+    if (EXCLUDED_COMMANDS.has(rel)) continue;
     const content = await readFile(srcPath, 'utf8');
     // Flatten subdirectory structure: "git/commit.md" → "git-commit.md"
     const flatName = rel.replace(/\//g, '-');
