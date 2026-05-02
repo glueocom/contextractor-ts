@@ -16,13 +16,13 @@ function getClient(): ApifyClient {
   return client;
 }
 
-export interface ActorRunResult {
+interface ActorRunResult {
   runId: string;
   datasetId: string;
   status: string;
 }
 
-export interface ActorInput extends ActorSettings {
+interface ActorInput extends ActorSettings {
   startUrls: Array<{ url: string }>;
   globs?: never[];
   linkSelector?: string;

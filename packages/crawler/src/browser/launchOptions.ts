@@ -1,4 +1,4 @@
-export interface BrowserLaunchOptions {
+interface BrowserLaunchOptions {
   args: string[];
   ignoreHTTPSErrors?: boolean;
 }

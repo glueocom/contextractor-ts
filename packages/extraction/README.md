@@ -3,9 +3,10 @@
 Pure TypeScript content-extraction package.
 
 Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
-(Rust port of Trafilatura, accessed via a napi-rs binding). Browser crawling
-lives separately in `@contextractor/crawler`, while this package stays focused
-on HTML-to-content extraction plus small pure helpers.
+(Rust port of Trafilatura, accessed via a napi-rs binding) and
+[Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright).
+Browser crawling lives separately in `@contextractor/crawler`, while this
+package stays focused on HTML-to-content extraction plus small pure helpers.
 
 ## Public API
 

@@ -79,7 +79,8 @@ the table below is auto-rebuilt from that schema by
 `trafilaturaConfig` keys (all optional, balanced defaults when omitted):
 `fast`, `favorPrecision`, `favorRecall`, `includeComments`, `includeTables`,
 `includeImages`, `includeFormatting`, `includeLinks`, `deduplicate`,
-`targetLanguage`, `withMetadata`, `onlyWithMetadata`, `teiValidation`.
+`targetLanguage`, `withMetadata`, `onlyWithMetadata`, `teiValidation`,
+`urlBlacklist`, `authorBlacklist`.
 
 ## Output
 

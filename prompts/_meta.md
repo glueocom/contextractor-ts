@@ -10,7 +10,7 @@ port the TypeScript patterns to Python Crawlee equivalents
 
 the purpose of the actor is to extract text from scraped HTML using https://github.com/adbar/trafilatura
 
-except the page function - we dont need the original data extraction, save HTML to Key-Value Store with URL-based keys
+except the page function - we don't need the original data extraction, save HTML to Key-Value Store with URL-based keys
 
 also, no need those fields and functionality:
 `useChrome`

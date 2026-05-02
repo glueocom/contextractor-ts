@@ -12,9 +12,6 @@ export interface KvsLike {
   getPublicUrl?(key: string): string | Promise<string>;
 }
 
-export function computeContentInfo(content: string | Buffer): ContentInfo {
-  return _computeContentInfo(content);
-}
 export async function saveContentToKvs(
   kvs: KvsLike,
   key: string,

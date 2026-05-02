@@ -8,7 +8,7 @@
 
 import { z } from 'zod';
 
-export type WalkType =
+type WalkType =
   | { kind: 'string' }
   | { kind: 'number' }
   | { kind: 'boolean' }
@@ -18,12 +18,12 @@ export type WalkType =
   | { kind: 'object'; fields: WalkField[] }
   | { kind: 'record'; value: WalkType };
 
-export interface WalkField {
+interface WalkField {
   name: string;
   node: WalkNode;
 }
 
-export interface WalkNode {
+interface WalkNode {
   type: WalkType;
   optional: boolean;
   defaulted: boolean;
@@ -60,7 +60,7 @@ function readDescription(schema: z.ZodType): string | undefined {
   return typeof fromMeta === 'string' ? fromMeta : undefined;
 }
 
-export function walkNode(schema: z.ZodType): WalkNode {
+function walkNode(schema: z.ZodType): WalkNode {
   const meta = readMeta(schema);
   const description = readDescription(schema);
 
@@ -164,7 +164,7 @@ export function topLevelFields(schema: z.ZodObject): WalkField[] {
   return node.type.fields;
 }
 
-export function findEnumNode(node: WalkNode): { values: string[]; node: WalkNode } | null {
+function findEnumNode(node: WalkNode): { values: string[]; node: WalkNode } | null {
   if (node.type.kind === 'enum') return { values: node.type.values, node };
   return null;
 }

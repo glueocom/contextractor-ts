@@ -12,7 +12,7 @@ import type {
 } from './types.js';
 
 const TEST_SUITES_DIR = path.join(import.meta.dirname, '..', 'test-suites');
-const OUTPUT_DIR = path.join(import.meta.dirname, '..', 'test-suites-output');
+export const OUTPUT_DIR = path.join(import.meta.dirname, '..', 'test-suites-output');
 
 /**
  * Load a test suite from disk
@@ -96,7 +96,7 @@ function matchDatasetItemToUrl(items: DatasetItem[], url: string): DatasetItem |
   return (
     items.find(
       (item) =>
-        item.loadedUrl === url || item.loadedUrl?.replace(/\/$/, '') === url.replace(/\/$/, ''),
+        item.loadedUrl === url || item.loadedUrl.replace(/\/$/, '') === url.replace(/\/$/, ''),
     ) || null
   );
 }
@@ -104,7 +104,7 @@ function matchDatasetItemToUrl(items: DatasetItem[], url: string): DatasetItem |
 /**
  * Run a test suite and save results
  */
-export async function runSuite(suite: TestSuite): Promise<SuiteRunResult> {
+async function runSuite(suite: TestSuite): Promise<SuiteRunResult> {
   console.log(`\nRunning test suite: ${suite.slug}`);
   console.log(`  Test cases: ${suite.testCases.length}`);
 
@@ -194,4 +194,3 @@ export async function runSingleSuite(suiteSlug: string): Promise<SuiteRunResult>
   return runSuite(suite);
 }
 
-export { OUTPUT_DIR, TEST_SUITES_DIR };

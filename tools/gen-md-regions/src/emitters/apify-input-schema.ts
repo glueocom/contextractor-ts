@@ -10,8 +10,7 @@ export function emitApifyInputSchema(): string {
   rows.push('| Field | Type | Default | Description |');
   rows.push('|-------|------|---------|-------------|');
 
-  for (const [name, raw] of Object.entries(schema.properties)) {
-    const prop = raw as Record<string, unknown>;
+  for (const [name, prop] of Object.entries(schema.properties)) {
     const type = formatType(prop);
     const def = formatDefault(prop, required.has(name));
     const desc = formatDescription(prop.description);

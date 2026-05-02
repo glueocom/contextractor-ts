@@ -1,11 +1,11 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
-import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
+import type { ContextractorInputType } from '@contextractor/schema';
 
 export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl';
 
-export const VALID_SAVE_FORMATS: ReadonlySet<SaveFormat> = new Set([
+const VALID_SAVE_FORMATS: ReadonlySet<SaveFormat> = new Set([
   'markdown',
   'html',
   'txt',
@@ -31,7 +31,7 @@ export function validateSaveFormats(formats: string[]): SaveFormat[] {
   return out;
 }
 
-export interface CrawlConfig {
+interface CrawlConfig {
   urls: string[];
   maxPages: number;
   outputDir: string;
@@ -160,4 +160,3 @@ async function loadYaml(text: string): Promise<Record<string, unknown>> {
   return out ?? {};
 }
 
-export { ContextractorInput };

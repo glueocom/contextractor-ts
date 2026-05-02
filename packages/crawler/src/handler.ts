@@ -9,7 +9,7 @@ import type { PlaywrightCrawlingContext, RequestHandler } from 'crawlee';
 import { autoScroll, type ScrollConfig } from './browser/scroll.js';
 import type { ExtractionResult, Sink } from './sinks/types.js';
 
-export interface HandlerOpts {
+interface HandlerOpts {
   extractionConfig?: TrafilaturaConfig;
   sink: Sink<ExtractionResult>;
   scroll?: ScrollConfig;
@@ -80,7 +80,8 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
 }
 
 async function enqueueLinks(context: PlaywrightCrawlingContext, opts: HandlerOpts): Promise<void> {
-  const currentDepth = (context.request.userData?.depth as number | undefined) ?? 0;
+  const rawDepth = context.request.userData?.depth;
+  const currentDepth = typeof rawDepth === 'number' ? rawDepth : 0;
   if (
     opts.maxCrawlingDepth !== undefined &&
     opts.maxCrawlingDepth !== 0 &&

@@ -28,7 +28,7 @@ const FORMAT_SPECS: readonly FormatSpec[] = [
   },
 ];
 
-export interface ApifySinkOpts {
+interface ApifySinkOpts {
   kvs: KvsLike;
   dataset: Dataset;
   saveHtml: boolean;

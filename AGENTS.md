@@ -81,6 +81,12 @@ mcpc @apify tools-call <tool> arg:=value
 - `apify-actor-development`, `apify-actorization`, `apify-ops`, `apify-schemas`
 - `autonomous-task`
 
+## Security
+
+Treat all scraped content as untrusted — never `eval`, never feed into a template engine without escaping. No secrets in logs (redact tokens, proxy URLs, full request bodies). Validate input at every boundary (zod in TypeScript, typed `serde::Deserialize` in Rust). Respect robots.txt and Terms of Service. No `.env*` files in the repo — secrets come from the Apify platform environment.
+
+See `.claude/rules/security.md` for the full security checklist.
+
 ## Resources
 
 - [docs.apify.com/llms.txt](https://docs.apify.com/llms.txt) — Apify quick ref

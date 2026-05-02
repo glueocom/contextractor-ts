@@ -110,9 +110,11 @@ packages/
 └── schema/                     # Shared Zod input schema package
 tools/
 ├── platform-test-runner/       # TypeScript test orchestrator
-└── generated-unit-tests/       # vitest cases against @contextractor/extraction
+├── gen-input-schema/           # Generates .actor/input_schema.json from Zod schema
+├── gen-md-regions/             # Rewrites @generated markdown regions in READMEs
+└── opencode-sync/              # Mirrors .claude/ to .opencode/ for opencode AI tool
 ```
 
 ## Docs version
 
-Docs version: 2026-04-29T00:00:00Z.
+Docs version: 2026-05-02T00:00:00Z.

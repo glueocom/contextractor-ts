@@ -66,7 +66,7 @@ export interface TestResult {
 }
 
 /** Content reference stored in KVS */
-export interface ContentRef {
+interface ContentRef {
   key?: string;
   url?: string;
   hash: string;

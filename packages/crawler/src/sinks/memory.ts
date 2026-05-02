@@ -1,6 +1,6 @@
 import type { Sink } from './types.js';
 
-export interface MemorySink<T> extends Sink<T> {
+interface MemorySink<T> extends Sink<T> {
   results: T[];
 }
 

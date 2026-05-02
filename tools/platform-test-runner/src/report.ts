@@ -100,32 +100,3 @@ export async function generateReport(suiteResults: SuiteRunResult[]): Promise<vo
   await fs.writeFile(reportPath, content);
   console.log(`\nReport saved to: ${reportPath}`);
 }
-
-/**
- * Get failed test cases from suite results
- */
-export function getFailedCases(
-  suiteResults: SuiteRunResult[],
-): Array<{ suite: string; testCase: string; url: string; error: string }> {
-  const failed: Array<{
-    suite: string;
-    testCase: string;
-    url: string;
-    error: string;
-  }> = [];
-
-  for (const suite of suiteResults) {
-    for (const [testCaseSlug, result] of suite.results) {
-      if (result.status === 'error') {
-        failed.push({
-          suite: suite.suiteSlug,
-          testCase: testCaseSlug,
-          url: result.url,
-          error: result.errorMessage || 'Unknown error',
-        });
-      }
-    }
-  }
-
-  return failed;
-}
