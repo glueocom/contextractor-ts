@@ -2,8 +2,8 @@
   "actorSpecification": 1,
   "name": "contextractor-test",
   "title": "Contextractor",
-  "description": "Crawls websites and extracts main-content text. Built on rs-trafilatura and Crawlee.",
-  "version": "0.1",
+  "description": "Crawls websites and extracts main-content text. built on rs-trafilatura and Crawlee.",
+  "version": "0.1.0",
   "buildTag": "latest",
   "meta": {
     "templateId": "node-playwright",

@@ -163,8 +163,3 @@ export function topLevelFields(schema: z.ZodObject): WalkField[] {
   }
   return node.type.fields;
 }
-
-function findEnumNode(node: WalkNode): { values: string[]; node: WalkNode } | null {
-  if (node.type.kind === 'enum') return { values: node.type.values, node };
-  return null;
-}

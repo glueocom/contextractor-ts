@@ -8,7 +8,7 @@ there should be those
 `initialCookies` field
 `customHttpHeaders` field
 
-The fuelds must be in the "Crawler settings" section
+The fields must be in the "Crawler settings" section
 
 same as in `/Users/miroslavsekera/r/contextractor/prompts/2026-adjust3/website-content-crawler-input-schema.json`
 same display like `/Users/miroslavsekera/r/contextractor/prompts/2026-adjust3/headers.png`, as implemented in the  `/Users/miroslavsekera/r/contextractor/prompts/2026-adjust3/website-content-crawler-input-schema.json`
@@ -27,7 +27,7 @@ do not implement, create prompt to implement at  `/Users/miroslavsekera/r/contex
 
 
 ## Include references
-in the target promt, keep al the references in absolute paths
+in the target prompt, keep all the references in absolute paths
 
 ## Output
-save the promt to `/Users/miroslavsekera/r/contextractor/prompts/2026-adjust3/prompt.md`
+save the prompt to `/Users/miroslavsekera/r/contextractor/prompts/2026-adjust3/prompt.md`

@@ -5,13 +5,37 @@ import type { ContextractorInputType } from '@contextractor/schema';
 
 export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl';
 
-const VALID_SAVE_FORMATS: ReadonlySet<SaveFormat> = new Set([
-  'markdown',
-  'html',
-  'txt',
-  'json',
-  'jsonl',
-]);
+const SORTED_SAVE_FORMATS = ['html', 'json', 'jsonl', 'markdown', 'txt'] as const;
+
+const PROXY_ROTATION_MAP = {
+  RECOMMENDED: 'recommended',
+  PER_REQUEST: 'per_request',
+  UNTIL_FAILURE: 'until_failure',
+} as const;
+
+const LAUNCHER_MAP = {
+  CHROMIUM: 'chromium',
+  FIREFOX: 'firefox',
+} as const;
+
+const WAIT_UNTIL_MAP = {
+  NETWORKIDLE: 'networkidle',
+  LOAD: 'load',
+  DOMCONTENTLOADED: 'domcontentloaded',
+} as const;
+
+function isSaveFormat(value: string): value is SaveFormat {
+  switch (value) {
+    case 'markdown':
+    case 'html':
+    case 'txt':
+    case 'json':
+    case 'jsonl':
+      return true;
+    default:
+      return false;
+  }
+}
 
 export function validateSaveFormats(formats: string[]): SaveFormat[] {
   const out: SaveFormat[] = [];
@@ -19,14 +43,12 @@ export function validateSaveFormats(formats: string[]): SaveFormat[] {
     let normalized = raw.trim().toLowerCase();
     if (normalized === 'text') normalized = 'txt';
     if (normalized === 'all') {
-      return [...VALID_SAVE_FORMATS].sort() as SaveFormat[];
+      return [...SORTED_SAVE_FORMATS];
     }
-    if (!VALID_SAVE_FORMATS.has(normalized as SaveFormat)) {
-      throw new Error(
-        `Unknown save format: '${raw}'. Valid: ${[...VALID_SAVE_FORMATS].sort().join(', ')}`,
-      );
+    if (!isSaveFormat(normalized)) {
+      throw new Error(`Unknown save format: '${raw}'. Valid: ${SORTED_SAVE_FORMATS.join(', ')}`);
     }
-    if (!out.includes(normalized as SaveFormat)) out.push(normalized as SaveFormat);
+    if (!out.includes(normalized)) out.push(normalized);
   }
   return out;
 }
@@ -95,9 +117,9 @@ export function buildCrawlConfig(
     headless: input.headless,
     maxPages: input.maxPagesPerCrawl,
     crawlDepth: input.maxCrawlingDepth,
-    proxyRotation: input.proxyRotation.toLowerCase() as CrawlConfig['proxyRotation'],
-    launcher: input.launcher.toLowerCase() as CrawlConfig['launcher'],
-    waitUntil: input.waitUntil.toLowerCase() as CrawlConfig['waitUntil'],
+    proxyRotation: PROXY_ROTATION_MAP[input.proxyRotation],
+    launcher: LAUNCHER_MAP[input.launcher],
+    waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
     pageLoadTimeout: input.pageLoadTimeoutSecs,
     ignoreCors: input.ignoreCorsAndCsp,
     closeCookieModals: input.closeCookieModals,
@@ -159,4 +181,3 @@ async function loadYaml(text: string): Promise<Record<string, unknown>> {
   const out = mod.parse(text) as Record<string, unknown> | null;
   return out ?? {};
 }
-

@@ -85,9 +85,11 @@ the table below is auto-rebuilt from that schema by
 ## Output
 
 Per-page dataset entry with `loadedUrl`, `loadedAt`, `httpStatus`, `metadata`
-(title, author, publishedAt, description, siteName, lang), and one of
-`extractedMarkdown` / `extractedText` / `extractedJson` / `rawHtml` per
-enabled save flag. Each save flag also writes a file to the Key-Value Store.
+(title, author, publishedAt, description, siteName, lang), the enabled
+`extractedMarkdown` / `extractedText` / `extractedJson` payloads, and `rawHtml`
+metadata on every item. Enabling a save flag writes the
+corresponding content file to the Key-Value Store; `saveRawHtmlToKeyValueStore`
+adds the raw-HTML file itself.
 
 ## Deploy
 
@@ -100,5 +102,5 @@ After the app rename, update the Apify Console git-connected source path to
 `apps/apify-actor` if it still points at the pre-rename app directory.
 
 For test-only deploys to `glueo/contextractor-test`, see
-`.claude/commands/platform/push-and-get-working.md`. Production
+`.claude/commands/platform/deploy-and-test.md`. Production
 (`glueo/contextractor`) requires the explicit `--production` flag.

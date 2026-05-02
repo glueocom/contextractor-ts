@@ -44,6 +44,9 @@ const meta = projectMetadata(extractor.extractMetadata(html, url));
 - `extractAllFormats(html, opts: { url?: string; formats?: OutputFormat[] })`
   — all four formats keyed by name.
 - `getConfig()` — read-only view of the resolved config.
+
+Top-level helper exports:
+
 - `computeContentInfo(content)` — stable hash + byte length helper.
 - `projectMetadata(meta)` — dataset-oriented metadata projection.
 

@@ -193,4 +193,3 @@ export async function runSingleSuite(suiteSlug: string): Promise<SuiteRunResult>
   const suite = await loadTestSuite(suiteSlug);
   return runSuite(suite);
 }
-
