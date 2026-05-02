@@ -2,7 +2,7 @@
 description: Validate Actor schemas and configuration
 ---
 
-Validate all Actor configuration and run static checks across the workspace. Save a report to `autonomous-task-output/`.
+Validate all Actor configuration and run static checks across the workspace. Save a report to `autonomous-task-output/{agent}/`.
 
 ## Validation Steps
 
@@ -41,7 +41,7 @@ Validate all Actor configuration and run static checks across the workspace. Sav
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/schema-validate-report.md` with:
+Save `autonomous-task-output/{agent}/reports/schema-validate-report.md` with:
 - Validation errors or warnings found, grouped by file with `path:line` references
 - Build and test results
-- Any issues requiring human review (save to `autonomous-task-output/schema-validate-prompt.md`)
+- Any issues requiring human review (save to `autonomous-task-output/{agent}/prompts/schema-validate-prompt.md`)

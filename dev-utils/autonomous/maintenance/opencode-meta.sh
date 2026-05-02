@@ -13,8 +13,8 @@ source "$SCRIPT_DIR/lib/opencode.sh"
 echo "[autonomous:maintenance:opencode-meta] Syncing .claude/ -> .opencode/..."
 pnpm opencode:sync
 
-rm -rf autonomous-task-output
-mkdir -p autonomous-task-output
+rm -rf autonomous-task-output/opencode
+mkdir -p autonomous-task-output/opencode/reports autonomous-task-output/opencode/prompts
 
 opencode_run "/autonomous-maintenance-meta-setup"
 

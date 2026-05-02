@@ -88,8 +88,8 @@ Report any inconsistencies found and fix the docs side. Mismatches between sourc
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/sync-docs-report.md` with:
+Save `autonomous-task-output/{agent}/reports/sync-docs-report.md` with:
 - READMEs updated
 - Markdown regions regenerated
 - Inconsistencies found and fixed
-- Any issues requiring human review (save to `autonomous-task-output/sync-docs-prompt.md`)
+- Any issues requiring human review (save to `autonomous-task-output/{agent}/prompts/sync-docs-prompt.md`)

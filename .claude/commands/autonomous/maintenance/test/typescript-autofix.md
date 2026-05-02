@@ -5,7 +5,7 @@ model: sonnet
 skills: autonomous-task
 ---
 
-Review all TypeScript source files in this repo for type safety violations and auto-fix what can be safely resolved. Save a report to `autonomous-task-output/`.
+Review all TypeScript source files in this repo for type safety violations and auto-fix what can be safely resolved. Save a report to `autonomous-task-output/{agent}/`.
 
 ## Scope
 
@@ -57,8 +57,8 @@ TypeScript compilation is the type check. Fix any new type errors introduced.
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/test-typescript-autofix-report.md` with:
+Save `autonomous-task-output/{agent}/reports/test-typescript-autofix-report.md` with:
 - Files reviewed
 - Issues found per file (type, line, description)
 - Fixes applied
-- Issues deferred to `autonomous-task-output/test-typescript-autofix-prompt.md`
+- Issues deferred to `autonomous-task-output/{agent}/prompts/test-typescript-autofix-prompt.md`

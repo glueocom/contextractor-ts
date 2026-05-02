@@ -1,10 +1,10 @@
 ---
-description: Autonomously audit and fix .claude/ setup — frontmatter, stale references, MCP alignment, CLAUDE.md consistency. Saves report to autonomous-task-output/.
+description: Autonomously audit and fix .claude/ setup — frontmatter, stale references, MCP alignment, CLAUDE.md consistency. Saves report to autonomous-task-output/{agent}/.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
 model: opus
 ---
 
-Audit `.claude/`, `CLAUDE.md`, `.mcp.json`, `settings.json`. Auto-fix safe issues (frontmatter, stale references, MCP alignment). Flag risky changes (file deletion, trim) for human review. Save a report to `autonomous-task-output/`.
+Audit `.claude/`, `CLAUDE.md`, `.mcp.json`, `settings.json`. Auto-fix safe issues (frontmatter, stale references, MCP alignment). Flag risky changes (file deletion, trim) for human review. Save a report to `autonomous-task-output/{agent}/`.
 
 ## Step INVENTORY
 
@@ -87,9 +87,9 @@ grep -q 'mcpc' .claude/skills/apify-ops/SKILL.md && echo "OK: mcpc in apify-ops"
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/meta-setup-report.md` with:
+Save `autonomous-task-output/{agent}/reports/meta-setup-report.md` with:
 - Files fixed (frontmatter, stale references, MCP alignment)
 - Orphaned or bloated files flagged for human review (do not delete)
 - Validation results (pass/fail per check)
 - Gaps identified (missing agents/skills)
-- Any issues that could not be auto-fixed (save to `autonomous-task-output/meta-setup-prompt.md`)
+- Any issues that could not be auto-fixed (save to `autonomous-task-output/{agent}/prompts/meta-setup-prompt.md`)

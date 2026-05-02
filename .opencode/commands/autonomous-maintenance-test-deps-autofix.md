@@ -2,7 +2,7 @@
 description: Audit dependencies for security vulnerabilities and auto-fix
 ---
 
-Audit all dependencies for security vulnerabilities and apply safe fixes. Save a report to `autonomous-task-output/`.
+Audit all dependencies for security vulnerabilities and apply safe fixes. Save a report to `autonomous-task-output/{agent}/`.
 
 ## Step AUDIT: Security Audit
 
@@ -42,7 +42,7 @@ Review any Rust advisories and fix where safe.
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/test-deps-autofix-report.md` with:
+Save `autonomous-task-output/{agent}/reports/test-deps-autofix-report.md` with:
 - TS vulnerabilities found and fixed
 - Rust advisories found
-- Outdated major versions requiring manual update (save to `autonomous-task-output/test-deps-autofix-prompt.md`)
+- Outdated major versions requiring manual update (save to `autonomous-task-output/{agent}/prompts/test-deps-autofix-prompt.md`)

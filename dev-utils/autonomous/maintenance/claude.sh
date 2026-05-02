@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Runs each autonomous-maintenance sub-command in its own Claude Code session.
-# Each session is small and focused; autonomous-task-output/ files coordinate between them.
+# Each session is small and focused; autonomous-task-output/claude/ files coordinate between them.
 # Mirrors the execution order in maintenance.md (generate → sync → test → validate → commit).
 set -euo pipefail
 
@@ -11,8 +11,8 @@ cd "$REPO_ROOT"
 # shellcheck source=lib/claude.sh
 source "$SCRIPT_DIR/lib/claude.sh"
 
-rm -rf autonomous-task-output
-mkdir -p autonomous-task-output
+rm -rf autonomous-task-output/claude
+mkdir -p autonomous-task-output/claude/reports autonomous-task-output/claude/prompts
 
 claude_run "/autonomous:maintenance:deps/update"
 claude_run "/autonomous:maintenance:schema/gen-input-schema"

@@ -23,7 +23,7 @@ This re-runs generation and checks `git diff`. A non-zero exit means the repo ha
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/docs-gen-md-regions-report.md` with:
+Save `autonomous-task-output/{agent}/reports/docs-gen-md-regions-report.md` with:
 - Number of files updated
 - Which regions were regenerated
 - Whether the drift check passed

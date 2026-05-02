@@ -2,7 +2,7 @@
 description: Build all projects and run local unit tests, auto-fixing lint and format issues
 ---
 
-Build all projects in the repository, run local unit tests, and auto-fix lint and format issues. Save a report to `autonomous-task-output/`.
+Build all projects in the repository, run local unit tests, and auto-fix lint and format issues. Save a report to `autonomous-task-output/{agent}/`.
 
 IMPORTANT: Only run unit tests. Do NOT run integration tests that hit external sites or start the scraper/Actor locally.
 
@@ -62,11 +62,11 @@ Fix clippy warnings in `packages/extraction/native/src/` by editing the code —
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/test-local-report.md` with:
+Save `autonomous-task-output/{agent}/reports/test-local-report.md` with:
 - Build results (TS: pass/fail, Rust: pass/fail)
 - TS test counts (passed / failed) per package
 - Rust test counts
 - Lint results (Biome, clippy)
 - First failing trace, with `path:line` link
 - Code changes made (if any)
-- Any issues that could not be auto-fixed (save to `autonomous-task-output/test-local-prompt.md`)
+- Any issues that could not be auto-fixed (save to `autonomous-task-output/{agent}/prompts/test-local-prompt.md`)

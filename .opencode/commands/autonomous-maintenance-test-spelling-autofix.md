@@ -2,7 +2,7 @@
 description: Check and fix typos and grammar errors in source files and documentation
 ---
 
-Check all source files and documentation for typos and grammar errors, and fix them. Save a report to `autonomous-task-output/`.
+Check all source files and documentation for typos and grammar errors, and fix them. Save a report to `autonomous-task-output/{agent}/`.
 
 ## Step CSPELL: Check Source Files
 
@@ -32,7 +32,7 @@ Do NOT change:
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/test-spelling-autofix-report.md` with:
+Save `autonomous-task-output/{agent}/reports/test-spelling-autofix-report.md` with:
 - Files checked
 - Genuine typos fixed
-- False positives (ambiguous words logged to `autonomous-task-output/test-spelling-autofix-prompt.md`)
+- False positives (ambiguous words logged to `autonomous-task-output/{agent}/prompts/test-spelling-autofix-prompt.md`)

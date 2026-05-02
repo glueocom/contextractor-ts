@@ -2,7 +2,7 @@
 description: Detect and remove dead code, unused exports, and unused dependencies
 ---
 
-Detect and remove dead code, unused exports, and unused dependencies across the repo. Save a report to `autonomous-task-output/`.
+Detect and remove dead code, unused exports, and unused dependencies across the repo. Save a report to `autonomous-task-output/{agent}/`.
 
 ## Step SCAN: Run knip
 
@@ -42,7 +42,7 @@ Ensure nothing broke after removing dead code.
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/test-dead-code-autofix-report.md` with:
+Save `autonomous-task-output/{agent}/reports/test-dead-code-autofix-report.md` with:
 - Total findings by category
 - Items removed
-- Items deferred (save to `autonomous-task-output/test-dead-code-autofix-prompt.md`)
+- Items deferred (save to `autonomous-task-output/{agent}/prompts/test-dead-code-autofix-prompt.md`)

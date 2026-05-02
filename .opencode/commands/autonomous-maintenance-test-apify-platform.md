@@ -2,7 +2,7 @@
 description: Deploy to Apify test actor, run platform test suites, and update unit tests from results
 ---
 
-Deploy to the Apify test actor, run all platform test suites, fix failures, and update unit tests in `packages/extraction/test/` from the results. Saves a report to `autonomous-task-output/`.
+Deploy to the Apify test actor, run all platform test suites, fix failures, and update unit tests in `packages/extraction/test/` from the results. Saves a report to `autonomous-task-output/{agent}/`.
 
 ## Step SYNC_SCHEMA: Review and Sync Test Cases with Actor Schema
 
@@ -121,14 +121,14 @@ Fix any failures before proceeding.
 
 ## Step REPORT: Save Report
 
-Write `tools/platform-test-runner/test-suites-output/analysis-report.md` and `autonomous-task-output/test-apify-platform-report.md` with:
+Write `tools/platform-test-runner/test-suites-output/analysis-report.md` and `autonomous-task-output/{agent}/reports/test-apify-platform-report.md` with:
 - Summary of the test run (suites tested, pass/fail counts)
 - Test schema sync changes made
 - Platform test results (passed / failed / skipped per suite)
 - Unit test files updated in `packages/extraction/test/`
 - Code changes made
 - External site failures (skipped)
-- Save issues requiring decisions to `autonomous-task-output/test-apify-platform-prompt.md`
+- Save issues requiring decisions to `autonomous-task-output/{agent}/prompts/test-apify-platform-prompt.md`
 
 ## Cost Limits
 

@@ -7,10 +7,21 @@ description: Execute tasks end-to-end without user interaction, saving reports a
 
 Execute assigned tasks autonomously without user interaction. Save structured output for later review.
 
+## Output Directory
+
+Determine `{agent}` from the AI tool running this command:
+- Claude Code → `claude`
+- opencode → `opencode`
+- Any other tool → use the tool's lowercase name
+
+All output goes to `autonomous-task-output/{agent}/` at the repo root:
+- Reports → `autonomous-task-output/{agent}/reports/`
+- Deferred prompts → `autonomous-task-output/{agent}/prompts/`
+
 ## Behavior
 
 - Execute the assigned task end-to-end without asking the user any questions
-- Save a report to `autonomous-task-output/{taskName}-report.md` (relative to repo root)
+- Save a report to `autonomous-task-output/{agent}/reports/{taskName}-report.md` (relative to repo root)
 - The report must include: task name, timestamp, findings, actions taken, and summary
 
 ## Handling Decisions
@@ -18,7 +29,7 @@ Execute assigned tasks autonomously without user interaction. Save structured ou
 If a subtask requires user interaction or a decision that cannot be made autonomously:
 
 - Do NOT ask the user — do not use `AskUserQuestion`
-- Create a prompt file at `autonomous-task-output/{taskName}-prompt.md` describing:
+- Create a prompt file at `autonomous-task-output/{agent}/prompts/{taskName}-prompt.md` describing:
   - Which subtask needs a decision
   - What the options are
   - What context is needed to decide
@@ -50,6 +61,6 @@ If a subtask requires user interaction or a decision that cannot be made autonom
 {counts: issues found, fixed, remaining}
 ```
 
-## Output Directory
+## Gitignore
 
-All output goes to `autonomous-task-output/` at the repo root. This directory is created automatically and should be in `.gitignore`.
+`autonomous-task-output/` is gitignored at the repo root. The directory and agent subdirectories are created automatically on first write.

@@ -22,7 +22,7 @@ This runs `tools/opencode-sync` which:
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/sync-opencode-report.md` with:
+Save `autonomous-task-output/{agent}/reports/sync-opencode-report.md` with:
 - Agents synced
 - Commands synced
 - Rules synced

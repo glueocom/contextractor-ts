@@ -22,7 +22,7 @@ The snapshot test in `packages/schema/test/to-apify-schema.test.ts` verifies the
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/schema-gen-input-schema-report.md` with:
+Save `autonomous-task-output/{agent}/reports/schema-gen-input-schema-report.md` with:
 - Whether `input_schema.json` changed
 - Whether the snapshot test passed
 - Any errors encountered

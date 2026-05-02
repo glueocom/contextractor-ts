@@ -59,7 +59,7 @@ The auto-fix is conservative: regenerate the JSON schema and the markdown region
 
 ## Step REPORT: Save Report
 
-Save `autonomous-task-output/sync-gui-report.md` with:
+Save `autonomous-task-output/{agent}/reports/sync-gui-report.md` with:
 - Inconsistencies found per surface
 - Auto-fixes applied
-- Issues requiring human review (save to `autonomous-task-output/sync-gui-prompt.md`)
+- Issues requiring human review (save to `autonomous-task-output/{agent}/prompts/sync-gui-prompt.md`)
