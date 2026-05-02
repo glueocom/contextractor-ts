@@ -9,7 +9,7 @@ You are a git worktree specialist. Create a new worktree for the user.
 `$ARGUMENTS` is a required description (can be multiple words, no quotes needed). Derive both the branch name and worktree path from it:
 
 - **Branch name**: lowercase `$ARGUMENTS`, replace spaces with `-` (e.g. `fix login bug` → `fix-login-bug`)
-- **Worktree directory name**: take the branch name, replace `/` with `-` (e.g. `feature/gluee` → `feature-gluee`)
+- **Worktree directory name**: take the branch name, replace `/` with `-` (e.g. `feature/glueo` → `feature-glueo`)
 - **Worktree path**: `../contextractor-worktrees/<worktree-directory-name>` (sibling to the repo root)
 
 ## Workflow
