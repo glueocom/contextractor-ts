@@ -20,7 +20,16 @@ This runs `tools/opencode-sync` which:
 - Copies commands (with `allowed-tools`, `argument-hint`, `model` stripped)
 - Copies rules
 - Copies `CLAUDE.md` to `AGENTS.md`
-- Regenerates `opencode.json` with MCP servers and instruction paths from rules
+
+## Step REVIEW: Audit opencode.json
+
+Read `.mcp.json` and `opencode.json`, then verify and fix both sections in `opencode.json`:
+
+**MCP servers** — every server in `.mcp.json["mcpServers"]` must appear in `opencode.json["mcp"]` with matching key name, `type`, and `url`. Add missing entries, update stale ones, remove entries no longer in `.mcp.json`.
+
+**Instructions** — `opencode.json["instructions"]` must list exactly the `.md` files present in `.opencode/rules/`, each prefixed with `.opencode/rules/`. Add missing entries, remove stale ones. Preserve order.
+
+Edit `opencode.json` directly to apply any fixes.
 
 ## Step REPORT: Save Report
 
@@ -28,5 +37,5 @@ Save `autonomous-task-output/{agent}/reports/sync-opencode-report.md` with:
 - Agents synced
 - Commands synced
 - Rules synced
-- MCP servers written to `opencode.json`
+- opencode.json audit: MCP servers checked, instructions checked, changes made (if any)
 - Any errors encountered
