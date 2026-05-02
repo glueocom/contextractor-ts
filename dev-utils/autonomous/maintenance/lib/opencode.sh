@@ -5,7 +5,7 @@
 _AM_OPENCODE_LIB=1
 
 # Launcher that sources .env before invoking opencode.
-_OPENCODE_BIN="$(dirname "${BASH_SOURCE[0]}")/../../../bin/opencode.sh"
+_OPENCODE_BIN="$(dirname "${BASH_SOURCE[0]}")/../../../opencode/opencode.sh"
 
 # Run an opencode slash command in an isolated session.
 # Streams all output to stdout so it appears live in the terminal.
