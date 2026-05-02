@@ -1,7 +1,6 @@
 ---
 description: Check and fix typos and grammar errors in source files and documentation
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
-model: sonnet
 skills: autonomous-task
 ---
 

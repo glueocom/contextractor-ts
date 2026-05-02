@@ -1,7 +1,6 @@
 ---
 description: Audit dependencies for security vulnerabilities and auto-fix
 allowed-tools: Read, Write, Edit, Bash
-model: sonnet
 skills: autonomous-task
 ---
 

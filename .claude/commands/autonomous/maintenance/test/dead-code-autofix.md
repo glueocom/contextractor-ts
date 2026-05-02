@@ -1,7 +1,6 @@
 ---
 description: Detect and remove dead code, unused exports, and unused dependencies
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
-model: sonnet
 skills: autonomous-task
 ---
 

@@ -1,7 +1,6 @@
 ---
 description: Review TypeScript code for type safety violations and auto-fix issues
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash
-model: sonnet
 skills: autonomous-task
 ---
 

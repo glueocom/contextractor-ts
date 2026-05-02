@@ -1,7 +1,6 @@
 ---
 description: Deploy to Apify test actor, run platform test suites, and update unit tests from results
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch
-model: sonnet
 skills: autonomous-task, apify-ops, apify-actor-development
 ---
 

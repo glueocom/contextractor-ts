@@ -1,7 +1,6 @@
 ---
 description: Run all autonomous/maintenance commands sequentially, then commit and push results
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
-model: opus
 skills: autonomous-task
 ---
 
