@@ -83,7 +83,7 @@ pnpm test
 
 ## Apify Actor
 
-- [ ] `.actor/actor.json` `name` is `contextractor-test` for test deploys (never `contextractor` outside an explicit production push)
-- [ ] `.actor/actor.json` has `dockerContextDir: "../../.."` so the Dockerfile sees the repo root
+- [ ] `apps/apify-actor/.actor/actor.json` `name` is `contextractor-test` for test deploys (never `contextractor` outside an explicit production push)
+- [ ] `apps/apify-actor/.actor/actor.json` has `dockerContextDir: "../../.."` so the Dockerfile sees the repo root
 - [ ] `package.json` declares `"@contextractor/crawler": "workspace:*"` — no `vendor/` directory
 - [ ] Dockerfile builds with `pnpm --filter @contextractor/apify build` (multi-stage), not a Rust toolchain

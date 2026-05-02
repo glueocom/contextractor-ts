@@ -81,7 +81,7 @@ grep -rn 'chargeableWithinLimit\|eventChargeLimitReached(' .claude/skills/ \
 grep -q 'mcpc' CLAUDE.md && echo "OK: mcpc referenced" || echo "MISSING: mcpc usage in CLAUDE.md"
 grep -q '## Security' CLAUDE.md && echo "OK: Security section" || echo "MISSING: Security section in CLAUDE.md"
 grep -q 'crawlee.dev/llms' CLAUDE.md && echo "OK: Crawlee docs linked" || echo "MISSING: Crawlee llms.txt in CLAUDE.md"
-grep -q 'generatedBy' .actor/actor.json && echo "OK: generatedBy set" || echo "MISSING: generatedBy in actor.json"
+grep -q 'generatedBy' apps/apify-actor/.actor/actor.json && echo "OK: generatedBy set" || echo "MISSING: generatedBy in actor.json"
 grep -q 'mcpc' .claude/skills/apify-ops/SKILL.md && echo "OK: mcpc in apify-ops" || echo "MISSING: mcpc preference in apify-ops"
 ```
 
