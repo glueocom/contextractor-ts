@@ -1,7 +1,5 @@
 ---
 description: Sync the .claude/ config to .opencode/ — agents, commands, rules, MCP servers
-allowed-tools: Bash(pnpm:*), Read
-model: haiku
 ---
 
 **Only run this command if you are Claude Code. If you are any other agent (opencode or otherwise), skip this command entirely and report it as skipped.**
