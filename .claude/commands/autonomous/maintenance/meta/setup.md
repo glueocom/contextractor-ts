@@ -1,7 +1,6 @@
 ---
 description: Autonomously audit and fix .claude/ setup — frontmatter, stale references, MCP alignment, CLAUDE.md consistency. Saves report to autonomous-task-output/{agent}/.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep
-model: opus
 ---
 
 Audit `.claude/`, `CLAUDE.md`, `.mcp.json`, `settings.json`. Auto-fix safe issues (frontmatter, stale references, MCP alignment). Flag risky changes (file deletion, trim) for human review. Save a report to `autonomous-task-output/{agent}/`.

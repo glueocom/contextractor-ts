@@ -2,7 +2,6 @@
 description: Research, structure, and produce implementation + test prompts from a raw prompt idea
 argument-hint: <raw-meta-prompt> [--- optional instructions after separator]
 allowed-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, WebFetch, AskUserQuestion, Task
-model: opus
 ---
 
 # Write Prompt

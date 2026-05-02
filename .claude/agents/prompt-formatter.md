@@ -2,7 +2,6 @@
 name: prompt-formatter
 description: USE PROACTIVELY when formatting Claude Code prompts. ACTIVATE for any .md file in .claude/agents/, .claude/commands/, .claude/skills/, or .claude/rules/. Formats according to formatting guidelines without making factual changes. Focuses only on structure, headers, code blocks, and spacing. <example>Context: User wants to standardize formatting. user: 'Format the rust-pro agent to match formatting guidelines' assistant: 'I'll use the prompt-formatter agent to apply formatting standards' <commentary>This agent only formats, never changes content or meaning.</commentary></example>
 tools: Read, Edit
-model: opus
 ---
 
 # Prompt Formatter Agent

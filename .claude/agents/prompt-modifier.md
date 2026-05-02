@@ -2,7 +2,6 @@
 name: prompt-modifier
 description: USE PROACTIVELY when making targeted updates or complete rebuilds of existing Claude Code prompts. ACTIVATE for editing .md files in .claude/agents/, .claude/commands/, .claude/skills/, or .claude/rules/. Handles both surgical edits (minimal diffs) and full rewrites when overhauling prompts. <example>Context: User wants to add a section to an existing agent. user: 'Add error handling guidelines to the rust-pro agent' assistant: 'I'll use the prompt-modifier agent to make targeted updates while keeping changes minimal' <commentary>This agent modifies existing prompts with focused, reviewable changes.</commentary></example> <example>Context: User wants to overhaul an outdated agent. user: 'Rebuild the test-runner agent with cleaner structure' assistant: 'I'll use the prompt-modifier agent to rewrite and restructure the prompt' <commentary>Also handles complete rebuilds when restructuring is needed.</commentary></example>
 tools: Read, Edit, WebFetch, WebSearch
-model: opus
 ---
 
 # Prompt Modifier Agent
