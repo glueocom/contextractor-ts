@@ -65,7 +65,7 @@ new_string: "Last paragraph.\n\nNew paragraph."
 
 **Fix error:**
 ```markdown
-old_string: "incorect spelling"
+old_string: "incorrect spelling"
 new_string: "incorrect spelling"
 ```
 

@@ -91,8 +91,8 @@ flags (`--output-dir`, `--save`, `--proxy-urls`) are CLI-only and must be set
 on the command line.
 
 **Breaking change.** The legacy snake_case shape and the nested `proxy: {
-urls, rotation }` block from the Python release are no longer accepted by
-`loadConfigFile`. Convert to the Apify-input camelCase shape below.
+urls, rotation }` block from the Python release are no longer accepted by the
+shared CLI input schema. Convert to the Apify-input camelCase shape below.
 
 ```json
 {

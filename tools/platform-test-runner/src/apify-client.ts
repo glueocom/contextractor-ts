@@ -68,5 +68,18 @@ export async function fetchDatasetItems(datasetId: string): Promise<DatasetItem[
 
   const { items } = await apifyClient.dataset(datasetId).listItems();
 
-  return items as unknown as DatasetItem[];
+  return items.map((item, index) => {
+    if (!isDatasetItem(item)) {
+      throw new Error(`Dataset ${datasetId} item ${index} is not a Contextractor dataset item`);
+    }
+    return item;
+  });
+}
+
+function isDatasetItem(value: unknown): value is DatasetItem {
+  return isRecord(value) && typeof value.loadedUrl === 'string';
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }

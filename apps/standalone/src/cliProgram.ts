@@ -85,7 +85,7 @@ export function buildProgram(): Command {
         layered.trafilaturaConfig = { ...fileTrafilatura, ...cliTrafilatura };
       }
 
-      const startUrlsLayered = layered.startUrls as Array<{ url: string }> | undefined;
+      const startUrlsLayered = Array.isArray(layered.startUrls) ? layered.startUrls : undefined;
       if (!startUrlsLayered || startUrlsLayered.length === 0) {
         console.error('Error: No URLs specified. Provide URLs as arguments or via --config.');
         process.exit(1);
@@ -197,8 +197,8 @@ function buildSchemaOverrides(opts: CliOptions): Partial<ContextractorInputType>
   if (opts.linkSelector !== undefined) out.linkSelector = opts.linkSelector;
   if (opts.keepUrlFragments !== undefined) out.keepUrlFragments = opts.keepUrlFragments;
   if (opts.respectRobotsTxt !== undefined) out.respectRobotsTxtFile = opts.respectRobotsTxt;
-  if (opts.cookies) out.initialCookies = JSON.parse(opts.cookies) as unknown[];
-  if (opts.headers) out.customHttpHeaders = JSON.parse(opts.headers) as Record<string, string>;
+  if (opts.cookies) out.initialCookies = parseJsonArray(opts.cookies, '--cookies');
+  if (opts.headers) out.customHttpHeaders = parseStringRecord(opts.headers, '--headers');
   if (opts.maxConcurrency !== undefined) out.maxConcurrency = opts.maxConcurrency;
   if (opts.maxRetries !== undefined) out.maxRequestRetries = opts.maxRetries;
   if (opts.maxResults !== undefined) out.maxResultsPerCrawl = opts.maxResults;
@@ -243,6 +243,32 @@ function resolveCliOnly(opts: CliOptions, input: ContextractorInputType): CliOnl
     : [];
 
   return { urls, outputDir: opts.outputDir ?? './output', save, proxyUrls };
+}
+
+function parseJsonArray(raw: string, flagName: string): unknown[] {
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    throw new Error(`${flagName} must be a JSON array`);
+  }
+  return parsed;
+}
+
+function parseStringRecord(raw: string, flagName: string): Record<string, string> {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${flagName} must be a JSON object`);
+  }
+
+  const entries = Object.entries(parsed);
+  if (entries.some(([, value]) => typeof value !== 'string')) {
+    throw new Error(`${flagName} must be a JSON object with string values`);
+  }
+
+  const out: Record<string, string> = {};
+  for (const [key, value] of entries) {
+    out[key] = value;
+  }
+  return out;
 }
 
 interface CliOptions {

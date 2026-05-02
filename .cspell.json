@@ -45,7 +45,12 @@
   "exclude": {
     "node_modules/**": true,
     "dist/**": true,
+    "**/dist/**": true,
     "target/**": true,
+    "storage/**": true,
+    "apps/**/storage/**": true,
+    "autonomous-task-output/**": true,
+    "tools/platform-test-runner/test-suites-output/**": true,
     ".next/**": true,
     ".git/**": true
   }

@@ -24,6 +24,10 @@ const WAIT_UNTIL_MAP = {
   DOMCONTENTLOADED: 'domcontentloaded',
 } as const;
 
+interface YamlModule {
+  parse(text: string): unknown;
+}
+
 function isSaveFormat(value: string): value is SaveFormat {
   switch (value) {
     case 'markdown':
@@ -157,19 +161,20 @@ export async function loadConfigFile(filePath: string): Promise<Partial<Contextr
     }
   }
 
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+  if (!isRecord(data)) {
     return {};
   }
-  return data as Partial<ContextractorInputType>;
+  return data;
 }
 
 async function loadYaml(text: string): Promise<Record<string, unknown>> {
   // Silent YAML support (per `.claude/rules/json-config-only.md`). Lazy-load
-  // through dynamic import so the package stays optional. The cast through
-  // `unknown` keeps the type strict without statically depending on `yaml`.
-  let mod: { parse(text: string): unknown } | null = null;
+  // through dynamic import so the package stays optional, then narrow the
+  // module shape at runtime without statically depending on `yaml`.
+  let mod: YamlModule | null = null;
   try {
-    mod = (await import('yaml' as string)) as unknown as { parse(text: string): unknown };
+    const imported: unknown = await import('yaml' as string);
+    mod = isYamlModule(imported) ? imported : null;
   } catch {
     mod = null;
   }
@@ -178,6 +183,14 @@ async function loadYaml(text: string): Promise<Record<string, unknown>> {
       'YAML config requested but the optional `yaml` package is not installed; convert your config to JSON.',
     );
   }
-  const out = mod.parse(text) as Record<string, unknown> | null;
-  return out ?? {};
+  const out = mod.parse(text);
+  return isRecord(out) ? out : {};
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isYamlModule(value: unknown): value is YamlModule {
+  return isRecord(value) && typeof value.parse === 'function';
 }
