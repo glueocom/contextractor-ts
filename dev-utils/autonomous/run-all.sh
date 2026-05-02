@@ -6,7 +6,7 @@
 #   4. opencode.sh      — opencode re-syncs .opencode/ and runs its own maintenance pass
 set -euo pipefail
 
-SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPTS_DIR="$(cd "$(dirname "$0")/maintenance" && pwd)"
 
 echo "[autonomous:maintenance:all] === Meta setup audit (Claude) ==="
 bash "$SCRIPTS_DIR/claude-meta.sh"

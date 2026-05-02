@@ -9,7 +9,7 @@ Run the autonomous/maintenance pipeline in STUB_MODE. If it fails, diagnose and 
 ## Step RUN: Execute the stub pipeline
 
 ```bash
-STUB_MODE=1 bash dev-utils/autonomous/maintenance/run-all.sh 2>&1
+STUB_MODE=1 bash dev-utils/autonomous/run-all.sh 2>&1
 echo "EXIT:$?"
 ```
 
@@ -29,7 +29,7 @@ Read the failing file, apply the minimal fix using Edit, then return to Step RUN
 Files most likely to need fixing:
 - `dev-utils/autonomous/maintenance/lib/claude.sh` — claude invocation flags
 - `dev-utils/autonomous/maintenance/lib/opencode.sh` — opencode invocation flags
-- `dev-utils/autonomous/maintenance/run-all.sh`, `claude.sh`, `opencode.sh`, `claude-meta.sh`, `opencode-meta.sh`
+- `dev-utils/autonomous/run-all.sh`, `dev-utils/autonomous/maintenance/claude.sh`, `opencode.sh`, `claude-meta.sh`, `opencode-meta.sh`
 
 ## Step VERIFY: Confirm success
 
