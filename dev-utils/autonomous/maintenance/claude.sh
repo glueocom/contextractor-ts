@@ -11,7 +11,6 @@ cd "$REPO_ROOT"
 # shellcheck source=lib/claude.sh
 source "$SCRIPT_DIR/lib/claude.sh"
 
-rm -rf autonomous-task-output/claude
 mkdir -p autonomous-task-output/claude/reports autonomous-task-output/claude/prompts
 
 claude_run "/autonomous:maintenance:deps/update"
@@ -19,7 +18,7 @@ claude_run "/autonomous:maintenance:schema/gen-input-schema"
 claude_run "/autonomous:maintenance:docs/gen-md-regions"
 claude_run "/autonomous:maintenance:sync/gui"
 claude_run "/autonomous:maintenance:sync/docs"
-claude_run "/autonomous:maintenance:sync/opencode"
+claude_run "/autonomous:meta:sync-opencode"
 claude_run "/autonomous:maintenance:test/local"
 claude_run "/autonomous:maintenance:test/typescript-autofix"
 claude_run "/autonomous:maintenance:test/dead-code-autofix"

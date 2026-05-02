@@ -13,7 +13,7 @@ source "$SCRIPT_DIR/lib/claude.sh"
 rm -rf autonomous-task-output/claude
 mkdir -p autonomous-task-output/claude/reports autonomous-task-output/claude/prompts
 
-claude_run "/autonomous:maintenance:meta/setup"
+claude_run "/autonomous:meta:setup"
 
 echo ""
 echo "[autonomous:maintenance:claude-meta] Committing results..."

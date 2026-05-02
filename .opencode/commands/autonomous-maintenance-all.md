@@ -1,7 +1,5 @@
 ---
 description: Run all autonomous/maintenance commands sequentially, then commit and push results
-allowed-tools: Read, Write, Edit, Bash, Glob, Grep
-model: sonnet
 ---
 
 # Maintenance Orchestrator
@@ -13,7 +11,7 @@ Run all autonomous/maintenance sub-commands sequentially across the repo, then c
 Remove the agent's output folder and recreate it clean:
 
 ```bash
-rm -rf autonomous-task-output && mkdir -p autonomous-task-output/claude/reports autonomous-task-output/claude/prompts
+rm -rf autonomous-task-output/claude && mkdir -p autonomous-task-output/claude/reports autonomous-task-output/claude/prompts
 ```
 
 ## Step EXECUTE: Run Each Sub-command
@@ -25,7 +23,7 @@ Run each sub-command sequentially in this order. If a command fails, log the fai
 - `/autonomous:maintenance:docs:gen-md-regions` — regenerate @generated markdown regions
 - `/autonomous:maintenance:sync:gui` — verify internal consistency
 - `/autonomous:maintenance:sync:docs` — sync READMEs
-- `/autonomous:meta:sync-opencode` — sync to opencode
+- `/autonomous:maintenance:sync:opencode` — sync to opencode
 - `/autonomous:maintenance:test:local` — build + unit tests + lint autofix
 - `/autonomous:maintenance:test:typescript-autofix` — TypeScript review
 - `/autonomous:maintenance:test:dead-code-autofix` — dead code cleanup
