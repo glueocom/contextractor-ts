@@ -6,7 +6,7 @@ Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
 (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
 Playwright).
 
-It owns the browser-facing pieces of the rearchitecture:
+It owns the browser-facing pieces of the re-architecture:
 
 - `createContextractorCrawler()` and `buildRequests()`
 - Cookie defences via Ghostery and optional autoconsent fallback

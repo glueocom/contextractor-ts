@@ -25,6 +25,12 @@ export type OutputFormat = 'txt' | 'markdown' | 'json' | 'html';
 
 const DEFAULT_FORMATS: readonly OutputFormat[] = ['txt', 'markdown', 'json', 'html'];
 
+const OUTPUT_FORMAT_SET = new Set<string>(DEFAULT_FORMATS);
+
+function isOutputFormat(value: string): value is OutputFormat {
+  return OUTPUT_FORMAT_SET.has(value);
+}
+
 /**
  * Trafilatura extraction config. Mirrors the Python `TrafilaturaConfig`
  * dataclass with two forward-compat placeholders (`teiValidation`,
@@ -254,7 +260,7 @@ function toNativeConfig(config: TrafilaturaConfig): NativeTrafilaturaConfig {
 function toResult(value: NativeExtractionResult): ExtractionResult {
   return {
     content: value.content,
-    format: (value.format as OutputFormat) ?? 'txt',
+    format: isOutputFormat(value.format) ? value.format : 'txt',
   };
 }
 

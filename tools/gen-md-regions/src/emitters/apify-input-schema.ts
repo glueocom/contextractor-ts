@@ -43,7 +43,7 @@ function formatDefault(prop: Record<string, unknown>, isRequired: boolean): stri
   if (value === null) return '`null`';
   if (Array.isArray(value)) return value.length === 0 ? '`[]`' : `\`${JSON.stringify(value)}\``;
   if (typeof value === 'object') {
-    const keys = Object.keys(value as Record<string, unknown>);
+    const keys = Object.keys(value);
     return keys.length === 0 ? '`{}`' : `\`${JSON.stringify(value)}\``;
   }
   if (typeof value === 'string') return value === '' ? '`""`' : `\`"${value}"\``;
