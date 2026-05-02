@@ -29,8 +29,12 @@ Read the failing file, apply the minimal fix using Edit, then return to Step RUN
 Files most likely to need fixing:
 - `dev-utils/autonomous/maintenance/lib/claude.sh` — claude invocation flags
 - `dev-utils/autonomous/maintenance/lib/opencode.sh` — opencode invocation flags
-- `dev-utils/autonomous/run-all.sh`, `dev-utils/autonomous/maintenance/claude.sh`, `opencode.sh`, `claude-meta.sh`, `opencode-meta.sh`
+- `dev-utils/autonomous/run-all.sh`, `dev-utils/autonomous/maintenance/claude.sh`, `opencode.sh`, `claude-meta.sh`, `sync.sh`
 
 ## Step VERIFY: Confirm success
 
 When `EXIT:0` and no error lines appear, report: which iteration passed, and a one-line summary of any fixes applied.
+
+## Step COMMIT: Commit and Push
+
+Run `/git:commit` to commit and push any fixes applied during the auto-fix loop.
