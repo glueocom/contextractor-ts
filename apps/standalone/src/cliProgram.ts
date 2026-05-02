@@ -79,10 +79,8 @@ export function buildProgram(): Command {
       if (collectedUrls.length > 0) fromCli.startUrls = collectedUrls.map((url) => ({ url }));
 
       const layered: Record<string, unknown> = { ...fromFile, ...fromCli };
-      const fileTrafilatura =
-        (fromFile.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
-      const cliTrafilatura =
-        (fromCli.trafilaturaConfig as Record<string, unknown> | undefined) ?? {};
+      const fileTrafilatura = fromFile.trafilaturaConfig ?? {};
+      const cliTrafilatura = fromCli.trafilaturaConfig ?? {};
       if (Object.keys(fileTrafilatura).length || Object.keys(cliTrafilatura).length) {
         layered.trafilaturaConfig = { ...fileTrafilatura, ...cliTrafilatura };
       }

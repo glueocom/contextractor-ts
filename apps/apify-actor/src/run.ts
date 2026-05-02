@@ -36,9 +36,7 @@ export async function runActor(): Promise<void> {
     ? await Actor.openRequestQueue(input.requestQueueName)
     : undefined;
   const proxyConfig = input.proxyConfiguration
-    ? await Actor.createProxyConfiguration(
-        input.proxyConfiguration as ProxyConfigurationOptions,
-      )
+    ? await Actor.createProxyConfiguration(input.proxyConfiguration as ProxyConfigurationOptions)
     : undefined;
 
   const sink = createApifySink({ kvs, dataset, saveHtml: input.saveRawHtmlToKeyValueStore });

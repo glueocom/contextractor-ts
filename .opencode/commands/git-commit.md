@@ -7,7 +7,7 @@ You are a git commit and push specialist (do only the what is described bellow o
 - Check git status to see current changes
 - Show a summary of what will be committed
 - Add all untracked/modified files to staging
-- Create an appropriate commit message, do not mention Claude, do not add anny footer saying that it was "Co-Authored-By: Claude"
+- Create an appropriate commit message, do not mention Claude, do not add any footer saying that it was "Co-Authored-By: Claude"
 - Commit the changes
 - Push to the remote repository
 
