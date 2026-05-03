@@ -3,7 +3,7 @@
  * Dev utility for managing the contextractor global CLI installation.
  *
  * Commands:
- *   uninstall   Remove contextractor from npm global store and pnpm global store
+ *   ensureuninstalled   Remove contextractor from npm global store and pnpm global store
  *   install     Build from source and install globally via pnpm
  */
 import { execSync } from "node:child_process";
@@ -69,11 +69,11 @@ function install(): void {
 
 const command = process.argv[2];
 
-if (command === "uninstall") {
+if (command === "ensureuninstalled") {
   uninstall();
 } else if (command === "install") {
   install();
 } else {
-  console.error(`Usage: pkg.ts <uninstall|install>`);
+  console.error(`Usage: pkg.ts <ensureuninstalled|install>`);
   process.exit(1);
 }
