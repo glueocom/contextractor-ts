@@ -3,4 +3,4 @@ set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$DIR/../.." && pwd)"
 TSX="$REPO_ROOT/node_modules/.bin/tsx"
-exec "$TSX" "$DIR/lib/pkg.ts" ensureuninstalled
+"$TSX" "$DIR/lib/pkg.ts" ensureuninstalled

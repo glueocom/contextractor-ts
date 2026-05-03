@@ -15,13 +15,15 @@ const STANDALONE_PKG = "@contextractor/standalone";
 
 const REPO_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../.."
+  "../../.."
 );
 const STANDALONE_DIR = path.join(REPO_ROOT, "apps/standalone");
 
+const SHELL = process.env.SHELL ?? "/bin/zsh";
+
 function run(cmd: string, cwd?: string): void {
   console.log(`  > ${cmd}`);
-  execSync(cmd, { stdio: "inherit", cwd });
+  execSync(cmd, { stdio: "inherit", cwd, shell: SHELL });
 }
 
 function tryRun(cmd: string, cwd?: string): boolean {
@@ -61,8 +63,8 @@ function install(): void {
   console.log(`\n[pkg] Building ${STANDALONE_PKG} from source…`);
   run("pnpm build", STANDALONE_DIR);
 
-  console.log(`\n[pkg] Installing ${BIN_NAME} globally via pnpm…`);
-  run(`pnpm install -g .`, STANDALONE_DIR);
+  console.log(`\n[pkg] Installing ${BIN_NAME} globally via npm…`);
+  run(`npm install -g .`, STANDALONE_DIR);
 
   console.log(`\n[pkg] Install complete. Test with: ${BIN_NAME} --help`);
 }
