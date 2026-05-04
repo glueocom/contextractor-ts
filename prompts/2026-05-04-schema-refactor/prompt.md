@@ -26,7 +26,7 @@ Remove the four boolean save fields (lines 171–204). In their place add two fi
 
 ```ts
 save: z
-  .array(z.enum(['txt', 'markdown', 'json', 'html', 'original']))
+  .array(z.enum(['text', 'markdown', 'json', 'html', 'original']))
   .default(['markdown'])
   .describe(
     'Output formats to extract and save. "original" saves the raw page HTML before extraction.',
@@ -36,7 +36,7 @@ save: z
     ...apifyMeta({
       editor: 'select',
       enumTitles: [
-        'TXT — plain text, whitespace-normalized',
+        'Text — plain text, whitespace-normalized',
         'Markdown — human-readable markup, suitable for LLM consumption',
         'JSON — structured data with metadata',
         'HTML — cleaned extracted content',
@@ -68,9 +68,11 @@ Replace the four-boolean format derivation (lines 22–26) with:
 ```ts
 const formats: OutputFormat[] = input.save
   .filter((f) => f !== 'original')
-  .map((f) => f as OutputFormat);
+  .map((f) => (f === 'text' ? 'txt' : f) as OutputFormat);
 if (formats.length === 0) formats.push('markdown');
 ```
+
+The schema uses `'text'` (user-facing); the internal `OutputFormat` still uses `'txt'`. Map at the boundary.
 
 ### `apps/apify-actor/src/sinks.ts`
 
@@ -105,35 +107,40 @@ Remove the redundant `--format` option (it is an alias of `--save`):
 
 ### `apps/standalone/src/config.ts`
 
-No other changes needed. The CLI resolves formats through `CliOnlyOverrides.save` and `validateSaveFormats` (which also handles `jsonl` and `all`). The shared schema `save` field applies when a JSON config file is used.
+Rename `'txt'` → `'text'` throughout to match the schema enum:
+
+- `SaveFormat` type: `'txt'` → `'text'`
+- `SORTED_SAVE_FORMATS`: replace `'txt'` with `'text'`
+- `isSaveFormat`: `case 'txt':` → `case 'text':`
+- `validateSaveFormats`: remove the `normalized === 'text' → 'txt'` alias line — `'text'` is now the canonical value, not a normalised alias
 
 ## Example Projects
 
-Create the following examples under `examples/`. Each must be self-contained and runnable.
+Create the following examples under `examples/`. Each must be self-contained and runnable. The `saveDestination` field applies only to Apify Actor invocations — do not include it in npm, Docker, or library examples.
 
 ### `examples/library-ts/`
 
-Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. The example should extract content from a URL and print the result to stdout.
+Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. The example should extract content from a URL and print the result to stdout. No `saveDestination`.
 
 ### `examples/cli-npm/`
 
-Folder containing `run.sh` — shell script invoking the `contextractor` CLI from the installed npm package. Show basic usage: one URL, `--save markdown`, `--output-dir ./out`.
+Folder containing `run.sh` — shell script invoking the `contextractor` CLI from the installed npm package. Show basic usage: one URL, `--save markdown`, `--output-dir ./out`. No `saveDestination`.
 
 ### `examples/cli-docker/`
 
-Folder containing `run.sh` — shell script invoking Contextractor via the Docker CLI. Use `docker run` with the published image. Pass URL and save flags as Docker command arguments.
+Folder containing `run.sh` — shell script invoking Contextractor via the Docker CLI. Use `docker run` with the published image. Pass URL and save flags as Docker command arguments. No `saveDestination`.
 
 ### `examples/docker-api-ts/`
 
-Node.js TypeScript project calling Contextractor via the Docker Engine API (no CLI). Use the Docker socket to start a container, pass input, and collect output. Include `package.json`, `tsconfig.json`, and `src/main.ts`.
+Node.js TypeScript project calling Contextractor via the Docker Engine API (no CLI). Use the Docker socket to start a container, pass input, and collect output. Include `package.json`, `tsconfig.json`, and `src/main.ts`. No `saveDestination`.
 
 ### `examples/apify-api-ts/`
 
-Node.js TypeScript project calling the test Apify actor (`glueo/contextractor-test`) via the Apify API. Use the `apify-client` npm package. Start a run, wait for it to finish, and retrieve dataset results. Include `package.json`, `tsconfig.json`, and `src/main.ts`.
+Node.js TypeScript project calling the test Apify actor (`glueo/contextractor-test`) via the Apify API. Use the `apify-client` npm package. Start a run, wait for it to finish, and retrieve dataset results. Include `package.json`, `tsconfig.json`, and `src/main.ts`. Pass `saveDestination: ['dataset']` in the actor input to demonstrate dataset output.
 
 ### `examples/cli-apify/`
 
-Folder containing `run.sh` — shell script calling `glueo/contextractor-test` via the Apify CLI (`apify call`). Pass actor input as JSON.
+Folder containing `run.sh` — shell script calling `glueo/contextractor-test` via the Apify CLI (`apify call`). Pass actor input as JSON including `saveDestination`.
 
 ## After Implementation
 
