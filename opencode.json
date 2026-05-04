@@ -6,8 +6,8 @@
     "azure": {
       "options": {
         "apiKey": "{env:AZURE_OPENAI_KEY}",
-        "baseURL": "https://glueo-se.openai.azure.com/openai",
-        "resourceName": "glueo-se",
+        "baseURL": "{env:AZURE_BASE_URL}",
+        "resourceName": "{env:AZURE_RESOURCE_NAME}",
         "apiVersion": "preview"
       },
       "models": {
