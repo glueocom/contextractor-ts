@@ -63,6 +63,7 @@ mcpc @apify tools-call <tool> arg:=value
 - [Minimal diff](.claude/rules/minimal-diff.md)
 - [Formatting guidelines](.claude/rules/formatting-guidelines.md)
 - [Prompt engineering knowledge](.claude/rules/prompt-engineering-knowledge.md)
+- [Spec maintenance](.claude/rules/spec-maintenance.md) — keep SPEC.md files accurate as the codebase evolves
 
 ## Agents
 
@@ -70,16 +71,34 @@ mcpc @apify tools-call <tool> arg:=value
 - `rust-pro` — Rust 1.85+ development
 - `ts-pro` — TypeScript 5.x, Biome, zod, vitest
 - `test-runner` — format, lint, unit, integration, smoke
-- `prompt-writer` — creates agents, commands, rules, skills
+- `prompt-writer` — creates agents, skills, rules
 - `prompt-modifier` — edits or rebuilds existing prompts
 - `prompt-formatter` — reformats prompts to guidelines
 - `web-research-specialist` — multi-source research
 
 ## Active Skills
 
-- `rust`, `async-rust-patterns`, `rust-testing-patterns`, `rust-packaging`, `rust-performance-optimization`
-- `apify-actor-development`, `apify-actorization`, `apify-ops`, `apify-schemas`
-- `autonomous-task`
+### Rust
+
+- `rust`, `rust:async-rust-patterns`, `rust:rust-testing-patterns`, `rust:rust-packaging`, `rust:rust-performance-optimization`
+
+### Apify
+
+- `apify:apify-actor-development`, `apify:apify-actorization`, `apify:apify-ops`, `apify:apify-schemas`
+
+### Contextractor
+
+- `autonomous-task`, `platform:deploy-and-test`, `run`
+
+### Dev workflow
+
+- `git:commit`, `git:release`, `git:squash-merge-to-dev`, `git:add-worktree`
+- `autonomous:maintenance-all`, `autonomous:maintenance:test:local`, `autonomous:maintenance:sync:docs`
+
+### Meta
+
+- `meta:setup`, `meta:write-prompt`, `meta:write-prompt-file`, `meta:fix-prompt`
+- `scaffold:rust-scaffold`
 
 ## Security
 

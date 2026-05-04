@@ -5,9 +5,8 @@ Shared knowledge for all prompt engineering agents in this repo.
 ## Prompt Types
 
 - **Agents**: `.claude/agents/<name>.md` (flat — no subdirectories in this repo)
-- **Commands**: `.claude/commands/[category]/<name>.md`
 - **Rules**: `.claude/rules/<name>.md` (flat)
-- **Skills**: `.claude/skills/<name>/SKILL.md`
+- **Skills**: `.claude/skills/<category>/<name>/SKILL.md` or `.claude/skills/<name>/SKILL.md` — the only home for custom extensions (`.claude/skills/` replaces the legacy `.claude/commands/`)
 - **General Prompts**: `prompts/<descriptive-name>.md`
 
 ## Frontmatter Structure
@@ -23,16 +22,14 @@ Shared knowledge for all prompt engineering agents in this repo.
 
 ### Skills
 
-- **name**: lowercase-with-hyphens (must match directory name)
-- **description**: Purpose and trigger conditions
-- No `displayName`, no `version`, no `license` (unless required by upstream skill source)
-
-### Commands
-
-- **description**: Clear one-line purpose
-- **argument-hint**: `<required> [optional]` (when the command takes args)
+- **name**: lowercase-with-hyphens matching the slash invocation path (e.g. `git:commit` for `.claude/skills/git/commit/SKILL.md`)
+- **description**: WHEN/WHEN-NOT directive form — when to invoke and when not to
 - **allowed-tools**: Only necessary tools (e.g. `Bash(git:*)`, `Bash(cargo:*)`, `Read`)
 - **model**: See Model Assignment below
+- **argument-hint**: `<required> [optional]` (when the skill takes args)
+- **disable-model-invocation: true**: For side-effectful skills (deploys, commits, pushes, irreversible writes) — prevents auto-triggering; user must explicitly invoke via `/name`
+- **user-invocable: false**: For ambient-only skills hidden from the `/` menu (auto-trigger only)
+- No `displayName`, no `version`, no `license` (unless required by upstream skill source)
 
 ### Rules
 
@@ -67,7 +64,7 @@ Grant only tools actually needed:
 - **Implementation**: Read, Write, Edit, Bash, Glob, Grep
 - **Coordination**: Broad set for orchestration
 - **Meta**: Read, Write, Edit (config files)
-- **Commands**: Task-specific (minimal)
+- **Skills**: Task-specific (minimal)
 
 ## Content Principles
 
@@ -96,5 +93,5 @@ Grant only tools actually needed:
 ## Documentation
 
 - Agents: `https://docs.claude.com/en/docs/claude-code/sub-agents`
-- Commands: `https://docs.claude.com/en/docs/claude-code/slash-commands`
+- Skills: `https://docs.claude.com/en/docs/claude-code/slash-commands`
 - Tools: `https://docs.claude.com/en/docs/claude-code/settings`
