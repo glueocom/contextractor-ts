@@ -4,6 +4,8 @@
 
 Replace the four boolean save fields in the Actor input with a single `save` enum array (matching the CLI `--save` style) and a new Actor-only `saveDestination` field. Source of truth: `packages/schema/src/input.ts`.
 
+The npm package (`@contextractor/standalone`) is both a CLI tool and a Node.js library — it exports a programmatic API in addition to the binary.
+
 Fields to remove:
 
 - `saveRawHtmlToKeyValueStore`
@@ -93,9 +95,45 @@ const sink = createApifySink({
 });
 ```
 
+### `apps/standalone/src/cliProgram.ts`
+
+Remove the redundant `--format` option (it is an alias of `--save`):
+
+- Delete the `.option('--format <fmt>', ...)` line (~line 26)
+- Delete the `opts.format` handling block (~lines 270–271)
+- Delete the `format?: string` field from the options type (~line 313)
+
 ### `apps/standalone/src/config.ts`
 
-No changes needed. The CLI resolves formats through `CliOnlyOverrides.save` and `validateSaveFormats` (which also handles `jsonl` and `all`). The shared schema `save` field applies when a JSON config file is used.
+No other changes needed. The CLI resolves formats through `CliOnlyOverrides.save` and `validateSaveFormats` (which also handles `jsonl` and `all`). The shared schema `save` field applies when a JSON config file is used.
+
+## Example Projects
+
+Create the following examples under `examples/`. Each must be self-contained and runnable.
+
+### `examples/library-ts/`
+
+Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. The example should extract content from a URL and print the result to stdout.
+
+### `examples/cli-npm.sh`
+
+Shell script invoking the `contextractor` CLI from the installed npm package. Show basic usage: one URL, `--save markdown`, `--output-dir ./out`.
+
+### `examples/cli-docker.sh`
+
+Shell script invoking Contextractor via the Docker CLI. Use `docker run` with the published image. Pass URL and save flags as Docker command arguments.
+
+### `examples/docker-api-ts/`
+
+Node.js TypeScript project calling Contextractor via the Docker Engine API (no CLI). Use the Docker socket to start a container, pass input, and collect output. Include `package.json`, `tsconfig.json`, and `src/main.ts`.
+
+### `examples/apify-api-ts/`
+
+Node.js TypeScript project calling the test Apify actor (`glueo/contextractor-test`) via the Apify API. Use the `apify-client` npm package. Start a run, wait for it to finish, and retrieve dataset results. Include `package.json`, `tsconfig.json`, and `src/main.ts`.
+
+### `examples/cli-apify.sh`
+
+Shell script calling `glueo/contextractor-test` via the Apify CLI (`apify call`). Pass actor input as JSON.
 
 ## After Implementation
 
