@@ -1,5 +1,5 @@
 ---
-description: Archive prompt text or file to @/prompts/ — words verbatim, clutter trimmed
+description: Archive prompt text or file to prompts/ — words verbatim, clutter trimmed
 allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
 model: haiku
 argument-hint: <prompt text or file path>
@@ -7,7 +7,7 @@ argument-hint: <prompt text or file path>
 
 # Store Prompt
 
-Save raw prompt text or move an existing prompt file into the organized `@/prompts/` directory. Words are saved **exactly verbatim** — only trim clutter (stray `\`, extra line breaks, extra tabs/spaces).
+Save raw prompt text or move an existing prompt file into the organized `prompts/` directory. Words are saved **exactly verbatim** — only trim clutter (stray `\`, extra line breaks, extra tabs/spaces).
 
 ## Input
 
@@ -31,7 +31,7 @@ Check if `$ARGUMENTS` is a file path:
 
 ## Step PATH: Build the File Path
 
-Destination: `@/prompts/YYYY-MM-DD-<topic>/prompt.md`
+Destination: `prompts/YYYY-MM-DD-<topic>/prompt.md`
 
 - Use today's date for the `YYYY-MM-DD` prefix
 - `<topic>` is the kebab-case topic name from Step NAME
@@ -42,7 +42,7 @@ Destination: `@/prompts/YYYY-MM-DD-<topic>/prompt.md`
 
 Create the directory:
 ```bash
-mkdir -p @/prompts/YYYY-MM-DD-<topic>
+mkdir -p prompts/YYYY-MM-DD-<topic>
 ```
 
 **Text mode**:
