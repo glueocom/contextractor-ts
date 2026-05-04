@@ -6,6 +6,8 @@ Replace the four boolean save fields in the Actor input with a single `save` enu
 
 The npm package (`@contextractor/standalone`) is both a CLI tool and a Node.js library — it exports a programmatic API in addition to the binary.
 
+No backward compatibility is required. Break any existing API, CLI flags, Actor input, or Docker interface without hesitation — this is a clean cut.
+
 Fields to remove:
 
 - `saveRawHtmlToKeyValueStore`
