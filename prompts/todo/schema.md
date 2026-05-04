@@ -10,4 +10,3 @@ in other words - use the settings like li CLI has, the source of truth must be /
                                                                                                                            
 Only for Apify Actor, there will be another array of possibilities where to save the output, for now it will have two values - dataset and key value store (default checked key value store). the npm package( cli, typescript lib    will be saving it to disk only, and won't have that settings)                                                                                                          
                                                                                                                            
-Write the prompt to a subfolder of '/Users/miroslavsekera/r/contextractor-ts/prompts', to a one-file prompt   
