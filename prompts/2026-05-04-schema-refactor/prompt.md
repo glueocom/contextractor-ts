@@ -15,12 +15,40 @@ Fields to remove:
 - `saveExtractedJsonToKeyValueStore`
 - `saveExtractedMarkdownToKeyValueStore`
 
+## Parameter and Naming Review
+
+Before finalizing any schema field, CLI flag, or dataset property, audit every name against May 2026 industry standards and API design best practices:
+
+- Are names consistent across the input schema, CLI flags, and dataset output?
+- Do names follow the dominant convention for the context (camelCase for JSON/TS, kebab-case for CLI flags)?
+- Are names unambiguous, self-documenting, and free of abbreviations that have clearer alternatives?
+- Are enum values lowercase and hyphen-separated where appropriate?
+- Are boolean field names framed as positive assertions (avoid `disableX` — prefer `skipX` or restructure)?
+- Are grouped concepts named with a consistent prefix or suffix?
+
+Rename any field that fails this review. No backward compatibility is required.
+
 ## Skills and Agents
 
 - `ts-pro` — TypeScript implementation
 - `apify-schemas` — Schema conventions reference
 
 ## Files to Change
+
+### `packages/schema/` — Folder Restructure
+
+Reorganise `packages/schema/src/` as follows — `index.ts` stays at `src/` root; everything else moves into subfolders:
+
+- `src/source-of-truth/` — all Zod source-of-truth definitions: `input.ts`, and the new output schema file (see below). These files are the canonical definitions that drive type inference and schema generation.
+- `src/apify/` — Apify-specific utilities: `apify-meta.ts`, `to-apify-schema.ts`.
+
+Update all import paths in the package and in consumers after the move.
+
+### `packages/schema/src/source-of-truth/output.ts` (new)
+
+Add a Zod source-of-truth for the Apify Actor dataset output schema. Each dataset item represents one extracted page. Field names must align with the naming conventions of the `rs-trafilatura` fork at https://github.com/Murrough-Foley/rs-trafilatura — read that repository's output structures before naming any field. Cross-check with the upstream Python trafilatura metadata fields (`title`, `author`, `url`, `hostname`, `description`, `sitename`, `date`, `categories`, `tags`, `fingerprint`, `id`, `license`, `text`, `comments`).
+
+Also generate `apps/apify-actor/.actor/dataset_schema.json` from this Zod definition (add a gen step or extend the existing `gen-input-schema` tool).
 
 ### `packages/schema/src/input.ts`
 
