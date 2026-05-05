@@ -4,6 +4,8 @@ Root `SPEC.md` and each package/app `SPEC.md` must be kept in sync with the code
 
 ## When to update specs
 
+Update the relevant SPEC.md in the **same response** as the source change — never defer to a follow-up.
+
 Update the affected `SPEC.md` when:
 - A public API changes (new exports, renamed functions, changed signatures)
 - Input or output schema fields change
