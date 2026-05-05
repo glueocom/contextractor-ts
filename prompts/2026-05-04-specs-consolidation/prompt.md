@@ -25,8 +25,8 @@ When writing specs, consider these latest prompts:
 
 ## Claude Code config consolidation
 
-Greenfield restructure — no backward compatibility required. `.claude/skills/` is the only home for custom extensions in May 2026; `.claude/commands/` is legacy.
+Greenfield restructure — no backward compatibility required.
 
-- **Update all related references.** Search and update path references and prose in: `CLAUDE.md` (root and nested), `.claude/agents/*.md`, `.claude/settings.json`, `.claude/settings.local.json`, `.mcp.json`, `README.md`, `CONTRIBUTING.md`, `docs/**/*.md`, and any `prompts/**/prompt.md` or `_run-all.md` orchestrators that reference the old `.claude/commands/` paths. Slash invocations (`/foo`) stay as-is. Collapse any "commands vs skills" prose to just "skills".
+- **Update all related references.** Search and update path references and prose in: `CLAUDE.md` (root and nested), `.claude/agents/*.md`, `.claude/settings.json`, `.claude/settings.local.json`, `.mcp.json`, `README.md`, `CONTRIBUTING.md`, `docs/**/*.md`, and any `prompts/**/prompt.md` or `_run-all.md` orchestrators.
 
 - **Entirely ignore anything related to opencode** — no edits to `opencode.json`, `.opencode/`, or OpenCode references in docs. Will be resolved in another prompt.
