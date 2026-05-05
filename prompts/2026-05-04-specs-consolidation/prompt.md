@@ -27,10 +27,6 @@ When writing specs, consider these latest prompts:
 
 Greenfield restructure — no backward compatibility required. `.claude/skills/` is the only home for custom extensions in May 2026; `.claude/commands/` is legacy.
 
-- **Place the command files into the skills folder.** For every file in `.claude/commands/`, create `.claude/skills/<command-name>/SKILL.md` with the file's content moved in and YAML frontmatter added: `name`, `description` (directive WHEN/WHEN-NOT form, not "Helps with…"), and `disable-model-invocation: true` for any side-effectful command (deploys, commits, publishes, sends, irreversible writes). Default (no flags) = hybrid: auto-triggers AND `/name` invocable. Add `user-invocable: false` for ambient-only skills that should be hidden from the `/` menu. Delete `.claude/commands/` once empty. Slash invocations (`/<name>`) continue to work — skills inherit them.
-
-- **Structure existing skills into subfolders.** Group related skills under category subdirectories instead of flat. Read the actual `.claude/skills/` tree first; do not invent categories that don't fit. Suggested grouping (adapt to reality): `apify/`, `contextractor/`, `typescript/`, `rust/`, `release/`. Skills that don't fit a category stay at top level.
-
 - **Update all related references.** Search and update path references and prose in: `CLAUDE.md` (root and nested), `.claude/agents/*.md`, `.claude/settings.json`, `.claude/settings.local.json`, `.mcp.json`, `README.md`, `CONTRIBUTING.md`, `docs/**/*.md`, and any `prompts/**/prompt.md` or `_run-all.md` orchestrators that reference the old `.claude/commands/` paths. Slash invocations (`/foo`) stay as-is. Collapse any "commands vs skills" prose to just "skills".
 
 - **Entirely ignore anything related to opencode** — no edits to `opencode.json`, `.opencode/`, or OpenCode references in docs. Will be resolved in another prompt.
