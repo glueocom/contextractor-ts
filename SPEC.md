@@ -1,0 +1,175 @@
+# Contextractor — Specification
+
+## Overview
+
+Contextractor crawls websites and extracts clean, readable main-content text. Built on **`rs-trafilatura`** (Rust port of Trafilatura, accessed via a napi-rs binding) and **[Crawlee](https://crawlee.dev/)** (TypeScript crawler driving Playwright).
+
+Available as:
+
+- **Apify Actor** — `glueo/contextractor` on the Apify platform; output saved to the run's Key-Value Store + Dataset
+- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI; output written to disk as one file per page
+- **Extraction library** (`@contextractor/extraction`) — embedded engine used by both surfaces above
+
+Supported output formats: `txt | markdown | json | html`.
+
+## Architecture
+
+```
+packages/extraction/        TypeScript engine + napi-rs Rust crate
+packages/crawler/           Shared Crawlee + Playwright crawler factory
+packages/schema/            Zod 4 single source of truth for input
+apps/apify-actor/           Apify Actor  (depends on extraction + crawler + schema)
+apps/standalone/            Standalone CLI (depends on extraction + crawler + schema)
+```
+
+Data flow:
+
+```
+Input URLs → PlaywrightCrawler → ContentExtractor (TS) → sink
+                                                         ├── KVS + Dataset  (Actor)
+                                                         └── output files   (CLI)
+```
+
+### Native binding
+
+```
+TS engine → require('@contextractor/extraction-native')
+         → loader picks @contextractor/extraction-native-<platform>
+         → loads contextractor-extraction-native.<platform>.node
+         → calls into rs-trafilatura via napi-rs
+```
+
+Platform prebuilds (`darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-gnu`) are committed under `packages/extraction/native/npm/<platform>/` and refreshed by CI on tag pushes. The `.node` files ship via `optionalDependencies` — no Rust toolchain needed in the production image.
+
+## Stack
+
+- **TypeScript 5.x** — all app logic
+- **Rust 1.85+ (Edition 2024)** — only the `napi-rs` wrapper around `rs-trafilatura`; no other Rust crates
+- **`rs-trafilatura` 0.2.x** — Rust port of Trafilatura; drives all extraction
+- **Crawlee 3.x** with `PlaywrightCrawler` for crawling
+- **Apify SDK 3.x** (Actor only)
+- **commander** for the standalone CLI
+- **Zod 4** for input schema and validation
+- **vitest** — TypeScript unit tests; **cargo test** — Rust crate tests
+- **Biome** — TypeScript lint + format
+- **pnpm 10** workspace + **Cargo workspace** at the repo root
+
+## Input Schema
+
+Canonical definition: `packages/schema/src/input.ts` (`ContextractorInput` Zod schema).
+
+`apps/apify-actor/.actor/input_schema.json` is generated at build time by `@contextractor/gen-input-schema`. The input table in `apps/apify-actor/README.md` is auto-rebuilt from the same schema by `@contextractor/gen-md-regions`.
+
+### `trafilaturaConfig`
+
+Pass as a JSON object; leave empty for balanced defaults.
+
+| Field             | Type    | Default | Description                           |
+| ----------------- | ------- | ------- | ------------------------------------- |
+| fast              | boolean | `false` | Fast mode (less thorough)             |
+| favorPrecision    | boolean | `false` | High precision, less noise            |
+| favorRecall       | boolean | `false` | High recall, more content             |
+| includeComments   | boolean | `true`  | Include comments                      |
+| includeTables     | boolean | `true`  | Include tables                        |
+| includeImages     | boolean | `false` | Include images                        |
+| includeFormatting | boolean | `true`  | Preserve formatting                   |
+| includeLinks      | boolean | `true`  | Include links                         |
+| deduplicate       | boolean | `false` | Deduplicate content                   |
+| targetLanguage    | string  | `null`  | Target language code                  |
+| withMetadata      | boolean | `true`  | Forward-compat — always extracted     |
+| onlyWithMetadata  | boolean | `false` | Return only if metadata found         |
+| teiValidation     | boolean | `false` | Forward-compat — accepted but ignored |
+
+Keys accept both camelCase and snake_case; snake_case is normalized internally.
+
+Backward-compat presets:
+- `{}` or omitted → balanced default
+- `{"favorPrecision": true}` → high precision mode
+- `{"favorRecall": true}` → high recall mode
+
+### Standalone CLI config file
+
+The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--save`, `--proxy-urls`) are not accepted in the config file.
+
+Config merge order: `config file → CLI args → ContextractorInput.parse()`.
+
+## Output Schema
+
+### Apify Actor — Dataset entry
+
+```json
+{
+  "loadedUrl": "https://example.com/page",
+  "rawHtml": {
+    "hash": "...",
+    "length": 89898,
+    "key": "abc123-raw.html",
+    "url": "https://api.apify.com/v2/key-value-stores/{id}/records/abc123-raw.html"
+  },
+  "extractedMarkdown": {
+    "key": "abc123.md",
+    "url": "...",
+    "hash": "...",
+    "length": 6887
+  },
+  "loadedAt": "2026-04-27T18:58:36Z",
+  "metadata": {
+    "title": "Page Title",
+    "author": null,
+    "publishedAt": "2024-01-15",
+    "description": "Meta description",
+    "siteName": "Example Site",
+    "lang": "en"
+  },
+  "httpStatus": 200
+}
+```
+
+Rules:
+- `rawHtml`: always has `hash` + `length`; adds `key` + `url` only when raw HTML is saved
+- `extractedMarkdown`, `extractedText`, `extractedJson`: each present only when the matching input flag is enabled
+- `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
+
+### Apify Actor — Key-Value Store
+
+Storage keys use the first 16 hex characters of an MD5 over the URL:
+`createHash('md5').update(url).digest('hex').slice(0, 16)`
+
+- `{hash}-raw.html` — raw HTML
+- `{hash}.txt` — plain text
+- `{hash}.json` — JSON with metadata
+- `{hash}.md` — Markdown
+
+### Standalone CLI — output files
+
+One file per crawled page in the output directory, named from a URL slug (e.g. `example-com-page.md`). When metadata is available, a header (title, author, date, URL) is prepended to text-format outputs.
+
+## Build
+
+```bash
+pnpm --filter @contextractor/extraction-native build:rebuild  # Host-platform .node
+pnpm build                                                      # TypeScript packages (turbo)
+cargo build --workspace                                         # Rust crate
+```
+
+Cross-platform `.node` prebuilds (CI runs the equivalent matrix):
+
+```bash
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target aarch64-apple-darwin
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target x86_64-apple-darwin
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target x86_64-unknown-linux-gnu --zig
+pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target aarch64-unknown-linux-gnu --zig
+```
+
+## Docker (Apify Actor)
+
+Multi-stage Dockerfile at `apps/apify-actor/Dockerfile`:
+
+- **Builder stage** (`apify/actor-node-playwright-chrome:22 AS builder`): runs `pnpm install`, `pnpm --filter @contextractor/apify build`, then `pnpm --filter @contextractor/apify --prod deploy /deploy` to produce a self-contained bundle.
+- **Runtime stage** (`apify/actor-node-playwright-chrome:22`): copies `/deploy` to `/usr/src/app`, runs `node dist/main.js`.
+
+`actor.json` sets `"dockerContextDir": "../../.."` so the Docker build context is the repo root, exposing all `packages/`. Production deploys go through a **Git-connected build** in Apify Console — `apify push` does not honor `dockerContextDir` for contexts above the actor directory.
+
+## CI
+
+`.github/workflows/build-napi.yml` builds all four `.node` prebuilds on release tags (`v*`) and opens a PR refreshing `packages/extraction/native/npm/<platform>/`.

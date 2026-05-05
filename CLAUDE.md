@@ -63,6 +63,7 @@ mcpc @apify tools-call <tool> arg:=value
 - [Minimal diff](.claude/rules/minimal-diff.md)
 - [Formatting guidelines](.claude/rules/formatting-guidelines.md)
 - [Prompt engineering knowledge](.claude/rules/prompt-engineering-knowledge.md)
+- [Spec maintenance](.claude/rules/spec-maintenance.md) — keep SPEC.md files in sync with code
 
 ## Agents
 

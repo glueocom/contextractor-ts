@@ -6,8 +6,7 @@
  * `@contextractor/apify` Actor and the standalone CLI which both also use
  * Crawlee (TypeScript) for crawling.
  *
- * The public API mirrors the Python `contextractor_engine` package and
- * exposes the metadata superset that rs-trafilatura provides.
+ * Exposes the metadata superset that rs-trafilatura provides.
  */
 
 import {
@@ -32,9 +31,9 @@ function isOutputFormat(value: string): value is OutputFormat {
 }
 
 /**
- * Trafilatura extraction config. Mirrors the Python `TrafilaturaConfig`
- * dataclass with two forward-compat placeholders (`teiValidation`,
- * `withMetadata`) accepted by the binding but ignored by rs-trafilatura.
+ * Trafilatura extraction config. `teiValidation` and `withMetadata` are
+ * forward-compat placeholders accepted by the binding but ignored by
+ * rs-trafilatura.
  */
 export interface TrafilaturaConfig {
   fast: boolean;
@@ -56,7 +55,7 @@ export interface TrafilaturaConfig {
   authorBlacklist: string[] | null;
 }
 
-/** Defaults matching the Python `TrafilaturaConfig.balanced()` factory. */
+/** Defaults matching rs-trafilatura's balanced preset. */
 export const DEFAULT_CONFIG: Readonly<TrafilaturaConfig> = Object.freeze({
   fast: false,
   favorPrecision: false,
@@ -82,11 +81,9 @@ export interface ExtractionResult {
 }
 
 /**
- * Metadata superset returned by rs-trafilatura. Fields the Python
- * `MetadataResult` already exposed: `title`, `author`, `date`, `description`,
- * `sitename`, `language`. Fields below those are rs-trafilatura-only and have
- * no Python counterpart: `categories`, `tags`, `license`, `image`, `pageType`,
- * `hostname`, `url`.
+ * Metadata returned by rs-trafilatura. Core fields: `title`, `author`,
+ * `date`, `description`, `sitename`, `language`. Extended fields:
+ * `categories`, `tags`, `license`, `image`, `pageType`, `hostname`, `url`.
  */
 export interface Metadata {
   title: string | null;
@@ -121,10 +118,7 @@ const EMPTY_METADATA: Readonly<Metadata> = Object.freeze({
   pageType: null,
 });
 
-/**
- * Trafilatura wrapper with configurable extraction. Mirrors the Python
- * `ContentExtractor` API.
- */
+/** Trafilatura wrapper with configurable extraction. */
 export class ContentExtractor {
   private readonly config: TrafilaturaConfig;
 
