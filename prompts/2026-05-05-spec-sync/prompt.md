@@ -1,0 +1,58 @@
+# Spec Sync — Propagate Source Changes to SPEC.md Files
+
+Scan all packages for drift between source code and their SPEC.md files. Apply surgical edits to bring specs current. Do not rewrite sections that are already accurate.
+
+## Source → SPEC Mapping
+
+- `packages/extraction/src/**` + `packages/extraction/native/src/**` → `packages/extraction/SPEC.md`
+- `packages/crawler/src/**` → `packages/crawler/SPEC.md`
+- `packages/schema/src/**` → `packages/schema/SPEC.md`
+- `apps/apify-actor/src/**` → `apps/apify-actor/SPEC.md`
+- `apps/standalone/src/**` → `apps/standalone/SPEC.md`
+- Architecture or data-flow changes in any of the above → root `SPEC.md`
+
+## Process
+
+### Step DETECT: Find changed source files
+
+Run `git diff --name-only HEAD~1..HEAD` and `git status --short` to identify what changed recently. If the working tree is clean, read key public API surfaces directly and compare to spec prose.
+
+Public API surfaces to prioritize:
+- `packages/*/src/index.ts` — TypeScript package public exports
+- `packages/extraction/native/src/lib.rs` — Rust napi-rs binding surface
+- `apps/apify-actor/src/run.ts` + `apps/standalone/src/program.ts` — app entry points
+
+### Step MAP: Identify affected specs
+
+From the changed file paths, identify which SPEC.md files need review using the mapping above. A single source file may affect both its package SPEC.md and the root SPEC.md if the data flow changed.
+
+### Step READ: Load source and spec side-by-side
+
+For each affected SPEC.md, read:
+- The package entry point (`src/index.ts` or `lib.rs`) for exported names and signatures
+- The existing SPEC.md to see what is currently documented
+
+Identify drift:
+- New exports, renamed functions, changed signatures
+- New or removed interface fields
+- New/removed behavior or options
+- Stale descriptions referencing removed functionality
+
+### Step PATCH: Apply targeted edits
+
+Use the Edit tool for every change. Never use Write on an existing SPEC.md. Update only the drifted sections. Preserve heading structure, prose style, and all accurate content.
+
+After patching each spec, do a quick coherence check — the spec must read correctly end-to-end.
+
+## Completion Report
+
+After all patches, output a summary table:
+
+| SPEC.md | Status | Summary of changes |
+|---|---|---|
+| packages/extraction/SPEC.md | updated | ... |
+| packages/crawler/SPEC.md | in sync | — |
+| packages/schema/SPEC.md | updated | ... |
+| apps/apify-actor/SPEC.md | in sync | — |
+| apps/standalone/SPEC.md | in sync | — |
+| SPEC.md | updated | ... |
