@@ -29,4 +29,4 @@ Greenfield restructure — no backward compatibility required.
 
 - **Update all related references.** Search and update path references and prose in: `CLAUDE.md` (root and nested), `.claude/agents/*.md`, `.claude/settings.json`, `.claude/settings.local.json`, `.mcp.json`, `README.md`, `CONTRIBUTING.md`, `docs/**/*.md`, and any `prompts/**/prompt.md` or `_run-all.md` orchestrators.
 
-- **Entirely ignore anything related to opencode** — no edits to `opencode.json`, `.opencode/`, or OpenCode references in docs. Will be resolved in another prompt.
+- **Entirely ignore anything related to opencode** — no edits to `opencode.json`, `.opencode/`, `AGENTS.md` or OpenCode references in docs. Will be resolved in another prompt.
