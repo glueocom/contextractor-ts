@@ -1,10 +1,16 @@
-# Set Up Automatic Spec Propagation
+# Set Up Automatic Documentation Propagation
 
-Audit and configure the Claude Code environment so that SPEC.md files are always updated in the same turn as any source file edit — without the user having to ask. Run this once to install or repair the setup.
+Audit and configure the Claude Code environment so that SPEC.md files, READMEs, and internal consistency are always kept in sync with source changes — without the user having to ask. Run this once to install or repair the setup.
 
 ## Goal
 
-Every time Claude edits a `.ts` or `.rs` source file during any task, the relevant SPEC.md must be updated in the same response. A Stop hook enforces this: if Claude finishes a turn having edited source files without updating the correct spec, the hook blocks completion and Claude must fix it before the session can end.
+Every time Claude edits a `.ts` or `.rs` source file during any task, all affected documentation must be updated in the same response:
+
+- **SPEC.md** — per-package spec for the modified package (always required for source changes)
+- **README.md** — package and app READMEs via `pnpm docs:update` (required when public API surfaces change)
+- **GUI consistency** — run `/autonomous:maintenance:sync:gui` to verify TS engine ↔ napi-rs ↔ CLI ↔ schemas alignment (required when API surfaces change)
+
+A Stop hook enforces this: if Claude finishes a turn without updating the correct documentation, the hook blocks completion and Claude must fix it before the session can end.
 
 ## Design rationale
 
@@ -14,11 +20,16 @@ Every time Claude edits a `.ts` or `.rs` source file during any task, the releva
 
 **Why per-package mapping and not "any SPEC.md"**: Editing `packages/extraction/src/index.ts` and only touching `apps/apify-actor/SPEC.md` would pass a naive "was any spec touched?" check. The hook must verify the *correct* spec for the package that was modified.
 
+**Public API surfaces** — files whose changes require README updates and GUI verification:
+- `packages/extraction/src/index.ts` + `packages/extraction/native/src/lib.rs` — TS engine API + napi-rs binding
+- `packages/schema/src/input.ts` — Zod input schema (canonical for CLI flags, Actor input, `ContextractorInputType`)
+- `apps/standalone/src/cliProgram.ts` + `apps/standalone/src/cli.ts` — CLI flag definitions
+
 ## Step AUDIT: Check current state
 
 Verify each required component exists and is correct. Read each file if it exists.
 
-- `.claude/hooks/spec-gate.sh` — executable Stop hook with per-package mapping logic
+- `.claude/hooks/spec-gate.sh` — executable Stop hook with per-package SPEC.md + README/GUI enforcement
 - `.claude/settings.json` → `hooks.Stop[]` entry pointing to spec-gate.sh
 - `.claude/rules/spec-maintenance.md` — spec maintenance rule with explicit same-turn requirement
 - `CLAUDE.md` → Rules section references spec-maintenance
@@ -29,7 +40,8 @@ Create or overwrite `.claude/hooks/spec-gate.sh` with this exact content:
 
 ```bash
 #!/usr/bin/env bash
-# Stop hook — blocks turn completion when source files were edited but the correct SPEC.md was not updated.
+# Stop hook — blocks turn completion when source files were edited but documentation was not updated.
+# Enforces: correct per-package SPEC.md + README.md for public API surface changes.
 # Fires once per turn; stop_hook_active=true on the re-entry prevents an infinite loop.
 set -euo pipefail
 
@@ -48,42 +60,67 @@ edited=$(echo "$input" | jq -r '
 ' 2>/dev/null || true)
 
 spec_files=$(printf '%s\n' "$edited" | grep 'SPEC\.md$' || true)
+readme_files=$(printf '%s\n' "$edited" | grep 'README\.md$' || true)
 
 # Map each edited source file to the SPEC.md it requires.
-required=""
+# Flag public API surface files that also require README updates.
+required_specs=""
+api_surface_changed=false
+
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   case "$f" in
     */packages/extraction/src/*|*/packages/extraction/native/src/*)
-      required+=$'\n'"packages/extraction/SPEC.md" ;;
+      required_specs+=$'\n'"packages/extraction/SPEC.md"
+      api_surface_changed=true ;;
     */packages/crawler/src/*)
-      required+=$'\n'"packages/crawler/SPEC.md" ;;
+      required_specs+=$'\n'"packages/crawler/SPEC.md" ;;
     */packages/schema/src/*)
-      required+=$'\n'"packages/schema/SPEC.md" ;;
+      required_specs+=$'\n'"packages/schema/SPEC.md"
+      api_surface_changed=true ;;
     */apps/apify-actor/src/*)
-      required+=$'\n'"apps/apify-actor/SPEC.md" ;;
+      required_specs+=$'\n'"apps/apify-actor/SPEC.md" ;;
     */apps/standalone/src/*)
-      required+=$'\n'"apps/standalone/SPEC.md" ;;
+      required_specs+=$'\n'"apps/standalone/SPEC.md"
+      [[ "$f" == */cliProgram.ts || "$f" == */cli.ts ]] && api_surface_changed=true ;;
   esac
 done < <(printf '%s\n' "$edited" | grep -E '\.(ts|rs)$' | grep -v 'SPEC\.md' || true)
 
 # Deduplicate.
-required=$(printf '%s\n' "$required" | sort -u | grep -v '^$' || true)
-[[ -z "$required" ]] && exit 0
+required_specs=$(printf '%s\n' "$required_specs" | sort -u | grep -v '^$' || true)
 
-# Check each required spec was actually touched.
-missing=""
-while IFS= read -r spec; do
-  if ! printf '%s\n' "$spec_files" | grep -qF "$spec"; then
-    missing+=" $spec"
+# --- Check 1: SPEC.md per-package ---
+missing_specs=""
+if [[ -n "$required_specs" ]]; then
+  while IFS= read -r spec; do
+    if ! printf '%s\n' "$spec_files" | grep -qF "$spec"; then
+      missing_specs+=" $spec"
+    fi
+  done <<< "$required_specs"
+fi
+
+# --- Check 2: README.md for public API surface changes ---
+missing_readme=""
+if [[ "$api_surface_changed" == true && -z "$readme_files" ]]; then
+  missing_readme=" README.md"
+fi
+
+# Build block message if anything is missing.
+if [[ -n "$missing_specs" || -n "$missing_readme" ]]; then
+  msg="Documentation was not updated after source changes."
+
+  if [[ -n "$missing_specs" ]]; then
+    list="${missing_specs# }"
+    list="${list// /, }"
+    msg+=" Missing SPEC.md: $list."
   fi
-done <<< "$required"
 
-if [[ -n "$missing" ]]; then
-  list="${missing# }"   # strip leading space
-  list="${list// /, }" # space-separate → comma-separate
-  printf '{"decision":"block","reason":"Source files were modified but the following SPEC.md files were not updated: %s. Check .claude/rules/spec-maintenance.md and update them before finishing."}' \
-    "$list"
+  if [[ -n "$missing_readme" ]]; then
+    msg+=" Public API surface changed — update README.md (run pnpm docs:update) and run /autonomous:maintenance:sync:gui."
+  fi
+
+  msg+=" See .claude/rules/spec-maintenance.md."
+  printf '{"decision":"block","reason":"%s"}' "$msg"
   exit 0
 fi
 
@@ -104,7 +141,7 @@ In `.claude/settings.json`, ensure `hooks.Stop` exists with this entry. If `hook
         "type": "command",
         "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/spec-gate.sh",
         "timeout": 10,
-        "statusMessage": "Checking spec files..."
+        "statusMessage": "Checking documentation..."
       }
     ]
   }
@@ -131,28 +168,40 @@ If absent, add it. If already present, skip.
 
 ## Step VERIFY: Smoke test the hook
 
-Run all three cases and confirm output:
+Run all cases and confirm output:
 
 ```bash
-# Case 1 — extraction source edited, extraction spec NOT touched → should block
+# Case 1 — extraction src, no spec → block (SPEC.md + README)
 echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/src/index.ts"}}]}' \
   | .claude/hooks/spec-gate.sh
 
-# Case 2 — extraction source edited AND extraction spec touched → should exit 0 silently
-echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/src/index.ts"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/SPEC.md"}}]}' \
+# Case 2 — extraction src + correct spec + README → exit 0
+echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/src/index.ts"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/SPEC.md"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/README.md"}}]}' \
   | .claude/hooks/spec-gate.sh ; echo "exit $?"
 
-# Case 3 — loop guard: stop_hook_active=true → should exit 0 silently
+# Case 3 — loop guard → exit 0
 echo '{"stop_hook_active":true,"tool_results":[]}' \
   | .claude/hooks/spec-gate.sh ; echo "exit $?"
 
-# Case 4 — extraction source edited but only apify-actor spec touched → should block (wrong spec)
+# Case 4 — wrong spec → block
 echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/extraction/src/index.ts"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/apps/apify-actor/SPEC.md"}}]}' \
   | .claude/hooks/spec-gate.sh
+
+# Case 5 — API surface (schema) + correct spec but no README → block (README + gui)
+echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/schema/src/input.ts"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/schema/SPEC.md"}}]}' \
+  | .claude/hooks/spec-gate.sh
+
+# Case 6 — API surface + spec + README → exit 0
+echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/schema/src/input.ts"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/schema/SPEC.md"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/schema/README.md"}}]}' \
+  | .claude/hooks/spec-gate.sh ; echo "exit $?"
+
+# Case 7 — internal src (crawler) + spec, no API surface → exit 0
+echo '{"stop_hook_active":false,"tool_results":[{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/crawler/src/crawler.ts"}},{"tool_name":"Edit","tool_input":{"file_path":"/repo/packages/crawler/SPEC.md"}}]}' \
+  | .claude/hooks/spec-gate.sh ; echo "exit $?"
 ```
 
-Fix the hook if any test produces unexpected output.
+Fix the hook if any case produces unexpected output.
 
 ## Completion
 
-Report: which components were already correct, which were created or patched, and confirm all four smoke tests passed.
+Report: which components were already correct, which were created or patched, and confirm all seven smoke tests passed.

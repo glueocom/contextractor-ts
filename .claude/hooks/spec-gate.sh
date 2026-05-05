@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Stop hook — blocks turn completion when source files were edited but the correct SPEC.md was not updated.
+# Stop hook — blocks turn completion when source files were edited but documentation was not updated.
+# Enforces: correct per-package SPEC.md + README.md for public API surface changes.
 # Fires once per turn; stop_hook_active=true on the re-entry prevents an infinite loop.
 set -euo pipefail
 
@@ -18,42 +19,67 @@ edited=$(echo "$input" | jq -r '
 ' 2>/dev/null || true)
 
 spec_files=$(printf '%s\n' "$edited" | grep 'SPEC\.md$' || true)
+readme_files=$(printf '%s\n' "$edited" | grep 'README\.md$' || true)
 
 # Map each edited source file to the SPEC.md it requires.
-required=""
+# Flag public API surface files that also require README updates.
+required_specs=""
+api_surface_changed=false
+
 while IFS= read -r f; do
   [[ -z "$f" ]] && continue
   case "$f" in
     */packages/extraction/src/*|*/packages/extraction/native/src/*)
-      required+=$'\n'"packages/extraction/SPEC.md" ;;
+      required_specs+=$'\n'"packages/extraction/SPEC.md"
+      api_surface_changed=true ;;
     */packages/crawler/src/*)
-      required+=$'\n'"packages/crawler/SPEC.md" ;;
+      required_specs+=$'\n'"packages/crawler/SPEC.md" ;;
     */packages/schema/src/*)
-      required+=$'\n'"packages/schema/SPEC.md" ;;
+      required_specs+=$'\n'"packages/schema/SPEC.md"
+      api_surface_changed=true ;;
     */apps/apify-actor/src/*)
-      required+=$'\n'"apps/apify-actor/SPEC.md" ;;
+      required_specs+=$'\n'"apps/apify-actor/SPEC.md" ;;
     */apps/standalone/src/*)
-      required+=$'\n'"apps/standalone/SPEC.md" ;;
+      required_specs+=$'\n'"apps/standalone/SPEC.md"
+      [[ "$f" == */cliProgram.ts || "$f" == */cli.ts ]] && api_surface_changed=true ;;
   esac
 done < <(printf '%s\n' "$edited" | grep -E '\.(ts|rs)$' | grep -v 'SPEC\.md' || true)
 
 # Deduplicate.
-required=$(printf '%s\n' "$required" | sort -u | grep -v '^$' || true)
-[[ -z "$required" ]] && exit 0
+required_specs=$(printf '%s\n' "$required_specs" | sort -u | grep -v '^$' || true)
 
-# Check each required spec was actually touched.
-missing=""
-while IFS= read -r spec; do
-  if ! printf '%s\n' "$spec_files" | grep -qF "$spec"; then
-    missing+=" $spec"
+# --- Check 1: SPEC.md per-package ---
+missing_specs=""
+if [[ -n "$required_specs" ]]; then
+  while IFS= read -r spec; do
+    if ! printf '%s\n' "$spec_files" | grep -qF "$spec"; then
+      missing_specs+=" $spec"
+    fi
+  done <<< "$required_specs"
+fi
+
+# --- Check 2: README.md for public API surface changes ---
+missing_readme=""
+if [[ "$api_surface_changed" == true && -z "$readme_files" ]]; then
+  missing_readme=" README.md"
+fi
+
+# Build block message if anything is missing.
+if [[ -n "$missing_specs" || -n "$missing_readme" ]]; then
+  msg="Documentation was not updated after source changes."
+
+  if [[ -n "$missing_specs" ]]; then
+    list="${missing_specs# }"
+    list="${list// /, }"
+    msg+=" Missing SPEC.md: $list."
   fi
-done <<< "$required"
 
-if [[ -n "$missing" ]]; then
-  list="${missing# }"   # strip leading space
-  list="${list// /, }" # space-separate → comma-separate
-  printf '{"decision":"block","reason":"Source files were modified but the following SPEC.md files were not updated: %s. Check .claude/rules/spec-maintenance.md and update them before finishing."}' \
-    "$list"
+  if [[ -n "$missing_readme" ]]; then
+    msg+=" Public API surface changed — update README.md (run pnpm docs:update) and run /autonomous:maintenance:sync:gui."
+  fi
+
+  msg+=" See .claude/rules/spec-maintenance.md."
+  printf '{"decision":"block","reason":"%s"}' "$msg"
   exit 0
 fi
 
