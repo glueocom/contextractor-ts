@@ -98,7 +98,7 @@ waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
 
 ### `packages/schema/src/input.ts`
 
-Add `sectionCaption` and `sectionDescription` to the existing `waitUntil` field's `apifyMeta` so it groups under "Performance and limits" in the Apify Console UI alongside `pageLoadTimeoutSecs` (current placement inherits whatever section the field above sets). Do not change the Zod default — `'LOAD'` is correct for this tool.
+Add `sectionCaption` to the existing `waitUntil` field's `apifyMeta` so it groups under "Performance and limits" in the Apify Console UI alongside `pageLoadTimeoutSecs` (current placement inherits whatever section the field above sets). Do not change the Zod default — `'LOAD'` is correct for this tool.
 
 ```ts
 waitUntil: z
