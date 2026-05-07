@@ -23,7 +23,7 @@ Read source files and verify each claim. Fix violations before running tests.
 
 ### Schema refactor (step 1)
 
-- No `txt` string literal in TypeScript or CLI help text. Search: `grep -r '"txt"' --include='*.ts' --include='*.json' packages/ apps/`. The napi-rs Rust source still outputs `"txt"` — do not modify it; translation happens in `packages/extraction/src/index.ts`.
+- No `txt` string literal in any source file. Search: `grep -r '"txt"' packages/ apps/`.
 - `text` and `original` are valid values in `OutputFormat`, `SaveFormat`, and `isSaveFormat`.
 - The four removed fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`) are absent from the Zod schema, TypeScript types, and generated `input_schema.json`.
 - `save` and `saveDestination` are present in `packages/schema/src/source-of-truth/input.ts` with correct enum values and defaults.
@@ -64,9 +64,18 @@ Read source files and verify each claim. Fix violations before running tests.
 
 Fix failures before proceeding to the next command.
 
+### Rust
+
+```bash
+cargo test --workspace
+cargo clippy --workspace --all-targets -- -D warnings
+cargo fmt --all --check
+```
+
 ### TypeScript build and regeneration
 
 ```bash
+pnpm --filter @contextractor/extraction-native build:rebuild
 pnpm --filter @contextractor/gen-input-schema start
 pnpm build
 ```
@@ -104,7 +113,7 @@ docker compose -f examples/docker-compose/docker-compose.yml config --quiet
 
 ### Schema refactor
 
-- [ ] `grep -r '"txt"' --include='*.ts' --include='*.json' packages/ apps/` — no matches (Rust source is not modified and intentionally still contains `"txt"`).
+- [ ] `grep -r '"txt"' packages/ apps/` — no matches.
 - [ ] `grep -r 'saveRawHtmlToKeyValueStore\|saveExtractedTextToKeyValueStore\|saveExtractedJsonToKeyValueStore\|saveExtractedMarkdownToKeyValueStore' packages/ apps/` — no matches.
 - [ ] `pnpm build && pnpm lint && pnpm test` — all pass.
 - [ ] `apps/apify-actor/.actor/input_schema.json` contains `save` and `saveDestination`; does not contain the four old boolean fields.
