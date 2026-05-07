@@ -1,17 +1,17 @@
 ---
 description: Research, fix, and compact a prompt file. Optionally execute it to validate and refine.
-argument-hint: <prompt-file-path>
+argument-hint: <prompt-file-path> [prompt-file-path ...]
 allowed-tools: Read, Edit, Grep, Glob, WebSearch, WebFetch, AskUserQuestion
 model: sonnet
 ---
 
 # Fix Prompt
 
-Deep-research a prompt file using mandatory detailed web research, find outdated or wrong approaches, fix them.
+Deep-research one or more prompt files using mandatory detailed web research, find outdated or wrong approaches, fix them. Process each file in full (RESEARCH → QA → FIX → TLDR) before moving to the next.
 
 ## Arguments
 
-- `$ARGUMENTS[0]`: Path to prompt file (required)
+- `$ARGUMENTS`: One or more paths to prompt files (at least one required)
 
 ## Principles
 
@@ -24,7 +24,7 @@ Deep-research a prompt file using mandatory detailed web research, find outdated
 
 ## Step RESEARCH: Deep Analysis
 
-Read the prompt file. Research **every technical claim, tool, library, API, and approach** mentioned. **Web research is mandatory and must not be skipped — even if a claim seems obviously correct, verify it.**
+For each prompt file in `$ARGUMENTS`, run the full pipeline below. Read the prompt file. Research **every technical claim, tool, library, API, and approach** mentioned. **Web research is mandatory and must not be skipped — even if a claim seems obviously correct, verify it.**
 
 - **Web search** (required for every technical claim): current documentation, changelogs, deprecation notices, known issues — search deeply, do not skim
 - **MCP servers**: Query relevant MCP tools for up-to-date information
