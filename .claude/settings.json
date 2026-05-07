@@ -119,6 +119,16 @@
             "statusMessage": "Checking documentation..."
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/test-gate.sh",
+            "timeout": 10,
+            "statusMessage": "Checking tests..."
+          }
+        ]
       }
     ]
   },
