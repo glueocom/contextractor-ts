@@ -61,7 +61,7 @@ Existing single-URL stdout behaviour stays intact: `contextractor https://exampl
 
 ### Storage layout (shared)
 
-Byte-identical to Crawlee's `FileSystemStorageClient`:
+Compatible with Crawlee's `@crawlee/memory-storage` on-disk JSON layout. (JS Crawlee has no `FileSystemStorageClient` — that class exists only in Crawlee for Python. The JS equivalent is `MemoryStorage` from `@crawlee/memory-storage`.)
 
 ```
 ${CONTEXTRACTOR_STORAGE_DIR}/
@@ -79,6 +79,8 @@ ${CONTEXTRACTOR_STORAGE_DIR}/
 │       └── <key>.<ext>          # extension derived from MIME via mime-db
 └── request_queues/               # NOT created in v1; reserve the path
 ```
+
+**`__metadata__.json` note:** Crawlee's `@crawlee/memory-storage` only writes `__metadata__.json` when `writeMetadata: true` (triggered by `DEBUG=crawlee:memory-storage`). Contextractor writes it unconditionally in every dataset and KVS directory because file-based index coordination requires it. This is the one intentional deviation from Crawlee's default on-disk output.
 
 Storage directory resolution order (top wins):
 1. `--storage-dir` CLI flag
@@ -168,7 +170,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - `KeyValueStore` class: `setValue(key, value, contentType?)`, `getValue(key) → {value, contentType}`, `deleteValue(key)`, `listKeys({limit, exclusiveStartKey})`.
    - `resolveStorageDir()` implementing the precedence rules above.
    - All file writes use atomic write-and-rename (write to `.tmp` then `rename`) to keep the directory consistent under `kill -9`.
-   - Concurrent appenders to a Dataset coordinate via the Crawlee technique: read `__metadata__.json`, take the next sequential index, write the item file, update metadata atomically. If you hit a contention loop, fall back to advisory file locking via `proper-lockfile` only if the codebase already includes it; otherwise add a brief retry with jittered backoff. Document the choice.
+   - Concurrent appenders to a Dataset must coordinate via file-based state because each CLI invocation is a fresh process with no shared in-memory state. (Crawlee's `@crawlee/memory-storage` coordinates in-process memory and is explicitly not safe for concurrent multi-process writes — do not reference it as a model here.) Strategy: read `__metadata__.json`, take the next sequential index, write the item file, update metadata atomically. If you hit a contention loop, fall back to advisory file locking via `proper-lockfile` only if the codebase already includes it; otherwise add a brief retry with jittered backoff. Document the choice.
    - MIME → extension via `mime-db` or `mime-types` (add only if not already present).
    - Unit tests: round-trip a Dataset and a KVS, verify byte-compatible layout, parallel pushers don't lose records.
 
