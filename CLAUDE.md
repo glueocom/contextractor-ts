@@ -64,6 +64,7 @@ mcpc @apify tools-call <tool> arg:=value
 - [Formatting guidelines](.claude/rules/formatting-guidelines.md)
 - [Prompt engineering knowledge](.claude/rules/prompt-engineering-knowledge.md)
 - [Spec maintenance](.claude/rules/spec-maintenance.md) — keep SPEC.md files in sync with code
+- [Native addon boundary](.claude/rules/native-addon-boundary.md) — wrapper follows upstream naming; translate at the TypeScript boundary
 
 ## Agents
 
