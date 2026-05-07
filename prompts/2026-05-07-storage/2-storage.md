@@ -227,3 +227,42 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - Datasette-style auto UI.
    - Apify Standby-mode readiness-probe header.
 
+## Unit Tests
+
+Write these tests alongside the implementation. Use vitest; use a temp directory via `os.tmpdir()` or `fs.mkdtempSync` for all storage operations — never use real paths.
+
+### `src/storage/dataset.test.ts`
+
+- `pushData(item)` creates `000000000.json` (nine-digit zero-padded) and sets `itemCount: 1` in `__metadata__.json`
+- `pushData` called twice sequentially creates `000000000.json` and `000000001.json`
+- `getItems({offset: 0, limit: 2})` returns the first two items in insertion order
+- `getItems({desc: true})` returns items in reverse insertion order
+- Two `pushData` calls run in parallel (separate `Dataset` instances on the same directory) — both records appear in `getItems` with no data loss
+- `drop()` removes the dataset directory; subsequent `getItems` returns an empty array
+
+### `src/storage/key-value-store.test.ts`
+
+- `setValue('my-key', buffer, 'image/png')` writes `my-key.png`; `getValue('my-key')` returns the same bytes with `contentType: 'image/png'`
+- `setValue('my-key', {json: true}, 'application/json')` writes `my-key.json`; `getValue` returns the same value
+- `deleteValue('my-key')` removes the file; subsequent `getValue` returns `null`
+- `listKeys({limit: 2})` returns at most two keys and the correct `exclusiveStartKey` for the next page
+
+### `src/storage/resolve-storage-dir.test.ts`
+
+- `--storage-dir` CLI flag takes precedence over env var and heuristics
+- `CONTEXTRACTOR_STORAGE_DIR` env var takes precedence over the `.actor/` heuristic and the XDG fallback
+- Presence of `.actor/` directory in cwd resolves to `./storage`
+- Falls back to `${XDG_DATA_HOME}/contextractor/storage` when no other signal is present
+
+### `src/serve/serve.test.ts`
+
+Use `hono/testing` `testClient` or `app.request()` — no real network port is needed:
+
+- `GET /healthz` returns `{"status":"ok","storageDir":"…","datasetCount":N}` without auth in all modes
+- `GET /v2/datasets/default/items` returns a JSON array; response has all four `X-Apify-Pagination-*` headers
+- `GET /v2/datasets/default/items?format=jsonl` returns NDJSON with `Content-Type: application/x-ndjson`
+- `POST /v2/datasets/default/items` with `{"url":"x","text":"y"}` appends a record; subsequent `GET` returns it
+- npm mode, non-loopback host: `serve` startup rejects with the loopback-only error message
+- Docker mode, non-loopback host, no `CONTEXTRACTOR_API_TOKEN`: startup rejects with a clear token-required error
+- Docker mode, non-loopback host, valid token: `GET /v2/datasets` without `Authorization` → HTTP 401; with `Authorization: Bearer <token>` → HTTP 200
+

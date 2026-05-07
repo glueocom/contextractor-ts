@@ -1,6 +1,6 @@
 # Storage Feature — Full Implementation
 
-Run all five steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
+Run all six steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
 
 ## What this builds
 
@@ -46,5 +46,13 @@ Do not proceed to the next step until all criteria pass.
 Read and execute [`5-auto-fixing-examples.md`](./5-auto-fixing-examples.md).
 
 Reviews every example project for correctness (content, structure, security invariants), runs TypeScript compilation and docker-compose validation, and fixes every failure. Appends examples findings to `report.md`.
+
+Do not mark complete until all checks pass.
+
+## Step UNIT-TESTS: Full Test Suite
+
+Read and execute [`6-unit-tests.md`](./6-unit-tests.md).
+
+Audits every package and app in the repo for unit test coverage gaps, writes missing tests, and ensures `pnpm build && pnpm lint && pnpm test && cargo test --workspace` all pass green.
 
 Do not mark complete until all checks pass.

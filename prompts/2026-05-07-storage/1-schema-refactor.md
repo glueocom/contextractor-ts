@@ -162,3 +162,25 @@ Add `original` handling — no rename needed, `result.formats.txt` stays as is:
 - `validateSaveFormats(['text'])` → expect it to throw (`'text'` is not a valid format; alias removed)
 - Expand `all` expansion test: include `'txt'` and `'original'`
 
+## Unit Tests
+
+Write tests in the same response as the implementation. Place each test file next to its source.
+
+### `packages/schema/src/source-of-truth/input.test.ts` (new)
+
+- `save` default is `['markdown']`; accepts all five enum values (`txt`, `markdown`, `json`, `html`, `original`); rejects unknown strings
+- `saveDestination` default is `['key-value-store']`; accepts `'key-value-store'` and `'dataset'`; rejects unknown strings
+- The five removed boolean fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`, `saveExtractedHtmlToKeyValueStore`) are not present on the inferred input type
+
+### `apps/apify-actor/src/config.test.ts` (new)
+
+- `save: ['txt', 'json']` → `formats` is `['txt', 'json']`
+- `save: ['original']` → after filtering, `formats` is empty → falls back to `['markdown']`
+- `save: ['txt', 'original', 'json']` → `original` filtered out → `formats` is `['txt', 'json']`
+
+### `apps/apify-actor/src/sinks.test.ts` (new)
+
+- `saveDestination: ['key-value-store']`: KVS `setValue` is called; dataset item contains only URL-reference fields, not raw string content
+- `saveDestination: ['dataset']`: content appears as string fields on the dataset item; KVS `setValue` is not called for content
+- `saveOriginal: true, saveDestination: ['key-value-store']`: KVS key for raw HTML is `${keyBase}-original.html`, not `${keyBase}-raw.html`
+
