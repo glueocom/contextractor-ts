@@ -2,7 +2,7 @@
 
 ## Context
 
-`contextractor` is a TypeScript/Node CLI that wraps the `go-trafilatura` binary (distributed via npm `optionalDependencies`) for web content extraction. Today it produces JSON/Markdown to stdout. We want to add a persistent storage layer and an HTTP API, modelled on Apify/Crawlee, so the **same CLI surface** works in three transports:
+`contextractor` is a TypeScript/Node CLI that wraps `rs-trafilatura` via a napi-rs native addon (`@contextractor/extraction-native`, distributed via npm `optionalDependencies`) for web content extraction. Today it writes extracted content to a local output directory (default `./output`). We want to add a persistent storage layer and an HTTP API, modelled on Apify/Crawlee, so the **same CLI surface** works in three transports:
 
 1. **stdout** — pipe-friendly default, today's behaviour preserved.
 2. **Volume-backed local storage** — append-only `Dataset` + mutable `KeyValueStore` on disk, byte-compatible with Apify/Crawlee's `FileSystemStorageClient` layout. Available in **both** the npm and Docker distributions.
@@ -16,7 +16,7 @@ This prompt is intentionally codebase-agnostic. **Do not assume layout, build to
 
 1. `ls` the repo root, find the package.json, read `bin` / `main` / `exports`, and identify how the CLI entrypoint is wired.
 2. Read the current CLI argument parser (commander, yargs, citty, oclif, or hand-rolled) and the current top-level command handler. The new subcommand structure must match the existing convention.
-3. Read how the `go-trafilatura` binary is currently located and invoked at runtime (the `optionalDependencies` resolution path). Storage code must not interfere with this.
+3. Read how the `rs-trafilatura` native addon (`@contextractor/extraction-native` napi-rs binding) is loaded at runtime. Storage code must not interfere with this.
 4. Check whether there's an existing Dockerfile. If yes, plan modifications; if no, plan a new one alongside the npm distribution without breaking it.
 5. Read `tsconfig.json`, the lint config (Biome per user's standing convention), and any existing test setup. Match conventions exactly.
 6. Check whether ESM or CJS is used; storage code must match.
@@ -37,7 +37,7 @@ Treat these as authoritative for *what to build*. The prompt below specifies *wh
 A single CLI surface that compiles into:
 
 - the npm package (Node ≥20, runs on the user's machine), and
-- a Docker image (multi-arch `linux/amd64,linux/arm64`, derived from the same `node:22-slim`-style base, runs the same Node CLI).
+- a Docker image (multi-arch `linux/amd64,linux/arm64`, with a Playwright-capable runtime image, runs the same Node CLI).
 
 The TypeScript source is **shared**. The only differences are: (a) Dockerfile and docker-compose.yml exist only in the Docker distribution; (b) the `serve` subcommand has stricter host-binding rules when running outside Docker.
 
@@ -189,15 +189,15 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - Integration tests via `supertest` or the router's built-in test client: full round-trip extract → list dataset items via API → fetch KVS record.
 
 4. **Dockerfile** (in the Docker repo/folder, leave the npm package untouched)
-   - Multi-stage: `node:22-slim` build → `node:22-slim` runtime.
+   - Multi-stage: `node:22-slim` build → `mcr.microsoft.com/playwright:v<X.Y.Z>-noble` runtime, where `<X.Y.Z>` matches the `playwright` version in `packages/crawler/package.json`. `node:22-slim` lacks the Chrome binary required by Playwright.
    - Non-root user `ctx` with UID/GID 1000.
    - `WORKDIR /storage` (or `WORKDIR /app` and document `/storage` as the mount target — pick one and be consistent).
    - `ENV CONTEXTRACTOR_STORAGE_DIR=/storage CONTEXTRACTOR_DOCKER=1 PORT=8080`.
    - `EXPOSE 8080`.
    - **Do not** declare `VOLUME /storage` (research/01 §8).
-   - `ENTRYPOINT ["node", "/app/bin/contextractor.js"]`, `CMD ["--help"]`.
+   - `ENTRYPOINT ["node", "/app/dist/cli.js"]`, `CMD ["--help"]`. (The `bin` field in `apps/standalone/package.json` maps to `dist/cli.js`; there is no `bin/` directory in the deploy output.)
    - Multi-arch build via `docker buildx`; document the `linux/amd64,linux/arm64` build line in the Dockerfile or a sibling `BUILD.md`.
-   - The Dockerfile must NOT bake the `go-trafilatura` binary unless it's needed at runtime; if it is, install the platform-correct binary in the build stage (consult `optionalDependencies` resolution) and copy it into the runtime image.
+   - The `rs-trafilatura` native addon is installed automatically by `pnpm install` via `optionalDependencies` — only the linux arch-matched prebuild is resolved. No manual binary copying is needed.
 
 5. **`docker-compose.yml`** at the Docker dist root, demonstrating both modes:
    - `api` service: `serve --host 0.0.0.0 --port 8080`, healthcheck on `/healthz`, `CONTEXTRACTOR_API_TOKEN` from env, named volume `ctx_storage:/storage`, `restart: unless-stopped`.
@@ -209,7 +209,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - One README snippet that ends with all three forms, copy-paste ready (mirror the pattern in research/03 §C6).
 
 7. **Migration / backwards compatibility**
-   - Existing users running `contextractor https://example.com` and piping to a file must see byte-identical stdout output. Verify with a snapshot test against a frozen input.
+   - Existing users running `contextractor https://example.com` must see byte-identical file output in `./output/`. Verify with a snapshot test against a frozen input.
    - If today's CLI has any flag named `--output`, `--output-dir`, or `-o`, audit the new `-o` (dataset name) for collision and either keep both with a deprecation warning or rename the new one to `--dataset` and drop the `-o` short flag. Decide based on what the codebase shows.
 
 8. **Things explicitly out of scope for v1** (note them as TODOs, do not implement):
@@ -236,11 +236,11 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
 - [ ] `docker compose up -d api` + `docker compose run --rm extract https://example.com` + `curl -H 'Authorization: Bearer …' http://localhost:8080/v2/datasets/default/items` round-trips correctly.
 - [ ] Multi-arch image builds for `linux/amd64` and `linux/arm64`.
 - [ ] README copy-paste invocations work on macOS bash, Linux bash, Windows PowerShell, and Windows cmd.
-- [ ] No regression for existing single-URL stdout users (snapshot test).
+- [ ] No regression for existing single-URL users: file output in `./output/` is byte-identical to before (snapshot test).
 
 ### Final report
 
-After implementation, write a short report at `prompts/2026-05-07-docker-storage-options/report.md` covering:
+After implementation, write a short report at `prompts/2026-05-07-storage/report.md` covering:
 - Final layout decisions (any deviations from this prompt and why).
 - Test commands with their output.
 - Any conflicts with the existing codebase that forced a deviation, and how they were resolved.
