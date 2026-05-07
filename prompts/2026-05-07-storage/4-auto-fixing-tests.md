@@ -10,6 +10,8 @@ All three implementation steps must be complete:
 - `2-storage.md` — storage layer, subcommands, `serve` API, Dockerfile, docker-compose
 - `3-examples.md` — example projects under `examples/`
 
+This step covers schema refactor (step 1), storage layer (step 2), and security. Examples verification is in `5-auto-fixing-examples.md` — run that step separately after this one.
+
 ## Agents
 
 - `code-reviewer` — Rust and TypeScript code review
@@ -46,13 +48,6 @@ Read source files and verify each claim. Fix violations before running tests.
 - `isRunningInDocker()` uses exactly one detection method (either `/.dockerenv` or `CONTEXTRACTOR_DOCKER=1` env — not both).
 - Storage errors (read-only dir, full disk) log a warning to stderr and continue with stdout-only — extraction does not fail.
 
-### Examples (step 3)
-
-- All seven `examples/` directories exist: `library-ts/`, `cli-npm/`, `cli-docker/`, `docker-compose/`, `docker-api-ts/`, `apify-api-ts/`, `cli-apify/`.
-- `run.sh` files have executable permissions.
-- TypeScript projects (`library-ts/`, `docker-api-ts/`, `apify-api-ts/`) have valid `tsconfig.json` and `package.json`.
-- `docker-compose.yml` is valid.
-
 ### Security
 
 - No `eval` or dynamic code execution in new files.
@@ -86,20 +81,6 @@ pnpm test -- --update-snapshots
 
 Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` and `saveDestination`; no old boolean fields.
 
-### Example TypeScript projects
-
-```bash
-cd examples/library-ts && npx tsc --noEmit
-cd examples/docker-api-ts && npx tsc --noEmit
-cd examples/apify-api-ts && npx tsc --noEmit
-```
-
-### docker-compose validation
-
-```bash
-docker compose -f examples/docker-compose/docker-compose.yml config --quiet
-```
-
 ## Step CRITERIA: Verify Acceptance Criteria
 
 ### Schema refactor
@@ -125,12 +106,6 @@ docker compose -f examples/docker-compose/docker-compose.yml config --quiet
 - [ ] README copy-paste invocations are present for macOS bash, Linux bash, and Windows PowerShell.
 - [ ] Snapshot test confirms existing single-URL file output in `./output/` is byte-identical to before.
 
-### Examples
-
-- [ ] `library-ts/`, `docker-api-ts/`, `apify-api-ts/` compile without errors.
-- [ ] `run.sh` files in `cli-npm/`, `cli-docker/`, `cli-apify/` are executable.
-- [ ] `docker-compose.yml` in `docker-compose/` passes `docker compose config --quiet`.
-
 ## Step FIX: Auto-Fix Loop
 
 For each failing test or unmet criterion:
@@ -144,9 +119,9 @@ Do not mark a criterion as passing until its command exits 0 or the manual check
 
 ## Final Report
 
-Write `prompts/2026-05-07-storage/report.md` covering:
+Write `prompts/2026-05-07-storage/report.md` covering schema refactor and storage layer findings. `5-auto-fixing-examples.md` appends examples findings to the same file.
 
-- Any deviations from the specs in prompts 1–3 and why.
+- Any deviations from the specs in prompts 1–2 and why.
 - Test output for each command above.
 - Conflicts with the existing codebase and how they were resolved.
 - Anything deferred (with rationale).

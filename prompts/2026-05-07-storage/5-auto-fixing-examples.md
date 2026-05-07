@@ -1,0 +1,201 @@
+# Auto-Fix: Examples Verification
+
+Run this after completing `3-examples.md`. Review every example project for correctness, run all validation commands, and fix every failure. Repeat the fix loop until everything passes.
+
+## Prerequisites
+
+`3-examples.md` must be complete — all seven `examples/` directories created. Schema and storage verification (steps 1–2) is in `4-auto-fixing-tests.md`.
+
+## Agents
+
+- `ts-pro` — TypeScript fixes in example projects
+- `code-reviewer` — content and correctness review
+
+## Step REVIEW: Content Review
+
+### Common rules
+
+- `saveDestination` must NOT appear in `library-ts/`, `cli-npm/`, `cli-docker/`, `docker-compose/`, `docker-api-ts/`.
+- `saveDestination` MUST appear in `apify-api-ts/` and `cli-apify/`.
+- All format values use `txt` not `text` throughout.
+- No hardcoded tokens or credentials; all come from env vars.
+- `glueo/contextractor-test` is used in all Apify examples — `glueo/contextractor` (production) must not appear.
+- `--format` flag is not used in any example (it was removed as a redundant alias of `--save`).
+
+### `examples/library-ts/`
+
+- `package.json`, `tsconfig.json`, `src/main.ts` all exist.
+- `src/main.ts` imports the programmatic API from `@contextractor/standalone` — not the binary.
+- Calls `extract` with a URL and prints the result to stdout.
+- No `saveDestination`.
+
+### `examples/cli-npm/run.sh`
+
+- File is executable.
+- Contains all 20 command patterns from `3-examples.md`:
+  - Single URL extract: `contextractor extract <url> --save txt`
+  - Force NDJSON: `contextractor extract <url> --ndjson`
+  - Multi-URL extract: `contextractor extract <url1> <url2> --save markdown`
+  - Named dataset: `contextractor extract <url> -o my-archive`
+  - Storage-only: `contextractor extract <url> --no-stdout`
+  - Input file: `contextractor extract --input-file urls.txt`
+  - List default dataset: `contextractor list --format json --limit 10`
+  - List named dataset: `contextractor list my-archive --format jsonl --desc`
+  - Get item: `contextractor get default 1`
+  - KVS put file: `contextractor kvs put my-key ./file.json`
+  - KVS put stdin: `echo '{"ok":true}' | contextractor kvs put my-key - --content-type application/json`
+  - KVS get: `contextractor kvs get my-key`
+  - KVS list: `contextractor kvs ls --limit 20`
+  - KVS delete: `contextractor kvs rm my-key`
+  - Print storage path: `contextractor storage-dir`
+  - Purge default: `contextractor purge`
+  - Purge all: `contextractor purge --all`
+  - Serve: `contextractor serve --port 8080` with `curl` calls to `GET /v2/datasets/default/items` and `POST /v2/extract`
+  - npm host rejection: `contextractor serve --host 0.0.0.0` with the npm-only error message shown
+  - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`
+- No `saveDestination`.
+
+### `examples/cli-docker/run.sh`
+
+- File is executable.
+- Opens with all four cross-platform path-variant comments: `macOS / Linux bash`, `Linux sh / CI`, `Windows cmd`, `Windows PowerShell`.
+- Contains all usage patterns from `3-examples.md`:
+  - Stdout mode: `docker run --rm <image> extract <url>` (no `-v`)
+  - Volume-backed extract: `docker run --rm -v "$(pwd)/storage:/storage" <image> extract <url>`
+  - Storage-only batch: `docker run --rm -v "$(pwd)/storage:/storage" <image> extract <url> --no-stdout`
+  - Large output: `docker run --rm --log-driver=none <image> extract <url>` — references research/02 §7
+  - Linux UID safety: `docker run --rm --user "$(id -u):$(id -g)" -v "$(pwd)/storage:/storage" <image> extract <url>`
+  - Serve with token: `docker run -d -p 8080:8080 -v "$(pwd)/storage:/storage" -e CONTEXTRACTOR_API_TOKEN=<token> <image> serve --host 0.0.0.0` with `curl` calls using `Authorization: Bearer` to `GET /v2/datasets/default/items` and `POST /v2/extract`
+  - Health check: `curl http://localhost:8080/healthz` — noted as unauthenticated
+  - Token enforcement: `docker run -d -p 8080:8080 <image> serve --host 0.0.0.0` (no token) — process refuses to start, exit shown
+- Docker Engine ≥24.0.6 requirement noted (containerd #8643).
+- No `saveDestination`.
+
+### `examples/docker-compose/docker-compose.yml`
+
+- `api` service: `serve --host 0.0.0.0 --port 8080`, healthcheck on `/healthz`, `CONTEXTRACTOR_API_TOKEN` from env, named volume `ctx_storage:/storage`, `restart: unless-stopped`.
+- `extract` service: under `profiles: ["cli"]`, same volume, entrypoint pointed at `extract`.
+- `dev` service (optional, for local development): uses `--insecure` flag with a fixed token; notes the loud stderr warning this produces.
+- Full round-trip sequence documented: `docker compose up -d api` → `curl /healthz` → `docker compose run --rm extract <url>` → `curl GET /v2/datasets/default/items` → `curl POST /v2/extract`.
+- No `saveDestination`.
+
+### `examples/docker-api-ts/`
+
+- `package.json`, `tsconfig.json`, `src/main.ts` all exist.
+- `src/main.ts` uses the Docker Engine API (Docker socket) — no CLI subprocess calls.
+- Starts a container running `contextractor serve`, calls `GET /healthz` to confirm readiness.
+- Triggers extraction via `POST /v2/extract`.
+- Retrieves results via `GET /v2/datasets/default/items`.
+- No `saveDestination`.
+
+### `examples/apify-api-ts/`
+
+- `package.json`, `tsconfig.json`, `src/main.ts` all exist.
+- Uses `apify-client` npm package.
+- Targets `glueo/contextractor-test` — not `glueo/contextractor`.
+- Starts a run, waits for it to finish, retrieves dataset results.
+- Passes `saveDestination: ['dataset']` in actor input.
+
+### `examples/cli-apify/run.sh`
+
+- File is executable.
+- Calls `apify call glueo/contextractor-test` — not `glueo/contextractor`.
+- Passes actor input as JSON including `saveDestination`.
+
+## Step TEST: Run Validation Commands
+
+### TypeScript compilation
+
+```bash
+cd examples/library-ts && npx tsc --noEmit
+cd examples/docker-api-ts && npx tsc --noEmit
+cd examples/apify-api-ts && npx tsc --noEmit
+```
+
+### docker-compose validation
+
+```bash
+docker compose -f examples/docker-compose/docker-compose.yml config --quiet
+```
+
+### File permissions
+
+```bash
+test -x examples/cli-npm/run.sh && echo "cli-npm: ok"
+test -x examples/cli-docker/run.sh && echo "cli-docker: ok"
+test -x examples/cli-apify/run.sh && echo "cli-apify: ok"
+```
+
+### No saveDestination in non-Apify examples
+
+```bash
+grep -rl 'saveDestination' examples/library-ts/ examples/cli-npm/ examples/cli-docker/ examples/docker-compose/ examples/docker-api-ts/
+```
+
+No output means pass. Any match is a bug.
+
+### saveDestination present in Apify examples
+
+```bash
+grep -l 'saveDestination' examples/apify-api-ts/src/main.ts examples/cli-apify/run.sh
+```
+
+Both files must appear in output.
+
+### No production actor reference
+
+```bash
+grep -rn 'glueo/contextractor[^-]' examples/
+```
+
+No output means pass. Any match that is not `glueo/contextractor-test` is a bug.
+
+### No removed --format flag in examples
+
+```bash
+grep -rn -- '--format' examples/cli-npm/ examples/cli-docker/
+```
+
+No output means pass. (`--format` was removed as a redundant alias of `--save`; `contextractor list --format` is a different command and is expected.)
+
+## Step CRITERIA: Acceptance Criteria
+
+### Structure
+
+- [ ] All seven directories exist: `library-ts/`, `cli-npm/`, `cli-docker/`, `docker-compose/`, `docker-api-ts/`, `apify-api-ts/`, `cli-apify/`.
+- [ ] `run.sh` in `cli-npm/`, `cli-docker/`, `cli-apify/` are executable.
+- [ ] TypeScript projects have `package.json`, `tsconfig.json`, `src/main.ts`.
+- [ ] `library-ts/`, `docker-api-ts/`, `apify-api-ts/` compile without errors.
+- [ ] `docker-compose/docker-compose.yml` passes `docker compose config --quiet`.
+
+### Content
+
+- [ ] No `saveDestination` in `library-ts/`, `cli-npm/`, `cli-docker/`, `docker-compose/`, `docker-api-ts/`.
+- [ ] `saveDestination: ['dataset']` present in `apify-api-ts/src/main.ts`.
+- [ ] `saveDestination` present in `cli-apify/run.sh`.
+- [ ] `glueo/contextractor-test` used in both Apify examples; `glueo/contextractor` (bare, no `-test`) does not appear.
+- [ ] `cli-npm/run.sh` contains all 20 command patterns listed in Step REVIEW.
+- [ ] `cli-docker/run.sh` includes all four cross-platform path variants, `--log-driver=none`, and `--user "$(id -u):$(id -g)"`.
+- [ ] `docker-compose/docker-compose.yml` has `api`, `extract`, and `dev` services with correct config.
+- [ ] `docker-api-ts/src/main.ts` uses Docker socket — no `child_process` or CLI subprocess.
+- [ ] No hardcoded tokens in any file; all loaded from env vars.
+- [ ] Format values use `txt` not `text` throughout all examples.
+
+## Step FIX: Auto-Fix Loop
+
+For each failing check:
+
+- Read the failing file and the relevant section of `3-examples.md`.
+- Apply the minimal fix (use Edit tool; never rewrite the whole file).
+- Re-run only the affected check.
+- Repeat until the criterion passes.
+
+Do not mark a criterion as passing until its command exits 0 or the manual check is confirmed.
+
+## Report
+
+Add examples findings to `prompts/2026-05-07-storage/report.md` (the shared report created by `4-auto-fixing-tests.md`):
+
+- Any deviations from `3-examples.md` and why.
+- Examples that cannot be fully validated without a live Docker or Apify environment — note as deferred with rationale.
+- Follow-up issues found during review.
