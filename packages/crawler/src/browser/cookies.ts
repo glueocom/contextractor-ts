@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname } from 'node:path';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { PlaywrightBlocker } from '@ghostery/adblocker-playwright';
 import type { Page } from 'playwright';
 
@@ -13,7 +14,7 @@ const FILTER_LISTS = [
 let blockerPromise: Promise<PlaywrightBlocker> | undefined;
 
 export async function getBlocker(
-  cachePath = '.cache/adblock-engine.bin',
+  cachePath = join(tmpdir(), '.cache', 'adblock-engine.bin'),
 ): Promise<PlaywrightBlocker> {
   blockerPromise ??= mkdir(dirname(cachePath), { recursive: true }).then(() =>
     PlaywrightBlocker.fromLists(globalThis.fetch, FILTER_LISTS, undefined, {
