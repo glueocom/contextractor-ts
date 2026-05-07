@@ -133,13 +133,18 @@ if (formats.length === 0) formats.push('markdown');
 
 ### `apps/apify-actor/src/sinks.ts`
 
+Format rename and new entries:
+- `{ format: 'txt', dataKey: 'extractedText', ... }` → `{ format: 'text', ... }`
 - Add `html` to `FORMAT_SPECS`:
   ```ts
   { format: 'html', dataKey: 'extractedHtml', contentType: 'text/html; charset=utf-8', ext: 'html' },
   ```
+
+Original and destination handling:
 - Rename `ApifySinkOpts.saveHtml` → `saveOriginal`; update interface, destructure, and KVS key from `${keyBase}-raw.html` → `${keyBase}-original.html`.
 - Add `saveDestination: string[]` to `ApifySinkOpts`.
-- When `saveDestination` includes `'dataset'`: write content as string fields directly on `data` (the dataset item) instead of saving to KVS. Keep KVS save when `saveDestination` includes `'key-value-store'` (default behavior).
+- When `saveDestination` includes `'dataset'`: write content as string fields directly on `data` (the dataset item) instead of saving to KVS.
+- When `saveDestination` includes `'key-value-store'` (default): keep existing KVS behavior.
 
 ### `apps/apify-actor/src/run.ts`
 
@@ -162,9 +167,7 @@ Remove the redundant `--format` option (it is an alias of `--save`):
 - Delete the `opts.format` handling block (~lines 270–271)
 - Delete the `format?: string` field from the options type (~line 313)
 
-Format rename changes:
-- `--format` help: `txt | markdown | json | html` → `text | markdown | json | html` (if keeping the flag)
-- `--save` help: `markdown,html,txt,json,jsonl,all` → `markdown,html,text,json,jsonl,original,all`
+Update `--save` help: `markdown,html,txt,json,jsonl,all` → `markdown,html,text,json,jsonl,original,all`
 
 ### `apps/standalone/src/config.ts`
 
@@ -181,7 +184,7 @@ Rename `'txt'` → `'text'` throughout to match the schema enum:
 Rename and extend format handling:
 
 - `result.formats.markdown ?? result.formats.txt` → `result.formats.markdown ?? result.formats.text`
-- Add `original` handling in `createCliSink`: when `'original'` is in formats, add a sink that writes `result.html` to `${slug}-raw.html` in `outDir` (no metadata header, raw bytes)
+- Add `original` handling in `createCliSink`: when `'original'` is in formats, add a sink that writes the raw page HTML captured before Trafilatura (not `result.formats.html`, which is cleaned extracted HTML) to `${slug}-raw.html` in `outDir` (no metadata header, raw bytes)
 
 ### `apps/standalone/src/cli.test.ts`
 
@@ -191,30 +194,3 @@ Rename and extend format handling:
 - `FORMAT_EXTENSIONS` keys: `'txt'` → `'text'`
 - Expand `all` expansion test: include `'text'` and `'original'`
 
-### `apps/apify-actor/src/sinks.ts`
-
-Format change:
-- `{ format: 'txt', dataKey: 'extractedText', ... }` → `{ format: 'text', ... }`
-
-Destination and original handling:
-- Add `html` to `FORMAT_SPECS` (if not already present)
-- Rename `ApifySinkOpts.saveHtml` → `saveOriginal`; update KVS key from `${keyBase}-raw.html` → `${keyBase}-original.html`
-- Add `saveDestination: string[]` to `ApifySinkOpts`
-- When `saveDestination` includes `'dataset'`: write content as string fields on the dataset item instead of KVS
-- When `saveDestination` includes `'key-value-store'` (default): keep existing KVS behavior
-
-## After Implementation
-
-- Regenerate `input_schema.json`:
-  ```bash
-  pnpm --filter @contextractor/gen-input-schema start
-  ```
-- Update schema snapshot:
-  ```bash
-  pnpm test -- --update-snapshots
-  ```
-  Snapshot test: `packages/schema/test/to-apify-schema.test.ts`
-- Verify:
-  ```bash
-  pnpm build && pnpm lint && pnpm test
-  ```
