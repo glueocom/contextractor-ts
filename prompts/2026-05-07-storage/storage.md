@@ -44,7 +44,7 @@ The TypeScript source is **shared**. The only differences are: (a) Dockerfile an
 ### CLI surface (shared between npm and Docker)
 
 ```
-contextractor extract <url> [<url>…]   [-o, --dataset <name>] [--no-stdout] [--format text|json|md|html|original]
+contextractor extract <url> [<url>…]   [-o, --dataset <name>] [--no-stdout] [--save text|markdown|json|html|original]
 contextractor extract --input-file <file>   [-o, --dataset <name>] [--ndjson]
 contextractor list [<dataset>]   [--limit <n>] [--offset <n>] [--format json|jsonl|csv] [--desc]
 contextractor get <dataset> <index>

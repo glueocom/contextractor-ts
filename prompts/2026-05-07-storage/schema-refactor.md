@@ -127,13 +127,9 @@ saveDestination: z
 Replace the four-boolean format derivation (lines 22–26) with:
 
 ```ts
-const formats: OutputFormat[] = input.save
-  .filter((f) => f !== 'original')
-  .map((f) => (f === 'text' ? 'text' : f) as OutputFormat);
+const formats: OutputFormat[] = input.save.filter((f) => f !== 'original') as OutputFormat[];
 if (formats.length === 0) formats.push('markdown');
 ```
-
-**Note**: After the format rename, `OutputFormat` will be `'text' | 'markdown' | 'json' | 'html'` — the `'text'` mapping happens automatically, not mapped from `'text'` to `'txt'` as shown here (this doc will be updated post-rename).
 
 ### `apps/apify-actor/src/sinks.ts`
 
