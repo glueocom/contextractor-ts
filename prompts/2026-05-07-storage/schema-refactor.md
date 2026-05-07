@@ -17,7 +17,7 @@ Fields to remove:
 
 ## Format Rename: `txt` → `text`; Add `original` Format
 
-Rename the `txt` format identifier to `text` across the full stack. Add `original` as a saveable format that writes raw Playwright-captured HTML (bypasses Trafilatura). Accept `txt` as a backward-compat alias that normalises silently to `text` in the CLI config layer only.
+Rename the `txt` format identifier to `text` across the full stack. Add `original` as a saveable format that writes raw Playwright-captured HTML (bypasses Trafilatura). No backward compatibility — `txt` is removed entirely.
 
 **Scope**: Rust output string (`lib.rs`), TypeScript `OutputFormat` type, `SaveFormat` in CLI, all sinks, CLI help text, tests, Actor schema, Apify sinks.
 
@@ -38,7 +38,7 @@ Rename any field that fails this review. No backward compatibility is required.
 
 ### `packages/extraction/native/src/lib.rs`
 - `OutputFormat::Txt => "txt"` → `"text"` (string returned to TypeScript callers)
-- Input alias stays: `"txt" | "text" | "plain" => Ok(OutputFormat::Txt)` — no change
+- Input: change `"txt" | "text" | "plain" => Ok(OutputFormat::Txt)` to `"text" | "plain" => Ok(OutputFormat::Text)` (remove `"txt"` input alias entirely)
 - Update JSDoc comments: `"txt"` → `"text"`, `["txt", ...]` → `["text", ...]`
 - Run `cargo test --workspace` and `cargo clippy --workspace --all-targets -- -D warnings` after
 
@@ -177,7 +177,7 @@ Rename `'txt'` → `'text'` throughout to match the schema enum:
 - `SaveFormat` type: add `'original'`; replace `'txt'` with `'text'`
 - `SORTED_SAVE_FORMATS`: add `'original'`; replace `'txt'` with `'text'`
 - `isSaveFormat`: `case 'txt':` → `case 'text':`; add `case 'original':`
-- `validateSaveFormats`: change alias direction from `'text' → 'txt'` to `'txt' → 'text'` (backward compat)
+- `validateSaveFormats`: remove any alias handling — `'txt'` is no longer accepted
 - Update error messages to list current valid formats
 
 ### `apps/standalone/src/sinks.ts`
@@ -190,8 +190,8 @@ Rename and extend format handling:
 ### `apps/standalone/src/cli.test.ts`
 
 - Format-list expectations: `'txt'` → `'text'` throughout
-- `validateSaveFormats(['text'])` → expect `['text']` (not `['txt']`)
-- Add: `validateSaveFormats(['txt'])` → expect `['text']` (alias test)
+- `validateSaveFormats(['text'])` → expect `['text']`
+- Update: `validateSaveFormats(['txt'])` should throw an error (no alias)
 - `FORMAT_EXTENSIONS` keys: `'txt'` → `'text'`
 - Expand `all` expansion test: include `'text'` and `'original'`
 
