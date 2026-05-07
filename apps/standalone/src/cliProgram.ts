@@ -1,10 +1,13 @@
 import { realpathSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildRequests, createContextractorCrawler } from '@contextractor/crawler';
+import {
+  buildRequests,
+  createContextractorCrawler,
+  ProxyConfiguration,
+} from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command } from 'commander';
-import { ProxyConfiguration } from 'crawlee';
 import {
   buildCrawlConfig,
   type CliOnlyOverrides,
