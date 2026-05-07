@@ -57,3 +57,13 @@ Edit the prompt file applying all findings:
 - Never add motivational language, disclaimers, or boilerplate
 - Every sentence must convey actionable information
 - Do not commit — let the user review via `git diff`
+
+## Step TLDR: Write or Fix TLDR
+
+Check whether the prompt has a TLDR blockquote as the first content block after the frontmatter (before any other content):
+
+- **No TLDR exists**: insert one immediately after the frontmatter — a one-to-three sentence summary of what the prompt does and when to use it, formatted as:
+  ```
+  > **TLDR**: One-to-three sentence summary of what this prompt does and when to use it.
+  ```
+- **TLDR already exists**: review it against the now-fixed prompt content. If it is stale or inaccurate, fix it in place with the Edit tool. If it is still accurate, leave it unchanged.
