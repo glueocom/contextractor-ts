@@ -7,7 +7,7 @@ model: sonnet
 
 # Fix Prompt
 
-Deep-research a prompt file, find outdated or wrong approaches, fix them.
+Deep-research a prompt file using mandatory detailed web research, find outdated or wrong approaches, fix them.
 
 ## Arguments
 
@@ -24,9 +24,9 @@ Deep-research a prompt file, find outdated or wrong approaches, fix them.
 
 ## Step RESEARCH: Deep Analysis
 
-Read the prompt file. Research **every technical claim, tool, library, API, and approach** mentioned:
+Read the prompt file. Research **every technical claim, tool, library, API, and approach** mentioned. **Web research is mandatory and must not be skipped — even if a claim seems obviously correct, verify it.**
 
-- **Web search**: Current documentation, changelogs, deprecation notices, known issues
+- **Web search** (required for every technical claim): current documentation, changelogs, deprecation notices, known issues — search deeply, do not skim
 - **MCP servers**: Query relevant MCP tools for up-to-date information
 - **Codebase**: Grep for related files, configs, and patterns already in use
 - **Documentation**: Fetch official docs for any referenced frameworks or tools
