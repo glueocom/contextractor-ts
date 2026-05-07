@@ -1,6 +1,6 @@
 # Feature Fixes Test Report
 
-**Date:** 2026-05-07 08:00 UTC
+**Date:** 2026-05-07 08:00 UTC (local); platform tests completed 2026-05-07 08:50 UTC
 
 ---
 
@@ -19,6 +19,8 @@ All packages build clean. One test fix required (see Code Fixes below).
 **Lib result:** PASS — all three values produced 1 extracted page each.
 Note: deduplication guard needed in the test script (use unique `uniqueKey` per crawler run within the same process).
 
+**Platform result:** PASS — run `v6bDKkzACmpr5RNYR` (build `0.3.158`), SUCCEEDED, `extractedMarkdown` length 39992.
+
 ---
 
 ## Proxy
@@ -32,6 +34,8 @@ Note: deduplication guard needed in the test script (use unique `uniqueKey` per 
 - `--proxy-urls=not-a-url` → `--proxy-urls: malformed URL "not-a-url". Expected http://user:pass@host:port…`
 - `--proxy-urls=ftp://example.com:21` → `--proxy-urls: unsupported scheme "ftp:" in "ftp://example.com:21"…`
 - `--proxy-rotation=PER_REQUEST` (no proxy URLs) → `Warning: --proxy-rotation=PER_REQUEST has no effect without --proxy-urls;…`
+
+**Platform proxyRotation result:** PASS — run `WBpg5LTe2cFCYhxHh` (build `0.3.158`), SUCCEEDED with `proxyRotation=PER_REQUEST`, 1 result extracted.
 
 **Deferred manual steps (Docker proxy tests):**
 
@@ -71,20 +75,8 @@ docker exec squid2 wc -l /var/log/squid/access.log
 
 **Lib result:** PASS — 138 chars extracted, assertion `includes('<')` passed.
 
-**Platform test:** Deferred (Actor not yet deployed). Run after `apify push`:
-
-```bash
-# From apps/apify-actor/
-apify push
-
-apify call glueo/contextractor-test --input '{
-  "startUrls": [{"url": "https://blog.apify.com/what-is-web-scraping/"}],
-  "saveExtractedHtmlToKeyValueStore": true,
-  "saveExtractedMarkdownToKeyValueStore": false
-}'
-# Expect: dataset item has extractedHtml.hash, .length, .key, .url
-# Expect: KVS content type text/html; charset=utf-8
-```
+**Platform result:** PASS — run `ZSRavFhPP3sQjAsga` (build `0.3.158`), SUCCEEDED.
+Dataset item: `extractedHtml.hash=288953fe76be28c39ea8795e26cdac15`, `extractedHtml.length=10650`, `extractedHtml.key=6e417914e1167fce.html`, `extractedHtml.url` present.
 
 ---
 
@@ -134,3 +126,22 @@ apify call glueo/contextractor-test --input '{
 
 ### `apps/standalone/src/cli.test.ts`
 - Removed stale assertion `expect(cfg.proxyRotation).toBe('recommended')` — `proxyRotation` moved to `CliOnlyOverrides`
+
+### `apps/apify-actor/.actor/actor.json`
+- Bumped `version` from `0.1.0` to `0.3.0` — platform was building version `0.1` (Python actor) by default; `0.3` is the TypeScript actor version and gets the `latest` tag
+
+### `apps/apify-actor/.actor/actor.json` (gitRepoUrl update via REST API)
+- Updated Apify Console actor version `0.3` source from `apps/contextractor-apify` → `apps/apify-actor` — directory was renamed but Console configuration still pointed to the old path, causing 1-second build failures
+
+### `apps/apify-actor/Dockerfile`
+- Removed stale `COPY tools/generated-unit-tests/package.json` line — directory no longer exists
+- Added `--chown=myuser:myuser` to final-stage `COPY --from=builder` — builder runs as root, so without chown the deployed files are root-owned
+
+### `packages/crawler/src/browser/cookies.ts`
+- Changed Ghostery filter cache path from relative `.cache/adblock-engine.bin` to `os.tmpdir()/.cache/adblock-engine.bin` — Docker container runs under `LIMITED_PERMISSIONS` and cannot `mkdir` in `/usr/src/app`; `/tmp` is always writable
+
+### `packages/crawler/src/index.ts`
+- Changed `export type { ProxyConfiguration }` to `export { ProxyConfiguration }` (value re-export) — standalone needs to instantiate it with `new`; direct `crawlee` import in standalone failed on platform where transitive deps aren't hoisted
+
+### `apps/standalone/src/cliProgram.ts`
+- Updated `ProxyConfiguration` import: from `crawlee` → from `@contextractor/crawler` (value export, not type-only)
