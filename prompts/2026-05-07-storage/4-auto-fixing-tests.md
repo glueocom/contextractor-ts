@@ -1,5 +1,7 @@
 # Auto-Fix: Code Review, Tests, and Verification
 
+> **TLDR**: Runs after completing steps 1–3. Reviews implementation for correctness, runs all tests, and auto-fixes every failure in a loop. Covers schema refactor, storage layer, and security; examples verification is in `5-auto-fixing-examples.md`.
+
 Run this after completing steps 1–3. Review the implementation, run all tests, fix every failure, and verify all acceptance criteria. Repeat the fix loop until everything is green.
 
 ## Prerequisites
@@ -44,7 +46,7 @@ Read source files and verify each claim. Fix violations before running tests.
 - All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`, `serve`.
 - `serve` host-binding: npm rejects any non-loopback host with a clear error; Docker allows `0.0.0.0` only with `CONTEXTRACTOR_API_TOKEN` set.
 - `/healthz` requires no auth; all `/v2/*` endpoints require `Authorization: Bearer` when host is non-loopback in Docker mode.
-- HTTP response envelopes match Apify v2: `{"data":{"total":…,"offset":…,"limit":…,"count":…,"desc":…,"items":[…]}}`.
+- `GET /v2/datasets/:name/items` returns a raw JSON array; `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count` are set in response headers. KVS keys list uses the `{"data":{…}}` envelope.
 - `isRunningInDocker()` uses exactly one detection method (either `/.dockerenv` or `CONTEXTRACTOR_DOCKER=1` env — not both).
 - Storage errors (read-only dir, full disk) log a warning to stderr and continue with stdout-only — extraction does not fail.
 
@@ -93,12 +95,12 @@ Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` a
 
 ### Storage layer
 
-- [ ] `contextractor extract https://example.com` prints JSON to stdout AND creates `./storage/datasets/default/000000001.json` AND `./storage/datasets/default/__metadata__.json` with `itemCount: 1`.
+- [ ] `contextractor extract https://example.com` prints JSON to stdout AND creates `./storage/datasets/default/000000000.json` AND `./storage/datasets/default/__metadata__.json` with `itemCount: 1`.
 - [ ] Two parallel `contextractor extract` runs against different URLs both succeed with no race-condition data loss.
 - [ ] `contextractor serve` on npm: `--host 0.0.0.0` is rejected with a clear error message.
 - [ ] In Docker: `serve --host 0.0.0.0` without `CONTEXTRACTOR_API_TOKEN` refuses to start.
 - [ ] In Docker: `serve --host 0.0.0.0` with token, requests without `Authorization: Bearer` return HTTP 401; `/healthz` does not require auth.
-- [ ] `GET /v2/datasets/default/items` returns `{"data":{"total":…,"offset":…,"limit":…,"count":…,"desc":…,"items":[…]}}`.
+- [ ] `GET /v2/datasets/default/items` returns a JSON array; response headers include `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count`.
 - [ ] `GET /v2/datasets/default/items?format=jsonl` returns NDJSON with `Content-Type: application/x-ndjson`.
 - [ ] `docker run --rm <image> extract https://example.com` prints JSON to stdout (no `-v` required). Skip if bare-URL invocation without `extract` subcommand was not previously supported — note as deferred.
 - [ ] `docker compose up -d api` + `docker compose run --rm extract https://example.com` + `curl -H 'Authorization: Bearer …' http://localhost:8080/v2/datasets/default/items` returns dataset items.

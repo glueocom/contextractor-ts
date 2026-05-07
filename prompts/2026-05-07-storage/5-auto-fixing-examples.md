@@ -1,5 +1,7 @@
 # Auto-Fix: Examples Verification
 
+> **TLDR**: Runs after `3-examples.md`. Reviews every example project for correctness — `saveDestination` scoping, format identifiers, actor references, and file permissions — then runs validation commands and auto-fixes failures in a loop.
+
 Run this after completing `3-examples.md`. Review every example project for correctness, run all validation commands, and fix every failure. Repeat the fix loop until everything passes.
 
 ## Prerequisites
@@ -153,10 +155,10 @@ No output means pass. Any match that is not `glueo/contextractor-test` is a bug.
 ### No removed --format flag in examples
 
 ```bash
-grep -rn -- '--format' examples/cli-npm/ examples/cli-docker/
+grep -rn -- '--format' examples/cli-npm/ examples/cli-docker/ | grep -v 'contextractor list'
 ```
 
-No output means pass. (`--format` was removed as a redundant alias of `--save`; `contextractor list --format` is a different command and is expected.)
+No output means pass. (`--format` was removed as a redundant alias of `--save`; `contextractor list --format` is excluded by the filter.)
 
 ## Step CRITERIA: Acceptance Criteria
 

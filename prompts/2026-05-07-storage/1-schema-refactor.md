@@ -1,5 +1,7 @@
 # Schema Refactor: Unified `save` and `saveDestination` Fields
 
+> **TLDR**: Replaces five individual boolean save fields with a unified `save` enum array and a new `saveDestination` field. Adds `original` as a saveable format, restructures `packages/schema/src/` into subdirectories, and generates an output Zod schema.
+
 ## Context
 
 Replace the four boolean save fields in the Actor input with a single `save` enum array (matching the CLI `--save` style) and a new Actor-only `saveDestination` field. Add `original` as a new saveable format for raw page HTML. The `txt` format identifier is NOT renamed — `txt` is the canonical plain-text format name across all layers. Source of truth: `packages/schema/src/input.ts`.
@@ -14,6 +16,7 @@ Fields to remove:
 - `saveExtractedTextToKeyValueStore`
 - `saveExtractedJsonToKeyValueStore`
 - `saveExtractedMarkdownToKeyValueStore`
+- `saveExtractedHtmlToKeyValueStore`
 
 ## Add `original` Format
 
@@ -106,11 +109,7 @@ if (formats.length === 0) formats.push('markdown');
 
 ### `apps/apify-actor/src/sinks.ts`
 
-New entry (no rename — `txt` stays):
-- Add `html` to `FORMAT_SPECS`:
-  ```ts
-  { format: 'html', dataKey: 'extractedHtml', contentType: 'text/html; charset=utf-8', ext: 'html' },
-  ```
+No rename needed — `txt` stays.
 
 Original and destination handling:
 - Rename `ApifySinkOpts.saveHtml` → `saveOriginal`; update interface, destructure, and KVS key from `${keyBase}-raw.html` → `${keyBase}-original.html`.

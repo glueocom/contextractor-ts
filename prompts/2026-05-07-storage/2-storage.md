@@ -1,5 +1,7 @@
 # Add Apify-compatible storage layer + serve mode to contextractor (Docker + npm)
 
+> **TLDR**: Adds persistent Crawlee-compatible storage (Dataset + KeyValueStore) and an HTTP server mirroring the Apify v2 API, shipping in both npm and Docker distributions. The storage module is pure TypeScript; the `serve` subcommand has stricter host-binding rules in npm vs Docker.
+
 ## Context
 
 `contextractor` is a TypeScript/Node CLI that wraps `rs-trafilatura` via a napi-rs native addon (`@contextractor/extraction-native`, distributed via npm `optionalDependencies`) for web content extraction. Today it writes extracted content to a local output directory (default `./output`). We want to add a persistent storage layer and an HTTP API, modelled on Apify/Crawlee, so the **same CLI surface** works in three transports:
@@ -70,15 +72,15 @@ ${CONTEXTRACTOR_STORAGE_DIR}/
 ├── datasets/
 │   └── <name>/
 │       ├── __metadata__.json
+│       ├── 000000000.json
 │       ├── 000000001.json
-│       ├── 000000002.json
 │       └── …
 ├── key_value_stores/
 │   └── <name>/
 │       ├── __metadata__.json
 │       ├── INPUT.json
 │       ├── OUTPUT.json
-│       └── <key>.<ext>          # extension derived from MIME via mime-db
+│       └── <key>.<ext>          # extension derived from MIME via mime-types
 └── request_queues/               # NOT created in v1; reserve the path
 ```
 
@@ -112,7 +114,7 @@ GET    /v2/datasets
 GET    /v2/datasets/:name
 DELETE /v2/datasets/:name
 GET    /v2/datasets/:name/items
-       ?format=json|jsonl|csv|xml|rss
+       ?format=json|jsonl|csv|html|xlsx|xml|rss
        &limit=&offset=&desc=&fields=&omit=&clean=&skipEmpty=
 POST   /v2/datasets/:name/items                    # body: object or array of objects
 
@@ -132,13 +134,13 @@ GET    /docs                                        # Swagger UI
 GET    /healthz
 ```
 
-**Pagination envelope** — exactly Apify's shape so `apify-client` works unmodified:
+**Dataset items response** — `GET /v2/datasets/:name/items` returns a raw JSON array. Pagination metadata is in response headers:
+- `X-Apify-Pagination-Total`
+- `X-Apify-Pagination-Offset`
+- `X-Apify-Pagination-Limit`
+- `X-Apify-Pagination-Count`
 
-```json
-{ "data": { "total": 42, "offset": 0, "limit": 100, "count": 42, "desc": false, "items": [ … ] } }
-```
-
-KVS keys list uses Apify's exclusive-start-key envelope (see research/03 §A3).
+KVS keys list uses the `{ "data": { … } }` envelope with `exclusiveStartKey` pagination (see research/03 §A3).
 
 **Error shape** — `{"error": {"type": "string", "message": "…"}}` with HTTP 4xx/5xx, again to match Apify.
 
@@ -173,7 +175,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - `resolveStorageDir()` implementing the precedence rules above.
    - All file writes use atomic write-and-rename (write to `.tmp` then `rename`) to keep the directory consistent under `kill -9`.
    - Concurrent appenders to a Dataset must coordinate via file-based state because each CLI invocation is a fresh process with no shared in-memory state. (Crawlee's `@crawlee/memory-storage` coordinates in-process memory and is explicitly not safe for concurrent multi-process writes — do not reference it as a model here.) Strategy: read `__metadata__.json`, take the next sequential index, write the item file, update metadata atomically. If you hit a contention loop, fall back to advisory file locking via `proper-lockfile` only if the codebase already includes it; otherwise add a brief retry with jittered backoff. Document the choice.
-   - MIME → extension via `mime-db` or `mime-types` (add only if not already present).
+   - MIME → extension via `mime-types` (add only if not already present).
    - Unit tests: round-trip a Dataset and a KVS, verify byte-compatible layout, parallel pushers don't lose records.
 
 2. **CLI subcommand wiring**
@@ -190,7 +192,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - Auth middleware applies the npm/Docker split documented above.
    - OpenAPI 3.1 spec — auto-generated if the chosen router supports it (Hono + `@hono/zod-openapi`); otherwise hand-write a minimal spec at `/openapi.json` and serve Swagger UI from a CDN-loaded HTML page at `/docs`.
    - `/healthz` returns `{"status":"ok","storageDir":"…","datasetCount":N}` with no auth.
-   - Integration tests via `supertest` or the router's built-in test client: full round-trip extract → list dataset items via API → fetch KVS record.
+   - Integration tests via Hono's `testClient` (from `hono/testing`) or `app.request()`: full round-trip extract → list dataset items via API → fetch KVS record.
 
 4. **Dockerfile** (in the Docker repo/folder, leave the npm package untouched)
    - Multi-stage: `node:22-slim` build → `mcr.microsoft.com/playwright:v<X.Y.Z>-noble` runtime, where `<X.Y.Z>` matches the `playwright` version in `packages/crawler/package.json`. `node:22-slim` lacks the Chrome binary required by Playwright.
