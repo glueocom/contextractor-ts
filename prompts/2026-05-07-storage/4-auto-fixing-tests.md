@@ -24,7 +24,7 @@ Read source files and verify each claim. Fix violations before running tests.
 ### Schema refactor (step 1)
 
 - `txt` is the format identifier used consistently across `OutputFormat`, `SaveFormat`, `FORMAT_SPECS`, Zod schema enum, and `--save` help text. Verify no format-value uses `'text'` instead: `grep -rn "'text'" --include='*.ts' packages/ apps/` — any match that is a format value (not a MIME type, description, or human-readable label) is a bug.
-- `text` and `original` are valid values in `OutputFormat`, `SaveFormat`, and `isSaveFormat`.
+- `txt` is a valid value in `OutputFormat`, `SaveFormat`, and `isSaveFormat`; `original` is valid in `SaveFormat` and `isSaveFormat` but must NOT appear in `OutputFormat` (it is filtered before calling the extraction layer).
 - The four removed fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`) are absent from the Zod schema, TypeScript types, and generated `input_schema.json`.
 - `save` and `saveDestination` are present in `packages/schema/src/source-of-truth/input.ts` with correct enum values and defaults.
 - `packages/schema/src/source-of-truth/output.ts` exists and exports a Zod schema for dataset items.
@@ -36,7 +36,7 @@ Read source files and verify each claim. Fix violations before running tests.
 ### Storage layer (step 2)
 
 - `apps/standalone/src/storage/` exists with `Dataset` and `KeyValueStore` classes; no Crawlee/Apify SDK runtime dependency.
-- Storage layout: `datasets/<name>/<n>.json`, `key_value_stores/<name>/<key>.<ext>`, `__metadata__.json` in each — byte-identical to Crawlee `FileSystemStorageClient`.
+- Storage layout: `datasets/<name>/<n>.json`, `key_value_stores/<name>/<key>.<ext>`, `__metadata__.json` in each — byte-compatible with Crawlee's `@crawlee/memory-storage` (`MemoryStorage`) on-disk layout. (JS Crawlee has no `FileSystemStorageClient` — that class exists only in Crawlee for Python.)
 - File writes are atomic: write to `.tmp`, then `rename`.
 - `resolveStorageDir()` implements the four-level precedence: `--storage-dir` flag → `CONTEXTRACTOR_STORAGE_DIR` env → `./storage` (if `.actor/` or existing `./storage/`) → `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`.
 - All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`, `serve`.
