@@ -3,7 +3,7 @@
   "name": "contextractor-test",
   "title": "Contextractor",
   "description": "Crawls websites and extracts main-content text. Built on rs-trafilatura and Crawlee.",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "buildTag": "latest",
   "meta": {
     "templateId": "node-playwright",
