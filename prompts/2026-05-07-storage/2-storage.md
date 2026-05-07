@@ -190,7 +190,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - Pick the smallest router that fits the existing dep set. Hono is the recommendation; if the project already includes Fastify or Express, use that instead.
    - Implement all the endpoints above. Use a shared response-envelope helper to keep shape parity with Apify.
    - Auth middleware applies the npm/Docker split documented above.
-   - OpenAPI 3.1 spec — auto-generated if the chosen router supports it (Hono + `@hono/zod-openapi`); otherwise hand-write a minimal spec at `/openapi.json` and serve Swagger UI from a CDN-loaded HTML page at `/docs`.
+   - OpenAPI 3.0 spec — auto-generated if the chosen router supports it (Hono + `@hono/zod-openapi`); otherwise hand-write a minimal spec at `/openapi.json` and serve Swagger UI from a CDN-loaded HTML page at `/docs`.
    - `/healthz` returns `{"status":"ok","storageDir":"…","datasetCount":N}` with no auth.
    - Integration tests via Hono's `testClient` (from `hono/testing`) or `app.request()`: full round-trip extract → list dataset items via API → fetch KVS record.
 

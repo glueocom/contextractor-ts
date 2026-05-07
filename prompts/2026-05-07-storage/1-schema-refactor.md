@@ -4,7 +4,7 @@
 
 ## Context
 
-Replace the four boolean save fields in the Actor input with a single `save` enum array (matching the CLI `--save` style) and a new Actor-only `saveDestination` field. Add `original` as a new saveable format for raw page HTML. The `txt` format identifier is NOT renamed — `txt` is the canonical plain-text format name across all layers. Source of truth: `packages/schema/src/input.ts`.
+Replace the five boolean save fields in the Actor input with a single `save` enum array (matching the CLI `--save` style) and a new Actor-only `saveDestination` field. Add `original` as a new saveable format for raw page HTML. The `txt` format identifier is NOT renamed — `txt` is the canonical plain-text format name across all layers. Source of truth: `packages/schema/src/input.ts`.
 
 The npm package (`@contextractor/standalone`) is both a CLI tool and a Node.js library — it exports a programmatic API in addition to the binary.
 
@@ -59,7 +59,7 @@ Also generate `apps/apify-actor/.actor/dataset_schema.json` from this Zod defini
 
 ### `packages/schema/src/input.ts`
 
-Remove the four boolean save fields (lines 171–204). In their place add two fields under `sectionCaption: 'Output settings'`:
+Remove the five boolean save fields (lines 171–212). In their place add two fields under `sectionCaption: 'Output settings'`:
 
 ```ts
 save: z
