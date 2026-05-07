@@ -26,11 +26,7 @@ export function buildCrawlerOpts(
   requestQueue?: RequestProvider,
   proxyRotation?: ContextractorInputType['proxyRotation'],
 ): ContextractorCrawlerOptions {
-  const formats: OutputFormat[] = [];
-  if (input.saveExtractedTextToKeyValueStore) formats.push('txt');
-  if (input.saveExtractedJsonToKeyValueStore) formats.push('json');
-  if (input.saveExtractedMarkdownToKeyValueStore) formats.push('markdown');
-  if (input.saveExtractedHtmlToKeyValueStore) formats.push('html');
+  const formats: OutputFormat[] = input.save.filter((f) => f !== 'original') as OutputFormat[];
   if (formats.length === 0) formats.push('markdown');
 
   return {

@@ -16,8 +16,8 @@ describe('ContextractorInput', () => {
     expect(parsed.pageLoadTimeoutSecs).toBe(60);
     expect(parsed.maxScrollHeightPixels).toBe(5000);
     expect(parsed.closeCookieModals).toBe(true);
-    expect(parsed.saveExtractedMarkdownToKeyValueStore).toBe(true);
-    expect(parsed.saveRawHtmlToKeyValueStore).toBe(false);
+    expect(parsed.save).toEqual(['markdown']);
+    expect(parsed.saveDestination).toEqual(['key-value-store']);
   });
 
   it('rejects empty startUrls', () => {
@@ -52,8 +52,8 @@ describe('ContextractorInput', () => {
       waitUntil: 'NETWORKIDLE' as const,
       proxyRotation: 'PER_REQUEST' as const,
       maxScrollHeightPixels: 0,
-      saveExtractedMarkdownToKeyValueStore: true,
-      saveRawHtmlToKeyValueStore: true,
+      save: ['txt', 'original'] as const,
+      saveDestination: ['dataset'] as const,
     };
     const parsed = ContextractorInput.parse(payload);
     expect(parsed.startUrls).toEqual(payload.startUrls);
@@ -64,7 +64,7 @@ describe('ContextractorInput', () => {
     expect(parsed.waitUntil).toBe('NETWORKIDLE');
     expect(parsed.proxyRotation).toBe('PER_REQUEST');
     expect(parsed.maxScrollHeightPixels).toBe(0);
-    expect(parsed.saveExtractedMarkdownToKeyValueStore).toBe(true);
-    expect(parsed.saveRawHtmlToKeyValueStore).toBe(true);
+    expect(parsed.save).toEqual(['txt', 'original']);
+    expect(parsed.saveDestination).toEqual(['dataset']);
   });
 });

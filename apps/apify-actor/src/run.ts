@@ -39,7 +39,12 @@ export async function runActor(): Promise<void> {
     ? await Actor.createProxyConfiguration(input.proxyConfiguration as ProxyConfigurationOptions)
     : undefined;
 
-  const sink = createApifySink({ kvs, dataset, saveHtml: input.saveRawHtmlToKeyValueStore });
+  const sink = createApifySink({
+    kvs,
+    dataset,
+    saveOriginal: input.save.includes('original'),
+    saveDestination: input.saveDestination,
+  });
   const crawler = createContextractorCrawler(
     buildCrawlerOpts(input, sink, proxyConfig, requestQueue, input.proxyRotation),
   );

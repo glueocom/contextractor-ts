@@ -1,6 +1,6 @@
-import { appendFile, mkdir } from 'node:fs/promises';
+import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { type ExtractionResult, fileSink, type Sink } from '@contextractor/crawler';
+import { type ExtractionResult, fileSink, type Sink, urlToFilename } from '@contextractor/crawler';
 import type { SaveFormat } from './config.js';
 
 export function createCliSink(opts: {
@@ -11,7 +11,8 @@ export function createCliSink(opts: {
   const sinks: Array<Sink<ExtractionResult>> = [];
 
   const fileFormats = formats.filter(
-    (format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl',
+    (format): format is Exclude<SaveFormat, 'jsonl' | 'original'> =>
+      format !== 'jsonl' && format !== 'original',
   );
   if (fileFormats.length > 0) {
     sinks.push(fileSink({ outDir, formats: fileFormats }));
@@ -19,6 +20,10 @@ export function createCliSink(opts: {
 
   if (formats.includes('jsonl')) {
     sinks.push(jsonlSink(outDir));
+  }
+
+  if (formats.includes('original')) {
+    sinks.push(originalSink(outDir));
   }
 
   return async (result) => {
@@ -46,5 +51,14 @@ function jsonlSink(outDir: string): Sink<ExtractionResult> {
     };
 
     await appendFile(outputPath, `${JSON.stringify(entry)}\n`, 'utf8');
+  };
+}
+
+function originalSink(outDir: string): Sink<ExtractionResult> {
+  return async (result) => {
+    const resolvedOutDir = path.resolve(outDir);
+    await mkdir(resolvedOutDir, { recursive: true });
+    const slug = urlToFilename(result.url);
+    await writeFile(path.join(resolvedOutDir, `${slug}-raw.html`), result.html, 'utf8');
   };
 }

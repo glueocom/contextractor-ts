@@ -32,11 +32,19 @@ describe('config helpers', () => {
 
   it('validateSaveFormats expands `all`', () => {
     const formats = validateSaveFormats(['all']);
-    expect(formats.sort()).toEqual(['html', 'json', 'jsonl', 'markdown', 'txt']);
+    expect(formats.sort()).toEqual(['html', 'json', 'jsonl', 'markdown', 'original', 'txt']);
   });
 
-  it('validateSaveFormats accepts the `text` alias for `txt`', () => {
-    expect(validateSaveFormats(['text'])).toEqual(['txt']);
+  it('validateSaveFormats accepts `txt`', () => {
+    expect(validateSaveFormats(['txt'])).toEqual(['txt']);
+  });
+
+  it('validateSaveFormats rejects `text` (alias removed)', () => {
+    expect(() => validateSaveFormats(['text'])).toThrow(/Unknown save format/);
+  });
+
+  it('validateSaveFormats accepts `original`', () => {
+    expect(validateSaveFormats(['original'])).toEqual(['original']);
   });
 
   it('validateSaveFormats rejects unknown values', () => {

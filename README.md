@@ -50,11 +50,8 @@ interface ContextractorInputType {
   maxConcurrency: number;
   maxRequestRetries: number;
   trafilaturaConfig?: Record<string, unknown>;
-  saveRawHtmlToKeyValueStore: boolean;
-  saveExtractedTextToKeyValueStore: boolean;
-  saveExtractedJsonToKeyValueStore: boolean;
-  saveExtractedMarkdownToKeyValueStore: boolean;
-  saveExtractedHtmlToKeyValueStore: boolean;
+  save: Array<'txt' | 'markdown' | 'json' | 'html' | 'original'>;
+  saveDestination: Array<'key-value-store' | 'dataset'>;
   datasetName?: string;
   keyValueStoreName?: string;
   requestQueueName?: string;

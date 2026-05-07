@@ -3,9 +3,9 @@ import path from 'node:path';
 import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
-export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl';
+export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl' | 'original';
 
-const SORTED_SAVE_FORMATS = ['html', 'json', 'jsonl', 'markdown', 'txt'] as const;
+const SORTED_SAVE_FORMATS = ['html', 'json', 'jsonl', 'markdown', 'original', 'txt'] as const;
 
 const LAUNCHER_MAP = {
   CHROMIUM: 'chromium',
@@ -29,6 +29,7 @@ function isSaveFormat(value: string): value is SaveFormat {
     case 'txt':
     case 'json':
     case 'jsonl':
+    case 'original':
       return true;
     default:
       return false;
@@ -38,13 +39,14 @@ function isSaveFormat(value: string): value is SaveFormat {
 export function validateSaveFormats(formats: string[]): SaveFormat[] {
   const out: SaveFormat[] = [];
   for (const raw of formats) {
-    let normalized = raw.trim().toLowerCase();
-    if (normalized === 'text') normalized = 'txt';
+    const normalized = raw.trim().toLowerCase();
     if (normalized === 'all') {
       return [...SORTED_SAVE_FORMATS];
     }
     if (!isSaveFormat(normalized)) {
-      throw new Error(`Unknown save format: '${raw}'. Valid: ${SORTED_SAVE_FORMATS.join(', ')}`);
+      throw new Error(
+        `Unknown save format: '${normalized}'. Valid: ${SORTED_SAVE_FORMATS.join(', ')}`,
+      );
     }
     if (!out.includes(normalized)) out.push(normalized);
   }

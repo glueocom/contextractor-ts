@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { apifyMeta } from './apify-meta.js';
+import { apifyMeta } from '../apify/apify-meta.js';
 
 const initialCookiesDescription = [
   'Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For example: ',
@@ -168,48 +168,30 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'json', sectionCaption: 'Content extraction' }),
     }),
 
-  saveRawHtmlToKeyValueStore: z
-    .boolean()
-    .default(false)
+  save: z
+    .array(z.enum(['txt', 'markdown', 'json', 'html', 'original']))
+    .default(['markdown'])
     .describe(
-      'If enabled, the crawler saves the raw HTML of all pages to the default key-value store and includes the URL link in the dataset output.',
+      'Output formats to extract and save. "original" saves the raw page HTML before extraction.',
     )
     .meta({
-      title: 'Save raw HTML to key-value store',
-      ...apifyMeta({ sectionCaption: 'Output settings' }),
+      title: 'Save formats',
+      ...apifyMeta({
+        editor: 'json',
+        sectionCaption: 'Output settings',
+      }),
     }),
 
-  saveExtractedTextToKeyValueStore: z
-    .boolean()
-    .default(false)
-    .describe(
-      'If enabled, the crawler extracts plain text from all pages, saves it to the key-value store, and includes the URL link in the dataset output.',
-    )
-    .meta({ title: 'Save extracted text to key-value store' }),
-
-  saveExtractedJsonToKeyValueStore: z
-    .boolean()
-    .default(false)
-    .describe(
-      'If enabled, the crawler extracts JSON with metadata from all pages, saves it to the key-value store, and includes the URL link in the dataset output.',
-    )
-    .meta({ title: 'Save extracted JSON to key-value store' }),
-
-  saveExtractedMarkdownToKeyValueStore: z
-    .boolean()
-    .default(true)
-    .describe(
-      'If enabled, the crawler extracts Markdown from all pages, saves it to the key-value store, and includes the URL link in the dataset output.',
-    )
-    .meta({ title: 'Save extracted Markdown to key-value store' }),
-
-  saveExtractedHtmlToKeyValueStore: z
-    .boolean()
-    .default(false)
-    .describe(
-      'If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output.',
-    )
-    .meta({ title: 'Save extracted HTML to key-value store' }),
+  saveDestination: z
+    .array(z.enum(['key-value-store', 'dataset']))
+    .default(['key-value-store'])
+    .describe('Where to save extracted content. Actor-only — the CLI always saves to disk.')
+    .meta({
+      title: 'Save to',
+      ...apifyMeta({
+        editor: 'json',
+      }),
+    }),
 
   datasetName: z
     .string()

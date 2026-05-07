@@ -13,22 +13,22 @@ interface FormatSpec {
 }
 
 const FORMAT_SPECS: readonly FormatSpec[] = [
-  { format: 'txt', dataKey: 'extractedText', contentType: 'text/plain; charset=utf-8', ext: 'txt' },
+  { format: 'txt', dataKey: 'txt', contentType: 'text/plain; charset=utf-8', ext: 'txt' },
   {
     format: 'json',
-    dataKey: 'extractedJson',
+    dataKey: 'json',
     contentType: 'application/json; charset=utf-8',
     ext: 'json',
   },
   {
     format: 'markdown',
-    dataKey: 'extractedMarkdown',
+    dataKey: 'markdown',
     contentType: 'text/markdown; charset=utf-8',
     ext: 'md',
   },
   {
     format: 'html',
-    dataKey: 'extractedHtml',
+    dataKey: 'html',
     contentType: 'text/html; charset=utf-8',
     ext: 'html',
   },
@@ -37,36 +37,51 @@ const FORMAT_SPECS: readonly FormatSpec[] = [
 interface ApifySinkOpts {
   kvs: KvsLike;
   dataset: Dataset;
-  saveHtml: boolean;
+  saveOriginal: boolean;
+  saveDestination: string[];
 }
 
 export function createApifySink(opts: ApifySinkOpts): Sink<ExtractionResult> {
-  const { kvs, dataset, saveHtml } = opts;
+  const { kvs, dataset, saveOriginal, saveDestination } = opts;
+  const toKvs = saveDestination.includes('key-value-store');
+  const toDataset = saveDestination.includes('dataset');
 
   return async (result: ExtractionResult): Promise<void> => {
     const keyBase = createHash('md5').update(result.url).digest('hex').slice(0, 16);
 
-    const rawHtmlInfo: ContentInfo = { hash: result.rawHtmlHash, length: result.rawHtmlLength };
-    if (saveHtml) {
-      const htmlKey = `${keyBase}-raw.html`;
-      await kvs.setValue(htmlKey, result.html, { contentType: 'text/html; charset=utf-8' });
-      rawHtmlInfo.key = htmlKey;
-      if (kvs.getPublicUrl) rawHtmlInfo.url = await kvs.getPublicUrl(htmlKey);
-    }
-
     const data: Record<string, unknown> = {
       loadedUrl: result.url,
-      rawHtml: rawHtmlInfo,
       loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       metadata: result.metadata,
       httpStatus: 200,
     };
 
+    if (saveOriginal) {
+      if (toKvs) {
+        const originalKey = `${keyBase}-original.html`;
+        const originalInfo: ContentInfo = {
+          hash: result.rawHtmlHash,
+          length: result.rawHtmlLength,
+          key: originalKey,
+        };
+        await kvs.setValue(originalKey, result.html, { contentType: 'text/html; charset=utf-8' });
+        if (kvs.getPublicUrl) originalInfo.url = await kvs.getPublicUrl(originalKey);
+        data.original = originalInfo;
+      } else if (toDataset) {
+        data.original = result.html;
+      }
+    }
+
     for (const spec of FORMAT_SPECS) {
       const content = result.formats[spec.format];
       if (!content) continue;
-      const key = `${keyBase}.${spec.ext}`;
-      data[spec.dataKey] = await saveContentToKvs(kvs, key, content, spec.contentType);
+
+      if (toDataset) {
+        data[spec.dataKey] = content;
+      } else if (toKvs) {
+        const key = `${keyBase}.${spec.ext}`;
+        data[spec.dataKey] = await saveContentToKvs(kvs, key, content, spec.contentType);
+      }
     }
 
     await dataset.pushData(data);

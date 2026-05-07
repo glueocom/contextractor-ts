@@ -27,7 +27,6 @@ export function buildProgram(): Command {
     .argument('[urls...]', 'URLs to extract content from')
     .option('-c, --config <path>', 'Path to JSON config file')
     .option('--start-url <url>', 'Start URL (alternative to positional URL)')
-    .option('--format <fmt>', 'Output format: txt | markdown | json | html (alias of --save)')
     .option('-o, --output-dir <dir>', 'Output directory')
     .option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)', toInt)
     .option('--crawl-depth <n>', 'Max link depth from start URLs (0 = start only)', toInt)
@@ -56,7 +55,7 @@ export function buildProgram(): Command {
     .option('--max-concurrency <n>', 'Max parallel requests', toInt)
     .option('--max-retries <n>', 'Max request retries', toInt)
     .option('--max-results <n>', 'Max results per crawl (0 = unlimited)', toInt)
-    .option('--save <formats>', 'Output formats: markdown,html,txt,json,jsonl,all')
+    .option('--save <formats>', 'Output formats: markdown,html,txt,json,jsonl,original,all')
     .option('--precision', 'High precision mode (less noise)')
     .option('--recall', 'High recall mode (more content)')
     .option('--fast', 'Fast extraction mode (less thorough)')
@@ -149,7 +148,8 @@ export function buildProgram(): Command {
         startUrls: cfg.urls,
         sink,
         formats: cfg.save.filter(
-          (format): format is Exclude<SaveFormat, 'jsonl'> => format !== 'jsonl',
+          (format): format is Exclude<SaveFormat, 'jsonl' | 'original'> =>
+            format !== 'jsonl' && format !== 'original',
         ),
         extractionConfig: cfg.trafilaturaConfig,
         cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',
@@ -304,8 +304,6 @@ function resolveCliOnly(opts: CliOptions, input: ContextractorInputType): CliOnl
   let save: SaveFormat[] = ['markdown'];
   if (opts.save) {
     save = validateSaveFormats(opts.save.split(','));
-  } else if (opts.format) {
-    save = validateSaveFormats([opts.format]);
   }
 
   const proxyUrls = opts.proxyUrls
@@ -353,7 +351,6 @@ function parseStringRecord(raw: string, flagName: string): Record<string, string
 interface CliOptions {
   config?: string;
   startUrl?: string;
-  format?: string;
   outputDir?: string;
   maxPages?: number;
   crawlDepth?: number;

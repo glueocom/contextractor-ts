@@ -53,11 +53,8 @@ the table below is auto-rebuilt from that schema by
 | `maxConcurrency` | integer | `50` | Maximum number of browser pages running in parallel. This setting is useful to avoid overloading target websites and getting blocked. |
 | `maxRequestRetries` | integer | `3` | Maximum number of retries for failed requests on network, proxy, or server errors. |
 | `trafilaturaConfig` | object | _optional_ | rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, dedupli… |
-| `saveRawHtmlToKeyValueStore` | boolean | `false` | If enabled, the crawler saves the raw HTML of all pages to the default key-value store and includes the URL link in the dataset output. |
-| `saveExtractedTextToKeyValueStore` | boolean | `false` | If enabled, the crawler extracts plain text from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
-| `saveExtractedJsonToKeyValueStore` | boolean | `false` | If enabled, the crawler extracts JSON with metadata from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
-| `saveExtractedMarkdownToKeyValueStore` | boolean | `true` | If enabled, the crawler extracts Markdown from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
-| `saveExtractedHtmlToKeyValueStore` | boolean | `false` | If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
+| `save` | array | `["markdown"]` | Output formats to extract and save. "original" saves the raw page HTML before extraction. |
+| `saveDestination` | array | `["key-value-store"]` | Where to save extracted content. Actor-only — the CLI always saves to disk. |
 | `datasetName` | string | _optional_ | Name or ID of the dataset for storing results. Leave empty to use the default run dataset. |
 | `keyValueStoreName` | string | _optional_ | Name or ID of the key-value store for content files. Leave empty to use the default store. |
 | `requestQueueName` | string | _optional_ | Name of the request queue for pending URLs. Leave empty to use the default queue. |

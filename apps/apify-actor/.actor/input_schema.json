@@ -126,41 +126,20 @@
       "description": "rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, deduplicate, targetLanguage, withMetadata, onlyWithMetadata, teiValidation.",
       "editor": "json"
     },
-    "saveRawHtmlToKeyValueStore": {
+    "save": {
       "sectionCaption": "Output settings",
-      "title": "Save raw HTML to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler saves the raw HTML of all pages to the default key-value store and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
+      "title": "Save formats",
+      "type": "array",
+      "description": "Output formats to extract and save. \"original\" saves the raw page HTML before extraction.",
+      "editor": "json",
+      "default": ["markdown"]
     },
-    "saveExtractedTextToKeyValueStore": {
-      "title": "Save extracted text to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts plain text from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
-    },
-    "saveExtractedJsonToKeyValueStore": {
-      "title": "Save extracted JSON to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts JSON with metadata from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
-    },
-    "saveExtractedMarkdownToKeyValueStore": {
-      "title": "Save extracted Markdown to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts Markdown from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": true
-    },
-    "saveExtractedHtmlToKeyValueStore": {
-      "title": "Save extracted HTML to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
+    "saveDestination": {
+      "title": "Save to",
+      "type": "array",
+      "description": "Where to save extracted content. Actor-only — the CLI always saves to disk.",
+      "editor": "json",
+      "default": ["key-value-store"]
     },
     "datasetName": {
       "title": "Dataset name",
