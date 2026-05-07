@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Stop hook — blocks turn completion when TypeScript source files were edited but no test files were updated.
-# Enforces: tests kept in sync with source changes.
-# Rust is exempt: tests are inline in the source file, so editing .rs counts as updating tests.
+# Stop hook — blocks turn completion when:
+#   1. TypeScript source files were edited but no test files were updated, OR
+#   2. Test files were edited but the tests fail when run.
+# Rust is exempt from check 1: tests are inline in the source file, so editing .rs counts as updating tests.
 set -euo pipefail
 
 input=$(cat)
@@ -28,12 +29,45 @@ ts_source=$(printf '%s\n' "$edited" | \
 # Any .test.ts file edited this turn.
 ts_tests=$(printf '%s\n' "$edited" | grep '\.test\.ts$' || true)
 
-# If TypeScript source was changed without any test file being touched, block.
+# Check 1: source changed without test updates.
 if [[ -n "$ts_source" && -z "$ts_tests" ]]; then
   files=$(printf '%s\n' "$ts_source" | sed 's|.*/packages/|packages/|; s|.*/apps/|apps/|' | head -3 | tr '\n' ' ' | sed 's/ $//')
   msg="Source changed without test updates ($files). Add or update the corresponding *.test.ts file in the same response. See .claude/rules/test-maintenance.md."
   printf '{"decision":"block","reason":"%s"}' "$msg"
   exit 0
+fi
+
+# Check 2: test files were edited — run them to verify they pass.
+if [[ -n "$ts_tests" ]]; then
+  # Resolve the package name for each edited test file via the nearest package.json.
+  pkgs=""
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    dir=$(dirname "$f")
+    while [[ "$dir" != "/" && "$dir" != "$CLAUDE_PROJECT_DIR" ]]; do
+      if [[ -f "$dir/package.json" ]]; then
+        name=$(jq -r '.name // empty' "$dir/package.json" 2>/dev/null || true)
+        [[ -n "$name" ]] && pkgs+=$'\n'"$name"
+        break
+      fi
+      dir=$(dirname "$dir")
+    done
+  done < <(printf '%s\n' "$ts_tests")
+
+  pkgs=$(printf '%s\n' "$pkgs" | sort -u | grep -v '^$' || true)
+
+  if [[ -n "$pkgs" ]]; then
+    filter_args=()
+    while IFS= read -r pkg; do
+      filter_args+=(--filter "$pkg")
+    done <<< "$pkgs"
+
+    if ! output=$(cd "$CLAUDE_PROJECT_DIR" && pnpm "${filter_args[@]}" test 2>&1); then
+      printf '%s' "$output" | tail -c 4000 | jq -Rcs \
+        '{"decision":"block","reason":("Tests failed. Fix failures before completing this turn.\n\n" + .)}'
+      exit 0
+    fi
+  fi
 fi
 
 exit 0

@@ -125,7 +125,7 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/test-gate.sh",
-            "timeout": 10,
+            "timeout": 120,
             "statusMessage": "Checking tests..."
           }
         ]
