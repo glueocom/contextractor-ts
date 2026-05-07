@@ -46,15 +46,14 @@ proxyConfiguration?: ProxyConfiguration;
 proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
 ```
 
-Add the constant near the top of the file (after imports). The numeric values must match `@apify/scraper-tools`. **Before merging, verify against `node_modules/@apify/scraper-tools/dist/consts.js` after `pnpm install` and update if the installed version differs:**
+Add the constant near the top of the file (after imports). Values are sourced from `@apify/scraper-tools` (`packages/scraper-tools/src/consts.ts` on GitHub, `apify/actor-scraper`):
 
 ```ts
-// Verbatim from @apify/scraper-tools SESSION_MAX_USAGE_COUNTS.
-// Verify against node_modules/@apify/scraper-tools/dist/consts.js before merging.
+// From @apify/scraper-tools SESSION_MAX_USAGE_COUNTS (apify/actor-scraper).
 const SESSION_MAX_USAGE_COUNTS = Object.freeze({
-  RECOMMENDED: 50,
+  RECOMMENDED: undefined,
   PER_REQUEST: 1,
-  UNTIL_FAILURE: Number.MAX_SAFE_INTEGER,
+  UNTIL_FAILURE: 1000,
 } as const);
 ```
 
@@ -225,7 +224,7 @@ After implementation, both surfaces behave identically per strategy:
 |---|---|
 | `RECOMMENDED` | Default sticky-IP-per-session; sessions retire after 50 requests, rotating to the next proxy URL via Crawlee's round-robin. |
 | `PER_REQUEST` | `sessionOptions.maxUsageCount: 1`; session retires after every request, new browser context per request, next proxy URL each time. |
-| `UNTIL_FAILURE` | `sessionPoolOptions.maxPoolSize: 1` plus `maxUsageCount: ∞`; all requests share one session pinned to one proxy URL until the session retires from errors, then the next URL takes over. |
+| `UNTIL_FAILURE` | `sessionPoolOptions.maxPoolSize: 1` plus `maxUsageCount: 1000`; all requests share one session pinned to one proxy URL until the session retires from errors, then the next URL takes over. |
 
 The only observable difference between Actor and CLI runs is the source of `proxyUrls` — Apify Proxy on the Actor side, the user's list on the CLI side.
 
@@ -236,14 +235,6 @@ Build, lint, and run tests:
 ```bash
 pnpm build && pnpm lint && pnpm test
 ```
-
-Verify the constants in `node_modules/@apify/scraper-tools/dist/consts.js` after install:
-
-```bash
-grep -A 5 SESSION_MAX_USAGE_COUNTS node_modules/@apify/scraper-tools/dist/consts.js
-```
-
-Update `SESSION_MAX_USAGE_COUNTS` in `createCrawler.ts` if the installed values differ from the literals committed.
 
 Smoke-test against a local Squid proxy:
 
