@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { buildRequests, createContextractorCrawler } from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command } from 'commander';
+import { ProxyConfiguration } from 'crawlee';
 import {
   buildCrawlConfig,
   type CliOnlyOverrides,
@@ -111,6 +112,36 @@ export function buildProgram(): Command {
         formats: cfg.save,
       });
 
+      let proxyConfiguration: ProxyConfiguration | undefined;
+      if (cliOnly.proxyUrls.length > 0) {
+        for (const raw of cliOnly.proxyUrls) {
+          let parsedUrl: URL;
+          try {
+            parsedUrl = new URL(raw);
+          } catch {
+            console.error(
+              `--proxy-urls: malformed URL "${raw}". ` +
+                `Expected http://user:pass@host:port (also accepts https://, socks4://, socks5://).`,
+            );
+            process.exit(1);
+          }
+          if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(parsedUrl.protocol)) {
+            console.error(
+              `--proxy-urls: unsupported scheme "${parsedUrl.protocol}" in "${raw}". ` +
+                `Use http://, https://, socks4:// or socks5://. ` +
+                `Apify Proxy configuration is only supported in the Apify Actor build.`,
+            );
+            process.exit(1);
+          }
+        }
+        proxyConfiguration = new ProxyConfiguration({ proxyUrls: cliOnly.proxyUrls });
+      } else if (cliOnly.proxyRotation && cliOnly.proxyRotation !== 'RECOMMENDED') {
+        console.warn(
+          `Warning: --proxy-rotation=${cliOnly.proxyRotation} has no effect ` +
+            `without --proxy-urls; running without proxy.`,
+        );
+      }
+
       const crawler = createContextractorCrawler({
         startUrls: cfg.urls,
         sink,
@@ -131,6 +162,7 @@ export function buildProgram(): Command {
         maxRetries: cfg.maxRetries,
         maxConcurrency: cfg.maxConcurrency,
         pageLoadTimeoutSecs: cfg.pageLoadTimeout,
+        waitUntil: cfg.waitUntil,
         maxResults: cfg.maxResults > 0 ? cfg.maxResults : undefined,
         linkSelector: cfg.linkSelector || undefined,
         maxCrawlingDepth: cfg.crawlDepth,
@@ -138,6 +170,8 @@ export function buildProgram(): Command {
         excludes: cfg.excludes,
         keepUrlFragments: cfg.keepUrlFragments,
         respectRobotsTxt: cfg.respectRobotsTxt,
+        proxyConfiguration,
+        proxyRotation: cliOnly.proxyRotation,
       });
 
       await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));
@@ -278,7 +312,13 @@ function resolveCliOnly(opts: CliOptions, input: ContextractorInputType): CliOnl
         .filter((s) => s.length > 0)
     : [];
 
-  return { urls, outputDir: opts.outputDir ?? './output', save, proxyUrls };
+  return {
+    urls,
+    outputDir: opts.outputDir ?? './output',
+    save,
+    proxyUrls,
+    proxyRotation: input.proxyRotation,
+  };
 }
 
 function parseJsonArray(raw: string, flagName: string): unknown[] {

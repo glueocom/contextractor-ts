@@ -13,16 +13,24 @@ const LAUNCHER_MAP = {
   FIREFOX: 'firefox',
 } as const;
 
+const WAIT_UNTIL_MAP = {
+  LOAD: 'load',
+  DOMCONTENTLOADED: 'domcontentloaded',
+  NETWORKIDLE: 'networkidle',
+} as const;
+
 export function buildCrawlerOpts(
   input: ContextractorInputType,
   sink: Sink<ExtractionResult>,
   proxyConfiguration?: ProxyConfiguration,
   requestQueue?: RequestProvider,
+  proxyRotation?: ContextractorInputType['proxyRotation'],
 ): ContextractorCrawlerOptions {
   const formats: OutputFormat[] = [];
   if (input.saveExtractedTextToKeyValueStore) formats.push('txt');
   if (input.saveExtractedJsonToKeyValueStore) formats.push('json');
   if (input.saveExtractedMarkdownToKeyValueStore) formats.push('markdown');
+  if (input.saveExtractedHtmlToKeyValueStore) formats.push('html');
   if (formats.length === 0) formats.push('markdown');
 
   return {
@@ -46,6 +54,7 @@ export function buildCrawlerOpts(
     maxRetries: input.maxRequestRetries,
     maxConcurrency: input.maxConcurrency,
     pageLoadTimeoutSecs: input.pageLoadTimeoutSecs,
+    waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
     maxResults: input.maxResultsPerCrawl > 0 ? input.maxResultsPerCrawl : undefined,
     linkSelector: input.linkSelector,
     maxCrawlingDepth: input.maxCrawlingDepth,
@@ -53,6 +62,7 @@ export function buildCrawlerOpts(
     excludes: input.excludes.map((g) => g.glob).filter((g): g is string => Boolean(g)),
     keepUrlFragments: input.keepUrlFragments,
     proxyConfiguration,
+    proxyRotation,
     requestQueue,
     browserLog: input.browserLog,
     respectRobotsTxt: input.respectRobotsTxtFile,

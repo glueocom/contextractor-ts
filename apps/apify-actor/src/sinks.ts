@@ -26,6 +26,12 @@ const FORMAT_SPECS: readonly FormatSpec[] = [
     contentType: 'text/markdown; charset=utf-8',
     ext: 'md',
   },
+  {
+    format: 'html',
+    dataKey: 'extractedHtml',
+    contentType: 'text/html; charset=utf-8',
+    ext: 'html',
+  },
 ];
 
 interface ApifySinkOpts {

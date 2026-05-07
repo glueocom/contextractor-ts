@@ -41,7 +41,7 @@ export async function runActor(): Promise<void> {
 
   const sink = createApifySink({ kvs, dataset, saveHtml: input.saveRawHtmlToKeyValueStore });
   const crawler = createContextractorCrawler(
-    buildCrawlerOpts(input, sink, proxyConfig, requestQueue),
+    buildCrawlerOpts(input, sink, proxyConfig, requestQueue, input.proxyRotation),
   );
   await crawler.run(buildRequests(startUrls, input.keepUrlFragments));
   await Actor.exit();

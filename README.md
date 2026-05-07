@@ -54,6 +54,7 @@ interface ContextractorInputType {
   saveExtractedTextToKeyValueStore: boolean;
   saveExtractedJsonToKeyValueStore: boolean;
   saveExtractedMarkdownToKeyValueStore: boolean;
+  saveExtractedHtmlToKeyValueStore: boolean;
   datasetName?: string;
   keyValueStoreName?: string;
   requestQueueName?: string;

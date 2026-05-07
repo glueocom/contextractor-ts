@@ -57,13 +57,14 @@ the table below is auto-rebuilt from that schema by
 | `saveExtractedTextToKeyValueStore` | boolean | `false` | If enabled, the crawler extracts plain text from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
 | `saveExtractedJsonToKeyValueStore` | boolean | `false` | If enabled, the crawler extracts JSON with metadata from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
 | `saveExtractedMarkdownToKeyValueStore` | boolean | `true` | If enabled, the crawler extracts Markdown from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
+| `saveExtractedHtmlToKeyValueStore` | boolean | `false` | If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output. |
 | `datasetName` | string | _optional_ | Name or ID of the dataset for storing results. Leave empty to use the default run dataset. |
 | `keyValueStoreName` | string | _optional_ | Name or ID of the key-value store for content files. Leave empty to use the default store. |
 | `requestQueueName` | string | _optional_ | Name of the request queue for pending URLs. Leave empty to use the default queue. |
 | `proxyConfiguration` | object | _optional_ | Enables loading websites from IP addresses in specific geographies and to circumvent blocking. |
 | `proxyRotation` | enum (`RECOMMENDED` \| `PER_REQUEST` \| `UNTIL_FAILURE`) | `"RECOMMENDED"` | Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails. |
 | `pageLoadTimeoutSecs` | integer | `60` | Maximum time to wait for page load in seconds |
-| `waitUntil` | enum (`NETWORKIDLE` \| `LOAD` \| `DOMCONTENTLOADED`) | `"LOAD"` | When to consider navigation finished |
+| `waitUntil` | enum (`NETWORKIDLE` \| `LOAD` \| `DOMCONTENTLOADED`) | `"LOAD"` | When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADE… |
 | `launcher` | enum (`CHROMIUM` \| `FIREFOX`) | `"CHROMIUM"` | Browser to use for crawling |
 | `headless` | boolean | `true` | Run browser in headless mode |
 | `ignoreCorsAndCsp` | boolean | `false` | Ignore Content Security Policy and Cross-Origin Resource Sharing restrictions. Enables free XHR/Fetch requests from pages. |

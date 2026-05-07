@@ -1,5 +1,10 @@
 import type { OutputFormat, TrafilaturaConfig } from '@contextractor/extraction';
-import type { ProxyConfiguration, RequestProvider, SessionPoolOptions } from 'crawlee';
+import type {
+  PlaywrightHook,
+  ProxyConfiguration,
+  RequestProvider,
+  SessionPoolOptions,
+} from 'crawlee';
 import { PlaywrightCrawler, Request } from 'crawlee';
 import { installCookieDefences, rejectViaAutoconsent } from './browser/cookies.js';
 import { buildBrowserLaunchOptions } from './browser/launchOptions.js';
@@ -19,6 +24,12 @@ export interface ContextractorCrawlerOptions {
   maxRetries?: number;
   maxConcurrency?: number;
   pageLoadTimeoutSecs?: number;
+  /**
+   * Navigation lifecycle event to wait for in `page.goto`.
+   * Forwarded to Crawlee via `preNavigationHooks` → `gotoOptions.waitUntil`.
+   * If undefined, Playwright's default of `'load'` applies.
+   */
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
   headless?: boolean;
   launcher?: 'chromium' | 'firefox';
   ignoreSslErrors?: boolean;
@@ -33,10 +44,26 @@ export interface ContextractorCrawlerOptions {
   excludes?: string[];
   keepUrlFragments?: boolean;
   proxyConfiguration?: ProxyConfiguration;
+  /**
+   * Proxy rotation strategy. Maps to Crawlee `sessionPoolOptions`.
+   * Mirrors Apify scraper-tools semantics: RECOMMENDED uses the default
+   * session reuse count; PER_REQUEST retires the session after one request
+   * (new browser context per request); UNTIL_FAILURE forces a single-session
+   * pool that stays on one proxy URL until the session retires from errors.
+   * Has no effect when `proxyConfiguration` is undefined.
+   */
+  proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
   requestQueue?: RequestProvider;
   browserLog?: boolean;
   respectRobotsTxt?: boolean;
 }
+
+// From @apify/scraper-tools SESSION_MAX_USAGE_COUNTS (apify/actor-scraper).
+const SESSION_MAX_USAGE_COUNTS = Object.freeze({
+  RECOMMENDED: undefined,
+  PER_REQUEST: 1,
+  UNTIL_FAILURE: 1000,
+} as const);
 
 export function createContextractorCrawler(opts: ContextractorCrawlerOptions): PlaywrightCrawler {
   const launcher = opts.launcher ?? 'chromium';
@@ -49,7 +76,22 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
   });
 
   const useSessionPool = opts.sessionPool !== false;
-  const sessionPoolOptions = typeof opts.sessionPool === 'object' ? opts.sessionPool : undefined;
+  const userSessionPoolOptions =
+    typeof opts.sessionPool === 'object' ? opts.sessionPool : undefined;
+
+  const rotation = opts.proxyRotation ?? 'RECOMMENDED';
+  const maxUsageCount = SESSION_MAX_USAGE_COUNTS[rotation];
+  const rotationSessionPoolOptions = {
+    sessionOptions: {
+      ...(userSessionPoolOptions?.sessionOptions ?? {}),
+      ...(maxUsageCount !== undefined ? { maxUsageCount } : {}),
+    },
+    ...(rotation === 'UNTIL_FAILURE' ? { maxPoolSize: 1 } : {}),
+  };
+
+  const sessionPoolOptions = userSessionPoolOptions
+    ? { ...userSessionPoolOptions, ...rotationSessionPoolOptions }
+    : rotationSessionPoolOptions;
 
   const contextOptions: {
     bypassCSP?: boolean;
@@ -61,7 +103,9 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
   if (opts.initialCookies && opts.initialCookies.length > 0) {
     contextOptions.storageState = { cookies: opts.initialCookies };
   }
-  if (opts.extraHTTPHeaders) contextOptions.extraHTTPHeaders = opts.extraHTTPHeaders;
+  if (opts.extraHTTPHeaders && Object.keys(opts.extraHTTPHeaders).length > 0) {
+    contextOptions.extraHTTPHeaders = opts.extraHTTPHeaders;
+  }
   if (opts.userAgent) contextOptions.userAgent = opts.userAgent;
 
   const handler = createHandler({
@@ -78,6 +122,17 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
     browserLog: opts.browserLog,
   });
 
+  const preNavigationHooks: PlaywrightHook[] = [];
+  const waitUntil = opts.waitUntil;
+  if (waitUntil !== undefined) {
+    preNavigationHooks.push(async (_ctx, gotoOptions) => {
+      if (gotoOptions) gotoOptions.waitUntil = waitUntil;
+    });
+  }
+  if (cookieStrategy === 'ghostery') {
+    preNavigationHooks.push(async ({ page }) => installCookieDefences(page));
+  }
+
   const crawler = new PlaywrightCrawler({
     headless: opts.headless ?? true,
     launchContext: {
@@ -86,7 +141,7 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
     },
     useSessionPool,
     persistCookiesPerSession: useSessionPool,
-    ...(sessionPoolOptions ? { sessionPoolOptions } : {}),
+    sessionPoolOptions,
     maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
     maxRequestRetries: opts.maxRetries ?? 3,
     ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
@@ -99,11 +154,7 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
     ...(opts.respectRobotsTxt !== undefined ? { respectRobotsTxtFile: opts.respectRobotsTxt } : {}),
     proxyConfiguration: opts.proxyConfiguration,
     requestQueue: opts.requestQueue,
-    ...(cookieStrategy === 'ghostery'
-      ? {
-          preNavigationHooks: [async ({ page }) => installCookieDefences(page)],
-        }
-      : {}),
+    ...(preNavigationHooks.length > 0 ? { preNavigationHooks } : {}),
     ...(cookieStrategy === 'autoconsent'
       ? {
           postNavigationHooks: [

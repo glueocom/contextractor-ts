@@ -40,6 +40,11 @@
       "type": "object",
       "title": "Extracted JSON",
       "description": "Info about extracted JSON content"
+    },
+    "extractedHtml": {
+      "type": "object",
+      "title": "Extracted HTML",
+      "description": "Info about extracted HTML content"
     }
   },
   "views": {

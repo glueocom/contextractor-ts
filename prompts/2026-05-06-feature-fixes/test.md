@@ -38,13 +38,15 @@ All three must produce output files. If a run errors or produces no output, read
 Write `test-wait-until.mjs` and run it:
 
 ```js
-import { createContextractorCrawler, buildRequests } from '@contextractor/crawler';
+import { createContextractorCrawler } from './packages/crawler/dist/index.js';
+import { Request } from 'crawlee';
 
 for (const waitUntil of ['load', 'domcontentloaded', 'networkidle']) {
   const results = [];
   const sink = async (r) => results.push(r.url);
   const crawler = createContextractorCrawler({ startUrls: ['https://example.com'], sink, waitUntil });
-  await crawler.run(buildRequests(['https://example.com']));
+  const req = new Request({ url: 'https://example.com', uniqueKey: `${waitUntil}-example` });
+  await crawler.run([req]);
   console.log(`waitUntil=${waitUntil}: extracted ${results.length} page(s) — OK`);
 }
 ```
@@ -54,6 +56,8 @@ node test-wait-until.mjs
 ```
 
 Expected: three lines each ending in `1 page(s) — OK`. If any line is missing or shows `0 page(s)`, the `waitUntil` hook is not wiring correctly — re-read `createCrawler.ts`, fix the `preNavigationHooks` build logic, rebuild, and retry.
+
+Note: each `Request` uses a `uniqueKey` to prevent Crawlee's in-process URL deduplication from skipping the second and third runs.
 
 ---
 
@@ -140,12 +144,14 @@ Expect one `.html` file with extracted HTML content. If no file appears, check t
 Write `test-html.mjs` and run it:
 
 ```js
-import { createContextractorCrawler, buildRequests } from '@contextractor/crawler';
+import { createContextractorCrawler } from './packages/crawler/dist/index.js';
+import { Request } from 'crawlee';
 
 const htmlResults = [];
 const sink = async (r) => htmlResults.push(r.formats.html ?? '');
 const crawler = createContextractorCrawler({ startUrls: ['https://example.com'], sink, formats: ['html'] });
-await crawler.run(buildRequests(['https://example.com']));
+const req = new Request({ url: 'https://example.com', uniqueKey: 'html-example' });
+await crawler.run([req]);
 console.assert(htmlResults[0]?.includes('<'), 'html format must contain HTML tags');
 console.log(`html lib test: extracted ${htmlResults[0]?.length ?? 0} chars — OK`);
 ```
@@ -156,24 +162,79 @@ node test-html.mjs
 
 If the assertion fires (output contains no `<` tags), the extraction engine is not returning html format — check `formats` is passed to `createHandler` in `createCrawler.ts`, fix, rebuild, retry.
 
-### Apify platform test
+Platform verification is covered in Step PLATFORM below.
 
-Confirm `apps/apify-actor/.actor/actor.json` has `"name": "contextractor-test"` before pushing.
+---
 
-Defer this test to the report as a manual step if the Actor has not been deployed yet. Record the exact `apify push` and `apify call` commands needed so the user can run them after deployment:
+## Step PLATFORM: Apify platform verification
+
+Run this step after all local tests pass. Deploys to `glueo/contextractor-test` and verifies all three features on the real platform.
+
+### Pre-flight
+
+Confirm `apps/apify-actor/.actor/actor.json` has `"name": "contextractor-test"` before pushing. Never push to `contextractor` (production).
+
+### Deploy
+
+Follow the deploy-and-test workflow from `.claude/commands/platform/deploy-and-test.md`:
 
 ```bash
-# From apps/apify-actor/
-apify push
-
-apify call glueo/contextractor-test --input '{
-  "startUrls": [{"url": "https://blog.apify.com/what-is-web-scraping/"}],
-  "saveExtractedHtmlToKeyValueStore": true,
-  "saveExtractedMarkdownToKeyValueStore": false
-}'
+# Push current branch to dev to trigger a Git-connected build
+git push origin HEAD:dev
 ```
 
-Expected: dataset item has `extractedHtml` with `hash`, `length`, `key`, and `url` fields; KVS content type is `text/html; charset=utf-8`.
+Poll every 15 s until the build is `SUCCEEDED`:
+
+```bash
+apify builds ls glueo/contextractor-test --limit 3
+```
+
+If build fails, fetch the log (`apify builds log <BUILD_ID>`), fix the error, rebuild locally, and push again.
+
+### PLATFORM-WAITUUNTIL: Verify waitUntil on platform
+
+```bash
+mcpc --json @apify tools-call call-actor \
+  actor:="glueo/contextractor-test" \
+  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"waitUntil":"NETWORKIDLE","maxPagesPerCrawl":1}'
+```
+
+Expected: run status `SUCCEEDED`, dataset item contains `extractedMarkdown` (or `extractedText` etc.) with `length > 0`. A clean run confirms `waitUntil` is accepted and does not break navigation.
+
+### PLATFORM-HTML: Verify html output on platform
+
+```bash
+mcpc --json @apify tools-call call-actor \
+  actor:="glueo/contextractor-test" \
+  input:='{"startUrls":[{"url":"https://blog.apify.com/what-is-web-scraping/"}],"saveExtractedHtmlToKeyValueStore":true,"saveExtractedMarkdownToKeyValueStore":false}'
+```
+
+Expected:
+- Run status `SUCCEEDED`
+- Dataset item has `extractedHtml.hash`, `extractedHtml.length`, `extractedHtml.key`, `extractedHtml.url`
+- KVS record at `extractedHtml.key` has content type `text/html; charset=utf-8`
+
+If `extractedHtml` is absent or missing fields, check `FORMAT_SPECS` in `apps/apify-actor/src/sinks.ts`, the `formats.push('html')` branch in `apps/apify-actor/src/config.ts`, and that the schema field `saveExtractedHtmlToKeyValueStore` is present in `apps/apify-actor/.actor/input_schema.json`.
+
+### PLATFORM-PROXY: Verify proxyRotation on platform
+
+```bash
+mcpc --json @apify tools-call call-actor \
+  actor:="glueo/contextractor-test" \
+  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"proxyRotation":"PER_REQUEST","maxPagesPerCrawl":1}'
+```
+
+Expected: run status `SUCCEEDED`. A clean run confirms `proxyRotation` is accepted and passed through without error (the platform uses Apify Proxy by default; rotation strategy is applied to that proxy pool).
+
+### Inspect results
+
+After each call, inspect the run and dataset:
+
+```bash
+apify runs ls glueo/contextractor-test --limit 3
+```
+
+Record the run IDs and dataset IDs in the Step REPORT.
 
 ---
 
@@ -192,8 +253,8 @@ rm -f test-wait-until.mjs test-html.mjs
 Save `autonomous-task-output/claude/reports/feature-fixes-test-report.md` with:
 - Date/time
 - Build result (pass/fail)
-- waitUntil: CLI result, lib result
-- Proxy: CLI result, rotation result (PER_REQUEST, UNTIL_FAILURE), error-message result; or "skipped — Docker unavailable"
-- HTML: CLI result, lib result, platform test (deferred/pass)
+- waitUntil: CLI result, lib result, platform result (run ID, status)
+- Proxy: CLI result, rotation result (PER_REQUEST, UNTIL_FAILURE), error-message result; or "skipped — Docker unavailable"; platform proxyRotation result
+- HTML: CLI result, lib result, platform result (run ID, extractedHtml fields verified)
 - All code fixes applied (file path, what changed, why)
 - Deferred items with exact commands to run manually

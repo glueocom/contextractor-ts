@@ -203,6 +203,14 @@ export const ContextractorInput = z.object({
     )
     .meta({ title: 'Save extracted Markdown to key-value store' }),
 
+  saveExtractedHtmlToKeyValueStore: z
+    .boolean()
+    .default(false)
+    .describe(
+      'If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output.',
+    )
+    .meta({ title: 'Save extracted HTML to key-value store' }),
+
   datasetName: z
     .string()
     .optional()
@@ -266,18 +274,21 @@ export const ContextractorInput = z.object({
     .describe('Maximum time to wait for page load in seconds')
     .meta({
       title: 'Page load timeout',
-      ...apifyMeta({ unit: 'seconds', sectionCaption: 'Browser' }),
+      ...apifyMeta({ unit: 'seconds', sectionCaption: 'Performance and limits' }),
     }),
 
   waitUntil: z
     .enum(['NETWORKIDLE', 'LOAD', 'DOMCONTENTLOADED'])
     .default('LOAD')
-    .describe('When to consider navigation finished')
+    .describe(
+      'When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADED is fastest but may fire before client-side rendering completes.',
+    )
     .meta({
       title: 'Navigation wait until',
       ...apifyMeta({
         editor: 'select',
         enumTitles: ['Network idle', 'Load event', 'DOM content loaded'],
+        sectionCaption: 'Performance and limits',
       }),
     }),
 

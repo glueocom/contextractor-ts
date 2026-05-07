@@ -7,12 +7,6 @@ export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl';
 
 const SORTED_SAVE_FORMATS = ['html', 'json', 'jsonl', 'markdown', 'txt'] as const;
 
-const PROXY_ROTATION_MAP = {
-  RECOMMENDED: 'recommended',
-  PER_REQUEST: 'per_request',
-  UNTIL_FAILURE: 'until_failure',
-} as const;
-
 const LAUNCHER_MAP = {
   CHROMIUM: 'chromium',
   FIREFOX: 'firefox',
@@ -65,10 +59,6 @@ interface CrawlConfig {
   headless: boolean;
   trafilaturaConfig: TrafilaturaConfig;
 
-  // Proxy.
-  proxyUrls: string[];
-  proxyRotation: 'recommended' | 'per_request' | 'until_failure';
-
   // Browser.
   launcher: 'chromium' | 'firefox';
   waitUntil: 'networkidle' | 'load' | 'domcontentloaded';
@@ -104,6 +94,7 @@ export interface CliOnlyOverrides {
   outputDir: string;
   save: SaveFormat[];
   proxyUrls: string[];
+  proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
 }
 
 // TODO(phase-2): hoist this projection into `@contextractor/schema` so the
@@ -116,12 +107,10 @@ export function buildCrawlConfig(
     urls: cli.urls,
     outputDir: cli.outputDir,
     save: cli.save,
-    proxyUrls: cli.proxyUrls,
 
     headless: input.headless,
     maxPages: input.maxPagesPerCrawl,
     crawlDepth: input.maxCrawlingDepth,
-    proxyRotation: PROXY_ROTATION_MAP[input.proxyRotation],
     launcher: LAUNCHER_MAP[input.launcher],
     waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
     pageLoadTimeout: input.pageLoadTimeoutSecs,

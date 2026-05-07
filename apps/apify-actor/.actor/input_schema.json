@@ -155,6 +155,13 @@
       "editor": "checkbox",
       "default": true
     },
+    "saveExtractedHtmlToKeyValueStore": {
+      "title": "Save extracted HTML to key-value store",
+      "type": "boolean",
+      "description": "If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
+      "editor": "checkbox",
+      "default": false
+    },
     "datasetName": {
       "title": "Dataset name",
       "type": "string",
@@ -190,7 +197,7 @@
       "enumTitles": ["Recommended", "Rotate per request", "Use until failure"]
     },
     "pageLoadTimeoutSecs": {
-      "sectionCaption": "Browser",
+      "sectionCaption": "Performance and limits",
       "title": "Page load timeout",
       "type": "integer",
       "description": "Maximum time to wait for page load in seconds",
@@ -201,9 +208,10 @@
       "unit": "seconds"
     },
     "waitUntil": {
+      "sectionCaption": "Performance and limits",
       "title": "Navigation wait until",
       "type": "string",
-      "description": "When to consider navigation finished",
+      "description": "When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADED is fastest but may fire before client-side rendering completes.",
       "editor": "select",
       "default": "LOAD",
       "enum": ["NETWORKIDLE", "LOAD", "DOMCONTENTLOADED"],

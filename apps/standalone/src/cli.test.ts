@@ -19,7 +19,6 @@ describe('config helpers', () => {
     expect(cfg.outputDir).toBe('./output');
     expect(cfg.launcher).toBe('chromium');
     expect(cfg.waitUntil).toBe('load');
-    expect(cfg.proxyRotation).toBe('recommended');
     expect(cfg.maxPages).toBe(0);
     expect(cfg.crawlDepth).toBe(0);
     expect(cfg.maxScrollHeight).toBe(5000);
