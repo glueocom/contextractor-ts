@@ -5,14 +5,11 @@ The napi-rs wrapper at `packages/extraction/native/src/lib.rs` follows `rs-trafi
 ## Rule
 
 - Do not modify `lib.rs` to align with TypeScript naming.
-- Translation between upstream naming and our naming belongs in `packages/extraction/src/index.ts`, immediately after the native call returns (and in reverse before passing values down to the native call).
+- If a naming divergence ever arises between the upstream crate and our API, the translation belongs in `packages/extraction/src/index.ts` — immediately after the native call returns and in reverse before passing values down.
 - This keeps the wrapper a thin, stable shim over `rs-trafilatura` and makes upstream upgrades straightforward.
 
 ## Example
 
-`rs-trafilatura` uses `"txt"` as a format identifier. Our TypeScript API uses `"text"`. The translation happens in `packages/extraction/src/index.ts`:
+`rs-trafilatura` uses `"txt"` as a format identifier. Our TypeScript API also uses `"txt"` — no translation is needed. This alignment is intentional: `txt` is the canonical plain-text format name across all layers.
 
-- Map `"txt"` → `"text"` on results coming out of the native call.
-- Map `"text"` → `"txt"` on format values passed into the native call.
-
-The Rust wrapper itself is not touched.
+Do not rename `txt` to `text` in TypeScript, CLI flags, or config to "clarify" it. The word "text" may appear only in human-readable titles and descriptions (e.g. `enumTitles`, help text prose), never as a format value in code.

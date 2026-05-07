@@ -2,7 +2,7 @@
 
 ## Context
 
-Replace the four boolean save fields in the Actor input with a single `save` enum array (matching the CLI `--save` style) and a new Actor-only `saveDestination` field. As part of this, rename the `txt` format identifier to `text` across the full stack (Rust → TypeScript → CLI → Actor) and add `original` as a new saveable format for raw page HTML. Source of truth: `packages/schema/src/input.ts`.
+Replace the four boolean save fields in the Actor input with a single `save` enum array (matching the CLI `--save` style) and a new Actor-only `saveDestination` field. Add `original` as a new saveable format for raw page HTML. The `txt` format identifier is NOT renamed — `txt` is the canonical plain-text format name across all layers. Source of truth: `packages/schema/src/input.ts`.
 
 The npm package (`@contextractor/standalone`) is both a CLI tool and a Node.js library — it exports a programmatic API in addition to the binary.
 
@@ -15,11 +15,9 @@ Fields to remove:
 - `saveExtractedJsonToKeyValueStore`
 - `saveExtractedMarkdownToKeyValueStore`
 
-## Format Rename: `txt` → `text`; Add `original` Format
+## Add `original` Format
 
-Rename the `txt` format identifier to `text` across the full stack. Add `original` as a saveable format that writes raw Playwright-captured HTML (bypasses Trafilatura). No backward compatibility — `txt` is removed entirely.
-
-**Scope**: Rust output string (`lib.rs`), TypeScript `OutputFormat` type, `SaveFormat` in CLI, all sinks, CLI help text, tests, Actor schema, Apify sinks.
+Add `original` as a saveable format that writes raw Playwright-captured HTML (bypasses Trafilatura). The `txt` identifier is not renamed — it remains the canonical plain-text format name.
 
 ## Parameter and Naming Review
 
@@ -33,26 +31,6 @@ Before finalizing any schema field, CLI flag, or dataset property, audit every n
 - Are grouped concepts named with a consistent prefix or suffix?
 
 Rename any field that fails this review. No backward compatibility is required.
-
-## Format Rename: File-by-File
-
-### `packages/extraction/src/index.ts`
-
-Do not modify the Rust wrapper — it follows `rs-trafilatura` naming and keeps `"txt"` as the format string. Translate at the TypeScript boundary, immediately after the native call returns, before the value propagates to any other layer.
-
-- Where the native result contains `format: "txt"`, remap it to `"text"`.
-- `OutputFormat = 'txt' | 'markdown' | 'json' | 'html'` → `'text' | 'markdown' | 'json' | 'html'`
-- `DEFAULT_FORMATS = ['txt', ...]` → `['text', ...]`
-- `opts.format ?? 'txt'` → `?? 'text'`; when passing the format down to the native call, map `'text'` back to `'txt'` so the wrapper receives a value it recognises.
-- `isOutputFormat(value.format) ? value.format : 'txt'` → `: 'text'`
-- `createEmptyResultMap()`: `txt: { content: '', format: 'txt' }` → `text: { content: '', format: 'text' }`
-
-### `packages/extraction/src/index.test.ts`
-- `['txt', 'markdown', 'json', 'html']` → `['text', 'markdown', 'json', 'html']` (assertions)
-- `Object.keys(result).sort()` expected values: replace `'txt'` with `'text'`
-
-### `packages/crawler/src/sinks/file.ts`
-- `FORMAT_EXTENSIONS: { txt: '.txt', ... }` → `{ text: '.txt', ... }` (file extension stays `.txt`)
 
 ## Skills and Agents
 
@@ -82,7 +60,7 @@ Remove the four boolean save fields (lines 171–204). In their place add two fi
 
 ```ts
 save: z
-  .array(z.enum(['text', 'markdown', 'json', 'html', 'original']))
+  .array(z.enum(['txt', 'markdown', 'json', 'html', 'original']))
   .default(['markdown'])
   .describe(
     'Output formats to extract and save. "original" saves the raw page HTML before extraction.',
@@ -92,7 +70,7 @@ save: z
     ...apifyMeta({
       editor: 'select',
       enumTitles: [
-        'Text — plain text, whitespace-normalized',
+        'Txt — plain text, whitespace-normalized',
         'Markdown — human-readable markup, suitable for LLM consumption',
         'JSON — structured data with metadata',
         'HTML — cleaned extracted content',
@@ -128,8 +106,7 @@ if (formats.length === 0) formats.push('markdown');
 
 ### `apps/apify-actor/src/sinks.ts`
 
-Format rename and new entries:
-- `{ format: 'txt', dataKey: 'extractedText', ... }` → `{ format: 'text', ... }`
+New entry (no rename — `txt` stays):
 - Add `html` to `FORMAT_SPECS`:
   ```ts
   { format: 'html', dataKey: 'extractedHtml', contentType: 'text/html; charset=utf-8', ext: 'html' },
@@ -162,30 +139,27 @@ Remove the redundant `--format` option (it is an alias of `--save`):
 - Delete the `opts.format` handling block (~lines 270–271)
 - Delete the `format?: string` field from the options type (~line 313)
 
-Update `--save` help: `markdown,html,txt,json,jsonl,all` → `markdown,html,text,json,jsonl,original,all`
+Update `--save` help: `markdown,html,txt,json,jsonl,all` → `markdown,html,txt,json,jsonl,original,all`
 
 ### `apps/standalone/src/config.ts`
 
-Rename `'txt'` → `'text'` throughout to match the schema enum:
+`'txt'` is the canonical plain-text format — do not rename it. Add `'original'`:
 
-- `SaveFormat` type: add `'original'`; replace `'txt'` with `'text'`
-- `SORTED_SAVE_FORMATS`: add `'original'`; replace `'txt'` with `'text'`
-- `isSaveFormat`: `case 'txt':` → `case 'text':`; add `case 'original':`
-- `validateSaveFormats`: remove any alias handling — `'txt'` is no longer accepted
-- Update error messages to list current valid formats
+- `SaveFormat` type: add `'original'`
+- `SORTED_SAVE_FORMATS`: add `'original'`
+- `isSaveFormat`: add `case 'original':`
+- Remove the existing `'text'`→`'txt'` alias (`if (normalized === 'text') normalized = 'txt'`) — `'text'` is not a valid format name
+- Update error messages to list current valid formats including `'original'`
 
 ### `apps/standalone/src/sinks.ts`
 
-Rename and extend format handling:
+Add `original` handling — no rename needed, `result.formats.txt` stays as is:
 
-- `result.formats.markdown ?? result.formats.txt` → `result.formats.markdown ?? result.formats.text`
 - Add `original` handling in `createCliSink`: when `'original'` is in formats, add a sink that writes the raw page HTML captured before Trafilatura (not `result.formats.html`, which is cleaned extracted HTML) to `${slug}-raw.html` in `outDir` (no metadata header, raw bytes)
 
 ### `apps/standalone/src/cli.test.ts`
 
-- Format-list expectations: `'txt'` → `'text'` throughout
-- `validateSaveFormats(['text'])` → expect `['text']`
-- Update: `validateSaveFormats(['txt'])` should throw an error (no alias)
-- `FORMAT_EXTENSIONS` keys: `'txt'` → `'text'`
-- Expand `all` expansion test: include `'text'` and `'original'`
+- `validateSaveFormats(['txt'])` → expect `['txt']` (valid)
+- `validateSaveFormats(['text'])` → expect it to throw (`'text'` is not a valid format; alias removed)
+- Expand `all` expansion test: include `'txt'` and `'original'`
 

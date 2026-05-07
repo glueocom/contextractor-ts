@@ -6,7 +6,7 @@ Run this after completing steps 1–3. Review the implementation, run all tests,
 
 All three implementation steps must be complete:
 
-- `1-schema-refactor.md` — format rename (`txt` → `text`), `save`/`saveDestination` fields, sinks
+- `1-schema-refactor.md` — add `original` format, `save`/`saveDestination` fields, sinks
 - `2-storage.md` — storage layer, subcommands, `serve` API, Dockerfile, docker-compose
 - `3-examples.md` — example projects under `examples/`
 
@@ -23,14 +23,14 @@ Read source files and verify each claim. Fix violations before running tests.
 
 ### Schema refactor (step 1)
 
-- No `txt` string literal in TypeScript or JSON files. Search: `grep -r '"txt"' --include='*.ts' --include='*.json' packages/ apps/`. The Rust wrapper (`packages/extraction/native/src/lib.rs`) intentionally keeps `"txt"` to match `rs-trafilatura` naming — do not flag it.
+- `txt` is the format identifier used consistently across `OutputFormat`, `SaveFormat`, `FORMAT_SPECS`, Zod schema enum, and `--save` help text. Verify no format-value uses `'text'` instead: `grep -rn "'text'" --include='*.ts' packages/ apps/` — any match that is a format value (not a MIME type, description, or human-readable label) is a bug.
 - `text` and `original` are valid values in `OutputFormat`, `SaveFormat`, and `isSaveFormat`.
 - The four removed fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`) are absent from the Zod schema, TypeScript types, and generated `input_schema.json`.
 - `save` and `saveDestination` are present in `packages/schema/src/source-of-truth/input.ts` with correct enum values and defaults.
 - `packages/schema/src/source-of-truth/output.ts` exists and exports a Zod schema for dataset items.
 - `apps/apify-actor/.actor/dataset_schema.json` was generated and is valid JSON.
 - `packages/schema/src/` restructured into `source-of-truth/` and `apify/` subdirectories; all import paths updated.
-- `apps/apify-actor/src/sinks.ts` has a single `FORMAT_SPECS` entry keyed `text` (not `txt`) and a `saveOriginal` field (not `saveHtml`).
+- `apps/apify-actor/src/sinks.ts` has a `FORMAT_SPECS` entry keyed `txt` and a `saveOriginal` field (not `saveHtml`).
 - The `original` sink in `apps/standalone/src/sinks.ts` reads from the raw Playwright-captured HTML (not `result.formats.html`, which is the cleaned extracted HTML).
 
 ### Storage layer (step 2)
@@ -104,7 +104,7 @@ docker compose -f examples/docker-compose/docker-compose.yml config --quiet
 
 ### Schema refactor
 
-- [ ] `grep -r '"txt"' --include='*.ts' --include='*.json' packages/ apps/` — no matches (Rust wrapper keeps `"txt"` intentionally).
+- [ ] `txt` is the format identifier in all TypeScript/JSON format values — not `text`. No format enum, type, or CLI help uses `'text'` as a format name.
 - [ ] `grep -r 'saveRawHtmlToKeyValueStore\|saveExtractedTextToKeyValueStore\|saveExtractedJsonToKeyValueStore\|saveExtractedMarkdownToKeyValueStore' packages/ apps/` — no matches.
 - [ ] `pnpm build && pnpm lint && pnpm test` — all pass.
 - [ ] `apps/apify-actor/.actor/input_schema.json` contains `save` and `saveDestination`; does not contain the four old boolean fields.
