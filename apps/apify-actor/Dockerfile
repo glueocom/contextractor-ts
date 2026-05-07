@@ -46,6 +46,6 @@ FROM apify/actor-node-playwright-chrome:24
 
 WORKDIR /usr/src/app
 
-COPY --from=builder /deploy ./
+COPY --chown=myuser:myuser --from=builder /deploy ./
 
 CMD ["node", "dist/main.js"]
