@@ -90,7 +90,7 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
 });
 
 describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-store"]', () => {
-  it('KVS key for raw HTML is ${keyBase}-original.html', async () => {
+  it('KVS key for raw HTML is {keyBase}-original.html', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
 

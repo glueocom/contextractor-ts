@@ -14,13 +14,17 @@ Actor.getInput() → ContextractorInput.safeParse() → createContextractorCrawl
 
 ## Sinks
 
-`createApifySink({ kvs, dataset, saveHtml })` saves:
+`createApifySink({ kvs, dataset, saveOriginal, saveDestination })` saves:
 
-- Raw HTML to KVS when `saveRawHtmlToKeyValueStore` is enabled (`{hash}-raw.html`)
-- Extracted `txt`, `json`, and `markdown` to KVS based on the three boolean save flags
-- Metadata and KVS references as a dataset item per page
+- Raw page HTML to KVS as `{hash}-original.html` when `"original"` is in `save`
+- Extracted `txt`, `json`, `markdown`, and `html` to KVS or inline in the dataset item based on `saveDestination`
+- Metadata and content references as a dataset item per page
 
 Keys use the first 16 hex characters of an MD5 over the URL.
+
+## Input
+
+`save` accepts `["txt", "markdown", "json", "html", "original"]`. `"original"` saves raw page HTML before extraction and is filtered before calling the extraction layer. `saveDestination` accepts `["key-value-store", "dataset"]`.
 
 ## Config
 

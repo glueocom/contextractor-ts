@@ -1,14 +1,12 @@
-import { existsSync } from 'node:fs';
-
 /**
  * Returns true when the process is running inside a Docker container.
  *
- * Detection strategy: check for /.dockerenv (created by Docker automatically
- * in every container) or CONTEXTRACTOR_DOCKER=1 (set in the image ENV for
- * cases where /.dockerenv is absent, e.g. in Kubernetes).
+ * Detection strategy: check for CONTEXTRACTOR_DOCKER=1 (set in the image ENV).
+ * Using a single explicit env-var check makes the behaviour predictable and
+ * testable without filesystem mocking.
  */
 export function isRunningInDocker(): boolean {
-  return existsSync('/.dockerenv') || process.env.CONTEXTRACTOR_DOCKER === '1';
+  return process.env.CONTEXTRACTOR_DOCKER === '1';
 }
 
 /** LOOPBACK_HOSTS are the only allowed bind addresses in npm (non-Docker) mode. */
