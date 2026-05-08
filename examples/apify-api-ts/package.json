@@ -1,0 +1,18 @@
+{
+  "name": "contextractor-apify-api-ts-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Call the contextractor Apify actor via the Apify API from Node.js TypeScript",
+  "scripts": {
+    "start": "npx tsx src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "apify-client": "^2.9.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

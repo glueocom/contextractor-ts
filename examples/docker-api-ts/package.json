@@ -1,0 +1,15 @@
+{
+  "name": "contextractor-docker-api-ts-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Call the contextractor Docker image via the HTTP API from Node.js TypeScript",
+  "scripts": {
+    "start": "npx tsx src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

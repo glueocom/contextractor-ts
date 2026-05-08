@@ -1,0 +1,92 @@
+name: contextractor
+
+# Full round-trip usage:
+#
+#   1. Start the API server:
+#        docker compose up -d api
+#
+#   2. Verify it is healthy:
+#        curl http://localhost:8080/healthz
+#
+#   3. Extract a URL (cli profile):
+#        docker compose run --rm extract https://blog.apify.com/what-is-web-scraping/
+#
+#   4. Read results (requires CTX_TOKEN):
+#        curl -H "Authorization: Bearer $CTX_TOKEN" \
+#             http://localhost:8080/v2/datasets/default/items
+#
+#   5. Trigger extraction via the REST API (returns 501 — use the CLI instead):
+#        curl -H "Authorization: Bearer $CTX_TOKEN" \
+#             -H 'Content-Type: application/json' \
+#             -X POST http://localhost:8080/v2/extract \
+#             -d '{"url":"https://blog.apify.com/what-is-web-scraping/"}'
+#
+# Set CTX_TOKEN before starting:
+#   export CTX_TOKEN=my-secret-token
+
+services:
+  # ── API server (long-running) ────────────────────────────────────────────────
+  # Serves the Apify-compatible storage API on port 8080.
+  # CONTEXTRACTOR_API_TOKEN is required for non-loopback binds.
+  api:
+    image: contextractor:latest
+    command: ["serve", "--host", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "8080:8080"
+    environment:
+      CONTEXTRACTOR_STORAGE_DIR: /storage
+      CONTEXTRACTOR_DOCKER: "1"
+      CONTEXTRACTOR_API_TOKEN: ${CTX_TOKEN:-changeme}
+    volumes:
+      - ctx_storage:/storage
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - >
+          node -e "fetch('http://localhost:8080/healthz').then(r => process.exit(r.ok ? 0 : 1))"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # ── On-demand extract (cli profile) ─────────────────────────────────────────
+  # Activated with --profile cli.
+  #
+  # Usage:
+  #   docker compose run --rm extract https://blog.apify.com/what-is-web-scraping/
+  #
+  # Additional flags pass straight through to `contextractor extract`:
+  #   docker compose run --rm extract <url> --save markdown --no-stdout
+  extract:
+    image: contextractor:latest
+    profiles:
+      - cli
+    entrypoint: ["node", "/app/dist/cli.js", "extract"]
+    environment:
+      CONTEXTRACTOR_STORAGE_DIR: /storage
+      CONTEXTRACTOR_DOCKER: "1"
+    volumes:
+      - ctx_storage:/storage
+
+  # ── Development service (optional) ───────────────────────────────────────────
+  # Runs the API server without authentication enforcement.
+  # WARNING: --insecure disables token enforcement — use in local dev only.
+  # The container prints a loud stderr warning on every request:
+  #   [WARN] Running with --insecure: no authentication enforced on non-loopback
+  dev:
+    image: contextractor:latest
+    command: ["serve", "--host", "0.0.0.0", "--port", "8080", "--insecure"]
+    profiles:
+      - dev
+    ports:
+      - "8080:8080"
+    environment:
+      CONTEXTRACTOR_STORAGE_DIR: /storage
+      CONTEXTRACTOR_DOCKER: "1"
+      CONTEXTRACTOR_API_TOKEN: dev-token
+    volumes:
+      - ctx_storage:/storage
+
+volumes:
+  ctx_storage:

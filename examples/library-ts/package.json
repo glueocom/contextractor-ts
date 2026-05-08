@@ -1,0 +1,19 @@
+{
+  "name": "contextractor-library-ts-example",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Programmatic usage of @contextractor/standalone as a Node.js library",
+  "scripts": {
+    "start": "npx tsx src/main.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@contextractor/standalone": "^0.1.0",
+    "commander": "^14.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}
