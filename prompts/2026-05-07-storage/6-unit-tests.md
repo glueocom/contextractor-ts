@@ -19,9 +19,9 @@ For each package and app below, read the source files and the existing test file
 ### TypeScript packages and apps to audit
 
 - `packages/extraction/src/` — extraction functions, format handling, metadata parsing, error paths
-- `packages/crawler/src/` — crawler construction, sink composition, request building
+- `packages/crawler/src/` — crawler construction, sink composition, request building. **Historically zero test files** — always check `sinks/file.ts` (`FORMAT_EXTENSIONS`, `urlToFilename`, `fileSink`), `sinks/memory.ts` (`memorySink`), and `browser/launchOptions.ts` (`buildBrowserLaunchOptions`) first.
 - `packages/schema/src/` — input schema parsing, output schema fields, `toApifySchema` conversion, `save` / `saveDestination` validation
-- `apps/standalone/src/` — CLI argument parsing, format validation (`validateSaveFormats`), config merging, storage integration, sink routing, `original` format handling
+- `apps/standalone/src/` — CLI argument parsing, format validation (`validateSaveFormats`), config merging, storage integration, sink routing, `original` format handling. Check `sinks.ts` (`createCliSink`, `jsonlSink`, `originalSink`, stdout/ndjson paths, dataset error isolation) and `serve/docker.ts` (`isRunningInDocker`, `isLoopback`, `LOOPBACK_HOSTS`).
 - `apps/apify-actor/src/` — Actor config derivation, sink routing (`key-value-store` vs `dataset`), `saveOriginal` flag, `isRunningInDocker` detection
 
 ### Rust crate to audit

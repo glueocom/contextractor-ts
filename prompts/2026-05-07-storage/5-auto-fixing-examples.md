@@ -23,6 +23,9 @@ Run this after completing `3-examples.md`. Review every example project for corr
 - No hardcoded tokens or credentials; all come from env vars.
 - `glueo/contextractor-test` is used in all Apify examples — `glueo/contextractor` (production) must not appear.
 - `--format` flag is not used in any example (it was removed as a redundant alias of `--save`).
+- Named dataset routing uses `--dataset <name>`, never `-o <name>` (`-o` is taken by `--output-dir`).
+- Dataset item indexes are **0-based**: `contextractor get default 0`, not `1`.
+- `POST /v2/extract` returns 501 in v1. Examples that show serving must use `GET /v2/datasets/default/items` for reads and `POST /v2/datasets/default/items` for writes — not `POST /v2/extract`.
 
 ### `examples/library-ts/`
 
@@ -38,12 +41,12 @@ Run this after completing `3-examples.md`. Review every example project for corr
   - Single URL extract: `contextractor extract <url> --save txt`
   - Force NDJSON: `contextractor extract <url> --ndjson`
   - Multi-URL extract: `contextractor extract <url1> <url2> --save markdown`
-  - Named dataset: `contextractor extract <url> -o my-archive`
+  - Named dataset: `contextractor extract <url> --dataset my-archive`
   - Storage-only: `contextractor extract <url> --no-stdout`
   - Input file: `contextractor extract --input-file urls.txt`
   - List default dataset: `contextractor list --format json --limit 10`
   - List named dataset: `contextractor list my-archive --format jsonl --desc`
-  - Get item: `contextractor get default 1`
+  - Get item: `contextractor get default 0` (0-based index)
   - KVS put file: `contextractor kvs put my-key ./file.json`
   - KVS put stdin: `echo '{"ok":true}' | contextractor kvs put my-key - --content-type application/json`
   - KVS get: `contextractor kvs get my-key`
@@ -84,10 +87,9 @@ Run this after completing `3-examples.md`. Review every example project for corr
 ### `examples/docker-api-ts/`
 
 - `package.json`, `tsconfig.json`, `src/main.ts` all exist.
-- `src/main.ts` uses the Docker Engine API (Docker socket) — no CLI subprocess calls.
-- Starts a container running `contextractor serve`, calls `GET /healthz` to confirm readiness.
-- Triggers extraction via `POST /v2/extract`.
-- Retrieves results via `GET /v2/datasets/default/items`.
+- `src/main.ts` communicates with Docker via the Unix socket (`/var/run/docker.sock`) using Node.js `http` module with `socketPath` option — **no `child_process`, no `execSync`, no `docker` CLI subprocess**.
+- Workflow: `POST /containers/create` → `POST /containers/{id}/start` → poll `GET /healthz` → retrieve results via `GET /v2/datasets/default/items` → `POST /containers/{id}/stop` + `DELETE /containers/{id}`.
+- Does not call `POST /v2/extract` (returns 501 in v1).
 - No `saveDestination`.
 
 ### `examples/apify-api-ts/`

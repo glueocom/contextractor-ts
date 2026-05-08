@@ -47,7 +47,7 @@ Read source files and verify each claim. Fix violations before running tests.
 - `serve` host-binding: npm rejects any non-loopback host with a clear error; Docker allows `0.0.0.0` only with `CONTEXTRACTOR_API_TOKEN` set.
 - `/healthz` requires no auth; all `/v2/*` endpoints require `Authorization: Bearer` when host is non-loopback in Docker mode.
 - `GET /v2/datasets/:name/items` returns a raw JSON array; `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count` are set in response headers. KVS keys list uses the `{"data":{…}}` envelope.
-- `isRunningInDocker()` uses exactly one detection method (either `/.dockerenv` or `CONTEXTRACTOR_DOCKER=1` env — not both).
+- `isRunningInDocker()` uses **only** `CONTEXTRACTOR_DOCKER=1` env var — not `/.dockerenv`. If both are present, remove the `/.dockerenv` check; the env var is reliable across container runtimes and fully testable without filesystem mocking.
 - Storage errors (read-only dir, full disk) log a warning to stderr and continue with stdout-only — extraction does not fail.
 
 ### Security
@@ -63,10 +63,15 @@ Fix failures before proceeding to the next command.
 
 ### TypeScript build and regeneration
 
+After a schema directory restructure, stale pre-restructure build artifacts can remain in `dist/` and cause type errors. Clean them before building:
+
 ```bash
+git clean -fdx packages/schema/dist/ apps/apify-actor/dist/ apps/standalone/dist/ 2>/dev/null; true
 pnpm --filter @contextractor/gen-input-schema start
 pnpm build
 ```
+
+If `pnpm build` exits 137 (OOM) for the gen-input-schema tool on ARM64, use: `NODE_OPTIONS=--max-old-space-size=4096 pnpm build`. The `pnpm --filter @contextractor/gen-input-schema start` (tsx) path is always reliable for schema regeneration.
 
 ### Lint and unit tests
 
