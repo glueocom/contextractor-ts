@@ -36,6 +36,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--config`, `-c` | Path to JSON config file |
 | `--start-url` | Start URL (alternative to positional URL) |
 | `--output-dir`, `-o` | Output directory |
+| `--storage-dir` | Storage root directory |
 | `--max-pages` | Max pages to crawl (0 = unlimited) |
 | `--crawl-depth` | Max link depth from start URLs (0 = start only) |
 | `--headless` | Run browser in headless mode |
@@ -145,6 +146,126 @@ stripped by `parse()`.
 - **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
 - **Apify CLI ≥ 1.4** (workspace-level; needed by the sibling Actor).
 - **Node 22+**, **pnpm 10+**.
+
+## Storage and subcommands
+
+Extraction results are written to both an output directory (one file per page) and a persistent storage directory (Crawlee/Apify-compatible JSON files).
+
+### Storage directory resolution (first match wins)
+
+- `--storage-dir <dir>` CLI flag
+- `CONTEXTRACTOR_STORAGE_DIR` env var
+- `./storage` if cwd contains `.actor/` or an existing `./storage/`
+- `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`
+
+Print the resolved path with `contextractor storage-dir`.
+
+### Subcommands
+
+```bash
+# Extract to storage + stdout
+contextractor extract https://example.com
+
+# Extract (no stdout echo)
+contextractor extract https://example.com --no-stdout
+
+# List items in the default dataset
+contextractor list
+
+# Get a single item by 0-based index
+contextractor get default 0
+
+# Key-value store
+contextractor kvs put my-key ./data.json
+contextractor kvs get my-key
+contextractor kvs ls
+contextractor kvs rm my-key
+
+# Purge default dataset + KVS
+contextractor purge
+
+# Purge everything
+contextractor purge --all
+
+# Print resolved storage dir
+contextractor storage-dir
+
+# Start HTTP API server (npm: localhost only)
+contextractor serve --port 8080
+```
+
+### API server (`serve`)
+
+The `serve` subcommand starts an [Apify-compatible HTTP API](https://docs.apify.com/api/v2/) at the configured port:
+
+- `GET /healthz` — health check (no auth)
+- `GET /v2/datasets/:name/items` — list items with pagination headers
+- `POST /v2/datasets/:name/items` — append items
+- `GET /v2/key-value-stores/:name/records/:key` — get a record
+- `PUT /v2/key-value-stores/:name/records/:key` — put a record
+- `GET /openapi.json` + `GET /docs` — OpenAPI spec + Swagger UI
+
+**npm distribution**: binds to `127.0.0.1` only. Non-loopback hosts are rejected with a clear error message.
+
+**Docker image**: allows `--host 0.0.0.0`. Non-loopback requires `CONTEXTRACTOR_API_TOKEN`; pass `Authorization: Bearer <token>` on all `/v2/*` requests.
+
+## Docker
+
+The standalone CLI ships as a Docker image (`contextractor:latest`).
+
+### Quick start
+
+```bash
+# Single URL → stdout (no volume needed)
+docker run --rm contextractor https://example.com
+
+# With volume persistence (bind mount)
+# Linux/macOS (bash/zsh):
+docker run --rm \
+  -v "$(pwd)/storage:/storage" \
+  -u "$(id -u):$(id -g)" \
+  contextractor extract https://example.com
+
+# Windows PowerShell:
+docker run --rm -v "${PWD}/storage:/storage" contextractor extract https://example.com
+
+# Windows cmd.exe:
+docker run --rm -v "%cd%/storage:/storage" contextractor extract https://example.com
+
+# HTTP API server (long-running)
+docker run -d --name ctx-api \
+  -v ctx_storage:/storage \
+  -p 8080:8080 \
+  -e CONTEXTRACTOR_API_TOKEN=your-secret-token \
+  contextractor serve --host 0.0.0.0 --port 8080
+```
+
+### docker-compose (API server + on-demand extract)
+
+```bash
+# Start the API server
+CTX_TOKEN=your-secret-token docker compose up api
+
+# Extract a URL and persist to the shared volume
+docker compose run --rm extract https://example.com
+```
+
+### Notes
+
+- Use `--user "$(id -u):$(id -g)"` on Linux to avoid root-owned bind-mount files.
+- Add `--log-driver=none` for large batch outputs (prevents the Docker log driver from doubling disk usage).
+- Requires Docker Engine ≥ 24.0.6.
+- Multi-arch: `linux/amd64` and `linux/arm64` are supported.
+- Do not mount `-v /:/host` or `-v $HOME:/host`; always use a dedicated narrow path like `$(pwd)/storage:/storage`.
+
+### Multi-arch build
+
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  -t contextractor:latest \
+  apps/standalone/
+```
 
 ## Local development
 

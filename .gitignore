@@ -1,6 +1,11 @@
 .mise.toml
 .nvim.lua
-storage
+# Runtime storage directories (Crawlee/Apify-compatible on-disk data).
+# Use /storage and /apps/*/storage to match only top-level storage roots,
+# not src/storage/ source directories.
+/storage
+/apps/standalone/storage
+/apps/apify-actor/storage
 .cache/
 .claude/settings.local.json
 tools/platform-test-runner/test-suites-output/

@@ -7,7 +7,7 @@ Contextractor crawls websites and extracts clean, readable main-content text. Bu
 Available as:
 
 - **Apify Actor** — `glueo/contextractor` on the Apify platform; output saved to the run's Key-Value Store + Dataset
-- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI; output written to disk as one file per page
+- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI; output written to disk as one file per page and pushed to a persistent Crawlee/Apify-compatible storage directory; ships as npm package and Docker image
 - **Extraction library** (`@contextractor/extraction`) — embedded engine used by both surfaces above
 
 Supported output formats: `txt | markdown | json | html`.
@@ -27,7 +27,8 @@ Data flow:
 ```
 Input URLs → PlaywrightCrawler → ContentExtractor (TS) → sink
                                                          ├── KVS + Dataset  (Actor)
-                                                         └── output files   (CLI)
+                                                         ├── output files   (CLI)
+                                                         └── Dataset + stdout (CLI with storage layer)
 ```
 
 ### Native binding
@@ -160,6 +161,16 @@ pnpm --filter @contextractor/extraction-native exec -- napi build --platform --r
 pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target x86_64-unknown-linux-gnu --zig
 pnpm --filter @contextractor/extraction-native exec -- napi build --platform --release --target aarch64-unknown-linux-gnu --zig
 ```
+
+## Docker (Standalone CLI)
+
+Multi-stage Dockerfile at `apps/standalone/Dockerfile`:
+
+- **Builder stage** (`node:22-slim AS builder`): installs workspace deps, builds all packages, deploys a self-contained bundle via `pnpm --filter @contextractor/standalone --prod deploy /deploy`.
+- **Runtime stage** (`mcr.microsoft.com/playwright:v1.59.1-noble`): non-root user `ctx` (UID/GID 1000), `WORKDIR /app`, `/storage` as the recommended mount point. Env: `CONTEXTRACTOR_STORAGE_DIR=/storage`, `CONTEXTRACTOR_DOCKER=1`, `PORT=8080`. `EXPOSE 8080`.
+- `docker-compose.yml` at `apps/standalone/docker-compose.yml`: `api` service running `contextractor serve --host 0.0.0.0 --port 8080` with a named volume `ctx_storage:/storage`; `extract` service under `profiles: ["cli"]`.
+
+Multi-arch build: `docker buildx build --platform linux/amd64,linux/arm64`.
 
 ## Docker (Apify Actor)
 
