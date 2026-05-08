@@ -2,12 +2,16 @@ import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { type ExtractionResult, fileSink, type Sink, urlToFilename } from '@contextractor/crawler';
 import type { SaveFormat } from './config.js';
+import type { Dataset } from './storage/dataset.js';
 
 export function createCliSink(opts: {
   outDir: string;
   formats: SaveFormat[];
+  dataset?: Dataset;
+  noStdout?: boolean;
+  ndjson?: boolean;
 }): Sink<ExtractionResult> {
-  const { outDir, formats } = opts;
+  const { outDir, formats, dataset, noStdout, ndjson } = opts;
   const sinks: Array<Sink<ExtractionResult>> = [];
 
   const fileFormats = formats.filter(
@@ -27,8 +31,48 @@ export function createCliSink(opts: {
   }
 
   return async (result) => {
+    // Write to all file-based sinks.
+    const errors: Error[] = [];
     for (const sink of sinks) {
       await sink(result);
+    }
+
+    // Build the dataset record.
+    const record: Record<string, unknown> = {
+      url: result.url,
+      title: result.metadata.title ?? null,
+      author: result.metadata.author ?? null,
+      date: result.metadata.publishedAt ?? null,
+    };
+    for (const [fmt, content] of Object.entries(result.formats)) {
+      record[fmt] = content;
+    }
+
+    // Write to dataset storage (non-fatal: log warning and continue on error).
+    if (dataset) {
+      try {
+        await dataset.pushData(record);
+      } catch (err) {
+        console.error(
+          '[WARN] Failed to write to storage dataset:',
+          err instanceof Error ? err.message : String(err),
+        );
+        errors.push(err instanceof Error ? err : new Error(String(err)));
+      }
+    }
+
+    // Echo to stdout unless suppressed.
+    if (!noStdout) {
+      if (ndjson) {
+        process.stdout.write(`${JSON.stringify(record)}\n`);
+      } else {
+        process.stdout.write(`${JSON.stringify(record, null, 2)}\n`);
+      }
+    }
+
+    // Non-fatal: partial failure logged but not rethrown.
+    if (errors.length > 0) {
+      // Already logged above.
     }
   };
 }
