@@ -1,0 +1,45 @@
+name: contextractor
+
+# Usage:
+#   API server (long-running):
+#     docker compose up api
+#
+#   On-demand extract (cli profile):
+#     docker compose run --rm extract https://example.com
+
+services:
+  api:
+    image: contextractor:latest
+    command: ["serve", "--host", "0.0.0.0", "--port", "8080"]
+    ports:
+      - "8080:8080"
+    environment:
+      CONTEXTRACTOR_STORAGE_DIR: /storage
+      CONTEXTRACTOR_DOCKER: "1"
+      CONTEXTRACTOR_API_TOKEN: ${CTX_TOKEN:-changeme}
+    volumes:
+      - ctx_storage:/storage
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  extract:
+    image: contextractor:latest
+    # Activated via --profile cli.
+    # Example:
+    #   docker compose run --rm extract https://example.com
+    profiles:
+      - cli
+    entrypoint: ["node", "/app/dist/cli.js", "extract"]
+    environment:
+      CONTEXTRACTOR_STORAGE_DIR: /storage
+      CONTEXTRACTOR_DOCKER: "1"
+    volumes:
+      - ctx_storage:/storage
+
+volumes:
+  ctx_storage:
