@@ -1,14 +1,14 @@
 # Add Apify-compatible storage layer + serve mode to contextractor (Docker + npm)
 
-> **TLDR**: Adds persistent Crawlee-compatible storage (Dataset + KeyValueStore) and an HTTP server mirroring the Apify v2 API, shipping in both npm and Docker distributions. The storage module is pure TypeScript; the `serve` subcommand has stricter host-binding rules in npm vs Docker.
+> **TLDR**: Adds persistent Crawlee-compatible storage (Dataset + KeyValueStore) and an HTTP server mirroring the Apify v2 API, shipping as an npm package only. The storage module is pure TypeScript; the `serve` subcommand is localhost-only.
 
 ## Context
 
-`contextractor` is a TypeScript/Node CLI that wraps `rs-trafilatura` via a napi-rs native addon (`@contextractor/extraction-native`, distributed via npm `optionalDependencies`) for web content extraction. Today it writes extracted content to a local output directory (default `./output`). We want to add a persistent storage layer and an HTTP API, modelled on Apify/Crawlee, so the **same CLI surface** works in three transports:
+`contextractor` is a TypeScript/Node CLI that wraps `rs-trafilatura` via a napi-rs native addon (`@contextractor/extraction-native`, distributed via npm `optionalDependencies`) for web content extraction. Today it writes extracted content to a local output directory (default `./output`). We want to add a persistent storage layer and an HTTP API, modelled on Apify/Crawlee, so the CLI surface works in three transports:
 
 1. **stdout** — pipe-friendly default, today's behaviour preserved.
-2. **Volume-backed local storage** — append-only `Dataset` + mutable `KeyValueStore` on disk, byte-compatible with Apify/Crawlee's `FileSystemStorageClient` layout. Available in **both** the npm and Docker distributions.
-3. **HTTP API** (`contextractor serve`) — a Hono server that exposes the storage directory through endpoints that mirror `https://api.apify.com/v2/`. Available in **both** distributions, but with platform-appropriate defaults: npm binds to `127.0.0.1` only and refuses `0.0.0.0`; Docker can bind to `0.0.0.0` with a mandatory bearer token.
+2. **Volume-backed local storage** — append-only `Dataset` + mutable `KeyValueStore` on disk, byte-compatible with Apify/Crawlee's `FileSystemStorageClient` layout.
+3. **HTTP API** (`contextractor serve`) — a Hono server that exposes the storage directory through endpoints that mirror `https://api.apify.com/v2/`. Binds to `127.0.0.1` only by default; no Docker distribution.
 
 The research that motivates these decisions lives in `./research/` next to this prompt — read those files before designing anything; they cover trade-offs, gotchas, and concrete numbers that aren't repeated here.
 
@@ -38,12 +38,7 @@ Treat these as authoritative for *what to build*. The prompt below specifies *wh
 
 ## What ships in this change
 
-A single CLI surface that compiles into:
-
-- the npm package (Node ≥20, runs on the user's machine), and
-- a Docker image (multi-arch `linux/amd64,linux/arm64`, with a Playwright-capable runtime image, runs the same Node CLI).
-
-The TypeScript source is **shared**. The only differences are: (a) Dockerfile and docker-compose.yml exist only in the Docker distribution; (b) the `serve` subcommand has stricter host-binding rules when running outside Docker.
+A single CLI surface that compiles into the npm package (Node ≥20, runs on the user's machine). There is no Docker distribution.
 
 ### CLI surface (shared between npm and Docker)
 
@@ -148,26 +143,14 @@ KVS keys list uses the `{ "data": { … } }` envelope with `exclusiveStartKey` p
 
 **Error shape** — `{"error": {"type": "string", "message": "…"}}` with HTTP 4xx/5xx, again to match Apify.
 
-### `serve` security rules — DIFFERENT between npm and Docker
+### `serve` security rules
 
-This is the only place where the two distributions diverge.
+There is no Docker distribution. `serve` is npm-only.
 
-**npm distribution (running on user's machine):**
-- Default and **only** allowed bind host is `127.0.0.1`.
-- Reject `--host 0.0.0.0` and any non-loopback host with a clear error message: *"The npm distribution of contextractor only serves on localhost. To expose the API on the network, use the Docker image (see <link to docs>)."*
-- The `--insecure` flag does **not** override this in the npm version. It exists only in Docker.
-- No bearer token is required; loopback-only is the security boundary.
-- `CONTEXTRACTOR_API_TOKEN`, if set, is still honoured (defence in depth).
-
-**Docker distribution:**
-- Default bind host is `127.0.0.1`. Override with `--host 0.0.0.0` to expose externally.
-- If `--host` is anything other than `127.0.0.1`/`::1`/loopback:
-  - `CONTEXTRACTOR_API_TOKEN` env var is **mandatory**; refuse to start without it (clear error).
-  - All `/v2/*` endpoints require `Authorization: Bearer $CONTEXTRACTOR_API_TOKEN`. `/healthz` is unauthenticated.
-  - Override with `--insecure` (development only); print a loud stderr warning every request.
-- `/healthz` always works without auth (Docker health checks need it).
-
-This split is enforced at runtime via a single `isRunningInDocker()` check. Use **only** the `CONTEXTRACTOR_DOCKER=1` env var baked in by the Dockerfile. Do **not** use `/.dockerenv` — it is absent in some container runtimes (containerd, Podman) and causes the detection to silently fail. Env var is testable without filesystem mocking.
+- Default bind host is `127.0.0.1`. If `--host` is set to a non-loopback address, log a warning to stderr but proceed (this allows CI pipelines to bind to `0.0.0.0` for local integration testing).
+- No `--insecure` flag. No `isRunningInDocker()`. No `CONTEXTRACTOR_DOCKER`.
+- `CONTEXTRACTOR_API_TOKEN`, if set, is honoured as optional defence-in-depth: all `/v2/*` endpoints require `Authorization: Bearer <token>`. If not set, no auth is required.
+- `/healthz` is always unauthenticated.
 
 ### Implementation tasks
 
@@ -193,36 +176,21 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
 3. **`serve` subcommand**
    - Pick the smallest router that fits the existing dep set. Hono is the recommendation; if the project already includes Fastify or Express, use that instead.
    - Implement all the endpoints above. Use a shared response-envelope helper to keep shape parity with Apify.
-   - Auth middleware applies the npm/Docker split documented above.
+   - Auth middleware: if `CONTEXTRACTOR_API_TOKEN` env var is set, require `Authorization: Bearer <token>` on all `/v2/*` requests (optional defence-in-depth). Otherwise no auth.
    - OpenAPI 3.0 spec — auto-generated if the chosen router supports it (Hono + `@hono/zod-openapi`); otherwise hand-write a minimal spec at `/openapi.json` and serve Swagger UI from a CDN-loaded HTML page at `/docs`.
    - `/healthz` returns `{"status":"ok","storageDir":"…","datasetCount":N}` with no auth.
+   - No `--insecure` flag. No `isRunningInDocker()`. No Docker-mode logic.
    - Integration tests via Hono's `testClient` (from `hono/testing`) or `app.request()`: full round-trip extract → list dataset items via API → fetch KVS record.
 
-4. **Dockerfile** (in the Docker repo/folder, leave the npm package untouched)
-   - Multi-stage: `node:22-slim` build → `mcr.microsoft.com/playwright:v<X.Y.Z>-noble` runtime, where `<X.Y.Z>` matches the `playwright` version in `packages/crawler/package.json`. `node:22-slim` lacks the Chrome binary required by Playwright.
-   - Non-root user `ctx` with UID/GID 1000.
-   - `WORKDIR /storage` (or `WORKDIR /app` and document `/storage` as the mount target — pick one and be consistent).
-   - `ENV CONTEXTRACTOR_STORAGE_DIR=/storage CONTEXTRACTOR_DOCKER=1 PORT=8080`.
-   - `EXPOSE 8080`.
-   - **Do not** declare `VOLUME /storage` (research/01 §8).
-   - `ENTRYPOINT ["node", "/app/dist/cli.js"]`, `CMD ["--help"]`. (The `bin` field in `apps/standalone/package.json` maps to `dist/cli.js`; there is no `bin/` directory in the deploy output.)
-   - Multi-arch build via `docker buildx`; document the `linux/amd64,linux/arm64` build line in the Dockerfile or a sibling `BUILD.md`.
-   - The `rs-trafilatura` native addon is installed automatically by `pnpm install` via `optionalDependencies` — only the linux arch-matched prebuild is resolved. No manual binary copying is needed.
+4. **README updates** (`apps/standalone/README.md`)
+   - Document `contextractor extract`, `contextractor serve` (localhost-only), and the storage dir resolution.
+   - No Docker content.
 
-5. **`docker-compose.yml`** at the Docker dist root, demonstrating both modes:
-   - `api` service: `serve --host 0.0.0.0 --port 8080`, healthcheck on `/healthz`, `CONTEXTRACTOR_API_TOKEN` from env, named volume `ctx_storage:/storage`, `restart: unless-stopped`.
-   - `extract` service under `profiles: ["cli"]`, same volume, entrypoint pointed at `extract`. Document the `docker compose run --rm extract <url>` invocation.
-
-6. **README updates**
-   - npm README: document `contextractor extract`, `contextractor serve` (loopback-only), the storage dir resolution, and the npm-vs-Docker split.
-   - Docker README: cross-platform invocations (`$(pwd)`, `${PWD}`, `%cd%`), the three modes (stdout / volume / serve), `--log-driver=none` for multi-GB outputs (research/02 §7), `--user $(id -u):$(id -g)` for Linux UID safety, and the minimum Docker Engine version of 24.0.6 (research/02 §2).
-   - One README snippet that ends with all three forms, copy-paste ready (mirror the pattern in research/03 §C6).
-
-7. **Migration / backwards compatibility**
+5. **Migration / backwards compatibility**
    - Existing users running `contextractor https://example.com` must see byte-identical file output in `./output/`. Verify with a snapshot test against a frozen input.
    - The current CLI uses `-o` / `--output-dir` for the file output directory. The new dataset name flag must be `--dataset` (long form only) to avoid the collision. Do **not** reuse `-o` as a short form for `--dataset` — it is already taken. All examples and docs must use `--dataset <name>`, never `-o <name>` for dataset routing.
 
-8. **Things explicitly out of scope for v1** (note them as TODOs, do not implement):
+6. **Things explicitly out of scope for v1** (note as TODOs, do not implement):
    - `request_queues/` write path. Reserve the directory but don't expose endpoints.
    - Crawlee/Apify SDK runtime dependency. Layout compatibility only.
    - `.actor/actor.json` + `apify push` flow. Mention in README as a v2 follow-up.
@@ -262,11 +230,10 @@ Write these tests alongside the implementation. Use vitest; use a temp directory
 
 Use `hono/testing` `testClient` or `app.request()` — no real network port is needed:
 
-- `GET /healthz` returns `{"status":"ok","storageDir":"…","datasetCount":N}` without auth in all modes
+- `GET /healthz` returns `{"status":"ok","storageDir":"…","datasetCount":N}` without auth
 - `GET /v2/datasets/default/items` returns a JSON array; response has all four `X-Apify-Pagination-*` headers
 - `GET /v2/datasets/default/items?format=jsonl` returns NDJSON with `Content-Type: application/x-ndjson`
 - `POST /v2/datasets/default/items` with `{"url":"x","text":"y"}` appends a record; subsequent `GET` returns it
-- npm mode, non-loopback host: `serve` startup rejects with the loopback-only error message
-- Docker mode, non-loopback host, no `CONTEXTRACTOR_API_TOKEN`: startup rejects with a clear token-required error
-- Docker mode, non-loopback host, valid token: `GET /v2/datasets` without `Authorization` → HTTP 401; with `Authorization: Bearer <token>` → HTTP 200
+- No token set: all `/v2/*` endpoints accessible without `Authorization` header
+- `CONTEXTRACTOR_API_TOKEN=secret` set: `GET /v2/datasets` without `Authorization` → HTTP 401; with `Authorization: Bearer secret` → HTTP 200; `/healthz` still 200 without auth
 

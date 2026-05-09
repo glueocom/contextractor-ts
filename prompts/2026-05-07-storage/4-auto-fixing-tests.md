@@ -44,10 +44,9 @@ Read source files and verify each claim. Fix violations before running tests.
 - File writes are atomic: write to `.tmp`, then `rename`.
 - `resolveStorageDir()` implements the four-level precedence: `--storage-dir` flag → `CONTEXTRACTOR_STORAGE_DIR` env → `./storage` (if `.actor/` or existing `./storage/`) → `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`.
 - All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`, `serve`.
-- `serve` host-binding: npm rejects any non-loopback host with a clear error; Docker allows `0.0.0.0` only with `CONTEXTRACTOR_API_TOKEN` set.
-- `/healthz` requires no auth; all `/v2/*` endpoints require `Authorization: Bearer` when host is non-loopback in Docker mode.
+- `serve` default bind host is `127.0.0.1`; no Docker-mode logic, no `--insecure` flag, no `isRunningInDocker()`.
+- `/healthz` requires no auth. When `CONTEXTRACTOR_API_TOKEN` is set, all `/v2/*` endpoints require `Authorization: Bearer <token>`; without a token set, no auth is required.
 - `GET /v2/datasets/:name/items` returns a raw JSON array; `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count` are set in response headers. KVS keys list uses the `{"data":{…}}` envelope.
-- `isRunningInDocker()` uses **only** `CONTEXTRACTOR_DOCKER=1` env var — not `/.dockerenv`. If both are present, remove the `/.dockerenv` check; the env var is reliable across container runtimes and fully testable without filesystem mocking.
 - Storage errors (read-only dir, full disk) log a warning to stderr and continue with stdout-only — extraction does not fail.
 
 ### Security
@@ -102,15 +101,11 @@ Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` a
 
 - [ ] `contextractor extract https://example.com` prints JSON to stdout AND creates `./storage/datasets/default/000000000.json` AND `./storage/datasets/default/__metadata__.json` with `itemCount: 1`.
 - [ ] Two parallel `contextractor extract` runs against different URLs both succeed with no race-condition data loss.
-- [ ] `contextractor serve` on npm: `--host 0.0.0.0` is rejected with a clear error message.
-- [ ] In Docker: `serve --host 0.0.0.0` without `CONTEXTRACTOR_API_TOKEN` refuses to start.
-- [ ] In Docker: `serve --host 0.0.0.0` with token, requests without `Authorization: Bearer` return HTTP 401; `/healthz` does not require auth.
+- [ ] `contextractor serve` binds to `127.0.0.1` by default; no `--insecure` flag exists; no `CONTEXTRACTOR_DOCKER` env var is referenced in the code.
+- [ ] No `CONTEXTRACTOR_API_TOKEN` set: all `/v2/*` endpoints return data without `Authorization` header.
+- [ ] `CONTEXTRACTOR_API_TOKEN=secret` set: requests to `/v2/*` without `Authorization: Bearer secret` return HTTP 401; `/healthz` still returns 200 without auth.
 - [ ] `GET /v2/datasets/default/items` returns a JSON array; response headers include `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count`.
 - [ ] `GET /v2/datasets/default/items?format=jsonl` returns NDJSON with `Content-Type: application/x-ndjson`.
-- [ ] `docker run --rm <image> extract https://example.com` prints JSON to stdout (no `-v` required). Skip if bare-URL invocation without `extract` subcommand was not previously supported — note as deferred.
-- [ ] `docker compose up -d api` + `docker compose run --rm extract https://example.com` + `curl -H 'Authorization: Bearer …' http://localhost:8080/v2/datasets/default/items` returns dataset items.
-- [ ] Multi-arch image builds succeed: `docker buildx build --platform linux/amd64,linux/arm64 .`
-- [ ] README copy-paste invocations are present for macOS bash, Linux bash, and Windows PowerShell.
 - [ ] Snapshot test confirms existing single-URL file output in `./output/` is byte-identical to before.
 
 ## Step FIX: Auto-Fix Loop

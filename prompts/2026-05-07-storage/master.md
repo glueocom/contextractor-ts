@@ -1,13 +1,22 @@
 # Storage Feature — Full Implementation
 
-Run all six steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
+Run all steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
 
 ## What this builds
 
 - Unified `save` / `saveDestination` schema fields replacing four boolean save flags; `original` format for raw HTML
 - Apify/Crawlee-compatible local storage layer (`Dataset`, `KeyValueStore`), new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`, `serve`), and an HTTP API mirroring Apify v2
-- Docker image (multi-arch) and `docker-compose.yml`
-- Seven self-contained example projects under `examples/`
+- Four self-contained example projects under `examples/`
+
+Shipping targets: **Apify Actor** and **npm package** (CLI + library). No Docker distribution.
+
+## Step REMOVE-DOCKER: Remove Docker Distribution
+
+Read and execute [`0-remove-docker.md`](./0-remove-docker.md).
+
+Removes the Dockerfile, docker-compose.yml, Docker examples, Docker-mode serve logic, and all Docker references in specs and docs. Simplifies `serve` to npm-only localhost.
+
+Commit when complete.
 
 ## Step SCHEMA: Schema Refactor
 
@@ -17,19 +26,19 @@ Replaces the four boolean save fields with `save` (enum array) and `saveDestinat
 
 Commit when complete.
 
-## Step STORAGE: Storage Layer, Serve, and Docker
+## Step STORAGE: Storage Layer and Serve
 
 Read and execute [`2-storage.md`](./2-storage.md).
 
-Builds the storage helper module, wires all new CLI subcommands, implements the `serve` HTTP API with npm/Docker security split, adds the Dockerfile and `docker-compose.yml`. Read the five research files in `./research/` before designing anything — they are referenced throughout.
+Builds the storage helper module, wires all new CLI subcommands, implements the `serve` HTTP API (npm-only, localhost). Read the five research files in `./research/` before designing anything — they are referenced throughout.
 
-Commit after each discrete implementation task (storage module, CLI wiring, serve, Dockerfile, docker-compose, README).
+Commit after each discrete implementation task (storage module, CLI wiring, serve, README).
 
 ## Step EXAMPLES: Example Projects
 
 Read and execute [`3-examples.md`](./3-examples.md).
 
-Creates seven self-contained examples under `examples/`: `library-ts/`, `cli-npm/`, `cli-docker/`, `docker-compose/`, `docker-api-ts/`, `apify-api-ts/`, `cli-apify/`.
+Creates four self-contained examples under `examples/`: `library-ts/`, `cli-npm/`, `apify-api-ts/`, `cli-apify/`.
 
 Commit when complete.
 
@@ -45,7 +54,7 @@ Do not proceed to the next step until all criteria pass.
 
 Read and execute [`5-auto-fixing-examples.md`](./5-auto-fixing-examples.md).
 
-Reviews every example project for correctness (content, structure, security invariants), runs TypeScript compilation and docker-compose validation, and fixes every failure. Appends examples findings to `report.md`.
+Reviews every example project for correctness (content, structure, security invariants), runs TypeScript compilation, and fixes every failure. Appends examples findings to `report.md`.
 
 Do not mark complete until all checks pass.
 
