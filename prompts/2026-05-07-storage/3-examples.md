@@ -12,11 +12,9 @@ Node.js TypeScript project consuming `@contextractor/standalone` as a library (p
 
 Folder with `run.sh` — shell script demonstrating the full npm CLI surface:
 
-- Single URL extract: `contextractor extract <url> --save txt` — writes to default dataset and prints JSON to stdout.
-- Single URL force NDJSON: `contextractor extract <url> --ndjson` — forces NDJSON output even for a single URL.
-- Multi-URL extract (NDJSON): `contextractor extract <url1> <url2> --save markdown` — emits one JSON record per line on stdout.
+- Single URL extract: `contextractor extract <url> --save txt` — writes to default dataset.
+- Multi-URL extract: `contextractor extract <url1> <url2> --save markdown` — saves both records to the default dataset.
 - Named dataset: `contextractor extract <url> --dataset my-archive` — routes to `datasets/my-archive/`. (The `-o` flag is taken by `--output-dir`; use `--dataset` for dataset routing.)
-- Storage-only (no stdout): `contextractor extract <url> --no-stdout` — writes to storage, silent on stdout.
 - Input file: `contextractor extract --input-file urls.txt` — reads URLs line by line.
 - List default dataset: `contextractor list --format json --limit 10`.
 - List named dataset: `contextractor list my-archive --format jsonl --desc` — named dataset, NDJSON output, descending order.

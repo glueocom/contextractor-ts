@@ -6,11 +6,10 @@
 
 ## 0. Executive summary
 
-The cleanest, most defensible 2026 design for `contextractor` is to **adopt Apify/Crawlee's storage layout almost verbatim** — a `storage/` directory that contains `datasets/`, `key_value_stores/`, and (optionally) `request_queues/` subdirectories. This single decision simultaneously satisfies all three access patterns:
+The cleanest, most defensible 2026 design for `contextractor` is to **adopt Apify/Crawlee's storage layout almost verbatim** — a `storage/` directory that contains `datasets/`, `key_value_stores/`, and (optionally) `request_queues/` subdirectories. This single decision simultaneously satisfies all access patterns:
 
-1. **stdout** — `contextractor extract URL` writes one JSON record to the default dataset and also echoes it to stdout.
-2. **Volume** — that dataset is plain JSON files on disk, mounted via `-v ctx_storage:/storage`. Any tool (jq, Python, another container) can read them directly with no HTTP layer.
-3. **API** — a `contextractor serve` subcommand starts an HTTP server that exposes the same directory through endpoints that mirror Apify's public API (`/v2/datasets/{id}/items`, `/v2/key-value-stores/{id}/records/{key}`).
+- **Volume** — the dataset is plain JSON files on disk. Any tool (jq, Python, another process) can read them directly with no HTTP layer.
+- **API** — a `contextractor serve` subcommand starts an HTTP server that exposes the same directory through endpoints that mirror Apify's public API (`/v2/datasets/{id}/items`, `/v2/key-value-stores/{id}/records/{key}`).
 
 Because the on‑disk layout is byte‑compatible with Apify/Crawlee, the same image can later be run as an Apify Actor (with `apify push`) without any code change, and existing Apify clients (`apify-client` for Python and JS, `curl`, MCP servers, integrations like Make.com / n8n) can read `contextractor`'s output directly.
 
@@ -185,7 +184,7 @@ ${CONTEXTRACTOR_STORAGE_DIR:-./storage}/
 ### C2. CLI mode
 
 ```
-contextractor extract <URL> [-o <dataset-name>] [--no-stdout]
+contextractor extract <URL> [--dataset <name>]
 contextractor extract --input-file urls.txt
 contextractor list [<dataset-name>] [--limit N] [--offset N] [--format json|jsonl|csv]
 contextractor get <dataset-name> <index>
@@ -248,13 +247,10 @@ CMD ["--help"]
 Three canonical invocations:
 
 ```bash
-# 1) Pure stdout (no volume, ephemeral)
-docker run --rm contextractor extract https://example.com > out.json
-
-# 2) Stdout + volume persistence
+# 1) Extract with volume persistence
 docker run --rm -v ctx_storage:/storage contextractor extract https://example.com
 
-# 3) API server reading the same volume
+# 2) API server reading the same volume
 docker run -d --name ctx-api -v ctx_storage:/storage -p 8080:8080 \
   -e CONTEXTRACTOR_API_TOKEN=devtoken \
   contextractor serve --host 0.0.0.0 --port 8080
@@ -326,7 +322,7 @@ volumes:
 1. **v1 (ship now):**
    * `./storage/datasets/default/000000NNN.json` + `__metadata__.json` layout, byte‑identical to Apify/Crawlee's FileSystemStorageClient.
    * `./storage/key_value_stores/default/INPUT.json` and `OUTPUT.json` conventions; record MIME type preserved via file extension.
-   * `contextractor extract URL` writes to default dataset **and** echoes JSON to stdout — both patterns simultaneously.
+   * `contextractor extract URL` writes to the default dataset.
    * `contextractor serve` starts on `127.0.0.1:8080` by default, exposing `/v2/datasets/{name}/items`, `/v2/key-value-stores/{name}/records/{key}`, and a single product‑specific `POST /v2/extract` shortcut.
    * Auth: none on loopback; mandatory bearer token via `CONTEXTRACTOR_API_TOKEN` on `0.0.0.0`. Refuse to start on `0.0.0.0` without a token (`--insecure` to override for dev).
    * Pagination envelope and `format=` query parameter identical to Apify's.

@@ -39,10 +39,8 @@ Run this after completing `3-examples.md`. Review every example project for corr
 - File is executable.
 - Contains the command patterns from `3-examples.md`:
   - Single URL extract: `contextractor extract <url> --save txt`
-  - Force NDJSON: `contextractor extract <url> --ndjson`
   - Multi-URL extract: `contextractor extract <url1> <url2> --save markdown`
   - Named dataset: `contextractor extract <url> --dataset my-archive`
-  - Storage-only: `contextractor extract <url> --no-stdout`
   - Input file: `contextractor extract --input-file urls.txt`
   - List default dataset: `contextractor list --format json --limit 10`
   - List named dataset: `contextractor list my-archive --format jsonl --desc`
@@ -135,7 +133,7 @@ No output means pass. (`--format` was removed as a redundant alias of `--save`; 
 - [ ] `saveDestination: ['dataset']` present in `apify-api-ts/src/main.ts`.
 - [ ] `saveDestination` present in `cli-apify/run.sh`.
 - [ ] `glueo/contextractor-test` used in both Apify examples; `glueo/contextractor` (bare, no `-test`) does not appear.
-- [ ] `cli-npm/run.sh` contains all 18 command patterns listed in Step REVIEW.
+- [ ] `cli-npm/run.sh` contains all 16 command patterns listed in Step REVIEW.
 - [ ] No hardcoded tokens in any file; all loaded from env vars.
 - [ ] Format values use `txt` not `text` throughout all examples.
 

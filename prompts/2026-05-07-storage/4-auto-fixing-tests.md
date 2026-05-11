@@ -45,7 +45,7 @@ Read source files and verify each claim. Fix violations before running tests.
 - `Configuration.getGlobalConfig().set('purgeOnStart', false)` is set before every subcommand invocation.
 - All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`.
 - Crawlee types (`Dataset`, `KeyValueStore`, `DatasetContent`, `KeyValueStoreKeyInfo`, `Configuration`) are re-exported from `@contextractor/standalone`'s public API.
-- Storage errors (read-only dir, full disk) log a warning to stderr and continue with stdout-only — extraction does not fail.
+- Storage errors (read-only dir, full disk) log a warning to stderr and continue — extraction does not fail.
 
 ### Security
 
@@ -96,7 +96,7 @@ Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` a
 
 ### Storage layer
 
-- [ ] `contextractor extract https://example.com` prints JSON to stdout AND creates `./storage/datasets/default/000000000.json`.
+- [ ] `contextractor extract https://example.com` creates `./storage/datasets/default/000000000.json`.
 - [ ] `import { Dataset, KeyValueStore, Configuration } from '@contextractor/standalone'` resolves without error.
 - [ ] `Configuration.getGlobalConfig().set('purgeOnStart', false)` is called before storage access in every subcommand.
 - [ ] Snapshot test confirms existing single-URL file output in `./output/` is byte-identical to before.

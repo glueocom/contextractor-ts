@@ -4,10 +4,7 @@
 
 ## Context
 
-`contextractor` is a TypeScript/Node CLI that wraps `rs-trafilatura` via a napi-rs native addon (`@contextractor/extraction-native`, distributed via npm `optionalDependencies`) for web content extraction. Today it writes extracted content to a local output directory (default `./output`). We want to add a persistent storage layer using Crawlee's native `Dataset` and `KeyValueStore`, so the CLI surface works in two transports:
-
-1. **stdout** — pipe-friendly default, today's behaviour preserved.
-2. **Volume-backed local storage** — append-only `Dataset` + mutable `KeyValueStore` on disk, using Crawlee's `@crawlee/memory-storage` on-disk layout.
+`contextractor` is a TypeScript/Node CLI that wraps `rs-trafilatura` via a napi-rs native addon (`@contextractor/extraction-native`, distributed via npm `optionalDependencies`) for web content extraction. Today it writes extracted content to a local output directory (default `./output`). We want to add a persistent storage layer using Crawlee's native `Dataset` and `KeyValueStore` on disk, using Crawlee's `@crawlee/memory-storage` on-disk layout.
 
 The research that motivates these decisions lives in `./research/` next to this prompt — read those files before designing anything; they cover trade-offs, gotchas, and concrete numbers that aren't repeated here.
 
@@ -27,7 +24,6 @@ If anything in this prompt conflicts with what you find in the codebase, **the c
 ## Reference reading (in `./research/` next to this prompt)
 
 - [`research/01-docker-output-storage.md`](./research/01-docker-output-storage.md) — Five storage strategies for Dockerized CLIs, with examples from pandoc/ffmpeg/aws-cli/yt-dlp/Apify. Establishes stdout-first + bind-mount pattern.
-- [`research/02-stdout-streaming-at-scale.md`](./research/02-stdout-streaming-at-scale.md) — Why stdout streaming holds up to multi-GB output, the Docker Engine ≥24.0.6 requirement (containerd #8643), the json-file logging driver double-write problem, and the `--log-driver=none` recommendation for large outputs.
 - [`research/03-apify-crawlee-storage-architecture.md`](./research/03-apify-crawlee-storage-architecture.md) — The Apify/Crawlee storage primitives (Dataset, KeyValueStore, RequestQueue), their on-disk layout, and the Apify v2 API shape used by Crawlee's dataset/KVS types.
 - [`research/04-crawlee-js-local-storage-reference.md`](./research/04-crawlee-js-local-storage-reference.md) — Crawlee for JS (`@crawlee/memory-storage`) on-disk layout in detail: directory structure, nine-digit zero-padded dataset indexes, KVS extension derivation from MIME, `__metadata__.json` written only in debug mode, purge behaviour, `CRAWLEE_STORAGE_DIR` env var, and why concurrent multi-process writes are unsafe with the default backend.
 - [`research/05-crawlee-js-programmatic-access.md`](./research/05-crawlee-js-programmatic-access.md) — Crawlee's in-process JS/TS API (`Dataset`, `KeyValueStore`, `RequestQueue`), the lower-level `StorageClient` interface, cross-process access caveats, and patterns for embedding storage access in a CLI.
@@ -42,8 +38,8 @@ A single CLI surface that compiles into the npm package (Node ≥22, runs on the
 ### CLI surface
 
 ```
-contextractor extract <url> [<url>…]   [--dataset <name>] [--no-stdout] [--save txt|markdown|json|html|original]
-contextractor extract --input-file <file>   [--dataset <name>] [--ndjson]
+contextractor extract <url> [<url>…]   [--dataset <name>] [--save txt|markdown|json|html|original]
+contextractor extract --input-file <file>   [--dataset <name>]
 contextractor list [<dataset>]   [--limit <n>] [--offset <n>] [--format json|jsonl|csv] [--desc]
 contextractor get <dataset> <index>
 contextractor kvs put <key> <file-or-->   [--store <name>] [--content-type <mime>]
@@ -54,7 +50,7 @@ contextractor purge   [--all]
 contextractor storage-dir   # prints the resolved storage path and exits
 ```
 
-Existing single-URL stdout behaviour stays intact: `contextractor https://example.com` (no subcommand) is treated as `contextractor extract https://example.com` for backwards compatibility, **only if** the existing CLI already does this. If the current CLI already requires a subcommand, leave that.
+Existing single-URL shorthand stays intact: `contextractor https://example.com` (no subcommand) is treated as `contextractor extract https://example.com` for backwards compatibility, **only if** the existing CLI already does this. If the current CLI already requires a subcommand, leave that.
 
 ### Storage layout (shared)
 
@@ -89,14 +85,13 @@ Storage directory resolution order (top wins):
 
 ### `extract` semantics
 
-- One URL, no `--dataset`: extract → push one record to `datasets/default/<n>.json` → echo the JSON record on stdout.
-- Multiple URLs, no `--dataset`: extract each → push to `datasets/default/` → emit **NDJSON** on stdout (one record per line). With `--ndjson` the user can force NDJSON for the single-URL case too.
-- `--dataset my-archive`: route to `datasets/my-archive/`. Stdout behaviour unchanged. (Do not use `-o` — it is already taken by `--output-dir`.)
-- `--no-stdout`: silence the stdout echo (storage write still happens). Use this for batch jobs where the user only wants the persistent copy.
+- One URL, no `--dataset`: extract → push one record to `datasets/default/<n>.json`.
+- Multiple URLs, no `--dataset`: extract each → push each record to `datasets/default/`.
+- `--dataset my-archive`: route to `datasets/my-archive/`. (Do not use `-o` — it is already taken by `--output-dir`.)
 - Logs go to **stderr** via a small logger (`pino` or `console.error` — match what the codebase already uses; do not add a new logging dep).
 - Exit codes: 0 full success, 2 partial (some URLs failed but storage is consistent), 1 hard error.
 
-The single new thing here is "always also write to storage". If the storage-dir is read-only or full, log a warning to stderr and continue with stdout-only output — extraction must not fail because of storage issues.
+The single new thing here is "always also write to storage". If the storage-dir is read-only or full, log a warning to stderr and continue — extraction must not fail because of storage issues.
 
 Set `Configuration.getGlobalConfig().set('purgeOnStart', false)` before any storage interaction — Crawlee's default (`purgeOnStart: true`) wipes default storage on every new run and must be disabled for persistent CLI use.
 
@@ -113,10 +108,10 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - Unit tests: verify `resolveStorageDir()` precedence; verify a `pushData`/`getData` round-trip using a temp dir with Crawlee configured to that dir.
 
 2. **CLI subcommand wiring**
-   - Refactor the existing entrypoint to add the subcommand structure listed above, preserving the existing single-URL stdout shorthand if present.
-   - `extract` writes to storage AND stdout by default; `--no-stdout` for storage-only.
+   - Refactor the existing entrypoint to add the subcommand structure listed above, preserving the existing single-URL shorthand if present.
+   - `extract` writes to storage.
    - `list` / `get` / `kvs *` / `purge` / `storage-dir` call Crawlee's `Dataset` and `KeyValueStore` APIs directly.
-   - All log output to stderr; data to stdout.
+   - All log output to stderr.
    - Exit codes per the §extract semantics.
    - Unit tests for each subcommand using a temp storage dir.
 
