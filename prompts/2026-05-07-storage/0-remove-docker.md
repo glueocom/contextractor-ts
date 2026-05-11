@@ -1,12 +1,12 @@
 # Remove Docker Distribution
 
-> **TLDR**: Contextractor ships as an Apify Actor and an npm package (CLI + library). The Docker distribution is discontinued. Remove every Docker artifact — Dockerfile, docker-compose, Docker examples, Docker-mode serve logic, and all Docker references in specs and docs.
+> **TLDR**: Contextractor ships as an Apify Actor and an npm package (CLI + library). The Docker distribution is discontinued. Remove every Docker artifact — Dockerfile, docker-compose, Docker examples, Docker-mode serve logic, and all Docker references in specs and docs. (only Apify actor can have dockerfile)
 
 ## Context
 
 Contextractor has two shipping targets:
 
-- **Apify Actor** (`apps/apify-actor/`) — cloud execution, unchanged.
+- **Apify Actor** (`apps/apify-actor/`) — cloud execution, unchanged. (only Apify actor can have dockerfile)
 - **npm package** (`apps/standalone/`) — CLI binary + Node.js library, unchanged.
 
 The Docker image and `docker-compose.yml` are removed. The `serve` subcommand is removed entirely — it will not be part of the npm package.
