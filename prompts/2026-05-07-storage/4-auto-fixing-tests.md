@@ -9,7 +9,7 @@ Run this after completing steps 1–3. Review the implementation, run all tests,
 All three implementation steps must be complete:
 
 - `1-schema-refactor.md` — add `original` format, `save`/`saveDestination` fields, sinks
-- `2-storage.md` — storage layer, subcommands, `serve` API, Dockerfile, docker-compose
+- `2-storage.md` — storage layer, subcommands, `serve` API
 - `3-examples.md` — example projects under `examples/`
 
 This step covers schema refactor (step 1), storage layer (step 2), and security. Examples verification is in `5-auto-fixing-examples.md` — run that step separately after this one.
@@ -29,7 +29,7 @@ Read source files and verify each claim. Fix violations before running tests.
 
 - `txt` is the format identifier used consistently across `OutputFormat`, `SaveFormat`, `FORMAT_SPECS`, Zod schema enum, and `--save` help text. Verify no format-value uses `'text'` instead: `grep -rn "'text'" --include='*.ts' packages/ apps/` — any match that is a format value (not a MIME type, description, or human-readable label) is a bug.
 - `txt` is a valid value in `OutputFormat`, `SaveFormat`, and `isSaveFormat`; `original` is valid in `SaveFormat` and `isSaveFormat` but must NOT appear in `OutputFormat` (it is filtered before calling the extraction layer).
-- The four removed fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`) are absent from the Zod schema, TypeScript types, and generated `input_schema.json`.
+- The five removed fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`, `saveExtractedHtmlToKeyValueStore`) are absent from the Zod schema, TypeScript types, and generated `input_schema.json`.
 - `save` and `saveDestination` are present in `packages/schema/src/source-of-truth/input.ts` with correct enum values and defaults.
 - `packages/schema/src/source-of-truth/output.ts` exists and exports a Zod schema for dataset items.
 - `apps/apify-actor/.actor/dataset_schema.json` was generated and is valid JSON.
@@ -92,7 +92,7 @@ Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` a
 ### Schema refactor
 
 - [ ] `txt` is the format identifier in all TypeScript/JSON format values — not `text`. No format enum, type, or CLI help uses `'text'` as a format name.
-- [ ] `grep -r 'saveRawHtmlToKeyValueStore\|saveExtractedTextToKeyValueStore\|saveExtractedJsonToKeyValueStore\|saveExtractedMarkdownToKeyValueStore' packages/ apps/` — no matches.
+- [ ] `grep -r 'saveRawHtmlToKeyValueStore\|saveExtractedTextToKeyValueStore\|saveExtractedJsonToKeyValueStore\|saveExtractedMarkdownToKeyValueStore\|saveExtractedHtmlToKeyValueStore' packages/ apps/` — no matches.
 - [ ] `pnpm build && pnpm lint && pnpm test` — all pass.
 - [ ] `apps/apify-actor/.actor/input_schema.json` contains `save` and `saveDestination`; does not contain the four old boolean fields.
 - [ ] `apps/apify-actor/.actor/dataset_schema.json` exists and is valid JSON.

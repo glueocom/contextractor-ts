@@ -1,10 +1,12 @@
 # Storage Feature — Full Implementation
 
+> **TLDR**: Orchestrates a full feature build in seven ordered steps: remove Docker, refactor the schema, add a storage layer and HTTP API, create examples, then verify with two auto-fix passes and a full monorepo test suite.
+
 Run all steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
 
 ## What this builds
 
-- Unified `save` / `saveDestination` schema fields replacing four boolean save flags; `original` format for raw HTML
+- Unified `save` / `saveDestination` schema fields replacing five boolean save flags; `original` format for raw HTML
 - Apify/Crawlee-compatible local storage layer (`Dataset`, `KeyValueStore`), new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`, `serve`), and an HTTP API mirroring Apify v2
 - Four self-contained example projects under `examples/`
 
@@ -22,7 +24,7 @@ Commit when complete.
 
 Read and execute [`1-schema-refactor.md`](./1-schema-refactor.md).
 
-Replaces the four boolean save fields with `save` (enum array) and `saveDestination`, adds the `original` format, restructures `packages/schema/src/` into `source-of-truth/` and `apify/` subdirectories, and adds a new output schema.
+Replaces the five boolean save fields with `save` (enum array) and `saveDestination`, adds the `original` format, restructures `packages/schema/src/` into `source-of-truth/` and `apify/` subdirectories, and adds a new output schema.
 
 Commit when complete.
 

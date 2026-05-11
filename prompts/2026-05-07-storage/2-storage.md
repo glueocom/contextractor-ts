@@ -19,10 +19,9 @@ This prompt is intentionally codebase-agnostic. **Do not assume layout, build to
 1. `ls` the repo root, find the package.json, read `bin` / `main` / `exports`, and identify how the CLI entrypoint is wired.
 2. Read the current CLI argument parser (commander, yargs, citty, oclif, or hand-rolled) and the current top-level command handler. The new subcommand structure must match the existing convention.
 3. Read how the `rs-trafilatura` native addon (`@contextractor/extraction-native` napi-rs binding) is loaded at runtime. Storage code must not interfere with this.
-4. Check whether there's an existing Dockerfile. If yes, plan modifications; if no, plan a new one alongside the npm distribution without breaking it.
-5. Read `tsconfig.json`, the lint config (Biome per user's standing convention), and any existing test setup. Match conventions exactly.
-6. Check whether ESM or CJS is used; storage code must match.
-7. Identify the formatter (Biome) and run it on every file you change. Minimal diffs only — no reformatting of untouched code.
+4. Read `tsconfig.json`, the lint config (Biome per user's standing convention), and any existing test setup. Match conventions exactly.
+5. Check whether ESM or CJS is used; storage code must match.
+6. Identify the formatter (Biome) and run it on every file you change. Minimal diffs only — no reformatting of untouched code.
 
 If anything in this prompt conflicts with what you find in the codebase, **the codebase wins** — adapt the prompt's conventions to fit, and call out the conflict in your final report.
 
@@ -40,7 +39,7 @@ Treat these as authoritative for *what to build*. The prompt below specifies *wh
 
 A single CLI surface that compiles into the npm package (Node ≥20, runs on the user's machine). There is no Docker distribution.
 
-### CLI surface (shared between npm and Docker)
+### CLI surface
 
 ```
 contextractor extract <url> [<url>…]   [--dataset <name>] [--no-stdout] [--save txt|markdown|json|html|original]
@@ -52,7 +51,7 @@ contextractor kvs get <key>   [--store <name>]
 contextractor kvs ls   [--store <name>] [--limit <n>] [--exclusive-start-key <key>]
 contextractor kvs rm <key>   [--store <name>]
 contextractor purge   [--all]
-contextractor serve   [--host <host>] [--port <port>] [--token <token>] [--insecure]
+contextractor serve   [--host <host>] [--port <port>] [--token <token>]
 contextractor storage-dir   # prints the resolved storage path and exits
 ```
 
@@ -87,7 +86,6 @@ Storage directory resolution order (top wins):
 3. `./storage` if cwd contains `.actor/` or an existing `./storage/` (Apify/Crawlee compat)
 4. `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`
 
-Inside Docker, `CONTEXTRACTOR_STORAGE_DIR=/storage` is set in the image and `/storage` is the recommended bind/volume target. Do **not** declare `VOLUME /storage` in the Dockerfile — see research/01 §8 (causes anonymous volume leaks).
 
 ### `extract` semantics
 
