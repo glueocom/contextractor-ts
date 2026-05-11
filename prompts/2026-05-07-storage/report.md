@@ -59,6 +59,28 @@ pnpm lint     → 8/8 tasks (1 pre-existing warning in apify sinks.test.ts)
 pnpm test     → 13/13 tasks (26 standalone tests, 13 gen-md-regions tests)
 ```
 
+## Examples verification (step 3)
+
+### Status: complete
+
+- All four examples created: `library-ts/`, `cli-npm/`, `apify-api-ts/`, `cli-apify/`.
+- `run.sh` files in `cli-npm/` and `cli-apify/` are executable.
+- `saveDestination` / `--save-destination` present in all three expected files.
+- `glueo/contextractor-test` used consistently; no bare `glueo/contextractor` reference.
+- All 18 command patterns present in `cli-npm/run.sh`.
+- No hardcoded tokens; all from env vars.
+- `txt` used throughout; no `text` format values.
+- Both TypeScript examples compile without errors after `npm install`.
+
+### Deviations
+
+- `library-ts/package.json` uses `"file:../../apps/standalone"` instead of `"^0.1.0"` so the example compiles against the local source rather than requiring an npm publish. A published user would use the semver range — this is a monorepo dev concern only.
+- `library-ts` uses `buildProgram().parseAsync()` as the programmatic API. A higher-level `extract(url, opts)` function would be a cleaner library surface for a v2.
+
+### Deferred
+
+- `apify-api-ts` and `cli-apify` cannot be fully validated without a live Apify environment and a valid `APIFY_TOKEN`. Type-checking passes; runtime behaviour deferred to integration/platform test.
+
 ## Follow-up (not blocking this PR)
 
 - `apps/apify-actor/src/sinks.test.ts:93` — `noTemplateCurlyInString` warning on a test description string. Pre-existing, cosmetic only.

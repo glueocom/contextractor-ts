@@ -8,7 +8,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@contextractor/standalone": "^0.1.0"
+    "@contextractor/standalone": "file:../../apps/standalone"
   },
   "devDependencies": {
     "typescript": "^5.4.0"
