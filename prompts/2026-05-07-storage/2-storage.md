@@ -23,7 +23,6 @@ If anything in this prompt conflicts with what you find in the codebase, **the c
 
 ## Reference reading (in `./research/` next to this prompt)
 
-- [`research/01-docker-output-storage.md`](./research/01-docker-output-storage.md) — Five storage strategies for Dockerized CLIs, with examples from pandoc/ffmpeg/aws-cli/yt-dlp/Apify. Establishes stdout-first + bind-mount pattern.
 - [`research/03-apify-crawlee-storage-architecture.md`](./research/03-apify-crawlee-storage-architecture.md) — The Apify/Crawlee storage primitives (Dataset, KeyValueStore, RequestQueue), their on-disk layout, and the Apify v2 API shape used by Crawlee's dataset/KVS types.
 - [`research/04-crawlee-js-local-storage-reference.md`](./research/04-crawlee-js-local-storage-reference.md) — Crawlee for JS (`@crawlee/memory-storage`) on-disk layout in detail: directory structure, nine-digit zero-padded dataset indexes, KVS extension derivation from MIME, `__metadata__.json` written only in debug mode, purge behaviour, `CRAWLEE_STORAGE_DIR` env var, and why concurrent multi-process writes are unsafe with the default backend.
 - [`research/05-crawlee-js-programmatic-access.md`](./research/05-crawlee-js-programmatic-access.md) — Crawlee's in-process JS/TS API (`Dataset`, `KeyValueStore`, `RequestQueue`), the lower-level `StorageClient` interface, cross-process access caveats, and patterns for embedding storage access in a CLI.
@@ -33,7 +32,7 @@ Treat these as authoritative for *what to build*. The prompt below specifies *wh
 
 ## What ships in this change
 
-A single CLI surface that compiles into the npm package (Node ≥22, runs on the user's machine). There is no Docker distribution.
+A single CLI surface that compiles into the npm package (Node ≥22, runs on the user's machine).
 
 ### CLI surface
 
@@ -122,7 +121,6 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
 
 4. **README updates** (`apps/standalone/README.md`)
    - Document `contextractor extract`, the storage subcommands (`list`, `get`, `kvs *`, `purge`), storage dir resolution, and the Crawlee type re-exports.
-   - No Docker content.
 
 5. **Migration / backwards compatibility**
    - Existing users running `contextractor https://example.com` must see byte-identical file output in `./output/`. Verify with a snapshot test against a frozen input.

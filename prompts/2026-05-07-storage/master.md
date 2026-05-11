@@ -10,7 +10,7 @@ Run all steps in order. Each step must complete and pass before the next begins.
 - Crawlee-backed storage layer (`Dataset`, `KeyValueStore`) with new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`); Crawlee types re-exported from the library
 - Four self-contained example projects under `examples/`
 
-Shipping targets: **Apify Actor** and **npm package** (CLI + library). No Docker distribution.
+Shipping targets: **Apify Actor** and **npm package** (CLI + library).
 
 ## Step REMOVE-DOCKER: Remove Docker Distribution
 
@@ -28,7 +28,7 @@ Replaces the five boolean save fields with `save` (enum array) and `saveDestinat
 
 Commit when complete.
 
-## Step STORAGE: Storage Layer and Serve
+## Step STORAGE: Storage Layer
 
 Read and execute [`2-storage.md`](./2-storage.md).
 

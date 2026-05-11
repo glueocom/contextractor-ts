@@ -22,7 +22,7 @@ For each package and app below, read the source files and the existing test file
 - `packages/crawler/src/` — crawler construction, sink composition, request building. **Historically zero test files** — always check `sinks/file.ts` (`FORMAT_EXTENSIONS`, `urlToFilename`, `fileSink`), `sinks/memory.ts` (`memorySink`), and `browser/launchOptions.ts` (`buildBrowserLaunchOptions`) first.
 - `packages/schema/src/` — input schema parsing, output schema fields, `toApifySchema` conversion, `save` / `saveDestination` validation
 - `apps/standalone/src/` — CLI argument parsing, format validation (`validateSaveFormats`), config merging, storage integration, sink routing, `original` format handling. Check `sinks.ts` (`createCliSink`, `jsonlSink`, `originalSink`, dataset error isolation). Check `storage/` (`resolveStorageDir` precedence, Crawlee `Configuration` setup, `purgeOnStart: false` enforcement) and the library re-exports (Crawlee types accessible from public API).
-- `apps/apify-actor/src/` — Actor config derivation, sink routing (`key-value-store` vs `dataset`), `saveOriginal` flag, `isRunningInDocker` detection
+- `apps/apify-actor/src/` — Actor config derivation, sink routing (`key-value-store` vs `dataset`), `saveOriginal` flag
 
 ### Rust crate to audit
 

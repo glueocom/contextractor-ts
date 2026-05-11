@@ -1,6 +1,6 @@
 # Auto-Fix: Examples Verification
 
-> **TLDR**: Runs after `3-examples.md`. Reviews all four example projects for correctness — `saveDestination` scoping, format identifiers, actor references, and file permissions — then runs validation commands and auto-fixes failures in a loop. No Docker examples exist.
+> **TLDR**: Runs after `3-examples.md`. Reviews all four example projects for correctness — `saveDestination` scoping, format identifiers, actor references, and file permissions — then runs validation commands and auto-fixes failures in a loop.
 
 Run this after completing `3-examples.md`. Review every example project for correctness, run all validation commands, and fix every failure. Repeat the fix loop until everything passes.
 
@@ -25,7 +25,6 @@ Run this after completing `3-examples.md`. Review every example project for corr
 - `--format` flag is not used in any example (it was removed as a redundant alias of `--save`).
 - Named dataset routing uses `--dataset <name>`, never `-o <name>` (`-o` is taken by `--output-dir`).
 - Dataset item indexes are **0-based**: `contextractor get default 0`, not `1`.
-- No Docker examples. `cli-docker/`, `docker-compose/`, `docker-api-ts/` must not exist.
 
 ### `examples/library-ts/`
 
@@ -54,7 +53,7 @@ Run this after completing `3-examples.md`. Review every example project for corr
   - Purge default: `contextractor purge`
   - Purge all: `contextractor purge --all`
   - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`
-- No Docker commands. No `saveDestination`.
+- No `saveDestination`.
 
 ### `examples/apify-api-ts/`
 
@@ -153,5 +152,5 @@ Do not mark a criterion as passing until its command exits 0 or the manual check
 Add examples findings to `prompts/2026-05-07-storage/report.md` (the shared report created by `4-auto-fixing-tests.md`):
 
 - Any deviations from `3-examples.md` and why.
-- Examples that cannot be fully validated without a live Docker or Apify environment — note as deferred with rationale.
+- Examples that cannot be fully validated without a live Apify environment — note as deferred with rationale.
 - Follow-up issues found during review.

@@ -1,6 +1,6 @@
 # Example Projects
 
-> **TLDR**: Creates four self-contained, runnable example projects under `examples/` demonstrating npm CLI, library, and Apify API usage patterns. No Docker examples — there is no Docker distribution.
+> **TLDR**: Creates four self-contained, runnable example projects under `examples/` demonstrating npm CLI, library, and Apify API usage patterns.
 
 Create the following examples under `examples/`. Each must be self-contained and runnable. The `saveDestination` field applies only to Apify Actor invocations — do not include it in npm or library examples.
 
