@@ -79,7 +79,7 @@ pnpm test
 ### Schema snapshot
 
 ```bash
-pnpm test -- --update-snapshots
+pnpm test -- --update
 ```
 
 Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` and `saveDestination`; no old boolean fields.

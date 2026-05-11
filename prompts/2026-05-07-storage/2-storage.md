@@ -109,7 +109,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - `resolveStorageDir()` implementing the five-level precedence above; apply the result via `Configuration.getGlobalConfig().set('storageClientOptions', { localDataDirectory: resolvedDir })` before any storage call.
    - Set `Configuration.getGlobalConfig().set('purgeOnStart', false)` at the start of every subcommand invocation — Crawlee's default wipes default storage on every run.
    - Use `Dataset.open(name)` / `pushData()` / `getData({ offset, limit, desc })` / `dataset.forEach()` / `dataset.drop()` from `crawlee` directly — do not build a custom Dataset class.
-   - Use `KeyValueStore.open(name)` / `kvs.getValue(key)` / `kvs.setValue(key, value, contentType)` / `kvs.deleteValue(key)` / `kvs.listKeys({ limit, exclusiveStartKey })` from `crawlee` directly.
+   - Use `KeyValueStore.open(name)` / `kvs.getValue(key)` / `kvs.setValue(key, value, { contentType })` / `kvs.setValue(key, null)` (to delete) / `kvs.forEachKey(iteratee)` or `kvs.keys()` (to iterate) from `crawlee` directly.
    - Unit tests: verify `resolveStorageDir()` precedence; verify a `pushData`/`getData` round-trip using a temp dir with Crawlee configured to that dir.
 
 2. **CLI subcommand wiring**
@@ -121,7 +121,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
    - Unit tests for each subcommand using a temp storage dir.
 
 3. **Library type re-exports**
-   - Re-export `Dataset`, `KeyValueStore`, `DatasetContent`, `KeyValueStoreKeyInfo`, and `Configuration` from `crawlee` in `@contextractor/standalone`'s public API (`src/index.ts` or equivalent export entry).
+   - Re-export `Dataset`, `KeyValueStore`, `DatasetContent`, and `Configuration` from `crawlee` in `@contextractor/standalone`'s public API (`src/index.ts` or equivalent export entry).
    - Verify the re-exports compile: `import { Dataset, KeyValueStore, Configuration } from '@contextractor/standalone'`.
    - No new dependencies needed — `crawlee` is already a runtime dep from task 1.
 
@@ -156,10 +156,10 @@ Write these tests alongside the implementation. Use vitest; use a temp directory
 
 ### `src/storage/key-value-store.test.ts`
 
-- `kvs.setValue('my-key', buffer, 'image/png')` persists the value; `kvs.getValue('my-key')` returns the same bytes
+- `kvs.setValue('my-key', buffer, { contentType: 'image/png' })` persists the value; `kvs.getValue('my-key')` returns the same bytes
 - `kvs.setValue('my-key', {json: true})` persists a JSON value; `kvs.getValue('my-key')` returns the same object
-- `kvs.deleteValue('my-key')` removes the key; subsequent `kvs.getValue('my-key')` returns `null`
-- `kvs.listKeys({ limit: 2 })` returns at most two keys and the correct `exclusiveStartKey` for the next page
+- `kvs.setValue('my-key', null)` removes the key; subsequent `kvs.getValue('my-key')` returns `null`
+- `kvs.forEachKey()` iterates all stored keys; collect via iteratee and assert collected key names match what was stored
 
 ### `src/storage/resolve-storage-dir.test.ts`
 

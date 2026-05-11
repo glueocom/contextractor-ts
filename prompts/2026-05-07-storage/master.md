@@ -16,7 +16,7 @@ Shipping targets: **Apify Actor** and **npm package** (CLI + library). No Docker
 
 Read and execute [`0-remove-docker.md`](./0-remove-docker.md).
 
-Removes the Dockerfile, docker-compose.yml, Docker examples, Docker-mode serve logic, and all Docker references in specs and docs. Simplifies `serve` to npm-only localhost.
+Removes the Dockerfile, docker-compose.yml, Docker examples, Docker-mode serve logic, and all Docker references in specs and docs.
 
 Commit when complete.
 
@@ -34,7 +34,7 @@ Read and execute [`2-storage.md`](./2-storage.md).
 
 Builds the Crawlee-backed storage module, wires all new CLI subcommands, re-exports Crawlee types from the library. Read the six research files in `./research/` before designing anything — they are referenced throughout.
 
-Commit after each discrete implementation task (storage module, CLI wiring, serve, README).
+Commit after each discrete implementation task (storage module, CLI wiring, README).
 
 ## Step EXAMPLES: Example Projects
 

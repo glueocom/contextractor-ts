@@ -51,11 +51,11 @@ Remove the `serve` subcommand and all associated imports (`isRunningInDocker`, a
 
 ### `apps/standalone/README.md`
 
-Remove all Docker sections: Dockerfile usage, `docker run`, `docker-compose`, `--log-driver=none`, UID safety notes, `CONTEXTRACTOR_DOCKER=1`, `CONTEXTRACTOR_API_TOKEN` mandatory requirement. Keep the npm CLI and serve sections. Keep the optional-token auth note.
+Remove all Docker sections: Dockerfile usage, `docker run`, `docker-compose`, `--log-driver=none`, UID safety notes, `CONTEXTRACTOR_DOCKER=1`, `CONTEXTRACTOR_API_TOKEN` mandatory requirement. Keep the npm CLI section. Keep the optional-token auth note.
 
 ### `apps/standalone/SPEC.md`
 
-Remove the Docker distribution section. Update the Security section to reflect the simplified serve model (loopback default, optional token). Remove `CONTEXTRACTOR_DOCKER=1` from the env var table.
+Remove the Docker distribution section. Remove serve-specific content from the Security section. Remove `CONTEXTRACTOR_DOCKER=1` from the env var table.
 
 ### Root `SPEC.md`
 
