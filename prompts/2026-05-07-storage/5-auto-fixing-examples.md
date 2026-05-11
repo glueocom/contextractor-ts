@@ -17,8 +17,8 @@ Run this after completing `3-examples.md`. Review every example project for corr
 
 ### Common rules
 
-- `saveDestination` must NOT appear in `library-ts/` or `cli-npm/`.
-- `saveDestination` MUST appear in `apify-api-ts/` and `cli-apify/`.
+- `saveDestination` MUST appear in `apify-api-ts/`, `cli-apify/`, and `cli-npm/`.
+- `saveDestination` (as `--save-destination`) must NOT appear in `library-ts/` (library users access KVS directly via the re-exported `KeyValueStore` API).
 - All format values use `txt` not `text` throughout.
 - No hardcoded tokens or credentials; all come from env vars.
 - `glueo/contextractor-test` is used in all Apify examples — `glueo/contextractor` (production) must not appear.
@@ -53,7 +53,8 @@ Run this after completing `3-examples.md`. Review every example project for corr
   - Purge default: `contextractor purge`
   - Purge all: `contextractor purge --all`
   - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`
-- No `saveDestination`.
+  - Save to KVS only: `contextractor extract <url> --save txt --save-destination key-value-store`
+  - Save to both: `contextractor extract <url> --save-destination dataset,key-value-store`
 
 ### `examples/apify-api-ts/`
 
@@ -85,21 +86,14 @@ test -x examples/cli-npm/run.sh && echo "cli-npm: ok"
 test -x examples/cli-apify/run.sh && echo "cli-apify: ok"
 ```
 
-### No saveDestination in non-Apify examples
+### `saveDestination` present in CLI and Apify examples
 
 ```bash
-grep -rl 'saveDestination' examples/library-ts/ examples/cli-npm/
-```
-
-No output means pass. Any match is a bug.
-
-### saveDestination present in Apify examples
-
-```bash
+grep -l 'save-destination' examples/cli-npm/run.sh
 grep -l 'saveDestination' examples/apify-api-ts/src/main.ts examples/cli-apify/run.sh
 ```
 
-Both files must appear in output.
+All three files must appear in output.
 
 ### No production actor reference
 
@@ -128,7 +122,7 @@ No output means pass. (`--format` was removed as a redundant alias of `--save`; 
 
 ### Content
 
-- [ ] No `saveDestination` in `library-ts/` or `cli-npm/`.
+- [ ] `--save-destination` demonstrated in `cli-npm/run.sh`.
 - [ ] `saveDestination: ['dataset']` present in `apify-api-ts/src/main.ts`.
 - [ ] `saveDestination` present in `cli-apify/run.sh`.
 - [ ] `glueo/contextractor-test` used in both Apify examples; `glueo/contextractor` (bare, no `-test`) does not appear.

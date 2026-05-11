@@ -87,7 +87,7 @@ saveDestination: z
   .array(z.enum(['key-value-store', 'dataset']))
   .default(['key-value-store'])
   .describe(
-    'Where to save extracted content. Actor-only — the CLI always saves to disk.',
+    'Where to save extracted content. Supported by both Actor and CLI.',
   )
   .meta({
     title: 'Save to',
@@ -139,6 +139,12 @@ Remove the redundant `--format` option (it is an alias of `--save`):
 - Delete the `format?: string` field from the options type (~line 313)
 
 Update `--save` help: `markdown,html,txt,json,jsonl,all` → `markdown,html,txt,json,jsonl,original,all`
+
+Add `--save-destination <dest>` option with default `dataset`:
+- Accepts `dataset`, `key-value-store`, or `dataset,key-value-store` (comma-separated).
+- `dataset` (default): push each extraction result as a JSON record to the Crawlee dataset.
+- `key-value-store`: write each requested format as a KVS entry keyed `${urlToFilename(url)}.${ext}` (e.g. `example-com.md`) with the appropriate MIME content-type.
+- `dataset,key-value-store`: write to both simultaneously.
 
 ### `apps/standalone/src/config.ts`
 

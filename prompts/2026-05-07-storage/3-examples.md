@@ -6,7 +6,7 @@ Create the following examples under `examples/`. Each must be self-contained and
 
 ## `examples/library-ts/`
 
-Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. Demonstrate calling `extract` for a URL, then consuming the persisted result via the re-exported `Dataset` API (`Dataset.open()` and `dataset.forEach()` imported from `@contextractor/standalone`). No `saveDestination`.
+Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. Demonstrate calling `extract` for a URL, then consuming the persisted result via the re-exported `Dataset` API (`Dataset.open()` and `dataset.forEach()` imported from `@contextractor/standalone`). Also demonstrate retrieving a value from the local `KeyValueStore` via the re-exported `KeyValueStore` API.
 
 ## `examples/cli-npm/`
 
@@ -27,9 +27,9 @@ Folder with `run.sh` — shell script demonstrating the full npm CLI surface:
 - Print resolved storage path: `contextractor storage-dir`.
 - Purge default storage: `contextractor purge`.
 - Purge all (including named datasets): `contextractor purge --all`.
+- Save to KVS only: `contextractor extract <url> --save txt --save-destination key-value-store`.
+- Save to both dataset and KVS: `contextractor extract <url> --save-destination dataset,key-value-store`.
 - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`.
-
-No `saveDestination`.
 
 ## `examples/apify-api-ts/`
 
