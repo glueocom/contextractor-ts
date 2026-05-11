@@ -54,7 +54,7 @@ the table below is auto-rebuilt from that schema by
 | `maxRequestRetries` | integer | `3` | Maximum number of retries for failed requests on network, proxy, or server errors. |
 | `trafilaturaConfig` | object | _optional_ | rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, dedupli… |
 | `save` | array | `["markdown"]` | Output formats to extract and save. "original" saves the raw page HTML before extraction. |
-| `saveDestination` | array | `["key-value-store"]` | Where to save extracted content. Actor-only — the CLI always saves to disk. |
+| `saveDestination` | array | `["key-value-store"]` | Where to save extracted content. Supported by both Actor and CLI. |
 | `datasetName` | string | _optional_ | Name or ID of the dataset for storing results. Leave empty to use the default run dataset. |
 | `keyValueStoreName` | string | _optional_ | Name or ID of the key-value store for content files. Leave empty to use the default store. |
 | `requestQueueName` | string | _optional_ | Name of the request queue for pending URLs. Leave empty to use the default queue. |

@@ -137,7 +137,7 @@
     "saveDestination": {
       "title": "Save to",
       "type": "array",
-      "description": "Where to save extracted content. Actor-only — the CLI always saves to disk.",
+      "description": "Where to save extracted content. Supported by both Actor and CLI.",
       "editor": "json",
       "default": ["key-value-store"]
     },

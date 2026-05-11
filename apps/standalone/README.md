@@ -8,18 +8,101 @@ Playwright).
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`.
+`txt`, `markdown`, `json`, `html`, `original` (raw page HTML).
 
 ## Usage
 
 ```bash
-contextractor [OPTIONS] [URLS...]
+contextractor [OPTIONS] [URLS...]         # backwards-compatible shorthand
+contextractor extract [URLS...]           # explicit extract subcommand
 ```
 
 ```bash
 contextractor https://example.com
 contextractor https://example.com --precision --save json -o ./results
+contextractor extract https://example.com --save-destination dataset
 contextractor --config config.json --max-pages 10
+```
+
+## Subcommands
+
+### `extract`
+
+Extract content from one or more URLs and save to storage.
+
+```bash
+contextractor extract https://example.com
+contextractor extract https://a.com https://b.com --save txt
+contextractor extract --input-file urls.txt --dataset my-archive
+contextractor extract https://example.com --save-destination key-value-store --save-destination dataset
+```
+
+- `--input-file <file>` — read URLs (one per line) from a file
+- `--dataset <name>` — route to a named dataset (default: `default`)
+- `--save-destination <dest>` — repeatable: `key-value-store` (default) or `dataset`
+- `--storage-dir <path>` — override Crawlee storage directory for this run
+
+### `list`
+
+```bash
+contextractor list                          # list default dataset
+contextractor list my-archive --format json --limit 10
+contextractor list my-archive --format jsonl --desc
+```
+
+Formats: `json`, `jsonl` (default), `csv`.
+
+### `get`
+
+```bash
+contextractor get default 0   # 0-based index
+```
+
+### `kvs`
+
+```bash
+contextractor kvs put my-key ./file.json
+echo '{"ok":true}' | contextractor kvs put my-key - --content-type application/json
+contextractor kvs get my-key
+contextractor kvs ls --limit 20
+contextractor kvs rm my-key
+```
+
+### `purge`
+
+```bash
+contextractor purge        # purge default dataset and key-value store
+contextractor purge --all  # purge all datasets and key-value stores
+```
+
+### `storage-dir`
+
+```bash
+contextractor storage-dir  # prints the resolved storage path and exits
+```
+
+## Storage directory resolution
+
+Storage directory is resolved in this order (first match wins):
+
+1. `--storage-dir` CLI flag
+2. `CONTEXTRACTOR_STORAGE_DIR` env var
+3. `CRAWLEE_STORAGE_DIR` env var (Crawlee native compatibility)
+4. `./storage` if `.actor/` or `./storage/` exists in the current working directory
+5. `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage` (XDG fallback)
+
+## Library use (Crawlee re-exports)
+
+`@contextractor/standalone` re-exports Crawlee's storage types for library consumers:
+
+```typescript
+import { Dataset, KeyValueStore, Configuration, type DatasetContent } from '@contextractor/standalone';
+
+const ds = await Dataset.open('my-dataset');
+await ds.forEach((item) => console.log(item));
+
+const kvs = await KeyValueStore.open('default');
+const value = await kvs.getValue('my-key');
 ```
 
 The CLI flag list below is generated from the same Commander program the
@@ -35,7 +118,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--version`, `-V` | output the version number |
 | `--config`, `-c` | Path to JSON config file |
 | `--start-url` | Start URL (alternative to positional URL) |
-| `--output-dir`, `-o` | Output directory |
+| `--output-dir`, `-o` | Output directory (default: ./output) |
 | `--max-pages` | Max pages to crawl (0 = unlimited) |
 | `--crawl-depth` | Max link depth from start URLs (0 = start only) |
 | `--headless` | Run browser in headless mode |
@@ -76,6 +159,8 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--with-metadata` | Extract metadata along with content |
 | `--no-metadata` | Skip metadata extraction |
 | `--verbose`, `-v` | Enable verbose logging |
+| `--save-destination` | Where to save: key-value-store\|dataset (repeatable) |
+| `--storage-dir` | Override Crawlee storage directory |
 
 <!-- @generated:end name="cli-flags" -->
 

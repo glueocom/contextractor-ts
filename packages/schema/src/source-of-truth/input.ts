@@ -185,7 +185,7 @@ export const ContextractorInput = z.object({
   saveDestination: z
     .array(z.enum(['key-value-store', 'dataset']))
     .default(['key-value-store'])
-    .describe('Where to save extracted content. Actor-only — the CLI always saves to disk.')
+    .describe('Where to save extracted content. Supported by both Actor and CLI.')
     .meta({
       title: 'Save to',
       ...apifyMeta({
