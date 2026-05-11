@@ -1,4 +1,4 @@
-# Add Apify-compatible storage layer + serve mode to contextractor (Docker + npm)
+# Add Apify-compatible storage layer + serve mode to contextractor (npm-only)
 
 > **TLDR**: Adds persistent Crawlee-compatible storage (Dataset + KeyValueStore) and an HTTP server mirroring the Apify v2 API, shipping as an npm package only. The storage module is pure TypeScript; the `serve` subcommand is localhost-only.
 
@@ -37,7 +37,7 @@ Treat these as authoritative for *what to build*. The prompt below specifies *wh
 
 ## What ships in this change
 
-A single CLI surface that compiles into the npm package (Node ≥20, runs on the user's machine). There is no Docker distribution.
+A single CLI surface that compiles into the npm package (Node ≥22, runs on the user's machine). There is no Docker distribution.
 
 ### CLI surface
 
