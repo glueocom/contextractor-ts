@@ -37,8 +37,8 @@ A single CLI surface that compiles into the npm package (Node ≥22, runs on the
 ### CLI surface
 
 ```
-contextractor extract <url> [<url>…]   [--dataset <name>] [--save txt|markdown|json|html|original] [--save-destination dataset|key-value-store]
-contextractor extract --input-file <file>   [--dataset <name>] [--save-destination dataset|key-value-store]
+contextractor extract <url> [<url>…]   [--dataset <name>] [--save txt|markdown|json|html|original] [--save-destination key-value-store|dataset]…
+contextractor extract --input-file <file>   [--dataset <name>] [--save-destination key-value-store|dataset]…
 contextractor list [<dataset>]   [--limit <n>] [--offset <n>] [--format json|jsonl|csv] [--desc]
 contextractor get <dataset> <index>
 contextractor kvs put <key> <file-or-->   [--store <name>] [--content-type <mime>]
@@ -87,9 +87,9 @@ Storage directory resolution order (top wins):
 - One URL, no `--dataset`: extract → push one record to `datasets/default/<n>.json`.
 - Multiple URLs, no `--dataset`: extract each → push each record to `datasets/default/`.
 - `--dataset my-archive`: route to `datasets/my-archive/`. (Do not use `-o` — it is already taken by `--output-dir`.)
-- `--save-destination dataset` (default): push each extraction result as a JSON record to the dataset.
-- `--save-destination key-value-store`: write each requested format as a KVS entry keyed `${urlToFilename(url)}.${ext}` (e.g. `example-com.md`, `example-com.txt`) with the appropriate MIME content-type.
-- `--save-destination dataset,key-value-store`: write to both simultaneously; a storage error on either path logs a warning and does not fail the extraction.
+- `--save-destination key-value-store` (default): write each requested format as a KVS entry keyed `${urlToFilename(url)}.${ext}` (e.g. `example-com.md`, `example-com.txt`) with the appropriate MIME content-type.
+- `--save-destination dataset`: push each extraction result as a JSON record to the dataset.
+- Repeatable — pass the flag multiple times to write to multiple destinations: `--save-destination key-value-store --save-destination dataset`. A storage error on any destination logs a warning and does not fail the extraction.
 - Logs go to **stderr** via a small logger (`pino` or `console.error` — match what the codebase already uses; do not add a new logging dep).
 - Exit codes: 0 full success, 2 partial (some URLs failed but storage is consistent), 1 hard error.
 
@@ -111,7 +111,7 @@ Carry these out in order. Each numbered item should be a discrete commit if the 
 
 2. **CLI subcommand wiring**
    - Refactor the existing entrypoint to add the subcommand structure listed above, preserving the existing single-URL shorthand if present.
-   - `extract` writes to storage; routing follows `--save-destination` (default `dataset`, see §extract semantics).
+   - `extract` writes to storage; routing follows `--save-destination` (default `key-value-store`, repeatable, see §extract semantics).
    - `list` / `get` / `kvs *` / `purge` / `storage-dir` call Crawlee's `Dataset` and `KeyValueStore` APIs directly.
    - All log output to stderr.
    - Exit codes per the §extract semantics.

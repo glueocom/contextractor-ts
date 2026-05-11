@@ -53,8 +53,8 @@ Run this after completing `3-examples.md`. Review every example project for corr
   - Purge default: `contextractor purge`
   - Purge all: `contextractor purge --all`
   - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`
-  - Save to KVS only: `contextractor extract <url> --save txt --save-destination key-value-store`
-  - Save to both: `contextractor extract <url> --save-destination dataset,key-value-store`
+  - Save to dataset only: `contextractor extract <url> --save txt --save-destination dataset`
+  - Save to both: `contextractor extract <url> --save-destination key-value-store --save-destination dataset`
 
 ### `examples/apify-api-ts/`
 

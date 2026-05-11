@@ -2,7 +2,7 @@
 
 > **TLDR**: Creates four self-contained, runnable example projects under `examples/` demonstrating npm CLI, library, and Apify API usage patterns.
 
-Create the following examples under `examples/`. Each must be self-contained and runnable. The `saveDestination` field applies only to Apify Actor invocations — do not include it in npm or library examples.
+Create the following examples under `examples/`. Each must be self-contained and runnable. The npm CLI uses `--save-destination`; Apify examples pass `saveDestination` in the actor input JSON.
 
 ## `examples/library-ts/`
 
@@ -12,8 +12,8 @@ Node.js TypeScript project consuming `@contextractor/standalone` as a library (p
 
 Folder with `run.sh` — shell script demonstrating the full npm CLI surface:
 
-- Single URL extract: `contextractor extract <url> --save txt` — writes to default dataset.
-- Multi-URL extract: `contextractor extract <url1> <url2> --save markdown` — saves both records to the default dataset.
+- Single URL extract: `contextractor extract <url> --save txt` — writes to default KVS.
+- Multi-URL extract: `contextractor extract <url1> <url2> --save markdown` — saves both records to the default KVS.
 - Named dataset: `contextractor extract <url> --dataset my-archive` — routes to `datasets/my-archive/`. (The `-o` flag is taken by `--output-dir`; use `--dataset` for dataset routing.)
 - Input file: `contextractor extract --input-file urls.txt` — reads URLs line by line.
 - List default dataset: `contextractor list --format json --limit 10`.
@@ -27,8 +27,8 @@ Folder with `run.sh` — shell script demonstrating the full npm CLI surface:
 - Print resolved storage path: `contextractor storage-dir`.
 - Purge default storage: `contextractor purge`.
 - Purge all (including named datasets): `contextractor purge --all`.
-- Save to KVS only: `contextractor extract <url> --save txt --save-destination key-value-store`.
-- Save to both dataset and KVS: `contextractor extract <url> --save-destination dataset,key-value-store`.
+- Save to dataset only: `contextractor extract <url> --save txt --save-destination dataset`.
+- Save to both KVS and dataset: `contextractor extract <url> --save-destination key-value-store --save-destination dataset`.
 - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`.
 
 ## `examples/apify-api-ts/`
