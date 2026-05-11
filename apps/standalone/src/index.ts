@@ -1,6 +1,6 @@
 export { Configuration, Dataset, KeyValueStore } from 'crawlee';
-export { buildProgram, isMainEntry, runCli } from './cliProgram.js';
 export { program } from './cli.js';
+export { buildProgram, isMainEntry, runCli } from './cliProgram.js';
 export { configureStorage, resolveStorageDir } from './storage/index.js';
 
 /** Mirrors the `DatasetContent<Data>` type from `@crawlee/core`. */
