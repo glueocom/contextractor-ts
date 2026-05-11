@@ -126,7 +126,7 @@ No output means pass. (`--format` was removed as a redundant alias of `--save`; 
 - [ ] `saveDestination: ['dataset']` present in `apify-api-ts/src/main.ts`.
 - [ ] `saveDestination` present in `cli-apify/run.sh`.
 - [ ] `glueo/contextractor-test` used in both Apify examples; `glueo/contextractor` (bare, no `-test`) does not appear.
-- [ ] `cli-npm/run.sh` contains all 16 command patterns listed in Step REVIEW.
+- [ ] `cli-npm/run.sh` contains all 18 command patterns listed in Step REVIEW.
 - [ ] No hardcoded tokens in any file; all loaded from env vars.
 - [ ] Format values use `txt` not `text` throughout all examples.
 

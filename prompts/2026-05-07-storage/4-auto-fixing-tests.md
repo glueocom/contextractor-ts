@@ -44,7 +44,7 @@ Read source files and verify each claim. Fix violations before running tests.
 - `resolveStorageDir()` implements the five-level precedence: `--storage-dir` flag → `CONTEXTRACTOR_STORAGE_DIR` env → `CRAWLEE_STORAGE_DIR` env → `./storage` (if `.actor/` or existing `./storage/`) → `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`.
 - `Configuration.getGlobalConfig().set('purgeOnStart', false)` is set before every subcommand invocation.
 - All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`.
-- Crawlee types (`Dataset`, `KeyValueStore`, `DatasetContent`, `KeyValueStoreKeyInfo`, `Configuration`) are re-exported from `@contextractor/standalone`'s public API.
+- Crawlee types (`Dataset`, `KeyValueStore`, `DatasetContent`, `Configuration`) are re-exported from `@contextractor/standalone`'s public API.
 - Storage errors (read-only dir, full disk) log a warning to stderr and continue — extraction does not fail.
 
 ### Security
