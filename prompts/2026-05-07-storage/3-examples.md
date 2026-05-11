@@ -6,7 +6,7 @@ Create the following examples under `examples/`. Each must be self-contained and
 
 ## `examples/library-ts/`
 
-Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. Demonstrate calling `extract` and printing the result to stdout. No `saveDestination`.
+Node.js TypeScript project consuming `@contextractor/standalone` as a library (programmatic API, not the CLI binary). Include `package.json`, `tsconfig.json`, and `src/main.ts`. Demonstrate calling `extract` for a URL, then consuming the persisted result via the re-exported `Dataset` API (`Dataset.open()` and `dataset.forEach()` imported from `@contextractor/standalone`). No `saveDestination`.
 
 ## `examples/cli-npm/`
 
@@ -29,7 +29,6 @@ Folder with `run.sh` — shell script demonstrating the full npm CLI surface:
 - Print resolved storage path: `contextractor storage-dir`.
 - Purge default storage: `contextractor purge`.
 - Purge all (including named datasets): `contextractor purge --all`.
-- Serve API (loopback only): `contextractor serve --port 8080`; show `curl` calls to `GET /v2/datasets/default/items`. For data ingestion use `POST /v2/datasets/default/items` (not `POST /v2/extract`, which is v1 501).
 - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`.
 
 No `saveDestination`.

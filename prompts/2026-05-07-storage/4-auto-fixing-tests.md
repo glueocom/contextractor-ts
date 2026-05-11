@@ -9,7 +9,7 @@ Run this after completing steps 1–3. Review the implementation, run all tests,
 All three implementation steps must be complete:
 
 - `1-schema-refactor.md` — add `original` format, `save`/`saveDestination` fields, sinks
-- `2-storage.md` — storage layer, subcommands, `serve` API
+- `2-storage.md` — storage layer, subcommands, Crawlee integration and library re-exports
 - `3-examples.md` — example projects under `examples/`
 
 This step covers schema refactor (step 1), storage layer (step 2), and security. Examples verification is in `5-auto-fixing-examples.md` — run that step separately after this one.
@@ -39,21 +39,18 @@ Read source files and verify each claim. Fix violations before running tests.
 
 ### Storage layer (step 2)
 
-- `apps/standalone/src/storage/` exists with `Dataset` and `KeyValueStore` classes; no Crawlee/Apify SDK runtime dependency.
-- Storage layout: `datasets/<name>/<n>.json`, `key_value_stores/<name>/<key>.<ext>`, `__metadata__.json` in each — byte-compatible with Crawlee's `@crawlee/memory-storage` (`MemoryStorage`) on-disk layout. (JS Crawlee has no `FileSystemStorageClient` — that class exists only in Crawlee for Python.)
-- File writes are atomic: write to `.tmp`, then `rename`.
-- `resolveStorageDir()` implements the four-level precedence: `--storage-dir` flag → `CONTEXTRACTOR_STORAGE_DIR` env → `./storage` (if `.actor/` or existing `./storage/`) → `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`.
-- All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`, `serve`.
-- `serve` default bind host is `127.0.0.1`; no Docker-mode logic, no `--insecure` flag, no `isRunningInDocker()`.
-- `/healthz` requires no auth. When `CONTEXTRACTOR_API_TOKEN` is set, all `/v2/*` endpoints require `Authorization: Bearer <token>`; without a token set, no auth is required.
-- `GET /v2/datasets/:name/items` returns a raw JSON array; `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count` are set in response headers. KVS keys list uses the `{"data":{…}}` envelope.
+- `apps/standalone/src/storage/` exists with `resolveStorageDir()` and Crawlee configuration helpers; `crawlee` is a runtime dependency.
+- Storage layout follows Crawlee's `@crawlee/memory-storage` (`MemoryStorage`) on-disk format. (JS Crawlee has no `FileSystemStorageClient` — that class exists only in Crawlee for Python.)
+- `resolveStorageDir()` implements the five-level precedence: `--storage-dir` flag → `CONTEXTRACTOR_STORAGE_DIR` env → `CRAWLEE_STORAGE_DIR` env → `./storage` (if `.actor/` or existing `./storage/`) → `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`.
+- `Configuration.getGlobalConfig().set('purgeOnStart', false)` is set before every subcommand invocation.
+- All subcommands wired: `extract`, `list`, `get`, `kvs put/get/ls/rm`, `purge`, `storage-dir`.
+- Crawlee types (`Dataset`, `KeyValueStore`, `DatasetContent`, `KeyValueStoreKeyInfo`, `Configuration`) are re-exported from `@contextractor/standalone`'s public API.
 - Storage errors (read-only dir, full disk) log a warning to stderr and continue with stdout-only — extraction does not fail.
 
 ### Security
 
 - No `eval` or dynamic code execution in new files.
 - No hardcoded tokens or credentials; all come from env vars.
-- HTTP endpoints validate input with zod at every boundary.
 - Scraped content not fed into templating engines without escaping.
 
 ## Step TEST: Run All Tests
@@ -99,13 +96,9 @@ Verify `packages/schema/test/to-apify-schema.test.ts` snapshot reflects `save` a
 
 ### Storage layer
 
-- [ ] `contextractor extract https://example.com` prints JSON to stdout AND creates `./storage/datasets/default/000000000.json` AND `./storage/datasets/default/__metadata__.json` with `itemCount: 1`.
-- [ ] Two parallel `contextractor extract` runs against different URLs both succeed with no race-condition data loss.
-- [ ] `contextractor serve` binds to `127.0.0.1` by default; no `--insecure` flag exists; no `CONTEXTRACTOR_DOCKER` env var is referenced in the code.
-- [ ] No `CONTEXTRACTOR_API_TOKEN` set: all `/v2/*` endpoints return data without `Authorization` header.
-- [ ] `CONTEXTRACTOR_API_TOKEN=secret` set: requests to `/v2/*` without `Authorization: Bearer secret` return HTTP 401; `/healthz` still returns 200 without auth.
-- [ ] `GET /v2/datasets/default/items` returns a JSON array; response headers include `X-Apify-Pagination-Total`, `X-Apify-Pagination-Offset`, `X-Apify-Pagination-Limit`, `X-Apify-Pagination-Count`.
-- [ ] `GET /v2/datasets/default/items?format=jsonl` returns NDJSON with `Content-Type: application/x-ndjson`.
+- [ ] `contextractor extract https://example.com` prints JSON to stdout AND creates `./storage/datasets/default/000000000.json`.
+- [ ] `import { Dataset, KeyValueStore, Configuration } from '@contextractor/standalone'` resolves without error.
+- [ ] `Configuration.getGlobalConfig().set('purgeOnStart', false)` is called before storage access in every subcommand.
 - [ ] Snapshot test confirms existing single-URL file output in `./output/` is byte-identical to before.
 
 ## Step FIX: Auto-Fix Loop

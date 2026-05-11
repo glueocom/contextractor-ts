@@ -1,13 +1,13 @@
 # Storage Feature — Full Implementation
 
-> **TLDR**: Orchestrates a full feature build in seven ordered steps: remove Docker, refactor the schema, add a storage layer and HTTP API, create examples, then verify with two auto-fix passes and a full monorepo test suite.
+> **TLDR**: Orchestrates a full feature build in seven ordered steps: remove Docker, refactor the schema, add a Crawlee-backed storage layer, create examples, then verify with two auto-fix passes and a full monorepo test suite.
 
 Run all steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
 
 ## What this builds
 
 - Unified `save` / `saveDestination` schema fields replacing five boolean save flags; `original` format for raw HTML
-- Apify/Crawlee-compatible local storage layer (`Dataset`, `KeyValueStore`), new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`, `serve`), and an HTTP API mirroring Apify v2
+- Crawlee-backed storage layer (`Dataset`, `KeyValueStore`) with new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`); Crawlee types re-exported from the library
 - Four self-contained example projects under `examples/`
 
 Shipping targets: **Apify Actor** and **npm package** (CLI + library). No Docker distribution.
@@ -32,7 +32,7 @@ Commit when complete.
 
 Read and execute [`2-storage.md`](./2-storage.md).
 
-Builds the storage helper module, wires all new CLI subcommands, implements the `serve` HTTP API (npm-only, localhost). Read the five research files in `./research/` before designing anything — they are referenced throughout.
+Builds the Crawlee-backed storage module, wires all new CLI subcommands, re-exports Crawlee types from the library. Read the six research files in `./research/` before designing anything — they are referenced throughout.
 
 Commit after each discrete implementation task (storage module, CLI wiring, serve, README).
 

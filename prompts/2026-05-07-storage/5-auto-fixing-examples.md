@@ -25,14 +25,13 @@ Run this after completing `3-examples.md`. Review every example project for corr
 - `--format` flag is not used in any example (it was removed as a redundant alias of `--save`).
 - Named dataset routing uses `--dataset <name>`, never `-o <name>` (`-o` is taken by `--output-dir`).
 - Dataset item indexes are **0-based**: `contextractor get default 0`, not `1`.
-- `POST /v2/extract` returns 501 in v1. Examples that show serving must use `GET /v2/datasets/default/items` for reads and `POST /v2/datasets/default/items` for writes.
 - No Docker examples. `cli-docker/`, `docker-compose/`, `docker-api-ts/` must not exist.
 
 ### `examples/library-ts/`
 
 - `package.json`, `tsconfig.json`, `src/main.ts` all exist.
 - `src/main.ts` imports the programmatic API from `@contextractor/standalone` — not the binary.
-- Calls `extract` with a URL and prints the result to stdout.
+- Calls `extract` with a URL and demonstrates consuming results with `Dataset.open()` and `dataset.forEach()` from the re-exported Crawlee API.
 - No `saveDestination`.
 
 ### `examples/cli-npm/run.sh`
@@ -56,7 +55,6 @@ Run this after completing `3-examples.md`. Review every example project for corr
   - Print storage path: `contextractor storage-dir`
   - Purge default: `contextractor purge`
   - Purge all: `contextractor purge --all`
-  - Serve: `contextractor serve --port 8080` with `curl` calls to `GET /v2/datasets/default/items` and `POST /v2/datasets/default/items`
   - Custom storage dir: `CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract <url>`
 - No Docker commands. No `saveDestination`.
 
@@ -137,7 +135,7 @@ No output means pass. (`--format` was removed as a redundant alias of `--save`; 
 - [ ] `saveDestination: ['dataset']` present in `apify-api-ts/src/main.ts`.
 - [ ] `saveDestination` present in `cli-apify/run.sh`.
 - [ ] `glueo/contextractor-test` used in both Apify examples; `glueo/contextractor` (bare, no `-test`) does not appear.
-- [ ] `cli-npm/run.sh` contains all 20 command patterns listed in Step REVIEW.
+- [ ] `cli-npm/run.sh` contains all 18 command patterns listed in Step REVIEW.
 - [ ] No hardcoded tokens in any file; all loaded from env vars.
 - [ ] Format values use `txt` not `text` throughout all examples.
 
