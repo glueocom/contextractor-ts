@@ -91,9 +91,9 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
     expect(item.txt).toBe('Test Page');
     expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(typeof item.markdownHash).toBe('string');
-    expect((item.markdownHash as string)).toHaveLength(32);
+    expect(item.markdownHash as string).toHaveLength(32);
     expect(typeof item.txtHash).toBe('string');
-    expect((item.txtHash as string)).toHaveLength(32);
+    expect(item.txtHash as string).toHaveLength(32);
   });
 });
 

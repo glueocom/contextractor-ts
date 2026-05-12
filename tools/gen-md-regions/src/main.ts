@@ -8,7 +8,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../..');
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'target', '.git', 'storage', '.actor']);
-const SKIP_PATH_PREFIXES = ['prompts/'];
+const SKIP_PATH_PREFIXES = ['prompts/', 'autonomous-task-output/'];
 
 async function* walkMarkdown(root: string): AsyncIterable<string> {
   const entries = await readdir(root, { withFileTypes: true });

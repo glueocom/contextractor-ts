@@ -8,9 +8,10 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "build": "turbo build",
+    "build": "pnpm run fix && turbo build",
     "test": "turbo test",
-    "lint": "turbo lint",
+    "lint": "biome check .",
+    "fix": "biome check . --fix --unsafe && biome format --write . && biome check .",
     "format": "biome format --write .",
     "check": "biome check .",
     "docs:update": "pnpm -F @contextractor/gen-md-regions start",

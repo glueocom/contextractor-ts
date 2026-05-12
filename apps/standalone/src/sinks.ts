@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { computeContentInfo } from '@contextractor/extraction';
 import { type ExtractionResult, fileSink, type Sink, urlToFilename } from '@contextractor/crawler';
+import { computeContentInfo } from '@contextractor/extraction';
 import type { Dataset, KeyValueStore } from 'crawlee';
 import type { SaveFormat } from './config.js';
 
@@ -45,7 +45,11 @@ export function createCrawleeStorageSink(opts: {
     }
 
     if (toDataset) {
-      const record: Record<string, unknown> = { url: result.url, ...result.metadata, originalHash: result.rawHtmlHash };
+      const record: Record<string, unknown> = {
+        url: result.url,
+        ...result.metadata,
+        originalHash: result.rawHtmlHash,
+      };
       for (const fmt of formats) {
         const content =
           fmt === 'original' ? result.html : result.formats[fmt as keyof typeof result.formats];

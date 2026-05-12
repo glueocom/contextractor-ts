@@ -117,7 +117,7 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(kvs.setValue).not.toHaveBeenCalled();
     expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
     expect(typeof item.txtHash).toBe('string');
-    expect((item.txtHash as string)).toHaveLength(32);
+    expect(item.txtHash as string).toHaveLength(32);
   });
 
   it('includes metadata fields in dataset record', async () => {
@@ -151,9 +151,9 @@ describe('createCrawleeStorageSink — dataset destination', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(typeof item.txtHash).toBe('string');
-    expect((item.txtHash as string)).toHaveLength(32);
+    expect(item.txtHash as string).toHaveLength(32);
     expect(typeof item.markdownHash).toBe('string');
-    expect((item.markdownHash as string)).toHaveLength(32);
+    expect(item.markdownHash as string).toHaveLength(32);
     expect(item.jsonHash).toBeUndefined();
     expect(item.htmlHash).toBeUndefined();
   });
@@ -228,5 +228,4 @@ describe('createCliSink', () => {
     const content = readFileSync(path.join(tmpDir, `${slug}-raw.html`), 'utf8');
     expect(content).toBe('<html>raw</html>');
   });
-
 });

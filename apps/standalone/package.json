@@ -13,7 +13,8 @@
     "./cli": "./dist/cli.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm run fix && tsc -p tsconfig.json",
+    "fix": "biome check . --fix --unsafe && biome format --write . && biome check .",
     "start": "tsx src/cli.ts",
     "test": "vitest run",
     "lint": "biome check ."

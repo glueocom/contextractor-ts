@@ -17,7 +17,8 @@
     "src"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm run fix && tsc -p tsconfig.json",
+    "fix": "biome check . --fix --unsafe && biome format --write . && biome check .",
     "test": "vitest run --passWithNoTests",
     "lint": "biome check ."
   },

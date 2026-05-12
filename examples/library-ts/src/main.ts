@@ -30,7 +30,7 @@ const ds = await Dataset.open('my-results');
 const page = await ds.getData({ limit: 10 });
 console.log(`Extracted ${page.count} item(s) of ${page.total} total`);
 await ds.forEach((item) => {
-  console.log('url:', item['url']);
+  console.log('url:', item.url);
 });
 
 // Read a value from the default key-value store

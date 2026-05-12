@@ -21,5 +21,5 @@ console.log('Run finished:', run.status);
 const { items } = await client.dataset(run.defaultDatasetId).listItems();
 console.log(`Got ${items.length} item(s)`);
 for (const item of items) {
-  console.log('url:', item['url']);
+  console.log('url:', item.url);
 }
