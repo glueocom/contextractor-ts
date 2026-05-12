@@ -11,14 +11,13 @@
 Run in this order:
 
 - `crawler-type.md` — Crawler type selection (`playwright:adaptive` / `playwright:firefox` / `playwright:chromium` / `cheerio`)
-- `error-records.md` — Dataset records for pages that fail after all retries
+- `failed-and-skipped-urls.md` — Dataset records for failed pages + KVS `SKIPPED_URLS` for skipped links (merged from `error-records.md` + `store-skipped-urls.md`)
 - `block-media.md` — Block images, fonts, stylesheets, and videos for faster crawling
 - `wait-for-selector.md` — Hard and soft CSS selector wait before extraction
 - `dynamic-content-wait.md` — Timeout-based network-idle wait for dynamic content
 - `use-sitemaps.md` — Auto-discover and crawl `sitemap.xml` at start URL domains
 - `initial-concurrency.md` — Expose Crawlee `minConcurrency` as `initialConcurrency`
 - `crawl-depth-referrer.md` — Track link depth and referrer URL in dataset records
-- `store-skipped-urls.md` — Save skipped URLs to KVS / output dir
 - `ignore-canonical-url.md` — Skip pages whose canonical URL was already extracted
 
 ## After all prompts
