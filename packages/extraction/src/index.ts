@@ -51,8 +51,6 @@ export interface TrafilaturaConfig {
   onlyWithMetadata: boolean;
   /** Forward-compat placeholder — accepted by the binding, not forwarded. */
   teiValidation: boolean;
-  urlBlacklist: string[] | null;
-  authorBlacklist: string[] | null;
 }
 
 /** Defaults matching rs-trafilatura's balanced preset. */
@@ -70,8 +68,6 @@ export const DEFAULT_CONFIG: Readonly<TrafilaturaConfig> = Object.freeze({
   withMetadata: true,
   onlyWithMetadata: false,
   teiValidation: false,
-  urlBlacklist: null,
-  authorBlacklist: null,
 });
 
 /** Single-format extraction result. */
@@ -240,8 +236,6 @@ function toNativeConfig(config: TrafilaturaConfig): NativeTrafilaturaConfig {
     teiValidation: config.teiValidation,
   };
   if (config.targetLanguage !== null) out.targetLanguage = config.targetLanguage;
-  if (config.authorBlacklist !== null) out.authorBlacklist = config.authorBlacklist;
-  if (config.urlBlacklist !== null) out.urlBlacklist = config.urlBlacklist;
   return out;
 }
 

@@ -37,8 +37,6 @@ pub struct TrafilaturaConfig {
     pub only_with_metadata: Option<bool>,
     /// Forward-compat — rs-trafilatura 0.2.x has no XML-TEI; flag is ignored.
     pub tei_validation: Option<bool>,
-    pub url_blacklist: Option<Vec<String>>,
-    pub author_blacklist: Option<Vec<String>>,
 }
 
 /// Options for a single extraction call.
@@ -233,21 +231,15 @@ fn build_rs_options(config: Option<&TrafilaturaConfig>, url: Option<&str>) -> Rs
         if let Some(v) = cfg.target_language.as_ref() {
             rs.target_language = Some(v.clone());
         }
-        if let Some(v) = cfg.author_blacklist.as_ref() {
-            rs.author_blacklist = Some(v.clone());
-        }
         // `fast` maps to disabling fallback extraction in rs-trafilatura's
         // recall-tuned defaults.
         if let Some(true) = cfg.fast {
             rs.use_fallback_extraction = false;
         }
-        // `with_metadata`, `tei_validation`, `url_blacklist` are accepted but
-        // not forwarded — rs-trafilatura 0.2.x has no backing fields.
-        let _ = (
-            cfg.with_metadata,
-            cfg.tei_validation,
-            cfg.url_blacklist.as_ref(),
-        );
+        // `with_metadata` and `tei_validation` are accepted but not forwarded —
+        // rs-trafilatura 0.2.x has no backing fields for them.
+        let _ = cfg.with_metadata;
+        let _ = cfg.tei_validation;
     }
     rs
 }

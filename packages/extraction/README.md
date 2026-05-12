@@ -73,8 +73,6 @@ Trafilatura.
 | withMetadata      | boolean         | `true`  | Forward-compat — always extracted        |
 | onlyWithMetadata  | boolean         | `false` | Only return if metadata found            |
 | teiValidation     | boolean         | `false` | Forward-compat — accepted but ignored    |
-| urlBlacklist      | string[] \| null | `null`  | URL deny list                            |
-| authorBlacklist   | string[] \| null | `null`  | Author deny list                         |
 
 ## Local prerequisites
 

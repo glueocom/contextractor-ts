@@ -79,8 +79,6 @@ Pass as a JSON object; leave empty for balanced defaults.
 | withMetadata      | boolean | `true`  | Forward-compat — always extracted     |
 | onlyWithMetadata  | boolean | `false` | Return only if metadata found         |
 | teiValidation     | boolean | `false` | Forward-compat — accepted but ignored |
-| urlBlacklist      | string[] | `null`  | URL patterns to exclude               |
-| authorBlacklist   | string[] | `null`  | Author names to exclude               |
 
 Keys accept both camelCase and snake_case; snake_case is normalized internally.
 

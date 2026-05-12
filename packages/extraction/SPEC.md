@@ -25,7 +25,7 @@ XML and XML-TEI are not currently supported by `rs-trafilatura`.
 
 ### `TrafilaturaConfig`
 
-See root `SPEC.md` for the full field table. Defaults match `rs-trafilatura`'s balanced preset. Additional filter fields: `urlBlacklist: string[] | null`, `authorBlacklist: string[] | null`.
+See root `SPEC.md` for the full field table. Defaults match `rs-trafilatura`'s balanced preset.
 
 ### `Metadata`
 
