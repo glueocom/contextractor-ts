@@ -148,7 +148,7 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--max-concurrency <n>', 'Max parallel requests', toInt)
     .option('--max-retries <n>', 'Max request retries', toInt)
     .option('--max-results <n>', 'Max results per crawl (0 = unlimited)', toInt)
-    .option('--save <formats>', 'Output formats: markdown,html,txt,json,jsonl,original,all')
+    .option('--save <formats>', 'Output formats: markdown,html,txt,json,original,all')
     .option('--precision', 'High precision mode (less noise)')
     .option('--recall', 'High recall mode (more content)')
     .option('--fast', 'Fast extraction mode (less thorough)')
@@ -363,8 +363,7 @@ async function runExtractAction(
     startUrls: cfg.urls,
     sink,
     formats: cfg.save.filter(
-      (format): format is Exclude<SaveFormat, 'jsonl' | 'original'> =>
-        format !== 'jsonl' && format !== 'original',
+      (format): format is Exclude<SaveFormat, 'original'> => format !== 'original',
     ),
     extractionConfig: cfg.trafilaturaConfig,
     cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',

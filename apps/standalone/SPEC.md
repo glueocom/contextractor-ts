@@ -58,7 +58,7 @@ Config file: optional JSON file with the same camelCase shape as the Apify input
 
 ### File output (backwards-compatible)
 
-One file per crawled page in the output directory, named from a URL slug (e.g. `example-com-page.md`). When metadata is available, a header (title, author, date, URL) is prepended to text-format outputs. Supported save formats: `txt`, `markdown`, `json`, `html`, `jsonl`, `original`.
+One file per crawled page in the output directory, named from a URL slug (e.g. `example-com-page.md`). When metadata is available, a header (title, author, date, URL) is prepended to text-format outputs. Supported save formats: `txt`, `markdown`, `json`, `html`, `original`.
 
 ### Crawlee storage output
 
@@ -94,5 +94,5 @@ Five-level precedence (first match wins):
 
 ## Sinks
 
-- `createCliSink({ outDir, formats })` — composes `fileSink`, `jsonlSink`, and `originalSink` for file output
+- `createCliSink({ outDir, formats })` — composes `fileSink` and `originalSink` for file output
 - `createCrawleeStorageSink({ destinations, kvs, dataset, formats })` — routes to KVS and/or Dataset; errors are caught and logged to stderr

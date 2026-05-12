@@ -32,7 +32,7 @@ describe('config helpers', () => {
 
   it('validateSaveFormats expands `all`', () => {
     const formats = validateSaveFormats(['all']);
-    expect(formats.sort()).toEqual(['html', 'json', 'jsonl', 'markdown', 'original', 'txt']);
+    expect(formats.sort()).toEqual(['html', 'json', 'markdown', 'original', 'txt']);
   });
 
   it('validateSaveFormats accepts `txt`', () => {

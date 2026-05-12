@@ -196,15 +196,6 @@ describe('createCliSink', () => {
     expect(content).toContain('Hello world');
   });
 
-  it('writes output.jsonl for jsonl format', async () => {
-    const sink = createCliSink({ outDir: tmpDir, formats: ['jsonl'] });
-    await sink(BASE_RESULT);
-    const content = readFileSync(path.join(tmpDir, 'output.jsonl'), 'utf8');
-    const entry = JSON.parse(content.trim());
-    expect(entry.url).toBe(BASE_RESULT.url);
-    expect(typeof entry.content).toBe('string');
-  });
-
   it('writes raw HTML file for original format', async () => {
     const sink = createCliSink({ outDir: tmpDir, formats: ['original'] });
     await sink(BASE_RESULT);
@@ -213,12 +204,4 @@ describe('createCliSink', () => {
     expect(content).toBe('<html>raw</html>');
   });
 
-  it('composes multiple formats in one pass', async () => {
-    const sink = createCliSink({ outDir: tmpDir, formats: ['txt', 'jsonl', 'original'] });
-    await sink(BASE_RESULT);
-    const slug = 'example-com-page';
-    expect(() => readFileSync(path.join(tmpDir, `${slug}.txt`), 'utf8')).not.toThrow();
-    expect(() => readFileSync(path.join(tmpDir, 'output.jsonl'), 'utf8')).not.toThrow();
-    expect(() => readFileSync(path.join(tmpDir, `${slug}-raw.html`), 'utf8')).not.toThrow();
-  });
 });

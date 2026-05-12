@@ -3,9 +3,9 @@ import path from 'node:path';
 import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
-export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'jsonl' | 'original';
+export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'original';
 
-const SORTED_SAVE_FORMATS = ['html', 'json', 'jsonl', 'markdown', 'original', 'txt'] as const;
+const SORTED_SAVE_FORMATS = ['html', 'json', 'markdown', 'original', 'txt'] as const;
 
 const LAUNCHER_MAP = {
   CHROMIUM: 'chromium',
@@ -28,7 +28,6 @@ function isSaveFormat(value: string): value is SaveFormat {
     case 'html':
     case 'txt':
     case 'json':
-    case 'jsonl':
     case 'original':
       return true;
     default:

@@ -143,7 +143,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--max-concurrency` | Max parallel requests |
 | `--max-retries` | Max request retries |
 | `--max-results` | Max results per crawl (0 = unlimited) |
-| `--save` | Output formats: markdown,html,txt,json,jsonl,original,all |
+| `--save` | Output formats: markdown,html,txt,json,original,all |
 | `--precision` | High precision mode (less noise) |
 | `--recall` | High recall mode (more content) |
 | `--fast` | Fast extraction mode (less thorough) |

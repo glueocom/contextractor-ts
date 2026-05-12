@@ -1,4 +1,4 @@
-import { appendFile, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { type ExtractionResult, fileSink, type Sink, urlToFilename } from '@contextractor/crawler';
 import type { Dataset, KeyValueStore } from 'crawlee';
@@ -21,13 +21,12 @@ export function createCrawleeStorageSink(opts: {
   const { destinations, kvs, dataset, formats } = opts;
   const toKvs = destinations.includes('key-value-store');
   const toDataset = destinations.includes('dataset');
-  const storageFormats = formats.filter((f) => f !== 'jsonl');
 
   return async (result) => {
     const slug = urlToFilename(result.url);
 
     if (toKvs) {
-      for (const fmt of storageFormats) {
+      for (const fmt of formats) {
         const content =
           fmt === 'original' ? result.html : result.formats[fmt as keyof typeof result.formats];
         if (!content) continue;
@@ -46,7 +45,7 @@ export function createCrawleeStorageSink(opts: {
 
     if (toDataset) {
       const record: Record<string, unknown> = { url: result.url, ...result.metadata };
-      for (const fmt of storageFormats) {
+      for (const fmt of formats) {
         const content =
           fmt === 'original' ? result.html : result.formats[fmt as keyof typeof result.formats];
         if (content !== undefined) record[fmt] = content;
@@ -70,15 +69,10 @@ export function createCliSink(opts: {
   const sinks: Array<Sink<ExtractionResult>> = [];
 
   const fileFormats = formats.filter(
-    (format): format is Exclude<SaveFormat, 'jsonl' | 'original'> =>
-      format !== 'jsonl' && format !== 'original',
+    (format): format is Exclude<SaveFormat, 'original'> => format !== 'original',
   );
   if (fileFormats.length > 0) {
     sinks.push(fileSink({ outDir, formats: fileFormats }));
-  }
-
-  if (formats.includes('jsonl')) {
-    sinks.push(jsonlSink(outDir));
   }
 
   if (formats.includes('original')) {
@@ -89,27 +83,6 @@ export function createCliSink(opts: {
     for (const sink of sinks) {
       await sink(result);
     }
-  };
-}
-
-function jsonlSink(outDir: string): Sink<ExtractionResult> {
-  const outputPath = path.join(path.resolve(outDir), 'output.jsonl');
-
-  return async (result) => {
-    await mkdir(path.dirname(outputPath), { recursive: true });
-
-    const content = result.formats.markdown ?? result.formats.txt;
-    if (!content) return;
-
-    const entry = {
-      url: result.url,
-      title: result.metadata.title ?? '',
-      author: result.metadata.author ?? '',
-      date: result.metadata.publishedAt ?? '',
-      content,
-    };
-
-    await appendFile(outputPath, `${JSON.stringify(entry)}\n`, 'utf8');
   };
 }
 
