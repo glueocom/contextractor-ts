@@ -27,7 +27,7 @@ Run `/platform:deploy-and-test` to push to the test actor, wait for a successful
 ## Step RUN_TESTS: Run Platform Test Suites
 
 ```bash
-cd tools/platform-test-runner && npm run test:run:all
+pnpm --filter @tools/platform-test-runner test:run:all
 ```
 
 Note: `APIFY_TOKEN` is provided via `.claude/settings.local.json`.
