@@ -11,7 +11,7 @@
 Run in this order:
 
 - `crawler-type.md` — Crawler type selection (`playwright:adaptive` / `playwright:firefox` / `playwright:chromium` / `cheerio`)
-- `failed-and-skipped-urls.md` — Dataset records for failed pages + KVS `SKIPPED_URLS` for skipped links (merged from `error-records.md` + `store-skipped-urls.md`)
+- `failed-and-skipped-urls.md` — Dataset records for failed pages + dataset records for skipped links when `storeSkippedUrls: true` (merged from `error-records.md` + `store-skipped-urls.md`)
 - `block-media.md` — Block images, fonts, stylesheets, and videos for faster crawling
 - `wait-for-selector.md` — Hard and soft CSS selector wait before extraction
 - `dynamic-content-wait.md` — Timeout-based network-idle wait for dynamic content
