@@ -1,0 +1,30 @@
+# Contextractor Improvements — Master
+
+> **TLDR**: Orchestrates all feature improvement prompts. Run each sub-prompt as a separate task in the order listed. Each prompt is self-contained; complete one before starting the next to avoid conflicts on shared files (`input.ts`, `createCrawler.ts`, `handler.ts`).
+
+## Agent
+
+`ts-pro`
+
+## Sub-prompts
+
+Run in this order:
+
+- `crawler-type.md` — Crawler type selection (`playwright:adaptive` / `playwright:firefox` / `playwright:chromium` / `cheerio`)
+- `error-records.md` — Dataset records for pages that fail after all retries
+- `block-media.md` — Block images, fonts, stylesheets, and videos for faster crawling
+- `wait-for-selector.md` — Hard and soft CSS selector wait before extraction
+- `dynamic-content-wait.md` — Timeout-based network-idle wait for dynamic content
+- `use-sitemaps.md` — Auto-discover and crawl `sitemap.xml` at start URL domains
+- `initial-concurrency.md` — Expose Crawlee `minConcurrency` as `initialConcurrency`
+- `crawl-depth-referrer.md` — Track link depth and referrer URL in dataset records
+- `store-skipped-urls.md` — Save skipped URLs to KVS / output dir
+- `ignore-canonical-url.md` — Skip pages whose canonical URL was already extracted
+
+## After all prompts
+
+```bash
+pnpm build && pnpm test && pnpm docs:update
+```
+
+Verify all tests pass and all `@generated` README regions are up to date.
