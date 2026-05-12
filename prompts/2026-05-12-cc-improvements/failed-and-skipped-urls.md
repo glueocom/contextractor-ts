@@ -211,8 +211,17 @@ Update in the same pass:
 - `packages/schema/SPEC.md` — add `storeSkippedUrls`
 - `apps/apify-actor/SPEC.md` — add all three record shapes to output schema section; note `status` field is present on every dataset record; remove any reference to `SKIPPED_URLS` KVS key
 - `apps/standalone/SPEC.md` — add `failed-urls.json` and `skipped-urls.json` to output section; add `--store-skipped-urls` flag
+- Relevant `README.md` files — update any manually-written sections covering the changed behaviour; `@generated` regions are handled by `pnpm docs:update`
+- `apps/apify-actor/.actor/input_schema.json` — run `pnpm --filter @contextractor/gen-input-schema start` after schema changes to regenerate the Actor input UI (GUI)
 
 Run `pnpm docs:update` to regenerate `@generated` README regions.
+
+## Step EXAMPLES
+
+Update `/examples` to demonstrate the new options and output shape in the same pass:
+- `examples/cli-npm/run.sh` — add a usage line for `--store-skipped-urls`
+- `examples/apify-api-ts/src/main.ts` — add `storeSkippedUrls: true`; log `item.status` when iterating dataset results
+- `examples/library-ts/src/main.ts` — handle `status: 'failed'` and `status: 'skipped'` records in printed output
 
 ## Step VERIFY
 

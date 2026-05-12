@@ -55,8 +55,17 @@ Update in the same pass:
 - `packages/schema/SPEC.md` — add `ignoreCanonicalUrl`
 - `packages/crawler/SPEC.md` — document canonical deduplication behaviour
 - `apps/apify-actor/SPEC.md` and `apps/standalone/SPEC.md` — mention in crawler settings
+- Relevant `README.md` files — update any manually-written sections covering the changed behaviour; `@generated` regions are handled by `pnpm docs:update`
+- `apps/apify-actor/.actor/input_schema.json` — run `pnpm --filter @contextractor/gen-input-schema start` after schema changes to regenerate the Actor input UI (GUI)
 
 Run `pnpm docs:update` to regenerate `@generated` README regions.
+
+## Examples
+
+Update `/examples` to demonstrate the new option in the same pass:
+- `examples/cli-npm/run.sh` — add a usage line for `--ignore-canonical-url`
+- `examples/apify-api-ts/src/main.ts` — add `ignoreCanonicalUrl: true` to the Actor call input
+- `examples/library-ts/src/main.ts` — add `ignoreCanonicalUrl` option
 
 ## Verification
 

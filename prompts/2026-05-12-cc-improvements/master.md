@@ -23,7 +23,8 @@ Run in this order:
 ## After all prompts
 
 ```bash
+pnpm --filter @contextractor/gen-input-schema start
 pnpm build && pnpm test && pnpm docs:update
 ```
 
-Verify all tests pass and all `@generated` README regions are up to date.
+Verify all tests pass, `input_schema.json` is in sync with the Zod schema, and all `@generated` README regions are up to date.

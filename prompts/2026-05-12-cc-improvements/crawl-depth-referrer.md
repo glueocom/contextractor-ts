@@ -50,8 +50,15 @@ Update in the same pass:
 - `apps/standalone/SPEC.md` — add `crawl` object to output schema
 - `packages/crawler/SPEC.md` — document `crawlDepth` and `referrerUrl` in `ExtractionResult`
 - Root `SPEC.md` — update dataset entry examples
+- Relevant `README.md` files — update any manually-written sections covering the changed behaviour; `@generated` regions are handled by `pnpm docs:update`
 
 Run `pnpm docs:update` to regenerate `@generated` README regions.
+
+## Examples
+
+Update `/examples` to show the new `crawl` output fields in the same pass:
+- `examples/apify-api-ts/src/main.ts` — log `item.crawl?.depth` and `item.crawl?.referrerUrl` from dataset results
+- `examples/library-ts/src/main.ts` — demonstrate the `crawl` field in printed output
 
 ## Verification
 

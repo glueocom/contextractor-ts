@@ -43,8 +43,17 @@ Update in the same pass:
 - `packages/crawler/SPEC.md` — add `blockMedia` to key options
 - `apps/apify-actor/SPEC.md` — mention in crawler settings
 - `apps/standalone/SPEC.md` — mention `--block-media` flag
+- Relevant `README.md` files — update any manually-written sections covering the changed behaviour; `@generated` regions are handled by `pnpm docs:update`
+- `apps/apify-actor/.actor/input_schema.json` — run `pnpm --filter @contextractor/gen-input-schema start` after schema changes to regenerate the Actor input UI (GUI)
 
 Run `pnpm docs:update` to regenerate `@generated` README regions.
+
+## Examples
+
+Update `/examples` to demonstrate the new option in the same pass:
+- `examples/cli-npm/run.sh` — add a usage line for `--block-media`
+- `examples/apify-api-ts/src/main.ts` — add `blockMedia: true` to the Actor call input
+- `examples/library-ts/src/main.ts` — add `blockMedia` option
 
 ## Verification
 

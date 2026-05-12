@@ -47,6 +47,25 @@ Both `apps/apify-actor/src/config.ts` and `apps/standalone/src/config.ts`:
 
 Replace `--launcher` / `parseLauncher` with `--crawler-type` (values: `adaptive` → `'playwright:adaptive'`, `firefox` → `'playwright:firefox'`, `chromium` → `'playwright:chromium'`, `cheerio` → `'cheerio'`). Add `--rendering-detection-pct <n>` for `renderingTypeDetectionPercentage`.
 
+## Docs
+
+Update in the same pass:
+- `packages/schema/SPEC.md` — document `crawlerType` and `renderingTypeDetectionPercentage`; remove `launcher`
+- `packages/crawler/SPEC.md` — document `crawlerType`, three handler types, widened return type
+- `apps/apify-actor/SPEC.md` — update crawler type in data flow
+- `apps/standalone/SPEC.md` — document `--crawler-type` and `--rendering-detection-pct` flags; remove `--launcher`
+- Relevant `README.md` files — update any manually-written sections covering the changed behaviour; `@generated` regions are handled by `pnpm docs:update`
+- `apps/apify-actor/.actor/input_schema.json` — run `pnpm --filter @contextractor/gen-input-schema start` after schema changes to regenerate the Actor input UI (GUI)
+
+Run `pnpm docs:update` to regenerate `@generated` README regions.
+
+## Examples
+
+Update `/examples` to demonstrate the new option in the same pass:
+- `examples/cli-npm/run.sh` — add usage lines for `--crawler-type` (e.g. `adaptive`, `firefox`, `cheerio`)
+- `examples/apify-api-ts/src/main.ts` — add `crawlerType` to the Actor call input
+- `examples/library-ts/src/main.ts` — add `crawlerType` option
+
 ## Verification
 
 ```bash

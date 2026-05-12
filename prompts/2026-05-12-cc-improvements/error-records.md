@@ -48,8 +48,15 @@ Update in the same pass:
 - `apps/apify-actor/SPEC.md` — add error record shape to output schema section
 - `apps/standalone/SPEC.md` — note `failed-urls.json` in output section
 - `packages/crawler/SPEC.md` — document `onFailedRequest` in key options
+- Relevant `README.md` files — update any manually-written sections covering the changed behaviour; `@generated` regions are handled by `pnpm docs:update`
 
 Run `pnpm docs:update` to regenerate `@generated` README regions.
+
+## Examples
+
+Update `/examples` to show failed-record output in the same pass:
+- `examples/apify-api-ts/src/main.ts` — note that dataset items may now have `status: 'failed'` and log accordingly
+- `examples/library-ts/src/main.ts` — handle failed records in printed output
 
 ## Verification
 
