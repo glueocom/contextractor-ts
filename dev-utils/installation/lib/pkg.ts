@@ -6,24 +6,21 @@
  *   ensureuninstalled   Remove contextractor from npm global store and pnpm global store
  *   install     Build from source and install globally via pnpm
  */
-import { execSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
+import { execSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const BIN_NAME = "contextractor";
-const STANDALONE_PKG = "@contextractor/standalone";
+const BIN_NAME = 'contextractor';
+const STANDALONE_PKG = '@contextractor/standalone';
 
-const REPO_ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../.."
-);
-const STANDALONE_DIR = path.join(REPO_ROOT, "apps/standalone");
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+const STANDALONE_DIR = path.join(REPO_ROOT, 'apps/standalone');
 
-const SHELL = process.env.SHELL ?? "/bin/zsh";
+const SHELL = process.env.SHELL ?? '/bin/zsh';
 
 function run(cmd: string, cwd?: string): void {
   console.log(`  > ${cmd}`);
-  execSync(cmd, { stdio: "inherit", cwd, shell: SHELL });
+  execSync(cmd, { stdio: 'inherit', cwd, shell: SHELL });
 }
 
 function tryRun(cmd: string, cwd?: string): boolean {
@@ -61,7 +58,7 @@ function install(): void {
   uninstall();
 
   console.log(`\n[pkg] Building ${STANDALONE_PKG} from source…`);
-  run("pnpm build", STANDALONE_DIR);
+  run('pnpm build', STANDALONE_DIR);
 
   console.log(`\n[pkg] Installing ${BIN_NAME} globally via npm…`);
   run(`npm install -g .`, STANDALONE_DIR);
@@ -71,9 +68,9 @@ function install(): void {
 
 const command = process.argv[2];
 
-if (command === "ensureuninstalled") {
+if (command === 'ensureuninstalled') {
   uninstall();
-} else if (command === "install") {
+} else if (command === 'install') {
   install();
 } else {
   console.error(`Usage: pkg.ts <ensureuninstalled|install>`);

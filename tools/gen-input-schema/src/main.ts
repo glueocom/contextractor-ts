@@ -36,7 +36,10 @@ execFileSync('pnpm', ['exec', 'biome', 'format', '--write', datasetOut], {
 });
 console.log(`Wrote ${datasetOut}`);
 
-function writeDatasetSchema(schema: z.ZodObject<Record<string, z.ZodTypeAny>>, outPath: string): void {
+function writeDatasetSchema(
+  schema: z.ZodObject<Record<string, z.ZodTypeAny>>,
+  outPath: string,
+): void {
   const jsonSchema = z.toJSONSchema(schema, {
     target: 'draft-07',
     unrepresentable: 'any',

@@ -4,11 +4,11 @@ description: Research, fix, and compact a prompt file. Optionally execute it to 
 
 # Fix Prompt
 
-Deep-research a prompt file, find outdated or wrong approaches, fix them.
+Deep-research one or more prompt files using mandatory detailed web research, find outdated or wrong approaches, fix them. Process each file in full (RESEARCH → QA → FIX → TLDR) before moving to the next.
 
 ## Arguments
 
-- `$ARGUMENTS[0]`: Path to prompt file (required)
+- `$ARGUMENTS`: One or more paths to prompt files (at least one required)
 
 ## Principles
 
@@ -21,9 +21,9 @@ Deep-research a prompt file, find outdated or wrong approaches, fix them.
 
 ## Step RESEARCH: Deep Analysis
 
-Read the prompt file. Research **every technical claim, tool, library, API, and approach** mentioned:
+For each prompt file in `$ARGUMENTS`, run the full pipeline below. Read the prompt file. Research **every technical claim, tool, library, API, and approach** mentioned. **Web research is mandatory and must not be skipped — even if a claim seems obviously correct, verify it.**
 
-- **Web search**: Current documentation, changelogs, deprecation notices, known issues
+- **Web search** (required for every technical claim): current documentation, changelogs, deprecation notices, known issues — search deeply, do not skim
 - **MCP servers**: Query relevant MCP tools for up-to-date information
 - **Codebase**: Grep for related files, configs, and patterns already in use
 - **Documentation**: Fetch official docs for any referenced frameworks or tools
@@ -54,3 +54,13 @@ Edit the prompt file applying all findings:
 - Never add motivational language, disclaimers, or boilerplate
 - Every sentence must convey actionable information
 - Do not commit — let the user review via `git diff`
+
+## Step TLDR: Write or Fix TLDR
+
+Check whether the prompt has a TLDR blockquote as the first content block after the frontmatter (before any other content):
+
+- **No TLDR exists**: insert one immediately after the frontmatter — a one-to-three sentence summary of what the prompt does and when to use it, formatted as:
+  ```
+  > **TLDR**: One-to-three sentence summary of what this prompt does and when to use it.
+  ```
+- **TLDR already exists**: review it against the now-fixed prompt content. If it is stale or inaccurate, fix it in place with the Edit tool. If it is still accurate, leave it unchanged.

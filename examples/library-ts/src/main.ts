@@ -1,8 +1,8 @@
 import {
-  Dataset,
-  KeyValueStore,
   buildProgram,
   configureStorage,
+  Dataset,
+  KeyValueStore,
   resolveStorageDir,
 } from '@contextractor/standalone';
 

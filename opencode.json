@@ -45,9 +45,12 @@
     ".opencode/rules/formatting-guidelines.md",
     ".opencode/rules/json-config-only.md",
     ".opencode/rules/minimal-diff.md",
+    ".opencode/rules/native-addon-boundary.md",
     ".opencode/rules/no-confirmation-prompts.md",
     ".opencode/rules/prompt-engineering-knowledge.md",
     ".opencode/rules/security.md",
+    ".opencode/rules/spec-maintenance.md",
+    ".opencode/rules/test-maintenance.md",
     ".opencode/rules/testing.md"
   ]
 }
