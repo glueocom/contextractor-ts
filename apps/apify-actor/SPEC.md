@@ -24,7 +24,7 @@ Keys use the first 16 hex characters of an MD5 over the URL.
 
 ## Config
 
-`buildCrawlerOpts(input, sink, proxyConfig, requestQueue)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`.
+`buildCrawlerOpts(input, sink, proxyConfig, requestQueue, proxyRotation?)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`.
 
 ## Entry point
 
