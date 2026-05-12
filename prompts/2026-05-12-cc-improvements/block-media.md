@@ -1,6 +1,6 @@
 # Block Media
 
-> **TLDR**: Adds `blockMedia: boolean` (default `false`) schema field. When enabled, calls `playwrightUtils.blockRequests(page)` in `preNavigationHooks` to block images, fonts, and stylesheets. Ignored for `'cheerio'` crawler type and no-op for non-Chromium browsers (Chromium only). Flows through schema → crawler package → both app configs → standalone CLI.
+> **TLDR**: Adds `blockMedia: boolean` (default `false`) schema field. When enabled, calls `playwrightUtils.blockRequests(page)` in `preNavigationHooks` to block images, stylesheets, fonts (.woff), PDFs, and ZIPs. Ignored for `'cheerio'` crawler type and no-op for non-Chromium browsers (Chromium only). Flows through schema → crawler package → both app configs → standalone CLI.
 
 ## Agent
 
@@ -13,7 +13,7 @@ Add in the Performance and limits section (after `pageLoadTimeoutSecs`):
 blockMedia: z
   .boolean()
   .default(false)
-  .describe('Block loading of images, fonts, and stylesheets. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium only).')
+  .describe('Block loading of images, stylesheets, fonts (.woff), PDFs, and ZIPs. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium only).')
   .meta({ title: 'Block media', ...apifyMeta({ sectionCaption: 'Performance and limits' }) }),
 ```
 
