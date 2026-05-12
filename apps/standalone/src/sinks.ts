@@ -28,8 +28,7 @@ export function createCrawleeStorageSink(opts: {
 
     if (toKvs) {
       for (const fmt of formats) {
-        const content =
-          fmt === 'original' ? result.html : result.formats[fmt as keyof typeof result.formats];
+        const content = fmt === 'original' ? result.html : result.formats[fmt];
         if (!content) continue;
         const info = KVS_FORMAT_INFO[fmt];
         if (!info) continue;
@@ -52,8 +51,7 @@ export function createCrawleeStorageSink(opts: {
         crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
       };
       for (const fmt of formats) {
-        const content =
-          fmt === 'original' ? result.html : result.formats[fmt as keyof typeof result.formats];
+        const content = fmt === 'original' ? result.html : result.formats[fmt];
         if (content !== undefined) {
           record[fmt] = content;
           if (fmt !== 'original') record[`${fmt}Hash`] = computeContentInfo(content).hash;
