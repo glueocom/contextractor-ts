@@ -99,6 +99,8 @@ Config merge order: `config file → CLI args → ContextractorInput.parse()`.
 
 ### Apify Actor — Dataset entry
 
+**`saveDestination: ["key-value-store"]` (default)**
+
 ```json
 {
   "loadedUrl": "https://example.com/page",
@@ -114,13 +116,29 @@ Config merge order: `config file → CLI args → ContextractorInput.parse()`.
   "httpStatus": 200,
   "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
   "original": {
-    "hash": "...",
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
     "length": 89898,
     "key": "abc123-original.html",
     "url": "https://api.apify.com/v2/key-value-stores/{id}/records/abc123-original.html"
   },
   "markdown": { "key": "abc123.md", "url": "...", "hash": "...", "length": 6887 },
   "txt": { "key": "abc123.txt", "url": "...", "hash": "...", "length": 5200 }
+}
+```
+
+**`saveDestination: ["dataset"]`**
+
+```json
+{
+  "loadedUrl": "https://example.com/page",
+  "loadedAt": "2026-04-27T18:58:36Z",
+  "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "lang": "en" },
+  "httpStatus": 200,
+  "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
+  "markdown": "# Page Title\n\nContent...",
+  "markdownHash": "5d41402abc4b2a76b9719d911017c592",
+  "txt": "Page Title\n\nContent...",
+  "txtHash": "7215ee9c7d9dc229d2921a40e899ec5f"
 }
 ```
 
