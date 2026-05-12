@@ -16,7 +16,7 @@ Fields grouped by logical section:
 - **Crawler settings** — `startUrls`, `globs`, `excludes`, `pseudoUrls`, `linkSelector`, `keepUrlFragments`, `respectRobotsTxtFile`, `maxPagesPerCrawl`, `maxResultsPerCrawl`, `maxCrawlingDepth`, `maxConcurrency`, `maxRequestRetries`
 - **Auth** — `initialCookies`, `customHttpHeaders`
 - **Content extraction** — `trafilaturaConfig`
-- **Output settings** — `save` (formats array: `txt|markdown|json|html|original`), `saveDestination` (sinks array: `key-value-store|dataset`), `maxResultsPerCrawl`
+- **Output settings** — `save` (formats array: `txt|markdown|json|html|original`), `saveDestination` (sinks array: `key-value-store|dataset`), `datasetName`, `keyValueStoreName`, `requestQueueName`
 - **Proxy** — `proxyConfiguration`, `proxyRotation`
 - **Browser** — `pageLoadTimeoutSecs`, `waitUntil`, `launcher`, `headless`, `ignoreCorsAndCsp`, `closeCookieModals`, `maxScrollHeightPixels`, `userAgent`, `ignoreSslErrors`
 - **Diagnostics** — `debugLog`, `browserLog`

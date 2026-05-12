@@ -20,12 +20,12 @@ type Sink<T> = (result: T) => Promise<void>;
 
 `createContextractorCrawler` accepts a `sink: Sink<ExtractionResult>`. Two built-in sinks:
 
-- `fileSink(outputDir, formats)` — writes one file per page per format to disk (standalone CLI)
+- `fileSink({ outDir, formats? })` — writes one file per page per format to disk (standalone CLI)
 - `memorySink()` — accumulates results in memory (tests)
 
 ### `ExtractionResult` (sink input)
 
-`url`, `html`, `rawHtmlHash`, `rawHtmlLength`, `formats: Record<OutputFormat, CrawlerExtractionResult>`, `metadata: Metadata`.
+`url`, `html`, `rawHtmlHash`, `rawHtmlLength`, `formats: Partial<Record<OutputFormat, string>>`, `metadata: Metadata`.
 
 ## Browser behaviour
 
