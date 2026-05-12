@@ -18,10 +18,10 @@
     "opencode:sync": "pnpm -F @contextractor/opencode-sync start"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
+    "@biomejs/biome": "^2.4.15",
     "@napi-rs/cli": "^3.6.2",
-    "@types/node": "^25.6.0",
-    "turbo": "^2.9.7",
+    "@types/node": "^25.7.0",
+    "turbo": "^2.9.12",
     "typescript": "^6.0.3"
   },
   "pnpm": {

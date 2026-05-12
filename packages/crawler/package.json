@@ -23,17 +23,17 @@
   },
   "dependencies": {
     "@contextractor/extraction": "workspace:*",
-    "@ghostery/adblocker-playwright": "^2.14.4",
+    "@ghostery/adblocker-playwright": "^2.17.0",
     "crawlee": "^3.16.0",
-    "playwright": "^1.59.1"
+    "playwright": "^1.60.0"
   },
   "optionalDependencies": {
-    "@duckduckgo/autoconsent": "^14.76.0"
+    "@duckduckgo/autoconsent": "^14.79.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
-    "@types/node": "^25.6.0",
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.7.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   }
 }

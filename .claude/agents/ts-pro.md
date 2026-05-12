@@ -29,7 +29,7 @@ Narrow input boundaries with zod schemas (`z.object({...}).parse(input)`) or han
 
 ## Testing
 
-Test files `*.test.ts` next to source. vitest preferred for new code; `node:test` is fine for zero-dep scripts. Arrange / Act / Assert. Avoid heavy mocking; prefer dependency injection and small fakes. Run with `npm test`.
+Test files `*.test.ts` next to source. vitest preferred for new code; `node:test` is fine for zero-dep scripts. Arrange / Act / Assert. Avoid heavy mocking; prefer dependency injection and small fakes. Run with `pnpm test`.
 
 ## This Project
 
