@@ -84,3 +84,7 @@ Apply all research findings and QA answers. Write the single polished file to `@
 - Use Write for new files
 - Never add motivational language, disclaimers, or boilerplate
 - Every sentence must convey actionable information
+
+## Step FIX: Polish Output File
+
+Run `/meta:fix-prompt` on the written file (`@/prompts/{date}-{slug}/{slug}.md`).
