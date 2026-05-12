@@ -63,6 +63,9 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     // The data key for markdown should be a ContentInfo object (has `hash`), not a raw string
     expect(typeof item.markdown).toBe('object');
     expect(item.markdown).not.toBe('# Test Page');
+    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect(item.markdownHash).toBeUndefined();
+    expect(item.txtHash).toBeUndefined();
   });
 });
 
@@ -86,6 +89,11 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.markdown).toBe('# Test Page');
     expect(item.txt).toBe('Test Page');
+    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect(typeof item.markdownHash).toBe('string');
+    expect((item.markdownHash as string)).toHaveLength(32);
+    expect(typeof item.txtHash).toBe('string');
+    expect((item.txtHash as string)).toHaveLength(32);
   });
 });
 
@@ -109,5 +117,7 @@ describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-s
     // Confirm the old key pattern is not used
     const oldKeyCall = kvs.calls.find((c) => c.key.endsWith('-raw.html'));
     expect(oldKeyCall).toBeUndefined();
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
   });
 });

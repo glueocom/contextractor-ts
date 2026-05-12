@@ -115,6 +115,9 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(item.url).toBe(BASE_RESULT.url);
     expect(item.txt).toBe('Hello world');
     expect(kvs.setValue).not.toHaveBeenCalled();
+    expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
+    expect(typeof item.txtHash).toBe('string');
+    expect((item.txtHash as string)).toHaveLength(32);
   });
 
   it('includes metadata fields in dataset record', async () => {
@@ -131,6 +134,28 @@ describe('createCrawleeStorageSink — dataset destination', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.title).toBe('Test');
+    expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
+  });
+
+  it('saves per-format hashes alongside content, no hash for absent formats', async () => {
+    const kvs = makeKvs();
+    const dataset = makeDataset();
+    const sink = createCrawleeStorageSink({
+      destinations: ['dataset'],
+      kvs: kvs as never,
+      dataset: dataset as never,
+      formats: ['txt', 'markdown'],
+    });
+
+    await sink(BASE_RESULT);
+
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect(typeof item.txtHash).toBe('string');
+    expect((item.txtHash as string)).toHaveLength(32);
+    expect(typeof item.markdownHash).toBe('string');
+    expect((item.markdownHash as string)).toHaveLength(32);
+    expect(item.jsonHash).toBeUndefined();
+    expect(item.htmlHash).toBeUndefined();
   });
 });
 

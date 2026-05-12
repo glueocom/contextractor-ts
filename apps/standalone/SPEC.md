@@ -65,7 +65,7 @@ One file per crawled page in the output directory, named from a URL slug (e.g. `
 Controlled by `--save-destination` (default `key-value-store`):
 
 - **`key-value-store`** — KVS key `${slug}.${ext}` (or `${slug}-original.html` for `original` format)
-- **`dataset`** — Dataset record with `url`, metadata fields, and content per format as inline strings
+- **`dataset`** — Dataset record with `url`, metadata fields, `originalHash` (MD5 of raw HTML), content per format as inline strings, and a `{format}Hash` field alongside each format's content
 
 Storage errors (write failures) are logged to stderr and do not abort extraction.
 

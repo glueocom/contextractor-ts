@@ -18,7 +18,7 @@ Actor.getInput() → ContextractorInput.safeParse() → createContextractorCrawl
 
 - Raw HTML to KVS as `{hash}-original.html` when `saveOriginal` is true and destination includes `key-value-store`; or inline on the dataset item when destination is `dataset` only
 - Extracted `txt`, `json`, `markdown`, `html` routed per `saveDestination`: KVS content-info references when `key-value-store`, inline strings when `dataset`
-- One dataset item per page with `loadedUrl`, `loadedAt`, `metadata`, `httpStatus`, and per-format content
+- One dataset item per page with `loadedUrl`, `loadedAt`, `metadata`, `httpStatus`, `originalHash` (MD5 of raw HTML), and per-format content; when destination is `dataset`, each format field is accompanied by a `{format}Hash` field (e.g. `markdownHash`)
 
 Keys use the first 16 hex characters of an MD5 over the URL.
 

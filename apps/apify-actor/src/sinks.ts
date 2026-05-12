@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { ExtractionResult, Sink } from '@contextractor/crawler';
-import type { OutputFormat } from '@contextractor/extraction';
+import { computeContentInfo, type OutputFormat } from '@contextractor/extraction';
 import type { Dataset } from 'apify';
 import type { ContentInfo, KvsLike } from './extraction.js';
 import { saveContentToKvs } from './extraction.js';
@@ -54,6 +54,7 @@ export function createApifySink(opts: ApifySinkOpts): Sink<ExtractionResult> {
       loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       metadata: result.metadata,
       httpStatus: 200,
+      originalHash: result.rawHtmlHash,
     };
 
     if (saveOriginal) {
@@ -78,6 +79,7 @@ export function createApifySink(opts: ApifySinkOpts): Sink<ExtractionResult> {
 
       if (toDataset) {
         data[spec.dataKey] = content;
+        data[`${spec.dataKey}Hash`] = computeContentInfo(content).hash;
       } else if (toKvs) {
         const key = `${keyBase}.${spec.ext}`;
         data[spec.dataKey] = await saveContentToKvs(kvs, key, content, spec.contentType);
