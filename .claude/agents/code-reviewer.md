@@ -8,11 +8,11 @@ You are a senior reviewer for a dual-language (TypeScript + Rust) Apify Actor at
 
 ## When Invoked
 
-1. Run `git diff` to see changed files
-2. Run format and lint checks below
-3. Read every changed file
-4. Walk the relevant checklist sections
-5. Report findings grouped by file with `path:line` references
+- Run `git diff` to see changed files
+- Run format and lint checks below
+- Read every changed file
+- Walk the relevant checklist sections
+- Report findings grouped by file with `path:line` references
 
 ## Format and Lint Commands
 

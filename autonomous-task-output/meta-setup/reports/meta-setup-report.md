@@ -1,80 +1,101 @@
+---
+date: 2026-05-12
+agent: meta-setup
+---
+
 # Meta Setup Audit Report
 
-**Date:** 2026-05-12
-**Branch:** feature/npm-only3
+## Summary
+
+- **Files fixed**: 10
+- **Validation**: All 6 checks pass
+- **Orphaned skills flagged**: 10 (not deleted — require human review)
+- **Numbered header violations in active files**: Resolved
 
 ---
 
 ## Files Fixed
 
-### Stale `npm run` → `pnpm` references
+### Formatting — Numbered Lists Converted to Bullet Points
 
-| File | Line | Change |
-|------|------|--------|
-| `.claude/agents/ts-pro.md` | 32 | `Run with \`npm test\`` → `Run with \`pnpm test\`` |
-| `.claude/commands/autonomous/maintenance/sync/gui.md` | 52 | `npm run docs:check` → `pnpm docs:check`, `npm run docs:update` → `pnpm docs:update` |
-| `.claude/commands/autonomous/maintenance/sync/docs.md` | 65 | `npm run docs:update` → `pnpm docs:update` |
-| `.claude/commands/autonomous/maintenance/sync/docs.md` | 75 | `npm run docs:update` → `pnpm docs:update` |
+| File | Issue |
+|------|-------|
+| `.claude/commands/run.md` | Steps 1–4 → bullets |
+| `.claude/commands/docs/update-docs-version.md` | Steps 1–4 → bullets |
+| `.claude/commands/meta/delete-prompt.md` | Steps 1–7 → bullets |
+| `.claude/commands/scaffold/rust-scaffold.md` | Steps 1–6 → bullets |
+| `.claude/agents/code-reviewer.md` | "When Invoked" steps 1–5 → bullets |
+| `.claude/skills/apify-ops/SKILL.md` | "Fix Build Errors", "Diagnose Failed Run", "Access Run Output" steps → bullets |
+| `.claude/skills/apify-actor-development/SKILL.md` | "Quick Start Workflow" steps 1–8 → bullets |
+| `.claude/skills/apify-actorization/SKILL.md` | "Quick Start" and "Step 1: Analyze" numbered lists → bullets |
+
+### Formatting — Numbered Headers Renamed to Descriptive Names
+
+| File | Old | New |
+|------|-----|-----|
+| `.claude/commands/meta/setup.md` | `## 1. Inventory` | `## Step INVENTORY` |
+| `.claude/commands/meta/setup.md` | `## 2. Codebase Scan` | `## Step SCAN: Codebase Scan` |
+| `.claude/commands/meta/setup.md` | `## 3. Gap Analysis` | `## Step ANALYZE: Gap Analysis` |
+| `.claude/commands/meta/setup.md` | `## 4. Cleanup (Interactive)` | `## Step CLEANUP: Cleanup (Interactive)` |
+| `.claude/commands/meta/setup.md` | `## 5. Validate` | `## Step VALIDATE` |
+| `.claude/skills/apify-actorization/SKILL.md` | `## Step 1: Analyze the Project` | `## Step ANALYZE: Analyze the Project` |
+| `.claude/skills/apify-actorization/SKILL.md` | `## Step 2: Initialize Actor Structure` | `## Step INITIALIZE: Initialize Actor Structure` |
+| `.claude/skills/apify-actorization/SKILL.md` | `## Step 3: Apply Language-Specific Changes` | `## Step IMPLEMENT: Apply Language-Specific Changes` |
+| `.claude/skills/apify-actorization/SKILL.md` | `## Steps 4-6: Configure Schemas` | `## Step CONFIGURE: Configure Schemas` |
+| `.claude/skills/apify-actorization/SKILL.md` | `## Step 7: Test Locally` | `## Step TEST: Test Locally` |
+| `.claude/skills/apify-actorization/SKILL.md` | `## Step 8: Deploy` | `## Step DEPLOY: Deploy` |
 
 ---
 
 ## Validation Results
 
-| Check | Result | Notes |
-|-------|--------|-------|
-| Agent frontmatter (name, description, tools, model) | PASS | All 8 agents valid |
-| Activation keywords in agent descriptions | WARN | See flagged issues below |
-| `skills:` references in agents | PASS | No agents use `skills:` field |
-| MCP alignment (`.mcp.json` ↔ `enabledMcpjsonServers`) | PASS | Both reference `apify` only |
-| Stale SDK methods (`chargeableWithinLimit`, `eventChargeLimitReached`) | PASS | None found |
-| `mcpc` referenced in `CLAUDE.md` | PASS |  |
-| `## Security` section in `CLAUDE.md` | PASS |  |
-| Crawlee `llms.txt` linked in `CLAUDE.md` | PASS |  |
-| `generatedBy` in `actor.json` | PASS | Value: `"claude-code"` |
-| `mcpc` preference in `apify-ops` skill | PASS |  |
-| Stale ESLint/Prettier/Jest/Yarn tool references | PASS | None (ESLint only appears as a named anti-pattern example in ts-pro and meta:setup commands — correct usage) |
-| All commands have `description:` frontmatter | PASS |  |
-| Empty directories | WARN | See flagged issues below |
+| Check | Result |
+|-------|--------|
+| MCP alignment (`.mcp.json` ↔ `settings.json`) | PASS — both have `apify` |
+| `mcpc` referenced in `CLAUDE.md` | PASS |
+| `## Security` section in `CLAUDE.md` | PASS |
+| Crawlee `llms.txt` linked in `CLAUDE.md` | PASS |
+| `meta.generatedBy` set in `actor.json` | PASS — value: `claude-code` |
+| Stale SDK methods in skills | PASS — none found |
+| `mcpc` preference in `apify-ops` skill | PASS |
+| Agent frontmatter completeness | PASS — all 8 agents have valid `name`, `description`, `tools` |
+| Skills listed in `CLAUDE.md` resolve to files | PASS — all 10 active skills exist |
+| No `skills:` field in any agent frontmatter | PASS |
 
 ---
 
-## Flagged for Human Review
+## Orphaned Skills — Flagged for Human Review
 
-### `test-runner` agent: non-standard activation keyword
+These 10 skills exist in `.claude/skills/` but are **not listed in `CLAUDE.md` Active Skills**. They appear to be general Apify marketplace skills, not specific to this content extraction project. None were deleted.
 
-`.claude/agents/test-runner.md` description ends with `"Use after implementing features."` — this does not match the required patterns (`USE PROACTIVELY when...`, `ACTIVATE for...`, or `ALWAYS use this agent`). This may cause the orchestrator to skip invoking it automatically. Consider updating to: `"USE PROACTIVELY after implementing features or fixing bugs."`
+| Skill | Description |
+|-------|-------------|
+| `apify-audience-analysis` | Social media audience demographics |
+| `apify-brand-reputation-monitoring` | Reviews and brand mentions across platforms |
+| `apify-competitor-intelligence` | Competitor strategy and pricing analysis |
+| `apify-content-analytics` | Content engagement metrics |
+| `apify-influencer-discovery` | Influencer finding across social platforms |
+| `apify-lead-generation` | B2B/B2C lead scraping |
+| `apify-market-research` | Market conditions and geographic analysis |
+| `apify-trend-analysis` | Trending content discovery |
+| `apify-ultimate-scraper` | Universal AI-powered scraper |
+| `skill-creator` | Guide for creating Claude Code skills |
 
-### Empty `.claude/worktrees/` directory
+**Recommendation**: Remove these skills if this project will not use social-media scraping capabilities. Run `/meta:delete-prompt` for each one to clean up references.
 
-`.claude/worktrees/` exists but is empty. It may be a placeholder for the `/git:add-worktree` command. Safe to delete if worktrees are managed elsewhere; keep if the command expects the directory to exist.
-
-### 10 skills not listed in CLAUDE.md Active Skills
-
-The following skills exist in `.claude/skills/` but are absent from the `## Active Skills` section in `CLAUDE.md`. They are likely general-purpose Apify skills installed globally, not project-specific:
-
-- `apify-audience-analysis`
-- `apify-brand-reputation-monitoring`
-- `apify-competitor-intelligence`
-- `apify-content-analytics`
-- `apify-influencer-discovery`
-- `apify-lead-generation`
-- `apify-market-research`
-- `apify-trend-analysis`
-- `apify-ultimate-scraper`
-- `skill-creator`
-
-No action needed unless these should be surfaced to agents operating on this project.
-
-### MCP validation script false positive
-
-The validation diff command in the meta:setup prompt (`diff <(grep -oE '"[a-z]+":' .mcp.json...)`) produces a false positive because it matches `"type":` and `"url":` keys inside the `mcpServers.apify` HTTP config object. The actual alignment is correct — both `.mcp.json` and `settings.json` reference only the `apify` server.
-
-### `npm install` references in Apify skills (intentional)
-
-Several Apify skills (`apify-ops`, `apify-actorization`, `apify-actor-development`, and analytics skills) reference `npm install -g apify-cli` and `npm install -g @apify/mcpc`. These are global CLI install commands where `npm` is the conventional installer — **not** project workspace commands. No fix needed.
+Note: the 5 orphaned skills with numbered lists (`apify-content-analytics`, `apify-market-research`, `apify-competitor-intelligence`, `apify-ultimate-scraper`, `skill-creator`) were not reformatted since they are candidates for deletion.
 
 ---
 
-## Gaps
+## No Gaps Found
 
-No missing agents or skills detected for the current technology domains (TypeScript + Rust + Crawlee + Apify + napi-rs). All CLAUDE.md-listed agents and skills resolve to actual files.
+- All agents listed in `CLAUDE.md` have corresponding `.md` files
+- All active skills listed in `CLAUDE.md` have corresponding `SKILL.md` files
+- MCP server `apify` is consistent across `.mcp.json` and `settings.json`
+- `AGENTS.md` exists at repo root (referenced in `meta/setup.md` checklist)
+
+---
+
+## No Issues That Could Not Be Auto-Fixed
+
+All identified issues were either auto-fixed (formatting violations) or flagged for human review (orphaned skills). No prompt file is written.

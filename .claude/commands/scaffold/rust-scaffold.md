@@ -155,12 +155,12 @@ cargo audit
 
 When invoked, this command will:
 
-1. **Analyze Context** — check for an existing workspace and either add a new member crate or scaffold standalone
-2. **Create Structure** — generate the project layout above
-3. **Configure Tooling** — write `Cargo.toml`, `rust-toolchain.toml`, `rustfmt.toml`, `deny.toml`
-4. **Initialize Git** — `.gitignore` (`target/`, `Cargo.lock` only for libraries), initial commit
-5. **Add Tests** — sample unit test in `src/`, integration test in `tests/`
-6. **Document** — `README.md` with build, test, run instructions
+- **Analyze Context** — check for an existing workspace and either add a new member crate or scaffold standalone
+- **Create Structure** — generate the project layout above
+- **Configure Tooling** — write `Cargo.toml`, `rust-toolchain.toml`, `rustfmt.toml`, `deny.toml`
+- **Initialize Git** — `.gitignore` (`target/`, `Cargo.lock` only for libraries), initial commit
+- **Add Tests** — sample unit test in `src/`, integration test in `tests/`
+- **Document** — `README.md` with build, test, run instructions
 
 ## Activated Skills
 

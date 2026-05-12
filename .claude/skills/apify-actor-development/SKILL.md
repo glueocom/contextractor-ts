@@ -59,16 +59,16 @@ Use the appropriate CLI command based on the user's language choice. Additional 
 
 ## Quick Start Workflow
 
-1. **Create actor project** - Run the appropriate `apify create` command based on user's language preference (see Template Selection above)
-2. **Install dependencies**
-   - JavaScript/TypeScript: `npm install`
-   - Python: `pip install -r requirements.txt`
-3. **Implement logic** - Write the actor code in `src/main.py`, `src/main.js`, or `src/main.ts`
-4. **Configure schemas** - Update input/output schemas in `.actor/input_schema.json`, `.actor/output_schema.json`, `.actor/dataset_schema.json`
-5. **Configure platform settings** - Update `.actor/actor.json` with actor metadata (see [references/actor-json.md](references/actor-json.md))
-6. **Write documentation** - Create comprehensive README.md for the marketplace
-7. **Test locally** - Run `apify run` to verify functionality (see Local Testing section below)
-8. **Deploy** - Run `apify push` to deploy the actor on the Apify platform (actor name is defined in `.actor/actor.json`)
+- **Create actor project** - Run the appropriate `apify create` command based on user's language preference (see Template Selection above)
+- **Install dependencies**
+  - JavaScript/TypeScript: `npm install`
+  - Python: `pip install -r requirements.txt`
+- **Implement logic** - Write the actor code in `src/main.py`, `src/main.js`, or `src/main.ts`
+- **Configure schemas** - Update input/output schemas in `.actor/input_schema.json`, `.actor/output_schema.json`, `.actor/dataset_schema.json`
+- **Configure platform settings** - Update `.actor/actor.json` with actor metadata (see [references/actor-json.md](references/actor-json.md))
+- **Write documentation** - Create comprehensive README.md for the marketplace
+- **Test locally** - Run `apify run` to verify functionality (see Local Testing section below)
+- **Deploy** - Run `apify push` to deploy the actor on the Apify platform (actor name is defined in `.actor/actor.json`)
 
 ## Best Practices
 
