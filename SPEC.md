@@ -112,6 +112,7 @@ Config merge order: `config file → CLI args → ContextractorInput.parse()`.
     "lang": "en"
   },
   "httpStatus": 200,
+  "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
   "original": {
     "hash": "...",
     "length": 89898,
@@ -124,8 +125,9 @@ Config merge order: `config file → CLI args → ContextractorInput.parse()`.
 ```
 
 Rules:
+- `originalHash`: always present; 32-char MD5 hex of the raw HTML
 - `original`: present when `saveOriginal` is true; a `ContentInfo` object (`hash`, `length`, `key`, `url`) when saved to KVS, or the raw HTML string when `saveDestination` is `dataset` only
-- `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentInfo` objects when `saveDestination` is `key-value-store`, inline content strings when `dataset`
+- `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentInfo` objects when `saveDestination` is `key-value-store`; inline content strings when `dataset`, each accompanied by a `{format}Hash` field (e.g. `markdownHash`, `txtHash`) containing the 32-char MD5 hex of that content
 - `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
 
 ### Apify Actor — Key-Value Store
@@ -143,7 +145,7 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 
 **File output** (default, backwards-compatible): one file per crawled page in `--output-dir` (default `./output/`), named from a URL slug (e.g. `example-com-page.md`). Metadata header prepended to text-format outputs when available.
 
-**Crawlee storage** (controlled by `--save-destination`): KVS keys use URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry `url`, metadata, and per-format content as inline strings.
+**Crawlee storage** (controlled by `--save-destination`): KVS keys use URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry `url`, metadata, `originalHash` (MD5 of raw HTML), per-format content as inline strings, and a `{format}Hash` field alongside each saved format.
 
 ## Build
 

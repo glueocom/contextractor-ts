@@ -83,11 +83,17 @@ the table below is auto-rebuilt from that schema by
 ## Output
 
 Per-page dataset entry with `loadedUrl`, `loadedAt`, `httpStatus`, `metadata`
-(title, author, publishedAt, description, siteName, lang), the enabled
-`extractedMarkdown` / `extractedText` / `extractedJson` payloads, and `rawHtml`
-metadata on every item. Enabling a save flag writes the
-corresponding content file to the Key-Value Store; `saveRawHtmlToKeyValueStore`
-adds the raw-HTML file itself.
+(title, author, publishedAt, description, siteName, lang), and `originalHash`
+(32-char MD5 hex of the raw HTML, always present).
+
+When `saveDestination` includes `dataset`: each enabled format (`markdown`,
+`txt`, `json`, `html`) appears as an inline string alongside a
+`{format}Hash` field (e.g. `markdownHash`) containing its 32-char MD5 hex.
+
+When `saveDestination` includes `key-value-store` (default): each enabled
+format appears as a `ContentInfo` object (`hash`, `length`, `key`, `url`);
+raw HTML is stored under `{hash}-original.html` when `save` includes
+`"original"`.
 
 ## Deploy
 
