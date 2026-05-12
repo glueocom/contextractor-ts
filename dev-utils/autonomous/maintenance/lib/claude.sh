@@ -1,8 +1,8 @@
-# Source-able library for running Claude Code slash commands.
-# Usage: source "$(dirname "$0")/lib/claude.sh"
+# Source-able library for running Claude Code slash commands (max effort / opus).
+# Usage: source "$(dirname "$0")/lib/claude-max.sh"
 # Guard prevents double-sourcing when multiple scripts source this file.
-[[ -n "${_AM_CLAUDE_LIB:-}" ]] && return 0
-_AM_CLAUDE_LIB=1
+[[ -n "${_AM_CLAUDE_MAX_LIB:-}" ]] && return 0
+_AM_CLAUDE_MAX_LIB=1
 
 # Run a Claude Code slash command in an isolated session.
 # Streams all output to stdout so it appears live in the terminal.
@@ -15,7 +15,7 @@ claude_run() {
   fi
   echo ""
   echo "[claude] Running $cmd ..."
-  claude --model sonnet --verbose -p "$cmd" --output-format stream-json | \
+  claude --effort max --verbose -p "$cmd" --output-format stream-json | \
     jq -r --unbuffered '
       if .type == "assistant" then
         .message.content[]? |
