@@ -49,6 +49,7 @@ export function createCrawleeStorageSink(opts: {
         url: result.url,
         ...result.metadata,
         originalHash: result.rawHtmlHash,
+        crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
       };
       for (const fmt of formats) {
         const content =

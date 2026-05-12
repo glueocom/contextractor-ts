@@ -1,4 +1,8 @@
-import { buildRequests, createContextractorCrawler } from '@contextractor/crawler';
+import {
+  buildRequests,
+  createContextractorCrawler,
+  SitemapRequestList,
+} from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
 import type { ProxyConfigurationOptions } from 'apify';
 import { Actor, log } from 'apify';
@@ -45,9 +49,37 @@ export async function runActor(): Promise<void> {
     saveOriginal: input.save.includes('original'),
     saveDestination: input.saveDestination,
   });
-  const crawler = createContextractorCrawler(
-    buildCrawlerOpts(input, sink, proxyConfig, requestQueue, input.proxyRotation),
-  );
+  let sitemapList: SitemapRequestList | undefined;
+  if (input.useSitemaps) {
+    const sitemapUrls = [...new Set(startUrls.map((u) => `${new URL(u).origin}/sitemap.xml`))];
+    sitemapList = await SitemapRequestList.open({
+      sitemapUrls,
+      globs: input.globs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+      exclude: input.excludes.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+    });
+  }
+
+  const crawler = createContextractorCrawler({
+    ...buildCrawlerOpts(input, sink, proxyConfig, requestQueue, input.proxyRotation),
+    ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
+    onFailedRequest: async (info) => {
+      await dataset.pushData({
+        url: info.url,
+        loadedUrl: info.loadedUrl,
+        status: 'failed',
+        errorMessages: info.errorMessages,
+        retryCount: info.retryCount,
+        crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      });
+    },
+    ...(input.storeSkippedUrls
+      ? {
+          onSkippedUrl: (url, reason) => {
+            void dataset.pushData({ url, status: 'skipped', skipReason: reason });
+          },
+        }
+      : {}),
+  });
   await crawler.run(buildRequests(startUrls, input.keepUrlFragments));
   await Actor.exit();
 }

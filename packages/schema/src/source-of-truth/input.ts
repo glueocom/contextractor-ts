@@ -33,6 +33,36 @@ export const ContextractorInput = z.object({
       }),
     }),
 
+  crawlerType: z
+    .enum(['playwright:adaptive', 'playwright:firefox', 'playwright:chromium', 'cheerio'])
+    .default('playwright:adaptive')
+    .describe(
+      'Browser engine or HTTP client for crawling. playwright:adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS).',
+    )
+    .meta({
+      title: 'Crawler type',
+      ...apifyMeta({
+        sectionCaption: 'Crawler settings',
+        editor: 'select',
+        enumTitles: [
+          'Adaptive switching (Recommended)',
+          'Headless browser (Firefox+Playwright)',
+          'Headless browser (Chromium+Playwright)',
+          'Raw HTTP client (Cheerio)',
+        ],
+      }),
+    }),
+
+  renderingTypeDetectionPercentage: z
+    .int()
+    .min(0)
+    .max(100)
+    .default(10)
+    .describe(
+      '(Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower.',
+    )
+    .meta({ title: 'Rendering type detection', ...apifyMeta({ unit: '%' }) }),
+
   globs: z
     .array(z.object({ glob: z.string() }).loose())
     .default([])
@@ -41,7 +71,7 @@ export const ContextractorInput = z.object({
     )
     .meta({
       title: 'Include URLs (globs)',
-      ...apifyMeta({ editor: 'globs', sectionCaption: 'Crawler settings' }),
+      ...apifyMeta({ editor: 'globs' }),
     }),
 
   excludes: z
@@ -82,6 +112,22 @@ export const ContextractorInput = z.object({
       'URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different pages.',
     )
     .meta({ title: 'Keep URL fragments' }),
+
+  useSitemaps: z
+    .boolean()
+    .default(false)
+    .describe(
+      'If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following.',
+    )
+    .meta({ title: 'Use sitemaps' }),
+
+  ignoreCanonicalUrl: z
+    .boolean()
+    .default(false)
+    .describe(
+      'If enabled, the crawler ignores the canonical URL declared in the page and always extracts content for every loaded URL. By default, pages whose canonical URL has already been extracted are skipped.',
+    )
+    .meta({ title: 'Ignore canonical URLs' }),
 
   respectRobotsTxtFile: z
     .boolean()
@@ -140,6 +186,15 @@ export const ContextractorInput = z.object({
       'Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited.',
     )
     .meta({ title: 'Max crawling depth' }),
+
+  initialConcurrency: z
+    .int()
+    .min(0)
+    .default(0)
+    .describe(
+      'Initial number of browser pages or HTTP clients running in parallel. Crawlee auto-scales up to maxConcurrency. 0 lets Crawlee pick the default.',
+    )
+    .meta({ title: 'Initial concurrency' }),
 
   maxConcurrency: z
     .int()
@@ -224,6 +279,14 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'textfield' }),
     }),
 
+  storeSkippedUrls: z
+    .boolean()
+    .default(false)
+    .describe(
+      'If enabled, pushes a dataset record for each URL skipped during crawling (excluded by globs, robots.txt, depth limit, or concurrency cap). Can produce high record volume — enable for auditing only.',
+    )
+    .meta({ title: 'Store skipped URLs' }),
+
   proxyConfiguration: z
     .record(z.string(), z.unknown())
     .optional()
@@ -259,6 +322,39 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ unit: 'seconds', sectionCaption: 'Performance and limits' }),
     }),
 
+  blockMedia: z
+    .boolean()
+    .default(false)
+    .describe(
+      'Block loading of images, stylesheets, fonts (.woff), PDFs, and ZIPs. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium only).',
+    )
+    .meta({ title: 'Block media' }),
+
+  waitForSelector: z
+    .string()
+    .default('')
+    .describe(
+      'Wait for this CSS selector to appear before extracting content. The request fails and is retried if the selector does not appear within the timeout. Leave empty to disable.',
+    )
+    .meta({ title: 'Wait for selector', ...apifyMeta({ editor: 'textfield' }) }),
+
+  softWaitForSelector: z
+    .string()
+    .default('')
+    .describe(
+      'Wait for this CSS selector to appear before extracting content. Unlike waitForSelector, the request continues even if the selector does not appear within the timeout. Leave empty to disable.',
+    )
+    .meta({ title: 'Soft wait for selector', ...apifyMeta({ editor: 'textfield' }) }),
+
+  dynamicContentWaitSecs: z
+    .int()
+    .min(0)
+    .default(0)
+    .describe(
+      'Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also used as the timeout for waitForSelector and softWaitForSelector.',
+    )
+    .meta({ title: 'Dynamic content wait', ...apifyMeta({ unit: 'seconds' }) }),
+
   waitUntil: z
     .enum(['NETWORKIDLE', 'LOAD', 'DOMCONTENTLOADED'])
     .default('LOAD')
@@ -272,15 +368,6 @@ export const ContextractorInput = z.object({
         enumTitles: ['Network idle', 'Load event', 'DOM content loaded'],
         sectionCaption: 'Performance and limits',
       }),
-    }),
-
-  launcher: z
-    .enum(['CHROMIUM', 'FIREFOX'])
-    .default('CHROMIUM')
-    .describe('Browser to use for crawling')
-    .meta({
-      title: 'Browser type',
-      ...apifyMeta({ editor: 'select', enumTitles: ['Chromium', 'Firefox'] }),
     }),
 
   headless: z

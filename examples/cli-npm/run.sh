@@ -61,5 +61,37 @@ contextractor extract "$URL1" --save txt --save-destination dataset
 # Save to both KVS and dataset
 contextractor extract "$URL1" --save-destination key-value-store --save-destination dataset
 
+# Crawler type selection
+contextractor extract "$URL1" --crawler-type adaptive
+contextractor extract "$URL1" --crawler-type firefox
+contextractor extract "$URL1" --crawler-type cheerio
+
+# Rendering detection percentage (adaptive only)
+contextractor extract "$URL1" --crawler-type adaptive --rendering-detection-pct 20
+
 # Custom storage directory via env var
 CONTEXTRACTOR_STORAGE_DIR=./my-storage contextractor extract "$URL1"
+
+# Write skipped-urls.json for auditing
+contextractor extract "$URL1" --link-selector a --store-skipped-urls
+
+# Block images, stylesheets, fonts, PDFs, and ZIPs (speeds up crawling)
+contextractor extract "$URL1" --block-media
+
+# Wait for a CSS selector before extracting (fails on timeout)
+contextractor extract "$URL1" --wait-for-selector "article.content"
+
+# Wait for a CSS selector before extracting (continues on timeout)
+contextractor extract "$URL1" --soft-wait-for-selector ".dynamic-section"
+
+# Wait for network idle up to 5 seconds after navigation (also sets selector wait timeout)
+contextractor extract "$URL1" --dynamic-content-wait 5
+
+# Discover and enqueue URLs from sitemap.xml at the start URL domain root
+contextractor extract "$URL1" --use-sitemaps --max-pages 50
+
+# Start with a fixed concurrency and let Crawlee scale up from there
+contextractor extract "$URL1" --initial-concurrency 5 --max-concurrency 20
+
+# Disable canonical URL deduplication — extract every loaded URL
+contextractor extract "$URL1" --ignore-canonical-url

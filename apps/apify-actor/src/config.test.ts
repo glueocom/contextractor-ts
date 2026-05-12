@@ -16,7 +16,8 @@ const BASE_INPUT: ContextractorInputType = {
   maxConcurrency: 50,
   maxRequestRetries: 3,
   headless: true,
-  launcher: 'CHROMIUM',
+  crawlerType: 'playwright:adaptive',
+  renderingTypeDetectionPercentage: 10,
   waitUntil: 'LOAD',
   proxyRotation: 'RECOMMENDED',
   pageLoadTimeoutSecs: 60,
@@ -25,6 +26,14 @@ const BASE_INPUT: ContextractorInputType = {
   maxScrollHeightPixels: 5000,
   userAgent: '',
   ignoreSslErrors: false,
+  blockMedia: false,
+  waitForSelector: '',
+  softWaitForSelector: '',
+  dynamicContentWaitSecs: 0,
+  useSitemaps: false,
+  initialConcurrency: 0,
+  ignoreCanonicalUrl: false,
+  storeSkippedUrls: false,
   debugLog: false,
   browserLog: false,
   save: ['markdown'],
@@ -32,6 +41,19 @@ const BASE_INPUT: ContextractorInputType = {
 };
 
 const FAKE_SINK = async () => {};
+
+describe('buildCrawlerOpts blockMedia pass-through', () => {
+  it('passes blockMedia: false by default', () => {
+    const opts = buildCrawlerOpts(BASE_INPUT, FAKE_SINK);
+    expect(opts.blockMedia).toBe(false);
+  });
+
+  it('passes blockMedia: true when set', () => {
+    const input: ContextractorInputType = { ...BASE_INPUT, blockMedia: true };
+    const opts = buildCrawlerOpts(input, FAKE_SINK);
+    expect(opts.blockMedia).toBe(true);
+  });
+});
 
 describe('buildCrawlerOpts format derivation', () => {
   it('save: ["txt", "json"] → formats is ["txt", "json"]', () => {

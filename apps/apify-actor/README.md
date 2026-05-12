@@ -39,17 +39,22 @@ the table below is auto-rebuilt from that schema by
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `startUrls` | array | _required_ | URLs to extract content from |
+| `crawlerType` | enum (`playwright:adaptive` \| `playwright:firefox` \| `playwright:chromium` \| `cheerio`) | `"playwright:adaptive"` | Browser engine or HTTP client for crawling. playwright:adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS). |
+| `renderingTypeDetectionPercentage` | integer | `10` | (Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower. |
 | `globs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
 | `excludes` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
 | `pseudoUrls` | array | `[]` | Pseudo-URLs to match links in the page that you want to enqueue. Alternative to glob patterns. Combine with Link selector to tell the scraper where to find links. |
 | `linkSelector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
 | `keepUrlFragments` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
+| `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
+| `ignoreCanonicalUrl` | boolean | `false` | If enabled, the crawler ignores the canonical URL declared in the page and always extracts content for every loaded URL. By default, pages whose canonical URL has already been extracted are skipped. |
 | `respectRobotsTxtFile` | boolean | `false` | If enabled, the crawler will consult the robots.txt file for each domain before crawling pages. |
 | `initialCookies` | array | _optional_ | Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For e… |
 | `customHttpHeaders` | object | _optional_ | HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to… |
 | `maxPagesPerCrawl` | integer | `0` | Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited. |
 | `maxResultsPerCrawl` | integer | `0` | Maximum number of results that will be saved to dataset. The scraper will terminate after reaching this number. 0 means unlimited. |
 | `maxCrawlingDepth` | integer | `0` | Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited. |
+| `initialConcurrency` | integer | `0` | Initial number of browser pages or HTTP clients running in parallel. Crawlee auto-scales up to maxConcurrency. 0 lets Crawlee pick the default. |
 | `maxConcurrency` | integer | `50` | Maximum number of browser pages running in parallel. This setting is useful to avoid overloading target websites and getting blocked. |
 | `maxRequestRetries` | integer | `3` | Maximum number of retries for failed requests on network, proxy, or server errors. |
 | `trafilaturaConfig` | object | _optional_ | rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, dedupli… |
@@ -58,11 +63,15 @@ the table below is auto-rebuilt from that schema by
 | `datasetName` | string | _optional_ | Name or ID of the dataset for storing results. Leave empty to use the default run dataset. |
 | `keyValueStoreName` | string | _optional_ | Name or ID of the key-value store for content files. Leave empty to use the default store. |
 | `requestQueueName` | string | _optional_ | Name of the request queue for pending URLs. Leave empty to use the default queue. |
+| `storeSkippedUrls` | boolean | `false` | If enabled, pushes a dataset record for each URL skipped during crawling (excluded by globs, robots.txt, depth limit, or concurrency cap). Can produce high record volume — enable for auditing only. |
 | `proxyConfiguration` | object | _optional_ | Enables loading websites from IP addresses in specific geographies and to circumvent blocking. |
 | `proxyRotation` | enum (`RECOMMENDED` \| `PER_REQUEST` \| `UNTIL_FAILURE`) | `"RECOMMENDED"` | Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails. |
 | `pageLoadTimeoutSecs` | integer | `60` | Maximum time to wait for page load in seconds |
+| `blockMedia` | boolean | `false` | Block loading of images, stylesheets, fonts (.woff), PDFs, and ZIPs. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium on… |
+| `waitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. The request fails and is retried if the selector does not appear within the timeout. Leave empty to disable. |
+| `softWaitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. Unlike waitForSelector, the request continues even if the selector does not appear within the timeout. Leave empty to disable. |
+| `dynamicContentWaitSecs` | integer | `0` | Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also… |
 | `waitUntil` | enum (`NETWORKIDLE` \| `LOAD` \| `DOMCONTENTLOADED`) | `"LOAD"` | When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADE… |
-| `launcher` | enum (`CHROMIUM` \| `FIREFOX`) | `"CHROMIUM"` | Browser to use for crawling |
 | `headless` | boolean | `true` | Run browser in headless mode |
 | `ignoreCorsAndCsp` | boolean | `false` | Ignore Content Security Policy and Cross-Origin Resource Sharing restrictions. Enables free XHR/Fetch requests from pages. |
 | `closeCookieModals` | boolean | `true` | Automatically dismiss cookie consent modals with Ghostery-based blocking. |

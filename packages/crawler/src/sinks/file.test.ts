@@ -19,6 +19,8 @@ const BASE_RESULT: ExtractionResult = {
     lang: null,
   },
   formats: { txt: 'Hello world', markdown: '# Hello world', json: '{"text":"Hello"}' },
+  crawlDepth: 0,
+  referrerUrl: null,
 };
 
 describe('FORMAT_EXTENSIONS', () => {

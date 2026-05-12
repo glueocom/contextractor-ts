@@ -51,10 +51,12 @@ export function createApifySink(opts: ApifySinkOpts): Sink<ExtractionResult> {
 
     const data: Record<string, unknown> = {
       loadedUrl: result.url,
+      status: 'success',
       loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       metadata: result.metadata,
       httpStatus: 200,
       originalHash: result.rawHtmlHash,
+      crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
     };
 
     if (saveOriginal) {

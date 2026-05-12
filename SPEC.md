@@ -25,10 +25,12 @@ apps/standalone/            Standalone CLI (depends on extraction + crawler + sc
 Data flow:
 
 ```
-Input URLs → PlaywrightCrawler → ContentExtractor (TS) → sink
-                                                         ├── KVS + Dataset       (Actor)
-                                                         └── files + KVS/Dataset (CLI)
+Input URLs → [SitemapRequestList (optional)] → PlaywrightCrawler → ContentExtractor (TS) → sink
+                                                                                           ├── KVS + Dataset       (Actor)
+                                                                                           └── files + KVS/Dataset (CLI)
 ```
+
+When `useSitemaps` is enabled, `SitemapRequestList.open()` fetches `sitemap.xml` at each start URL's domain root and feeds discovered URLs into the crawler alongside the explicit start URLs.
 
 ### Native binding
 

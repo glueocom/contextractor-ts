@@ -19,6 +19,8 @@ const BASE_RESULT: ExtractionResult = {
     lang: null,
   },
   formats: { txt: 'Hello world', markdown: '# Hello world' },
+  crawlDepth: 0,
+  referrerUrl: null,
 };
 
 // --- createCrawleeStorageSink ---
@@ -118,6 +120,7 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
     expect(typeof item.txtHash).toBe('string');
     expect(item.txtHash as string).toHaveLength(32);
+    expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
   });
 
   it('includes metadata fields in dataset record', async () => {

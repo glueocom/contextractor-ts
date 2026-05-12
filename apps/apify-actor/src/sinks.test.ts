@@ -20,6 +20,8 @@ const FAKE_RESULT: ExtractionResult = {
     markdown: '# Test Page',
     txt: 'Test Page',
   },
+  crawlDepth: 2,
+  referrerUrl: 'https://example.com/',
 };
 
 function makeKvs(): KvsLike & { calls: Array<{ key: string; value: string }> } {
@@ -66,6 +68,8 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.markdownHash).toBeUndefined();
     expect(item.txtHash).toBeUndefined();
+    expect(item.status).toBe('success');
+    expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
   });
 });
 
@@ -94,6 +98,8 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
     expect(item.markdownHash as string).toHaveLength(32);
     expect(typeof item.txtHash).toBe('string');
     expect(item.txtHash as string).toHaveLength(32);
+    expect(item.status).toBe('success');
+    expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
   });
 });
 
@@ -119,5 +125,6 @@ describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-s
     expect(oldKeyCall).toBeUndefined();
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect(item.status).toBe('success');
   });
 });

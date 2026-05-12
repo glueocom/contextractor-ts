@@ -23,6 +23,14 @@ await program.parseAsync([
   'dataset',
   '--dataset',
   'my-results',
+  '--initial-concurrency',
+  '3',
+  '--block-media',
+  '--dynamic-content-wait',
+  '5',
+  '--wait-for-selector',
+  'article',
+  '--ignore-canonical-url',
 ]);
 
 // Read results back via re-exported Dataset API
@@ -30,7 +38,16 @@ const ds = await Dataset.open('my-results');
 const page = await ds.getData({ limit: 10 });
 console.log(`Extracted ${page.count} item(s) of ${page.total} total`);
 await ds.forEach((item) => {
-  console.log('url:', item.url);
+  const record = item as Record<string, unknown>;
+  const status = record.status ?? 'success';
+  if (status === 'failed') {
+    console.log('url:', record.url, '— failed:', record.errorMessages);
+  } else if (status === 'skipped') {
+    console.log('url:', record.url, '— skipped:', record.skipReason);
+  } else {
+    const crawl = record.crawl as { depth: number; referrerUrl: string | null } | undefined;
+    console.log('url:', record.url, 'depth:', crawl?.depth, 'referrer:', crawl?.referrerUrl);
+  }
 });
 
 // Read a value from the default key-value store

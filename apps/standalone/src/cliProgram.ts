@@ -1,5 +1,5 @@
 import { realpathSync } from 'node:fs';
-import { readFile, rm } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path, { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -10,7 +10,7 @@ import {
 } from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command } from 'commander';
-import { Dataset, KeyValueStore } from 'crawlee';
+import { Dataset, KeyValueStore, SitemapRequestList } from 'crawlee';
 import {
   buildCrawlConfig,
   type CliOnlyOverrides,
@@ -35,14 +35,20 @@ function collectValues(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
-function parseLauncher(value: string): ContextractorInputType['launcher'] {
+function parseCrawlerType(value: string): ContextractorInputType['crawlerType'] {
   switch (value.trim().toLowerCase()) {
-    case 'chromium':
-      return 'CHROMIUM';
+    case 'adaptive':
+      return 'playwright:adaptive';
     case 'firefox':
-      return 'FIREFOX';
+      return 'playwright:firefox';
+    case 'chromium':
+      return 'playwright:chromium';
+    case 'cheerio':
+      return 'cheerio';
     default:
-      throw new Error(`Unsupported --launcher value: '${value}'. Use chromium or firefox.`);
+      throw new Error(
+        `Unsupported --crawler-type value: '${value}'. Use adaptive, firefox, chromium, or cheerio.`,
+      );
   }
 }
 
@@ -130,9 +136,16 @@ function addExtractionOptions(cmd: Command): Command {
       '--proxy-rotation <strategy>',
       'Proxy rotation: recommended, per_request, until_failure',
     )
-    .option('--launcher <type>', 'Browser engine: chromium, firefox')
+    .option('--crawler-type <type>', 'Crawler engine: adaptive, firefox, chromium, cheerio')
+    .option(
+      '--rendering-detection-pct <n>',
+      'Rendering type detection percentage (adaptive only)',
+      toInt,
+    )
     .option('--wait-until <event>', 'Page load event: networkidle, load, domcontentloaded')
     .option('--page-load-timeout <secs>', 'Page load timeout in seconds', toInt)
+    .option('--block-media', 'Block images, stylesheets, fonts, PDFs, and ZIPs')
+    .option('--no-block-media', 'Do not block media requests (default)')
     .option('--ignore-cors', 'Disable CORS/CSP restrictions')
     .option('--close-cookie-modals', 'Auto-dismiss cookie banners')
     .option('--max-scroll-height <px>', 'Max scroll height in pixels', toInt)
@@ -142,9 +155,14 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--excludes <patterns>', 'Comma-separated glob patterns to exclude')
     .option('--link-selector <css>', 'CSS selector for links to follow')
     .option('--keep-url-fragments', 'Preserve URL fragments')
+    .option(
+      '--use-sitemaps',
+      'Discover and enqueue URLs from sitemap.xml at each start URL domain root',
+    )
     .option('--respect-robots-txt', 'Honor robots.txt')
     .option('--cookies <json>', 'JSON array of cookie objects')
     .option('--headers <json>', 'JSON object of custom HTTP headers')
+    .option('--initial-concurrency <n>', 'Initial parallel requests (0 = Crawlee default)', toInt)
     .option('--max-concurrency <n>', 'Max parallel requests', toInt)
     .option('--max-retries <n>', 'Max request retries', toInt)
     .option('--max-results <n>', 'Max results per crawl (0 = unlimited)', toInt)
@@ -170,7 +188,25 @@ function addExtractionOptions(cmd: Command): Command {
       collectValues,
       [] as string[],
     )
-    .option('--storage-dir <path>', 'Override Crawlee storage directory');
+    .option('--storage-dir <path>', 'Override Crawlee storage directory')
+    .option('--store-skipped-urls', 'Write skipped-urls.json to output dir after crawl')
+    .option(
+      '--dynamic-content-wait <seconds>',
+      'Seconds to wait for network idle after navigation (0 = disabled)',
+      toInt,
+    )
+    .option(
+      '--wait-for-selector <selector>',
+      'CSS selector to wait for before extracting (fails on timeout)',
+    )
+    .option(
+      '--soft-wait-for-selector <selector>',
+      'CSS selector to wait for before extracting (continues on timeout)',
+    )
+    .option(
+      '--ignore-canonical-url',
+      'Disable canonical URL deduplication — extract every loaded URL even if its canonical was already extracted',
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -183,10 +219,13 @@ function buildSchemaOverrides(opts: ExtractOpts): Partial<ContextractorInputType
   if (opts.maxPages !== undefined) out.maxPagesPerCrawl = opts.maxPages;
   if (opts.crawlDepth !== undefined) out.maxCrawlingDepth = opts.crawlDepth;
   if (opts.headless !== undefined) out.headless = opts.headless;
-  if (opts.launcher) out.launcher = parseLauncher(opts.launcher);
+  if (opts.crawlerType) out.crawlerType = parseCrawlerType(opts.crawlerType);
+  if (opts.renderingDetectionPct !== undefined)
+    out.renderingTypeDetectionPercentage = opts.renderingDetectionPct;
   if (opts.waitUntil) out.waitUntil = parseWaitUntil(opts.waitUntil);
   if (opts.proxyRotation) out.proxyRotation = parseProxyRotation(opts.proxyRotation);
   if (opts.pageLoadTimeout !== undefined) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
+  if (opts.blockMedia !== undefined) out.blockMedia = opts.blockMedia;
   if (opts.ignoreCors !== undefined) out.ignoreCorsAndCsp = opts.ignoreCors;
   if (opts.closeCookieModals !== undefined) out.closeCookieModals = opts.closeCookieModals;
   if (opts.maxScrollHeight !== undefined) out.maxScrollHeightPixels = opts.maxScrollHeight;
@@ -196,12 +235,18 @@ function buildSchemaOverrides(opts: ExtractOpts): Partial<ContextractorInputType
   if (opts.excludes) out.excludes = opts.excludes.split(',').map((s) => ({ glob: s.trim() }));
   if (opts.linkSelector !== undefined) out.linkSelector = opts.linkSelector;
   if (opts.keepUrlFragments !== undefined) out.keepUrlFragments = opts.keepUrlFragments;
+  if (opts.useSitemaps !== undefined) out.useSitemaps = opts.useSitemaps;
   if (opts.respectRobotsTxt !== undefined) out.respectRobotsTxtFile = opts.respectRobotsTxt;
   if (opts.cookies) out.initialCookies = parseJsonArray(opts.cookies, '--cookies');
   if (opts.headers) out.customHttpHeaders = parseStringRecord(opts.headers, '--headers');
+  if (opts.initialConcurrency !== undefined) out.initialConcurrency = opts.initialConcurrency;
   if (opts.maxConcurrency !== undefined) out.maxConcurrency = opts.maxConcurrency;
   if (opts.maxRetries !== undefined) out.maxRequestRetries = opts.maxRetries;
   if (opts.maxResults !== undefined) out.maxResultsPerCrawl = opts.maxResults;
+  if (opts.dynamicContentWait !== undefined) out.dynamicContentWaitSecs = opts.dynamicContentWait;
+  if (opts.waitForSelector !== undefined) out.waitForSelector = opts.waitForSelector;
+  if (opts.softWaitForSelector !== undefined) out.softWaitForSelector = opts.softWaitForSelector;
+  if (opts.ignoreCanonicalUrl !== undefined) out.ignoreCanonicalUrl = opts.ignoreCanonicalUrl;
 
   const tcfg: Record<string, unknown> = {};
   if (opts.fast !== undefined) tcfg.fast = opts.fast;
@@ -359,6 +404,26 @@ async function runExtractAction(
     );
   }
 
+  let sitemapList: SitemapRequestList | undefined;
+  if (parsed.data.useSitemaps) {
+    const sitemapUrls = [...new Set(cfg.urls.map((u) => `${new URL(u).origin}/sitemap.xml`))];
+    sitemapList = await SitemapRequestList.open({
+      sitemapUrls,
+      globs: cfg.globs,
+      exclude: cfg.excludes,
+    });
+  }
+
+  const failedRecords: Array<{
+    url: string;
+    loadedUrl: string | null;
+    status: 'failed';
+    errorMessages: string[];
+    retryCount: number;
+  }> = [];
+
+  const skippedRecords: Array<{ url: string; status: 'skipped'; skipReason: string }> = [];
+
   const crawler = createContextractorCrawler({
     startUrls: cfg.urls,
     sink,
@@ -369,7 +434,8 @@ async function runExtractAction(
     cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',
     scroll: cfg.maxScrollHeight > 0 ? { maxScrollHeight: cfg.maxScrollHeight } : undefined,
     headless: cfg.headless,
-    launcher: cfg.launcher,
+    crawlerType: cfg.crawlerType,
+    renderingTypeDetectionPercentage: cfg.renderingTypeDetectionPercentage,
     ignoreSslErrors: cfg.ignoreSslErrors,
     bypassCSP: cfg.ignoreCors,
     initialCookies: cfg.cookies,
@@ -377,7 +443,9 @@ async function runExtractAction(
     userAgent: cfg.userAgent || undefined,
     maxPages: cfg.maxPages,
     maxRetries: cfg.maxRetries,
+    initialConcurrency: cfg.initialConcurrency,
     maxConcurrency: cfg.maxConcurrency,
+    blockMedia: cfg.blockMedia,
     pageLoadTimeoutSecs: cfg.pageLoadTimeout,
     waitUntil: cfg.waitUntil,
     maxResults: cfg.maxResults > 0 ? cfg.maxResults : undefined,
@@ -387,11 +455,47 @@ async function runExtractAction(
     excludes: cfg.excludes,
     keepUrlFragments: cfg.keepUrlFragments,
     respectRobotsTxt: cfg.respectRobotsTxt,
+    dynamicContentWaitSecs: cfg.dynamicContentWaitSecs > 0 ? cfg.dynamicContentWaitSecs : undefined,
+    waitForSelector: cfg.waitForSelector || undefined,
+    softWaitForSelector: cfg.softWaitForSelector || undefined,
+    ignoreCanonicalUrl: cfg.ignoreCanonicalUrl,
+    ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
     proxyConfiguration,
     proxyRotation: cliOnly.proxyRotation,
+    onFailedRequest: async (info) => {
+      failedRecords.push({
+        url: info.url,
+        loadedUrl: info.loadedUrl,
+        status: 'failed',
+        errorMessages: info.errorMessages,
+        retryCount: info.retryCount,
+      });
+    },
+    ...(opts.storeSkippedUrls
+      ? {
+          onSkippedUrl: (url, reason) => {
+            skippedRecords.push({ url, status: 'skipped', skipReason: reason });
+          },
+        }
+      : {}),
   });
 
   await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));
+
+  if (failedRecords.length > 0) {
+    await mkdir(cfg.outputDir, { recursive: true });
+    const outPath = path.join(cfg.outputDir, 'failed-urls.json');
+    await writeFile(outPath, JSON.stringify(failedRecords, null, 2));
+    process.stderr.write(`Failed URLs written to ${outPath}\n`);
+  }
+
+  if (opts.storeSkippedUrls && skippedRecords.length > 0) {
+    await mkdir(cfg.outputDir, { recursive: true });
+    const outPath = path.join(cfg.outputDir, 'skipped-urls.json');
+    await writeFile(outPath, JSON.stringify(skippedRecords, null, 2));
+    process.stderr.write(`Skipped URLs written to ${outPath}\n`);
+  }
+
   process.stderr.write('Done.\n');
 }
 
@@ -679,9 +783,11 @@ interface ExtractOpts {
   headless?: boolean;
   proxyUrls?: string;
   proxyRotation?: string;
-  launcher?: string;
+  crawlerType?: string;
+  renderingDetectionPct?: number;
   waitUntil?: string;
   pageLoadTimeout?: number;
+  blockMedia?: boolean;
   ignoreCors?: boolean;
   closeCookieModals?: boolean;
   maxScrollHeight?: number;
@@ -691,9 +797,11 @@ interface ExtractOpts {
   excludes?: string;
   linkSelector?: string;
   keepUrlFragments?: boolean;
+  useSitemaps?: boolean;
   respectRobotsTxt?: boolean;
   cookies?: string;
   headers?: string;
+  initialConcurrency?: number;
   maxConcurrency?: number;
   maxRetries?: number;
   maxResults?: number;
@@ -715,6 +823,11 @@ interface ExtractOpts {
   verbose?: boolean;
   saveDestination?: string[];
   storageDir?: string;
+  storeSkippedUrls?: boolean;
+  dynamicContentWait?: number;
+  waitForSelector?: string;
+  softWaitForSelector?: string;
+  ignoreCanonicalUrl?: boolean;
 }
 
 interface ListOpts {

@@ -13,6 +13,13 @@ const run = await client.actor('glueo/contextractor-test').call({
   startUrls: [{ url: 'https://example.com' }],
   save: ['txt'],
   saveDestination: ['dataset'],
+  initialConcurrency: 3,
+  blockMedia: true,
+  useSitemaps: true,
+  storeSkippedUrls: true,
+  dynamicContentWaitSecs: 5,
+  waitForSelector: 'article',
+  ignoreCanonicalUrl: true,
 });
 
 console.log('Run finished:', run.status);
@@ -21,5 +28,16 @@ console.log('Run finished:', run.status);
 const { items } = await client.dataset(run.defaultDatasetId).listItems();
 console.log(`Got ${items.length} item(s)`);
 for (const item of items) {
-  console.log('url:', item.url);
+  const record = item as Record<string, unknown>;
+  const crawl = record.crawl as { depth: number; referrerUrl: string | null } | undefined;
+  console.log(
+    'url:',
+    item.url,
+    'status:',
+    item.status,
+    'depth:',
+    crawl?.depth,
+    'referrer:',
+    crawl?.referrerUrl,
+  );
 }

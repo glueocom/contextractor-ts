@@ -41,6 +41,110 @@ describe('ContextractorInput — saveDestination field', () => {
   });
 });
 
+describe('ContextractorInput — storeSkippedUrls field', () => {
+  it('defaults to false', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.storeSkippedUrls).toBe(false);
+  });
+
+  it('accepts true', () => {
+    const result = ContextractorInput.parse({ ...BASE, storeSkippedUrls: true });
+    expect(result.storeSkippedUrls).toBe(true);
+  });
+});
+
+describe('ContextractorInput — blockMedia field', () => {
+  it('defaults to false', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.blockMedia).toBe(false);
+  });
+
+  it('accepts true', () => {
+    const result = ContextractorInput.parse({ ...BASE, blockMedia: true });
+    expect(result.blockMedia).toBe(true);
+  });
+});
+
+describe('ContextractorInput — waitForSelector field', () => {
+  it('defaults to empty string', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.waitForSelector).toBe('');
+  });
+
+  it('accepts a CSS selector string', () => {
+    const result = ContextractorInput.parse({ ...BASE, waitForSelector: 'article.content' });
+    expect(result.waitForSelector).toBe('article.content');
+  });
+});
+
+describe('ContextractorInput — softWaitForSelector field', () => {
+  it('defaults to empty string', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.softWaitForSelector).toBe('');
+  });
+
+  it('accepts a CSS selector string', () => {
+    const result = ContextractorInput.parse({ ...BASE, softWaitForSelector: '.dynamic-section' });
+    expect(result.softWaitForSelector).toBe('.dynamic-section');
+  });
+});
+
+describe('ContextractorInput — useSitemaps field', () => {
+  it('defaults to false', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.useSitemaps).toBe(false);
+  });
+
+  it('accepts true', () => {
+    const result = ContextractorInput.parse({ ...BASE, useSitemaps: true });
+    expect(result.useSitemaps).toBe(true);
+  });
+});
+
+describe('ContextractorInput — initialConcurrency field', () => {
+  it('defaults to 0', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.initialConcurrency).toBe(0);
+  });
+
+  it('accepts positive integers', () => {
+    const result = ContextractorInput.parse({ ...BASE, initialConcurrency: 5 });
+    expect(result.initialConcurrency).toBe(5);
+  });
+
+  it('rejects negative values', () => {
+    expect(() => ContextractorInput.parse({ ...BASE, initialConcurrency: -1 })).toThrow();
+  });
+});
+
+describe('ContextractorInput — ignoreCanonicalUrl field', () => {
+  it('defaults to false', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.ignoreCanonicalUrl).toBe(false);
+  });
+
+  it('accepts true', () => {
+    const result = ContextractorInput.parse({ ...BASE, ignoreCanonicalUrl: true });
+    expect(result.ignoreCanonicalUrl).toBe(true);
+  });
+});
+
+describe('ContextractorInput — dynamicContentWaitSecs field', () => {
+  it('defaults to 0', () => {
+    const result = ContextractorInput.parse(BASE);
+    expect(result.dynamicContentWaitSecs).toBe(0);
+  });
+
+  it('accepts positive integers', () => {
+    const result = ContextractorInput.parse({ ...BASE, dynamicContentWaitSecs: 10 });
+    expect(result.dynamicContentWaitSecs).toBe(10);
+  });
+
+  it('rejects negative values', () => {
+    expect(() => ContextractorInput.parse({ ...BASE, dynamicContentWaitSecs: -1 })).toThrow();
+  });
+});
+
 describe('ContextractorInput — removed boolean fields', () => {
   it('does not have saveRawHtmlToKeyValueStore on the inferred type', () => {
     const result = ContextractorInput.parse(BASE);

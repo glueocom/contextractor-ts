@@ -1,15 +1,23 @@
 import type { OutputFormat, TrafilaturaConfig } from '@contextractor/extraction';
 import type {
+  AdaptivePlaywrightCrawlerOptions,
   PlaywrightHook,
   ProxyConfiguration,
   RequestProvider,
   SessionPoolOptions,
 } from 'crawlee';
-import { PlaywrightCrawler, Request } from 'crawlee';
+import {
+  AdaptivePlaywrightCrawler,
+  CheerioCrawler,
+  PlaywrightCrawler,
+  playwrightUtils,
+  Request,
+  type SitemapRequestList,
+} from 'crawlee';
 import { installCookieDefences, rejectViaAutoconsent } from './browser/cookies.js';
 import { buildBrowserLaunchOptions } from './browser/launchOptions.js';
 import type { ScrollConfig } from './browser/scroll.js';
-import { createHandler } from './handler.js';
+import { createAdaptiveHandler, createCheerioHandler, createHandler } from './handler.js';
 import type { ExtractionResult, Sink } from './sinks/types.js';
 
 export interface ContextractorCrawlerOptions {
@@ -22,6 +30,7 @@ export interface ContextractorCrawlerOptions {
   sessionPool?: boolean | SessionPoolOptions;
   maxPages?: number;
   maxRetries?: number;
+  initialConcurrency?: number;
   maxConcurrency?: number;
   pageLoadTimeoutSecs?: number;
   /**
@@ -31,7 +40,8 @@ export interface ContextractorCrawlerOptions {
    */
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
   headless?: boolean;
-  launcher?: 'chromium' | 'firefox';
+  crawlerType?: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
+  renderingTypeDetectionPercentage?: number;
   ignoreSslErrors?: boolean;
   bypassCSP?: boolean;
   initialCookies?: unknown[];
@@ -54,8 +64,21 @@ export interface ContextractorCrawlerOptions {
    */
   proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
   requestQueue?: RequestProvider;
+  requestList?: SitemapRequestList;
+  blockMedia?: boolean;
   browserLog?: boolean;
   respectRobotsTxt?: boolean;
+  dynamicContentWaitSecs?: number;
+  waitForSelector?: string;
+  softWaitForSelector?: string;
+  onFailedRequest?: (info: {
+    url: string;
+    loadedUrl: string | null;
+    errorMessages: string[];
+    retryCount: number;
+  }) => Promise<void>;
+  onSkippedUrl?: (url: string, reason: string) => void;
+  ignoreCanonicalUrl?: boolean;
 }
 
 // From @apify/scraper-tools SESSION_MAX_USAGE_COUNTS (apify/actor-scraper).
@@ -65,10 +88,62 @@ const SESSION_MAX_USAGE_COUNTS = Object.freeze({
   UNTIL_FAILURE: 1000,
 } as const);
 
-export function createContextractorCrawler(opts: ContextractorCrawlerOptions): PlaywrightCrawler {
-  const launcher = opts.launcher ?? 'chromium';
+export function createContextractorCrawler(
+  opts: ContextractorCrawlerOptions,
+): CheerioCrawler | AdaptivePlaywrightCrawler | PlaywrightCrawler {
+  const crawlerType = opts.crawlerType ?? 'playwright:adaptive';
   const cookieStrategy = opts.cookieStrategy ?? 'ghostery';
   const formats = opts.formats ?? ['markdown'];
+
+  if (crawlerType === 'cheerio') {
+    const handler = createCheerioHandler({
+      extractionConfig: opts.extractionConfig,
+      sink: opts.sink,
+      formats,
+      maxResults: opts.maxResults,
+      linkSelector: opts.linkSelector,
+      maxCrawlingDepth: opts.maxCrawlingDepth,
+      globs: opts.globs,
+      excludes: opts.excludes,
+      keepUrlFragments: opts.keepUrlFragments,
+      onSkippedUrl: opts.onSkippedUrl,
+    });
+
+    const crawler = new CheerioCrawler({
+      useSessionPool: opts.sessionPool !== false,
+      ...(typeof opts.sessionPool === 'object' ? { sessionPoolOptions: opts.sessionPool } : {}),
+      maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
+      maxRequestRetries: opts.maxRetries ?? 3,
+      ...(opts.initialConcurrency ? { minConcurrency: opts.initialConcurrency } : {}),
+      ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
+      ...(opts.pageLoadTimeoutSecs !== undefined
+        ? { requestHandlerTimeoutSecs: opts.pageLoadTimeoutSecs }
+        : {}),
+      ...(opts.respectRobotsTxt !== undefined
+        ? { respectRobotsTxtFile: opts.respectRobotsTxt }
+        : {}),
+      proxyConfiguration: opts.proxyConfiguration,
+      requestQueue: opts.requestQueue,
+      ...(opts.requestList !== undefined ? { requestList: opts.requestList } : {}),
+      additionalMimeTypes: ['text/html', 'application/xhtml+xml'],
+      ...(opts.onFailedRequest
+        ? {
+            failedRequestHandler: async ({ request }, error) => {
+              await opts.onFailedRequest?.({
+                url: request.url,
+                loadedUrl: request.loadedUrl ?? null,
+                errorMessages: [...(request.errorMessages ?? []), error.message],
+                retryCount: request.retryCount,
+              });
+            },
+          }
+        : {}),
+    });
+    crawler.router.addDefaultHandler(handler);
+    return crawler;
+  }
+
+  const launcher = crawlerType === 'playwright:firefox' ? 'firefox' : 'chromium';
 
   const launchOptions = buildBrowserLaunchOptions({
     launcher,
@@ -108,6 +183,127 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
   }
   if (opts.userAgent) contextOptions.userAgent = opts.userAgent;
 
+  const baseOptions = {
+    headless: opts.headless ?? true,
+    launchContext: {
+      launchOptions,
+      ...(Object.keys(contextOptions).length > 0 ? { contextOptions } : {}),
+    },
+    useSessionPool,
+    persistCookiesPerSession: useSessionPool,
+    sessionPoolOptions,
+    maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
+    maxRequestRetries: opts.maxRetries ?? 3,
+    ...(opts.initialConcurrency ? { minConcurrency: opts.initialConcurrency } : {}),
+    ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
+    ...(opts.pageLoadTimeoutSecs !== undefined
+      ? {
+          requestHandlerTimeoutSecs: opts.pageLoadTimeoutSecs,
+          navigationTimeoutSecs: opts.pageLoadTimeoutSecs,
+        }
+      : {}),
+    ...(opts.respectRobotsTxt !== undefined ? { respectRobotsTxtFile: opts.respectRobotsTxt } : {}),
+    proxyConfiguration: opts.proxyConfiguration,
+    requestQueue: opts.requestQueue,
+    ...(opts.requestList !== undefined ? { requestList: opts.requestList } : {}),
+  };
+
+  if (crawlerType === 'playwright:adaptive') {
+    const adaptivePreHooks: AdaptivePlaywrightCrawlerOptions['preNavigationHooks'] = [];
+    const waitUntil = opts.waitUntil;
+    if (waitUntil !== undefined) {
+      adaptivePreHooks.push(async (_ctx, gotoOptions) => {
+        if (gotoOptions) gotoOptions.waitUntil = waitUntil;
+      });
+    }
+    if (opts.blockMedia) {
+      adaptivePreHooks.push(async ({ page }) => {
+        if (page) await playwrightUtils.blockRequests(page);
+      });
+    }
+    if (cookieStrategy === 'ghostery') {
+      adaptivePreHooks.push(async ({ page }) => {
+        if (page) await installCookieDefences(page);
+      });
+    }
+
+    const adaptivePostHooks: AdaptivePlaywrightCrawlerOptions['postNavigationHooks'] =
+      cookieStrategy === 'autoconsent'
+        ? [
+            async ({ page, log }) => {
+              if (!page) return;
+              const result = await rejectViaAutoconsent(page);
+              log.info(
+                result.success
+                  ? `autoconsent: rejected via ${result.cmp ?? 'unknown CMP'}`
+                  : 'autoconsent: no CMP detected or timed out',
+              );
+            },
+          ]
+        : [];
+
+    const adaptiveHandler = createAdaptiveHandler({
+      extractionConfig: opts.extractionConfig,
+      sink: opts.sink,
+      formats,
+      maxResults: opts.maxResults,
+      linkSelector: opts.linkSelector,
+      maxCrawlingDepth: opts.maxCrawlingDepth,
+      globs: opts.globs,
+      excludes: opts.excludes,
+      keepUrlFragments: opts.keepUrlFragments,
+      onSkippedUrl: opts.onSkippedUrl,
+    });
+    const adaptiveCrawler = new AdaptivePlaywrightCrawler({
+      ...baseOptions,
+      renderingTypeDetectionRatio: (opts.renderingTypeDetectionPercentage ?? 10) / 100,
+      ...(adaptivePreHooks.length > 0 ? { preNavigationHooks: adaptivePreHooks } : {}),
+      ...(adaptivePostHooks.length > 0 ? { postNavigationHooks: adaptivePostHooks } : {}),
+      ...(opts.onFailedRequest
+        ? {
+            failedRequestHandler: async ({ request }, error) => {
+              await opts.onFailedRequest?.({
+                url: request.url,
+                loadedUrl: request.loadedUrl ?? null,
+                errorMessages: [...(request.errorMessages ?? []), error.message],
+                retryCount: request.retryCount,
+              });
+            },
+          }
+        : {}),
+    });
+    adaptiveCrawler.router.addDefaultHandler(adaptiveHandler);
+    return adaptiveCrawler;
+  }
+
+  const preNavigationHooks: PlaywrightHook[] = [];
+  const waitUntil = opts.waitUntil;
+  if (waitUntil !== undefined) {
+    preNavigationHooks.push(async (_ctx, gotoOptions) => {
+      if (gotoOptions) gotoOptions.waitUntil = waitUntil;
+    });
+  }
+  if (opts.blockMedia) {
+    preNavigationHooks.push(async ({ page }) => playwrightUtils.blockRequests(page));
+  }
+  if (cookieStrategy === 'ghostery') {
+    preNavigationHooks.push(async ({ page }) => installCookieDefences(page));
+  }
+
+  const postNavigationHooks: PlaywrightHook[] =
+    cookieStrategy === 'autoconsent'
+      ? [
+          async ({ page, log }) => {
+            const result = await rejectViaAutoconsent(page);
+            log.info(
+              result.success
+                ? `autoconsent: rejected via ${result.cmp ?? 'unknown CMP'}`
+                : 'autoconsent: no CMP detected or timed out',
+            );
+          },
+        ]
+      : [];
+
   const handler = createHandler({
     extractionConfig: opts.extractionConfig,
     sink: opts.sink,
@@ -120,57 +316,30 @@ export function createContextractorCrawler(opts: ContextractorCrawlerOptions): P
     excludes: opts.excludes,
     keepUrlFragments: opts.keepUrlFragments,
     browserLog: opts.browserLog,
+    onSkippedUrl: opts.onSkippedUrl,
+    dynamicContentWaitSecs: opts.dynamicContentWaitSecs,
+    waitForSelector: opts.waitForSelector,
+    softWaitForSelector: opts.softWaitForSelector,
+    ignoreCanonicalUrl: opts.ignoreCanonicalUrl,
   });
-
-  const preNavigationHooks: PlaywrightHook[] = [];
-  const waitUntil = opts.waitUntil;
-  if (waitUntil !== undefined) {
-    preNavigationHooks.push(async (_ctx, gotoOptions) => {
-      if (gotoOptions) gotoOptions.waitUntil = waitUntil;
-    });
-  }
-  if (cookieStrategy === 'ghostery') {
-    preNavigationHooks.push(async ({ page }) => installCookieDefences(page));
-  }
 
   const crawler = new PlaywrightCrawler({
-    headless: opts.headless ?? true,
-    launchContext: {
-      launchOptions,
-      ...(Object.keys(contextOptions).length > 0 ? { contextOptions } : {}),
-    },
-    useSessionPool,
-    persistCookiesPerSession: useSessionPool,
-    sessionPoolOptions,
-    maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
-    maxRequestRetries: opts.maxRetries ?? 3,
-    ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
-    ...(opts.pageLoadTimeoutSecs !== undefined
-      ? {
-          requestHandlerTimeoutSecs: opts.pageLoadTimeoutSecs,
-          navigationTimeoutSecs: opts.pageLoadTimeoutSecs,
-        }
-      : {}),
-    ...(opts.respectRobotsTxt !== undefined ? { respectRobotsTxtFile: opts.respectRobotsTxt } : {}),
-    proxyConfiguration: opts.proxyConfiguration,
-    requestQueue: opts.requestQueue,
+    ...baseOptions,
     ...(preNavigationHooks.length > 0 ? { preNavigationHooks } : {}),
-    ...(cookieStrategy === 'autoconsent'
+    ...(postNavigationHooks.length > 0 ? { postNavigationHooks } : {}),
+    ...(opts.onFailedRequest
       ? {
-          postNavigationHooks: [
-            async ({ page, log }) => {
-              const result = await rejectViaAutoconsent(page);
-              log.info(
-                result.success
-                  ? `autoconsent: rejected via ${result.cmp ?? 'unknown CMP'}`
-                  : 'autoconsent: no CMP detected or timed out',
-              );
-            },
-          ],
+          failedRequestHandler: async ({ request }, error) => {
+            await opts.onFailedRequest?.({
+              url: request.url,
+              loadedUrl: request.loadedUrl ?? null,
+              errorMessages: [...(request.errorMessages ?? []), error.message],
+              retryCount: request.retryCount,
+            });
+          },
         }
       : {}),
   });
-
   crawler.router.addDefaultHandler(handler);
   return crawler;
 }

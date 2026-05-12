@@ -22,11 +22,19 @@ Full flag reference: auto-generated table in `apps/standalone/README.md`.
 
 Extracts content from one or more URLs. Writes to the file output directory (`--output-dir`, default `./output/`) and/or Crawlee storage (Dataset / KeyValueStore), depending on `--save-destination`.
 
-Options: all extraction flags (`--save`, `--max-pages`, `--headless`, etc.) plus:
+Options: all extraction flags (`--save`, `--max-pages`, `--headless`, `--crawler-type`, `--rendering-detection-pct`, etc.) plus:
 - `--input-file <file>` — read URLs line by line from a file
 - `--dataset <name>` — named dataset for Crawlee storage (default `default`)
 - `--save-destination <dest>` — repeatable; `key-value-store` (default) or `dataset`
 - `--storage-dir <path>` — override Crawlee storage directory
+- `--use-sitemaps` — fetch `sitemap.xml` at each start URL domain root and enqueue matching URLs (filtered by `--globs` / `--excludes`) in addition to link-following
+- `--store-skipped-urls` — write `skipped-urls.json` to `--output-dir` after the crawl
+- `--initial-concurrency <n>` — initial parallel requests; Crawlee auto-scales up to `--max-concurrency`; `0` (default) lets Crawlee pick the starting concurrency
+- `--block-media` / `--no-block-media` — block images, stylesheets, fonts, PDFs, and ZIPs (no effect for `cheerio`)
+- `--dynamic-content-wait <seconds>` — seconds to wait for network idle after navigation; also sets the timeout for `--wait-for-selector` / `--soft-wait-for-selector`; 0 disables (Playwright only)
+- `--wait-for-selector <selector>` — CSS selector to wait for before extracting; request fails and is retried if selector does not appear within the timeout (Playwright only)
+- `--soft-wait-for-selector <selector>` — like `--wait-for-selector` but continues extraction even if the selector does not appear (Playwright only)
+- `--ignore-canonical-url` — disable canonical URL deduplication; by default, pages whose `<link rel="canonical">` was already extracted are skipped (Playwright only)
 
 ### `list`
 
@@ -60,12 +68,16 @@ Config file: optional JSON file with the same camelCase shape as the Apify input
 
 One file per crawled page in the output directory, named from a URL slug (e.g. `example-com-page.md`). When metadata is available, a header (title, author, date, URL) is prepended to text-format outputs. Supported save formats: `txt`, `markdown`, `json`, `html`, `original`.
 
+After `crawler.run()` completes:
+- If any requests failed (all retries exhausted), `failed-urls.json` is written to `--output-dir` with records `{ url, loadedUrl, status: 'failed', errorMessages, retryCount }`.
+- If `--store-skipped-urls` is set and any URLs were skipped, `skipped-urls.json` is written to `--output-dir` with records `{ url, status: 'skipped', skipReason }`.
+
 ### Crawlee storage output
 
 Controlled by `--save-destination` (default `key-value-store`):
 
 - **`key-value-store`** — KVS key `${slug}.${ext}` (or `${slug}-original.html` for `original` format)
-- **`dataset`** — Dataset record with `url`, metadata fields, `originalHash` (MD5 of raw HTML), content per format as inline strings, and a `{format}Hash` field alongside each format's content
+- **`dataset`** — Dataset record with `url`, metadata fields, `originalHash` (MD5 of raw HTML), `crawl: { depth, referrerUrl }` (link distance from start URL and linking page URL; `depth` is 0 and `referrerUrl` is `null` for start URLs), content per format as inline strings, and a `{format}Hash` field alongside each format's content
 
 Storage errors (write failures) are logged to stderr and do not abort extraction.
 

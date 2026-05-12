@@ -7,11 +7,6 @@ export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'original';
 
 const SORTED_SAVE_FORMATS = ['html', 'json', 'markdown', 'original', 'txt'] as const;
 
-const LAUNCHER_MAP = {
-  CHROMIUM: 'chromium',
-  FIREFOX: 'firefox',
-} as const;
-
 const WAIT_UNTIL_MAP = {
   NETWORKIDLE: 'networkidle',
   LOAD: 'load',
@@ -61,12 +56,14 @@ interface CrawlConfig {
   trafilaturaConfig: TrafilaturaConfig;
 
   // Browser.
-  launcher: 'chromium' | 'firefox';
+  crawlerType: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
+  renderingTypeDetectionPercentage: number;
   waitUntil: 'networkidle' | 'load' | 'domcontentloaded';
   pageLoadTimeout: number;
   ignoreCors: boolean;
   closeCookieModals: boolean;
   maxScrollHeight: number;
+  blockMedia: boolean;
   ignoreSslErrors: boolean;
   userAgent: string;
 
@@ -82,9 +79,18 @@ interface CrawlConfig {
   headers: Record<string, string>;
 
   // Concurrency & retries.
+  initialConcurrency: number;
   maxConcurrency: number;
   maxRetries: number;
   maxResults: number;
+
+  // Selector waits.
+  dynamicContentWaitSecs: number;
+  waitForSelector: string;
+  softWaitForSelector: string;
+
+  // Canonical deduplication.
+  ignoreCanonicalUrl: boolean;
 
   // Output formats.
   save: SaveFormat[];
@@ -112,12 +118,14 @@ export function buildCrawlConfig(
     headless: input.headless,
     maxPages: input.maxPagesPerCrawl,
     crawlDepth: input.maxCrawlingDepth,
-    launcher: LAUNCHER_MAP[input.launcher],
+    crawlerType: input.crawlerType,
+    renderingTypeDetectionPercentage: input.renderingTypeDetectionPercentage,
     waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
     pageLoadTimeout: input.pageLoadTimeoutSecs,
     ignoreCors: input.ignoreCorsAndCsp,
     closeCookieModals: input.closeCookieModals,
     maxScrollHeight: input.maxScrollHeightPixels,
+    blockMedia: input.blockMedia,
     ignoreSslErrors: input.ignoreSslErrors,
     userAgent: input.userAgent,
     globs: input.globs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
@@ -127,9 +135,14 @@ export function buildCrawlConfig(
     respectRobotsTxt: input.respectRobotsTxtFile,
     cookies: input.initialCookies ?? [],
     headers: input.customHttpHeaders ?? {},
+    initialConcurrency: input.initialConcurrency,
     maxConcurrency: input.maxConcurrency,
     maxRetries: input.maxRequestRetries,
     maxResults: input.maxResultsPerCrawl,
+    dynamicContentWaitSecs: input.dynamicContentWaitSecs,
+    waitForSelector: input.waitForSelector,
+    softWaitForSelector: input.softWaitForSelector,
+    ignoreCanonicalUrl: input.ignoreCanonicalUrl,
     trafilaturaConfig: normalizeConfigKeys(input.trafilaturaConfig),
   };
 }
