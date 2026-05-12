@@ -1,5 +1,5 @@
 # Source-able library for running Claude Code slash commands (max effort / opus).
-# Usage: source "$(dirname "$0")/lib/claude-max.sh"
+# Usage: source "$(dirname "$0")/lib/claude.sh"
 # Guard prevents double-sourcing when multiple scripts source this file.
 [[ -n "${_AM_CLAUDE_MAX_LIB:-}" ]] && return 0
 _AM_CLAUDE_MAX_LIB=1
