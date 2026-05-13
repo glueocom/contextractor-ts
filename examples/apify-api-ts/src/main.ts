@@ -28,8 +28,7 @@ console.log('Run finished:', run.status);
 const { items } = await client.dataset(run.defaultDatasetId).listItems();
 console.log(`Got ${items.length} item(s)`);
 for (const item of items) {
-  const record = item as Record<string, unknown>;
-  const crawl = record.crawl as { depth: number; referrerUrl: string | null } | undefined;
+  const crawl = item.crawl as { depth: number; referrerUrl: string | null } | undefined;
   console.log(
     'url:',
     item.url,

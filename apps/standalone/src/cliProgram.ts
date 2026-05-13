@@ -102,9 +102,10 @@ function parseStringRecord(raw: string, flagName: string): Record<string, string
   return out;
 }
 
-function toCsv(items: unknown[]): string {
-  if (items.length === 0) return '';
-  const keys = Object.keys(items[0] as Record<string, unknown>);
+function toCsv(items: Record<string, unknown>[]): string {
+  const [first] = items;
+  if (!first) return '';
+  const keys = Object.keys(first);
   const csvCell = (v: unknown): string => {
     const s = v == null ? '' : String(v);
     return s.includes(',') || s.includes('"') || s.includes('\n')
@@ -112,9 +113,7 @@ function toCsv(items: unknown[]): string {
       : s;
   };
   const header = keys.map(csvCell).join(',');
-  const rows = (items as Record<string, unknown>[]).map((item) =>
-    keys.map((k) => csvCell(item[k])).join(','),
-  );
+  const rows = items.map((item) => keys.map((k) => csvCell(item[k])).join(','));
   return [header, ...rows].join('\n');
 }
 
@@ -307,7 +306,9 @@ async function runExtractAction(
   const storageDir = resolveStorageDir(opts.storageDir);
   configureStorage(storageDir);
 
-  const fromFile = opts.config ? await loadConfigFile(opts.config) : {};
+  const fromFile: Partial<ContextractorInputType> = opts.config
+    ? await loadConfigFile(opts.config)
+    : {};
   const fromCli = buildSchemaOverrides(opts);
 
   const collectedUrls = [...urls];
@@ -325,13 +326,10 @@ async function runExtractAction(
   if (collectedUrls.length > 0) fromCli.startUrls = collectedUrls.map((url) => ({ url }));
 
   const layered: Record<string, unknown> = { ...fromFile, ...fromCli };
-  const fileTrafilatura = (fromFile as Record<string, unknown>).trafilaturaConfig ?? {};
-  const cliTrafilatura = (fromCli as Record<string, unknown>).trafilaturaConfig ?? {};
-  if (
-    Object.keys(fileTrafilatura as object).length ||
-    Object.keys(cliTrafilatura as object).length
-  ) {
-    layered.trafilaturaConfig = { ...(fileTrafilatura as object), ...(cliTrafilatura as object) };
+  const fileTrafilatura = fromFile.trafilaturaConfig ?? {};
+  const cliTrafilatura = fromCli.trafilaturaConfig ?? {};
+  if (Object.keys(fileTrafilatura).length || Object.keys(cliTrafilatura).length) {
+    layered.trafilaturaConfig = { ...fileTrafilatura, ...cliTrafilatura };
   }
 
   const startUrlsLayered = Array.isArray(layered.startUrls) ? layered.startUrls : undefined;

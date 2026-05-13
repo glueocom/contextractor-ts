@@ -38,15 +38,14 @@ const ds = await Dataset.open('my-results');
 const page = await ds.getData({ limit: 10 });
 console.log(`Extracted ${page.count} item(s) of ${page.total} total`);
 await ds.forEach((item) => {
-  const record = item as Record<string, unknown>;
-  const status = record.status ?? 'success';
+  const status = item.status ?? 'success';
   if (status === 'failed') {
-    console.log('url:', record.url, '— failed:', record.errorMessages);
+    console.log('url:', item.url, '— failed:', item.errorMessages);
   } else if (status === 'skipped') {
-    console.log('url:', record.url, '— skipped:', record.skipReason);
+    console.log('url:', item.url, '— skipped:', item.skipReason);
   } else {
-    const crawl = record.crawl as { depth: number; referrerUrl: string | null } | undefined;
-    console.log('url:', record.url, 'depth:', crawl?.depth, 'referrer:', crawl?.referrerUrl);
+    const crawl = item.crawl as { depth: number; referrerUrl: string | null } | undefined;
+    console.log('url:', item.url, 'depth:', crawl?.depth, 'referrer:', crawl?.referrerUrl);
   }
 });
 
