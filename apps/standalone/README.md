@@ -96,7 +96,7 @@ Storage directory is resolved in this order (first match wins):
 `@contextractor/standalone` re-exports Crawlee's storage types for library consumers:
 
 ```typescript
-import { Dataset, KeyValueStore, Configuration, type DatasetContent } from '@contextractor/standalone';
+import { Dataset, KeyValueStore, Configuration } from '@contextractor/standalone';
 
 const ds = await Dataset.open('my-dataset');
 await ds.forEach((item) => console.log(item));

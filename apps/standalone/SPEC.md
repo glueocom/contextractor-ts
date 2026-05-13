@@ -102,7 +102,6 @@ Five-level precedence (first match wins):
 - `configureStorage(storageDir)` — sets Crawlee `localDataDirectory` and `purgeOnStart: false`
 - `resolveStorageDir(flagValue?)` — five-level storage dir resolution
 - `Dataset`, `KeyValueStore`, `Configuration` — re-exported from `crawlee`
-- `DatasetContent<Data>` — interface matching the Crawlee dataset page shape
 
 ## Sinks
 
