@@ -52,3 +52,21 @@ type Sink<T> = (result: T) => Promise<void>;
 - `onFailedRequest?: (info: { url, loadedUrl, errorMessages, retryCount }) => Promise<void>` — called after all retries are exhausted for a request
 - `onSkippedUrl?: (url: string, reason: string) => void` — called synchronously during `enqueueLinks` when a URL is skipped (glob filter, robots.txt, depth limit, or concurrency cap)
 - `ignoreCanonicalUrl?: boolean` (default `false`) — when `false`, `createHandler` maintains a `seenCanonicals` Set for the lifetime of the crawl; after `page.content()` it extracts the `<link rel="canonical">` href and skips the page if that canonical was already seen (and the canonical differs from the current URL); when `true`, the check is disabled and every loaded URL is extracted; Playwright-only (`createCheerioHandler` and `createAdaptiveHandler` are not affected)
+
+## Proxy Configuration
+
+Pass proxy URLs via `proxyConfiguration: { proxyUrls: [...] }`. Rotation mode is controlled by `proxyRotation`:
+
+- `'RECOMMENDED'` (default) — Crawlee's default rotation strategy
+- `'PER_REQUEST'` — new proxy session per request
+- `'UNTIL_FAILURE'` — single session until failure, then rotate
+
+In handler context, proxy metadata is available via `request.proxyInfo` (when a proxy was used):
+
+```ts
+const { hostname, port, url } = context.request.proxyInfo;
+```
+
+Properties: `hostname` (proxy server hostname), `port` (proxy server port), `url` (full proxy URL as configured).
+
+Proxy info is available in all handler types (`PlaywrightCrawlingContext`, `CheerioCrawlingContext`, `AdaptivePlaywrightCrawlerContext`) when a proxy is active.

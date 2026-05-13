@@ -91,6 +91,12 @@ Five-level precedence (first match wins):
 4. `./storage` if `.actor/` or `./storage/` exists in the current working directory
 5. `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage`
 
+## Testing
+
+Proxy rotation is tested via the `/proxy-test` slash command, which verifies proxy configuration, rotation modes, and content extraction for this entry point alongside the Actor and library entry points.
+
+See `tools/proxy-rotation-tester/README.md` for test documentation.
+
 ## Programmatic API
 
 `@contextractor/standalone` exports:

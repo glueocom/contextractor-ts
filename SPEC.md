@@ -57,6 +57,19 @@ Platform prebuilds (`darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-
 - **pnpm 10** workspace + **Cargo workspace** at the repo root
 - **knip** — dead-code and unused-export analysis; `examples/` is excluded via `knip.json` (examples are not workspace packages and have no `workspace:*` deps)
 
+## Tools
+
+Internal tooling under `tools/` for development, testing, and code generation:
+
+- **`gen-input-schema`** — generates `apps/apify-actor/.actor/input_schema.json` from the Zod schema
+- **`gen-md-regions`** — auto-regenerates markdown sections in READMEs from schemas and JSON outputs
+- **`platform-test-runner`** — orchestrates integration tests against Apify Platform
+- **`opencode-sync`** — mirrors `.claude/` config to `.opencode/` for opencode AI tool
+- **`proxy-simulator`** — mock HTTP proxy server for testing proxy rotation
+- **`proxy-rotation-tester`** — comprehensive test suite for proxy rotation across all entry points
+
+See individual tool README.md files for usage details.
+
 ## Input Schema
 
 Canonical definition: `packages/schema/src/source-of-truth/input.ts` (`ContextractorInput` Zod schema).

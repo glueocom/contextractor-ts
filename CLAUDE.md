@@ -16,7 +16,9 @@ tools/
 ├── platform-test-runner/      # test orchestrator
 ├── gen-input-schema/          # generates .actor/input_schema.json from Zod schema
 ├── gen-md-regions/            # rewrites @generated markdown regions in READMEs
-└── opencode-sync/             # mirrors .claude/ to .opencode/ for opencode AI tool
+├── opencode-sync/             # mirrors .claude/ to .opencode/ for opencode AI tool
+├── proxy-simulator/           # mock HTTP proxy server for testing
+└── proxy-rotation-tester/     # proxy rotation test suite for all entry points
 ```
 
 ## Commands
@@ -33,9 +35,17 @@ cargo test --workspace                                     # Cargo tests
 cargo clippy --workspace --all-targets -- -D warnings      # Rust lint
 cargo fmt --all                                            # Rust format
 apify run                                                  # Run Actor locally
+/proxy-test                                                # Run proxy rotation tests with auto-fix
+/proxy-test --no-fix                                       # Run proxy rotation tests without retry
 ```
 
 Production deploys go through a **Git-connected build** in Apify Console (not `apify push`). `.node` prebuilds ship via `optionalDependencies` — no Rust toolchain needed in the image.
+
+Proxy rotation testing requires:
+
+```bash
+export PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1
+```
 
 ## Local Prerequisites
 

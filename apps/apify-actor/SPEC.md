@@ -41,6 +41,12 @@ Every record has a `status` field. Three record shapes are possible:
 
 `apps/apify-actor/src/main.ts` → `runActor()` in `src/run.ts`. Actor initializes with `Actor.init()` and exits with `Actor.exit()`. Input validation failure exits with code 1.
 
+## Testing
+
+Proxy rotation is tested via the `/proxy-test` slash command, which verifies proxy configuration, rotation modes, and content extraction for this entry point alongside the CLI and library entry points.
+
+See `tools/proxy-rotation-tester/README.md` for test documentation.
+
 ## Deploy
 
 Production deploys go through a Git-connected build in Apify Console (`glueo/contextractor`). `actor.json` sets `"dockerContextDir": "../../.."` so the Dockerfile sees all workspace packages. Test deploys target `glueo/contextractor-test` via `/platform:deploy-and-test`.
