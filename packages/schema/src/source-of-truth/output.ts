@@ -54,5 +54,3 @@ export const ContextractorOutput = z.object({
 
   html: ContentField.optional().describe('Cleaned extracted HTML. Present when "html" is in save.'),
 });
-
-export type ContextractorOutputType = z.infer<typeof ContextractorOutput>;
