@@ -10,7 +10,8 @@
   "dependencies": {
     "@contextractor/crawler": "workspace:*",
     "@contextractor/extraction": "workspace:*",
-    "@contextractor/schema": "workspace:*"
+    "@contextractor/schema": "workspace:*",
+    "proxy-chain": "^2.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

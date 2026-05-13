@@ -1,87 +1,85 @@
-import type { Server } from 'node:http';
-import { createServer } from 'node:http';
-import { createContextractorCrawler, memorySink } from '@contextractor/crawler';
+import { buildRequests, createContextractorCrawler, memorySink, ProxyConfiguration } from '@contextractor/crawler';
+import { Server } from 'proxy-chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 describe('Proxy Rotation - Library (Direct API)', () => {
-  const proxies: Server[] = [];
+  const servers: Server[] = [];
   const proxyPorts = [8081, 8082, 8083];
   const proxyUrls = proxyPorts.map((port) => `http://127.0.0.1:${port}`);
 
   beforeAll(async () => {
-    // Start mock proxy servers
     for (const port of proxyPorts) {
-      const server = createServer((_req, res) => {
-        res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end(`<!DOCTYPE html>
+      const server = new Server({
+        port,
+        prepareRequestFunction: () => ({
+          customResponseFunction: () => ({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/html' },
+            body: `<!DOCTYPE html>
 <html>
-<head><title>Test</title></head>
-<body>Proxy port: ${port}</body>
-</html>`);
+<head><title>Test page from proxy ${port}</title></head>
+<body>
+<article>
+<p>This response was intercepted by proxy on port ${port}</p>
+</article>
+</body>
+</html>`,
+          }),
+        }),
       });
 
-      await new Promise<void>((resolve, reject) => {
-        server.listen(port, '127.0.0.1', () => {
-          resolve();
-        });
-        server.on('error', reject);
-      });
-
-      proxies.push(server);
+      await server.listen();
+      servers.push(server);
     }
   });
 
   afterAll(async () => {
-    for (const server of proxies) {
-      await new Promise<void>((resolve) => {
-        server.close(() => {
-          resolve();
-        });
-      });
+    for (const server of servers) {
+      await server.close(true);
     }
   });
 
-  it('should extract content through a proxy and identify the proxy port', async () => {
+  it('should route requests through a proxy and identify the proxy port in content', async () => {
     const sink = memorySink();
+    const startUrls = ['http://example.com'];
     const crawler = createContextractorCrawler({
-      startUrls: [{ url: 'http://example.com' }],
-      proxyConfiguration: {
-        proxyUrls,
-      },
+      startUrls,
+      crawlerType: 'cheerio',
+      proxyConfiguration: new ProxyConfiguration({ proxyUrls }),
       proxyRotation: 'RECOMMENDED',
+      formats: ['txt'],
       sink,
     });
 
-    await crawler.run();
+    await crawler.run(buildRequests(startUrls));
 
-    expect(sink.results.length).toBeGreaterThan(0);
+    expect(sink.results.length, 'Crawler returned no results').toBeGreaterThan(0);
 
-    const content = sink.results[0]?.formats?.txt || '';
-    // Content should contain one of the proxy port numbers
+    const content = sink.results[0]?.formats?.txt ?? '';
     const containsProxyPort = proxyPorts.some((port) => content.includes(port.toString()));
-    expect(containsProxyPort).toBe(true);
+    expect(containsProxyPort, `Content did not include any proxy port. Content: "${content.slice(0, 300)}"`).toBe(true);
   });
 
-  it('should rotate proxies with PER_REQUEST mode', async () => {
+  it('should route each request through a different proxy with PER_REQUEST mode', async () => {
     const sink = memorySink();
+    const startUrls = ['http://example.com/page1', 'http://example.com/page2'];
     const crawler = createContextractorCrawler({
-      startUrls: [{ url: 'http://example.com/1' }, { url: 'http://example.com/2' }],
-      proxyConfiguration: {
-        proxyUrls,
-      },
+      startUrls,
+      crawlerType: 'cheerio',
+      proxyConfiguration: new ProxyConfiguration({ proxyUrls }),
       proxyRotation: 'PER_REQUEST',
+      formats: ['txt'],
       sink,
     });
 
-    await crawler.run();
+    await crawler.run(buildRequests(startUrls));
 
-    expect(sink.results.length).toBe(2);
+    expect(sink.results.length, 'Crawler returned no results').toBe(2);
 
-    // Each result should have content from a proxy
     for (const result of sink.results) {
-      const content = result.formats?.txt || '';
+      const content = result.formats?.txt ?? '';
       const containsProxyPort = proxyPorts.some((port) => content.includes(port.toString()));
-      expect(containsProxyPort).toBe(true);
+      expect(containsProxyPort, `Result did not include any proxy port. Content: "${content.slice(0, 200)}"`).toBe(true);
     }
   });
-});
+}, 60_000);

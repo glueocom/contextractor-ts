@@ -9,7 +9,9 @@
     "build": "tsc",
     "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "proxy-chain": "^2.1.5"
+  },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "typescript": "^5.3.3"

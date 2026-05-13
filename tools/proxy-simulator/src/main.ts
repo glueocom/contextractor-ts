@@ -1,5 +1,4 @@
-import type { Server } from 'node:http';
-import { createServer } from 'node:http';
+import { Server } from 'proxy-chain';
 
 export interface ProxySimulatorConfig {
   startPort?: number;
@@ -13,9 +12,7 @@ export interface ProxySimulator {
   proxies: string[];
 }
 
-export async function createProxySimulator(
-  config: ProxySimulatorConfig = {},
-): Promise<ProxySimulator> {
+export async function createProxySimulator(config: ProxySimulatorConfig = {}): Promise<ProxySimulator> {
   const startPort = config.startPort ?? 8081;
   const portCount = config.portCount ?? 10;
   const ports: number[] = Array.from({ length: portCount }, (_, i) => startPort + i);
@@ -27,35 +24,33 @@ export async function createProxySimulator(
 
     async start() {
       for (const port of ports) {
-        const server = createServer((_req, res) => {
-          res.writeHead(200, { 'Content-Type': 'text/html' });
-          res.end(`<!DOCTYPE html>
+        const server = new Server({
+          port,
+          prepareRequestFunction: () => ({
+            customResponseFunction: () => ({
+              statusCode: 200,
+              headers: { 'Content-Type': 'text/html' },
+              body: `<!DOCTYPE html>
 <html>
 <head><title>Proxy ${port}</title></head>
 <body>
+<article>
 <p>Request intercepted by proxy on port ${port}</p>
+</article>
 </body>
-</html>`);
+</html>`,
+            }),
+          }),
         });
 
-        await new Promise<void>((resolve, reject) => {
-          server.listen(port, '127.0.0.1', () => {
-            resolve();
-          });
-          server.on('error', reject);
-        });
-
+        await server.listen();
         servers.push(server);
       }
     },
 
     async stop() {
       for (const server of servers) {
-        await new Promise<void>((resolve) => {
-          server.close(() => {
-            resolve();
-          });
-        });
+        await server.close(true);
       }
       servers.length = 0;
     },
