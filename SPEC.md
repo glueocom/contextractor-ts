@@ -55,6 +55,7 @@ Platform prebuilds (`darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-
 - **vitest** — TypeScript unit tests; **cargo test** — Rust crate tests
 - **Biome** — TypeScript lint + format
 - **pnpm 10** workspace + **Cargo workspace** at the repo root
+- **knip** — dead-code and unused-export analysis; `examples/` is excluded via `knip.json` (examples are not workspace packages and have no `workspace:*` deps)
 
 ## Input Schema
 
