@@ -1,13 +1,13 @@
 # Autonomous Proxy Rotation Testing
 
-> **TLDR**: Build a mock proxy simulator (multi-port HTTP server) and a test harness that verifies proxy rotation across all three Contextractor entry points — Apify actor (local), NPM CLI, and NPM library.
+> **TLDR**: Build a mock proxy simulator (multi-port HTTP server) and a test harness that verifies proxy rotation across all three Contextractor entry points — Apify Actor (local), npm CLI, and npm library.
 
-- we need to test proxy rotation for
-    - Apify actor running locally
-    - NPM CLI running locally from a console
-    - calling the contextractor NPM from a typescript file
+- test proxy rotation for
+    - Apify Actor running locally
+    - npm CLI running locally from a console
+    - calling the Contextractor npm package from a TypeScript file
 
-- create a tool for helping with proxy testing at a subfolder of `/Users/miroslavsekera/r/contextractor-ts/tools`. the new tool will HTTP listen to multiple ports (around 10) and will simulate proxy servers. Then the proxy server test tool will return for each HTTP request a simple html containing just the port number to distinguish the proxy
-- create another project or projects (or keep it within the proxy rotation simulator, decide whats better, probably splitting is better) that will do the actual proxy rotation testing, that will call the Contextractor as the Apify actor running locally, the Contextractor as the NPM CLI running locally, the Contextractor as the NPM lib running locally
+- create a proxy simulator tool under `tools/` in this repo. The tool will listen on multiple HTTP ports (around 10) and simulate proxy servers. For each HTTP request it receives, it returns a simple HTML page containing just the port number to distinguish the proxy
+- create a separate proxy rotation test project (or keep it within the simulator — decide what's better, probably splitting is better) that calls Contextractor as the Apify Actor running locally, the npm CLI running locally, and the npm library running locally
 - set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1` when running the tests — without it, Chromium silently bypasses proxies for localhost and the mock proxies will never receive any traffic
 - create a Claude Code slash command (`.claude/commands/`) that runs the full simulation end-to-end: starts the mock proxy simulator, runs all three proxy rotation tests (actor, CLI, lib), autofixes any failures, and exits with a clear pass/fail summary — the command must get everything working
