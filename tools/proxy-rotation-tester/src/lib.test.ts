@@ -1,4 +1,9 @@
-import { buildRequests, createContextractorCrawler, memorySink, ProxyConfiguration } from '@contextractor/crawler';
+import {
+  buildRequests,
+  createContextractorCrawler,
+  memorySink,
+  ProxyConfiguration,
+} from '@contextractor/crawler';
 import { Server } from 'proxy-chain';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
@@ -57,7 +62,10 @@ describe('Proxy Rotation - Library (Direct API)', () => {
 
     const content = sink.results[0]?.formats?.txt ?? '';
     const containsProxyPort = proxyPorts.some((port) => content.includes(port.toString()));
-    expect(containsProxyPort, `Content did not include any proxy port. Content: "${content.slice(0, 300)}"`).toBe(true);
+    expect(
+      containsProxyPort,
+      `Content did not include any proxy port. Content: "${content.slice(0, 300)}"`,
+    ).toBe(true);
   });
 
   it('should route each request through a different proxy with PER_REQUEST mode', async () => {
@@ -79,7 +87,10 @@ describe('Proxy Rotation - Library (Direct API)', () => {
     for (const result of sink.results) {
       const content = result.formats?.txt ?? '';
       const containsProxyPort = proxyPorts.some((port) => content.includes(port.toString()));
-      expect(containsProxyPort, `Result did not include any proxy port. Content: "${content.slice(0, 200)}"`).toBe(true);
+      expect(
+        containsProxyPort,
+        `Result did not include any proxy port. Content: "${content.slice(0, 200)}"`,
+      ).toBe(true);
     }
   });
 }, 60_000);

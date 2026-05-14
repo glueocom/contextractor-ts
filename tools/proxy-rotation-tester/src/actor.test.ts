@@ -10,10 +10,7 @@ const REPO_ROOT = resolve(__dirname, '../../..');
 
 function runActor(storageDir: string, input: unknown): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    writeFileSync(
-      join(storageDir, 'key_value_stores/default/INPUT.json'),
-      JSON.stringify(input),
-    );
+    writeFileSync(join(storageDir, 'key_value_stores/default/INPUT.json'), JSON.stringify(input));
 
     const child = spawn('apify', ['run'], {
       cwd: join(REPO_ROOT, 'apps/apify-actor'),
@@ -26,8 +23,12 @@ function runActor(storageDir: string, input: unknown): Promise<{ stdout: string;
 
     let stdout = '';
     let stderr = '';
-    child.stdout?.on('data', (data: Buffer) => { stdout += String(data); });
-    child.stderr?.on('data', (data: Buffer) => { stderr += String(data); });
+    child.stdout?.on('data', (data: Buffer) => {
+      stdout += String(data);
+    });
+    child.stderr?.on('data', (data: Buffer) => {
+      stderr += String(data);
+    });
 
     // `apify run` CLI does not exit naturally when the actor completes locally —
     // it keeps running even after the actor's node process calls process.exit().
@@ -133,9 +134,13 @@ describe('Proxy Rotation - Apify Actor', () => {
     expect(files.length).toBeGreaterThan(0);
 
     const datasetFile = JSON.parse(readFileSync(join(datasetPath, files[0]), 'utf-8'));
-    const content = typeof datasetFile.txt === 'string' ? datasetFile.txt : JSON.stringify(datasetFile);
+    const content =
+      typeof datasetFile.txt === 'string' ? datasetFile.txt : JSON.stringify(datasetFile);
     const containsProxyPort = proxyPorts.some((port) => content.includes(port.toString()));
-    expect(containsProxyPort, `Proxy port not found in dataset. content: ${content.slice(0, 300)}`).toBe(true);
+    expect(
+      containsProxyPort,
+      `Proxy port not found in dataset. content: ${content.slice(0, 300)}`,
+    ).toBe(true);
   });
 
   it('should rotate proxies with PER_REQUEST mode', async () => {

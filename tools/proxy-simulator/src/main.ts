@@ -12,7 +12,9 @@ export interface ProxySimulator {
   proxies: string[];
 }
 
-export async function createProxySimulator(config: ProxySimulatorConfig = {}): Promise<ProxySimulator> {
+export async function createProxySimulator(
+  config: ProxySimulatorConfig = {},
+): Promise<ProxySimulator> {
   const startPort = config.startPort ?? 8081;
   const portCount = config.portCount ?? 10;
   const ports: number[] = Array.from({ length: portCount }, (_, i) => startPort + i);

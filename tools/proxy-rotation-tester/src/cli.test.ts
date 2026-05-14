@@ -84,6 +84,7 @@ describe('Proxy Rotation - CLI', () => {
             env: {
               ...process.env,
               PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK: '1',
+              CRAWLEE_STORAGE_DIR: join(tempDir, 'crawlee-storage'),
             },
           },
         );
@@ -111,6 +112,9 @@ describe('Proxy Rotation - CLI', () => {
 
     const content = readFileSync(join(outputDir, files[0]), 'utf-8');
     const containsProxyPort = proxyPorts.some((port) => content.includes(port.toString()));
-    expect(containsProxyPort, `Content did not contain any proxy port. Content: ${content.slice(0, 200)}`).toBe(true);
+    expect(
+      containsProxyPort,
+      `Content did not contain any proxy port. Content: ${content.slice(0, 200)}`,
+    ).toBe(true);
   });
 }, 60_000);
