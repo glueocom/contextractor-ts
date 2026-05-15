@@ -8,7 +8,8 @@
     "gen-md-regions": "dist/main.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm run fix && tsc -p tsconfig.json",
+    "fix": "biome check . --fix --unsafe && biome format --write . && biome check .",
     "start": "tsx src/main.ts",
     "test": "vitest run",
     "lint": "biome check ."
@@ -17,13 +18,13 @@
     "@contextractor/schema": "workspace:*",
     "@contextractor/standalone": "workspace:*",
     "commander": "^14.0.3",
-    "zod": "^4.4.2"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
-    "@types/node": "^25.6.0",
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.7.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   }
 }

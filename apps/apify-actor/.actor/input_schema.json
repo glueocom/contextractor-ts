@@ -15,8 +15,32 @@
       ],
       "minItems": 1
     },
-    "globs": {
+    "crawlerType": {
       "sectionCaption": "Crawler settings",
+      "title": "Crawler type",
+      "type": "string",
+      "description": "Browser engine or HTTP client for crawling. playwright:adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS).",
+      "editor": "select",
+      "default": "playwright:adaptive",
+      "enum": ["playwright:adaptive", "playwright:firefox", "playwright:chromium", "cheerio"],
+      "enumTitles": [
+        "Adaptive switching (Recommended)",
+        "Headless browser (Firefox+Playwright)",
+        "Headless browser (Chromium+Playwright)",
+        "Raw HTTP client (Cheerio)"
+      ]
+    },
+    "renderingTypeDetectionPercentage": {
+      "title": "Rendering type detection",
+      "type": "integer",
+      "description": "(Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower.",
+      "editor": "number",
+      "default": 10,
+      "minimum": 0,
+      "maximum": 100,
+      "unit": "%"
+    },
+    "globs": {
       "title": "Include URLs (globs)",
       "type": "array",
       "description": "Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the crawler access all URLs starting with `https://store.example.com/` or `https://docs.example.com/`.",
@@ -48,6 +72,20 @@
       "title": "Keep URL fragments",
       "type": "boolean",
       "description": "URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different pages.",
+      "editor": "checkbox",
+      "default": false
+    },
+    "useSitemaps": {
+      "title": "Use sitemaps",
+      "type": "boolean",
+      "description": "If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following.",
+      "editor": "checkbox",
+      "default": false
+    },
+    "ignoreCanonicalUrl": {
+      "title": "Ignore canonical URLs",
+      "type": "boolean",
+      "description": "If enabled, the crawler ignores the canonical URL declared in the page and always extracts content for every loaded URL. By default, pages whose canonical URL has already been extracted are skipped.",
       "editor": "checkbox",
       "default": false
     },
@@ -101,6 +139,15 @@
       "minimum": 0,
       "maximum": 9007199254740991
     },
+    "initialConcurrency": {
+      "title": "Initial concurrency",
+      "type": "integer",
+      "description": "Initial number of browser pages or HTTP clients running in parallel. Crawlee auto-scales up to maxConcurrency. 0 lets Crawlee pick the default.",
+      "editor": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
     "maxConcurrency": {
       "title": "Max concurrency",
       "type": "integer",
@@ -126,41 +173,20 @@
       "description": "rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, deduplicate, targetLanguage, withMetadata, onlyWithMetadata, teiValidation.",
       "editor": "json"
     },
-    "saveRawHtmlToKeyValueStore": {
+    "save": {
       "sectionCaption": "Output settings",
-      "title": "Save raw HTML to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler saves the raw HTML of all pages to the default key-value store and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
+      "title": "Save formats",
+      "type": "array",
+      "description": "Output formats to extract and save. \"original\" saves the raw page HTML before extraction.",
+      "editor": "json",
+      "default": ["markdown"]
     },
-    "saveExtractedTextToKeyValueStore": {
-      "title": "Save extracted text to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts plain text from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
-    },
-    "saveExtractedJsonToKeyValueStore": {
-      "title": "Save extracted JSON to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts JSON with metadata from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
-    },
-    "saveExtractedMarkdownToKeyValueStore": {
-      "title": "Save extracted Markdown to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts Markdown from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": true
-    },
-    "saveExtractedHtmlToKeyValueStore": {
-      "title": "Save extracted HTML to key-value store",
-      "type": "boolean",
-      "description": "If enabled, the crawler extracts HTML from all pages, saves it to the key-value store, and includes the URL link in the dataset output.",
-      "editor": "checkbox",
-      "default": false
+    "saveDestination": {
+      "title": "Save to",
+      "type": "array",
+      "description": "Where to save extracted content. Supported by both Actor and CLI.",
+      "editor": "json",
+      "default": ["key-value-store"]
     },
     "datasetName": {
       "title": "Dataset name",
@@ -179,6 +205,13 @@
       "type": "string",
       "description": "Name of the request queue for pending URLs. Leave empty to use the default queue.",
       "editor": "textfield"
+    },
+    "storeSkippedUrls": {
+      "title": "Store skipped URLs",
+      "type": "boolean",
+      "description": "If enabled, pushes a dataset record for each URL skipped during crawling (excluded by globs, robots.txt, depth limit, or concurrency cap). Can produce high record volume — enable for auditing only.",
+      "editor": "checkbox",
+      "default": false
     },
     "proxyConfiguration": {
       "sectionCaption": "Proxy",
@@ -207,6 +240,37 @@
       "maximum": 9007199254740991,
       "unit": "seconds"
     },
+    "blockMedia": {
+      "title": "Block media",
+      "type": "boolean",
+      "description": "Block loading of images, stylesheets, fonts (.woff), PDFs, and ZIPs. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium only).",
+      "editor": "checkbox",
+      "default": false
+    },
+    "waitForSelector": {
+      "title": "Wait for selector",
+      "type": "string",
+      "description": "Wait for this CSS selector to appear before extracting content. The request fails and is retried if the selector does not appear within the timeout. Leave empty to disable.",
+      "editor": "textfield",
+      "default": ""
+    },
+    "softWaitForSelector": {
+      "title": "Soft wait for selector",
+      "type": "string",
+      "description": "Wait for this CSS selector to appear before extracting content. Unlike waitForSelector, the request continues even if the selector does not appear within the timeout. Leave empty to disable.",
+      "editor": "textfield",
+      "default": ""
+    },
+    "dynamicContentWaitSecs": {
+      "title": "Dynamic content wait",
+      "type": "integer",
+      "description": "Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also used as the timeout for waitForSelector and softWaitForSelector.",
+      "editor": "number",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 9007199254740991,
+      "unit": "seconds"
+    },
     "waitUntil": {
       "sectionCaption": "Performance and limits",
       "title": "Navigation wait until",
@@ -216,15 +280,6 @@
       "default": "LOAD",
       "enum": ["NETWORKIDLE", "LOAD", "DOMCONTENTLOADED"],
       "enumTitles": ["Network idle", "Load event", "DOM content loaded"]
-    },
-    "launcher": {
-      "title": "Browser type",
-      "type": "string",
-      "description": "Browser to use for crawling",
-      "editor": "select",
-      "default": "CHROMIUM",
-      "enum": ["CHROMIUM", "FIREFOX"],
-      "enumTitles": ["Chromium", "Firefox"]
     },
     "headless": {
       "title": "Headless mode",

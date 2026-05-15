@@ -1,6 +1,8 @@
 {
   "ignore": [
     ".claude/skills/**/reference/scripts/run_actor.js",
-    "packages/extraction/native/index.js"
+    "packages/extraction/native/index.js",
+    "dev-utils/installation/lib/pkg.ts",
+    "examples/**"
   ]
 }

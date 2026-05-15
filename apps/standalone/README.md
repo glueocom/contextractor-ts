@@ -8,18 +8,101 @@ Playwright).
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`.
+`txt`, `markdown`, `json`, `html`, `original` (raw page HTML).
 
 ## Usage
 
 ```bash
-contextractor [OPTIONS] [URLS...]
+contextractor [OPTIONS] [URLS...]         # backwards-compatible shorthand
+contextractor extract [URLS...]           # explicit extract subcommand
 ```
 
 ```bash
 contextractor https://example.com
 contextractor https://example.com --precision --save json -o ./results
+contextractor extract https://example.com --save-destination dataset
 contextractor --config config.json --max-pages 10
+```
+
+## Subcommands
+
+### `extract`
+
+Extract content from one or more URLs and save to storage.
+
+```bash
+contextractor extract https://example.com
+contextractor extract https://a.com https://b.com --save txt
+contextractor extract --input-file urls.txt --dataset my-archive
+contextractor extract https://example.com --save-destination key-value-store --save-destination dataset
+```
+
+- `--input-file <file>` — read URLs (one per line) from a file
+- `--dataset <name>` — route to a named dataset (default: `default`)
+- `--save-destination <dest>` — repeatable: `key-value-store` (default) or `dataset`
+- `--storage-dir <path>` — override Crawlee storage directory for this run
+
+### `list`
+
+```bash
+contextractor list                          # list default dataset
+contextractor list my-archive --format json --limit 10
+contextractor list my-archive --format jsonl --desc
+```
+
+Formats: `json`, `jsonl` (default), `csv`.
+
+### `get`
+
+```bash
+contextractor get default 0   # 0-based index
+```
+
+### `kvs`
+
+```bash
+contextractor kvs put my-key ./file.json
+echo '{"ok":true}' | contextractor kvs put my-key - --content-type application/json
+contextractor kvs get my-key
+contextractor kvs ls --limit 20
+contextractor kvs rm my-key
+```
+
+### `purge`
+
+```bash
+contextractor purge        # purge default dataset and key-value store
+contextractor purge --all  # purge all datasets and key-value stores
+```
+
+### `storage-dir`
+
+```bash
+contextractor storage-dir  # prints the resolved storage path and exits
+```
+
+## Storage directory resolution
+
+Storage directory is resolved in this order (first match wins):
+
+1. `--storage-dir` CLI flag
+2. `CONTEXTRACTOR_STORAGE_DIR` env var
+3. `CRAWLEE_STORAGE_DIR` env var (Crawlee native compatibility)
+4. `./storage` if `.actor/` or `./storage/` exists in the current working directory
+5. `${XDG_DATA_HOME:-~/.local/share}/contextractor/storage` (XDG fallback)
+
+## Library use (Crawlee re-exports)
+
+`@contextractor/standalone` re-exports Crawlee's storage types for library consumers:
+
+```typescript
+import { Dataset, KeyValueStore, Configuration } from '@contextractor/standalone';
+
+const ds = await Dataset.open('my-dataset');
+await ds.forEach((item) => console.log(item));
+
+const kvs = await KeyValueStore.open('default');
+const value = await kvs.getValue('my-key');
 ```
 
 The CLI flag list below is generated from the same Commander program the
@@ -35,17 +118,19 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--version`, `-V` | output the version number |
 | `--config`, `-c` | Path to JSON config file |
 | `--start-url` | Start URL (alternative to positional URL) |
-| `--format` | Output format: txt \| markdown \| json \| html (alias of --save) |
-| `--output-dir`, `-o` | Output directory |
+| `--output-dir`, `-o` | Output directory (default: ./output) |
 | `--max-pages` | Max pages to crawl (0 = unlimited) |
 | `--crawl-depth` | Max link depth from start URLs (0 = start only) |
 | `--headless` | Run browser in headless mode |
 | `--no-headless` | Run browser with UI |
 | `--proxy-urls` | Comma-separated proxy URLs |
 | `--proxy-rotation` | Proxy rotation: recommended, per_request, until_failure |
-| `--launcher` | Browser engine: chromium, firefox |
+| `--crawler-type` | Crawler engine: adaptive, firefox, chromium, cheerio |
+| `--rendering-detection-pct` | Rendering type detection percentage (adaptive only) |
 | `--wait-until` | Page load event: networkidle, load, domcontentloaded |
 | `--page-load-timeout` | Page load timeout in seconds |
+| `--block-media` | Block images, stylesheets, fonts, PDFs, and ZIPs |
+| `--no-block-media` | Do not block media requests (default) |
 | `--ignore-cors` | Disable CORS/CSP restrictions |
 | `--close-cookie-modals` | Auto-dismiss cookie banners |
 | `--max-scroll-height` | Max scroll height in pixels |
@@ -55,13 +140,15 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--excludes` | Comma-separated glob patterns to exclude |
 | `--link-selector` | CSS selector for links to follow |
 | `--keep-url-fragments` | Preserve URL fragments |
+| `--use-sitemaps` | Discover and enqueue URLs from sitemap.xml at each start URL domain root |
 | `--respect-robots-txt` | Honor robots.txt |
 | `--cookies` | JSON array of cookie objects |
 | `--headers` | JSON object of custom HTTP headers |
+| `--initial-concurrency` | Initial parallel requests (0 = Crawlee default) |
 | `--max-concurrency` | Max parallel requests |
 | `--max-retries` | Max request retries |
 | `--max-results` | Max results per crawl (0 = unlimited) |
-| `--save` | Output formats: markdown,html,txt,json,jsonl,all |
+| `--save` | Output formats: markdown,html,txt,json,original,all |
 | `--precision` | High precision mode (less noise) |
 | `--recall` | High recall mode (more content) |
 | `--fast` | Fast extraction mode (less thorough) |
@@ -77,6 +164,13 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--with-metadata` | Extract metadata along with content |
 | `--no-metadata` | Skip metadata extraction |
 | `--verbose`, `-v` | Enable verbose logging |
+| `--save-destination` | Where to save: key-value-store\|dataset (repeatable) |
+| `--storage-dir` | Override Crawlee storage directory |
+| `--store-skipped-urls` | Write skipped-urls.json to output dir after crawl |
+| `--dynamic-content-wait` | Seconds to wait for network idle after navigation (0 = disabled) |
+| `--wait-for-selector` | CSS selector to wait for before extracting (fails on timeout) |
+| `--soft-wait-for-selector` | CSS selector to wait for before extracting (continues on timeout) |
+| `--ignore-canonical-url` | Disable canonical URL deduplication — extract every loaded URL even if its canonical was already extracted |
 
 <!-- @generated:end name="cli-flags" -->
 
@@ -116,6 +210,15 @@ stripped by `parse()`.
 
 <!-- This block is auto-generated by @contextractor/gen-md-regions. Do not edit. -->
 
+### `crawlerType` (default `playwright:adaptive`)
+
+| Value | Title |
+|-------|-------|
+| `playwright:adaptive` | Adaptive switching (Recommended) |
+| `playwright:firefox` | Headless browser (Firefox+Playwright) |
+| `playwright:chromium` | Headless browser (Chromium+Playwright) |
+| `cheerio` | Raw HTTP client (Cheerio) |
+
 ### `proxyRotation` (default `RECOMMENDED`)
 
 | Value | Title |
@@ -131,13 +234,6 @@ stripped by `parse()`.
 | `NETWORKIDLE` | Network idle |
 | `LOAD` | Load event |
 | `DOMCONTENTLOADED` | DOM content loaded |
-
-### `launcher` (default `CHROMIUM`)
-
-| Value | Title |
-|-------|-------|
-| `CHROMIUM` | Chromium |
-| `FIREFOX` | Firefox |
 
 <!-- @generated:end name="enum-values" -->
 

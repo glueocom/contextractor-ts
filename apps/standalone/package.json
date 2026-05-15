@@ -7,9 +7,14 @@
   "bin": {
     "contextractor": "dist/cli.js"
   },
-  "main": "dist/cli.js",
+  "main": "dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./cli": "./dist/cli.js"
+  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "pnpm run fix && tsc -p tsconfig.json",
+    "fix": "biome check . --fix --unsafe && biome format --write . && biome check .",
     "start": "tsx src/cli.ts",
     "test": "vitest run",
     "lint": "biome check ."
@@ -18,13 +23,14 @@
     "@contextractor/crawler": "workspace:*",
     "@contextractor/extraction": "workspace:*",
     "@contextractor/schema": "workspace:*",
-    "commander": "^14.0.3"
+    "commander": "^14.0.3",
+    "crawlee": "^3.16.0"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.14",
-    "@types/node": "^25.6.0",
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.7.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   }
 }

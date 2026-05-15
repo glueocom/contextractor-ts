@@ -8,11 +8,6 @@ import type {
 import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
-const LAUNCHER_MAP = {
-  CHROMIUM: 'chromium',
-  FIREFOX: 'firefox',
-} as const;
-
 const WAIT_UNTIL_MAP = {
   LOAD: 'load',
   DOMCONTENTLOADED: 'domcontentloaded',
@@ -26,11 +21,7 @@ export function buildCrawlerOpts(
   requestQueue?: RequestProvider,
   proxyRotation?: ContextractorInputType['proxyRotation'],
 ): ContextractorCrawlerOptions {
-  const formats: OutputFormat[] = [];
-  if (input.saveExtractedTextToKeyValueStore) formats.push('txt');
-  if (input.saveExtractedJsonToKeyValueStore) formats.push('json');
-  if (input.saveExtractedMarkdownToKeyValueStore) formats.push('markdown');
-  if (input.saveExtractedHtmlToKeyValueStore) formats.push('html');
+  const formats: OutputFormat[] = input.save.filter((f) => f !== 'original') as OutputFormat[];
   if (formats.length === 0) formats.push('markdown');
 
   return {
@@ -44,7 +35,8 @@ export function buildCrawlerOpts(
         ? { maxScrollHeight: input.maxScrollHeightPixels }
         : undefined,
     headless: input.headless,
-    launcher: LAUNCHER_MAP[input.launcher],
+    crawlerType: input.crawlerType,
+    renderingTypeDetectionPercentage: input.renderingTypeDetectionPercentage,
     ignoreSslErrors: input.ignoreSslErrors,
     bypassCSP: input.ignoreCorsAndCsp,
     initialCookies: input.initialCookies,
@@ -52,6 +44,7 @@ export function buildCrawlerOpts(
     userAgent: input.userAgent || undefined,
     maxPages: input.maxPagesPerCrawl,
     maxRetries: input.maxRequestRetries,
+    initialConcurrency: input.initialConcurrency,
     maxConcurrency: input.maxConcurrency,
     pageLoadTimeoutSecs: input.pageLoadTimeoutSecs,
     waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
@@ -64,7 +57,12 @@ export function buildCrawlerOpts(
     proxyConfiguration,
     proxyRotation,
     requestQueue,
+    blockMedia: input.blockMedia,
     browserLog: input.browserLog,
     respectRobotsTxt: input.respectRobotsTxtFile,
+    dynamicContentWaitSecs: input.dynamicContentWaitSecs,
+    waitForSelector: input.waitForSelector || undefined,
+    softWaitForSelector: input.softWaitForSelector || undefined,
+    ignoreCanonicalUrl: input.ignoreCanonicalUrl,
   };
 }

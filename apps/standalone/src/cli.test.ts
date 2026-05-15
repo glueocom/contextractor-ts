@@ -1,6 +1,7 @@
 import { FORMAT_EXTENSIONS, urlToFilename } from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
 import { describe, expect, it } from 'vitest';
+import { buildProgram } from './cliProgram.js';
 import { buildCrawlConfig, validateSaveFormats } from './config.js';
 
 describe('config helpers', () => {
@@ -14,10 +15,12 @@ describe('config helpers', () => {
     });
 
     expect(cfg.save).toEqual(['markdown']);
+    expect(cfg.initialConcurrency).toBe(0);
     expect(cfg.maxConcurrency).toBe(50);
     expect(cfg.headless).toBe(true);
     expect(cfg.outputDir).toBe('./output');
-    expect(cfg.launcher).toBe('chromium');
+    expect(cfg.crawlerType).toBe('playwright:adaptive');
+    expect(cfg.renderingTypeDetectionPercentage).toBe(10);
     expect(cfg.waitUntil).toBe('load');
     expect(cfg.maxPages).toBe(0);
     expect(cfg.crawlDepth).toBe(0);
@@ -32,11 +35,19 @@ describe('config helpers', () => {
 
   it('validateSaveFormats expands `all`', () => {
     const formats = validateSaveFormats(['all']);
-    expect(formats.sort()).toEqual(['html', 'json', 'jsonl', 'markdown', 'txt']);
+    expect(formats.sort()).toEqual(['html', 'json', 'markdown', 'original', 'txt']);
   });
 
-  it('validateSaveFormats accepts the `text` alias for `txt`', () => {
-    expect(validateSaveFormats(['text'])).toEqual(['txt']);
+  it('validateSaveFormats accepts `txt`', () => {
+    expect(validateSaveFormats(['txt'])).toEqual(['txt']);
+  });
+
+  it('validateSaveFormats rejects `text` (alias removed)', () => {
+    expect(() => validateSaveFormats(['text'])).toThrow(/Unknown save format/);
+  });
+
+  it('validateSaveFormats accepts `original`', () => {
+    expect(validateSaveFormats(['original'])).toEqual(['original']);
   });
 
   it('validateSaveFormats rejects unknown values', () => {
@@ -50,6 +61,62 @@ describe('config helpers', () => {
 describe('FORMAT_EXTENSIONS', () => {
   it('contains exactly the supported set', () => {
     expect(Object.keys(FORMAT_EXTENSIONS).sort()).toEqual(['html', 'json', 'markdown', 'txt']);
+  });
+});
+
+describe('buildProgram — --store-skipped-urls flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--store-skipped-urls');
+  });
+});
+
+describe('buildProgram — --wait-for-selector flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--wait-for-selector');
+  });
+});
+
+describe('buildProgram — --soft-wait-for-selector flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--soft-wait-for-selector');
+  });
+});
+
+describe('buildProgram — --dynamic-content-wait flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--dynamic-content-wait');
+  });
+});
+
+describe('buildProgram — --use-sitemaps flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--use-sitemaps');
+  });
+});
+
+describe('buildProgram — --initial-concurrency flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--initial-concurrency');
+  });
+});
+
+describe('buildProgram — --ignore-canonical-url flag', () => {
+  it('is a recognized option on the root command', () => {
+    const program = buildProgram();
+    const allOptions = program.options.map((o) => o.long);
+    expect(allOptions).toContain('--ignore-canonical-url');
   });
 });
 

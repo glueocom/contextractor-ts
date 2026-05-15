@@ -7,10 +7,10 @@ Contextractor crawls websites and extracts clean, readable main-content text. Bu
 Available as:
 
 - **Apify Actor** — `glueo/contextractor` on the Apify platform; output saved to the run's Key-Value Store + Dataset
-- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI; output written to disk as one file per page
+- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI; output written to disk and/or Crawlee storage (Dataset / KeyValueStore)
 - **Extraction library** (`@contextractor/extraction`) — embedded engine used by both surfaces above
 
-Supported output formats: `txt | markdown | json | html`.
+Supported output formats: `txt | markdown | json | html | original`.
 
 ## Architecture
 
@@ -25,10 +25,12 @@ apps/standalone/            Standalone CLI (depends on extraction + crawler + sc
 Data flow:
 
 ```
-Input URLs → PlaywrightCrawler → ContentExtractor (TS) → sink
-                                                         ├── KVS + Dataset  (Actor)
-                                                         └── output files   (CLI)
+Input URLs → [SitemapRequestList (optional)] → PlaywrightCrawler → ContentExtractor (TS) → sink
+                                                                                           ├── KVS + Dataset       (Actor)
+                                                                                           └── files + KVS/Dataset (CLI)
 ```
+
+When `useSitemaps` is enabled, `SitemapRequestList.open()` fetches `sitemap.xml` at each start URL's domain root and feeds discovered URLs into the crawler alongside the explicit start URLs.
 
 ### Native binding
 
@@ -53,10 +55,24 @@ Platform prebuilds (`darwin-arm64`, `darwin-x64`, `linux-x64-gnu`, `linux-arm64-
 - **vitest** — TypeScript unit tests; **cargo test** — Rust crate tests
 - **Biome** — TypeScript lint + format
 - **pnpm 10** workspace + **Cargo workspace** at the repo root
+- **knip** — dead-code and unused-export analysis; `examples/` is excluded via `knip.json` (examples are not workspace packages and have no `workspace:*` deps)
+
+## Tools
+
+Internal tooling under `tools/` for development, testing, and code generation:
+
+- **`gen-input-schema`** — generates `apps/apify-actor/.actor/input_schema.json` from the Zod schema
+- **`gen-md-regions`** — auto-regenerates markdown sections in READMEs from schemas and JSON outputs
+- **`platform-test-runner`** — orchestrates integration tests against Apify Platform
+- **`opencode-sync`** — mirrors `.claude/` config to `.opencode/` for opencode AI tool
+- **`proxy-simulator`** — mock HTTP proxy server for testing proxy rotation
+- **`proxy-rotation-tester`** — comprehensive test suite for proxy rotation across all entry points
+
+See individual tool README.md files for usage details.
 
 ## Input Schema
 
-Canonical definition: `packages/schema/src/input.ts` (`ContextractorInput` Zod schema).
+Canonical definition: `packages/schema/src/source-of-truth/input.ts` (`ContextractorInput` Zod schema).
 
 `apps/apify-actor/.actor/input_schema.json` is generated at build time by `@contextractor/gen-input-schema`. The input table in `apps/apify-actor/README.md` is auto-rebuilt from the same schema by `@contextractor/gen-md-regions`.
 
@@ -97,21 +113,11 @@ Config merge order: `config file → CLI args → ContextractorInput.parse()`.
 
 ### Apify Actor — Dataset entry
 
+**`saveDestination: ["key-value-store"]` (default)**
+
 ```json
 {
   "loadedUrl": "https://example.com/page",
-  "rawHtml": {
-    "hash": "...",
-    "length": 89898,
-    "key": "abc123-raw.html",
-    "url": "https://api.apify.com/v2/key-value-stores/{id}/records/abc123-raw.html"
-  },
-  "extractedMarkdown": {
-    "key": "abc123.md",
-    "url": "...",
-    "hash": "...",
-    "length": 6887
-  },
   "loadedAt": "2026-04-27T18:58:36Z",
   "metadata": {
     "title": "Page Title",
@@ -121,13 +127,39 @@ Config merge order: `config file → CLI args → ContextractorInput.parse()`.
     "siteName": "Example Site",
     "lang": "en"
   },
-  "httpStatus": 200
+  "httpStatus": 200,
+  "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
+  "original": {
+    "hash": "d41d8cd98f00b204e9800998ecf8427e",
+    "length": 89898,
+    "key": "abc123-original.html",
+    "url": "https://api.apify.com/v2/key-value-stores/{id}/records/abc123-original.html"
+  },
+  "markdown": { "key": "abc123.md", "url": "...", "hash": "...", "length": 6887 },
+  "txt": { "key": "abc123.txt", "url": "...", "hash": "...", "length": 5200 }
+}
+```
+
+**`saveDestination: ["dataset"]`**
+
+```json
+{
+  "loadedUrl": "https://example.com/page",
+  "loadedAt": "2026-04-27T18:58:36Z",
+  "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "lang": "en" },
+  "httpStatus": 200,
+  "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
+  "markdown": "# Page Title\n\nContent...",
+  "markdownHash": "5d41402abc4b2a76b9719d911017c592",
+  "txt": "Page Title\n\nContent...",
+  "txtHash": "7215ee9c7d9dc229d2921a40e899ec5f"
 }
 ```
 
 Rules:
-- `rawHtml`: always has `hash` + `length`; adds `key` + `url` only when raw HTML is saved
-- `extractedMarkdown`, `extractedText`, `extractedJson`: each present only when the matching input flag is enabled
+- `originalHash`: always present; 32-char MD5 hex of the raw HTML
+- `original`: present when `saveOriginal` is true; a `ContentInfo` object (`hash`, `length`, `key`, `url`) when saved to KVS, or the raw HTML string when `saveDestination` is `dataset` only
+- `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentInfo` objects when `saveDestination` is `key-value-store`; inline content strings when `dataset`, each accompanied by a `{format}Hash` field (e.g. `markdownHash`, `txtHash`) containing the 32-char MD5 hex of that content
 - `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
 
 ### Apify Actor — Key-Value Store
@@ -135,14 +167,17 @@ Rules:
 Storage keys use the first 16 hex characters of an MD5 over the URL:
 `createHash('md5').update(url).digest('hex').slice(0, 16)`
 
-- `{hash}-raw.html` — raw HTML
+- `{hash}-original.html` — raw HTML (when `saveOriginal` is true)
 - `{hash}.txt` — plain text
-- `{hash}.json` — JSON with metadata
+- `{hash}.json` — JSON
 - `{hash}.md` — Markdown
+- `{hash}.html` — extracted HTML
 
-### Standalone CLI — output files
+### Standalone CLI — output
 
-One file per crawled page in the output directory, named from a URL slug (e.g. `example-com-page.md`). When metadata is available, a header (title, author, date, URL) is prepended to text-format outputs.
+**File output** (default, backwards-compatible): one file per crawled page in `--output-dir` (default `./output/`), named from a URL slug (e.g. `example-com-page.md`). Metadata header prepended to text-format outputs when available.
+
+**Crawlee storage** (controlled by `--save-destination`): KVS keys use URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry `url`, metadata, `originalHash` (MD5 of raw HTML), per-format content as inline strings, and a `{format}Hash` field alongside each saved format.
 
 ## Build
 

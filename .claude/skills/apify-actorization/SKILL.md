@@ -9,11 +9,11 @@ Actorization converts existing software into reusable serverless applications co
 
 ## Quick Start
 
-1. Run `apify init` in project root
-2. Wrap code with SDK lifecycle (see language-specific section below)
-3. Configure `.actor/input_schema.json`
-4. Test with `apify run --input '{"key": "value"}'`
-5. Deploy with `apify push`
+- Run `apify init` in project root
+- Wrap code with SDK lifecycle (see language-specific section below)
+- Configure `.actor/input_schema.json`
+- Test with `apify run --input '{"key": "value"}'`
+- Deploy with `apify push`
 
 ## When to Use This Skill
 
@@ -67,17 +67,17 @@ Copy this checklist to track progress:
 - [ ] Step 7: Test locally with `apify run`
 - [ ] Step 8: Deploy with `apify push`
 
-## Step 1: Analyze the Project
+## Step ANALYZE: Analyze the Project
 
 Before making changes, understand the project:
 
-1. **Identify the language** - JavaScript/TypeScript, Python, or other
-2. **Find the entry point** - The main file that starts execution
-3. **Identify inputs** - Command-line arguments, environment variables, config files
-4. **Identify outputs** - Files, console output, API responses
-5. **Check for state** - Does it need to persist data between runs?
+- **Identify the language** - JavaScript/TypeScript, Python, or other
+- **Find the entry point** - The main file that starts execution
+- **Identify inputs** - Command-line arguments, environment variables, config files
+- **Identify outputs** - Files, console output, API responses
+- **Check for state** - Does it need to persist data between runs?
 
-## Step 2: Initialize Actor Structure
+## Step INITIALIZE: Initialize Actor Structure
 
 Run in the project root:
 
@@ -90,7 +90,7 @@ This creates:
 - `.actor/input_schema.json` - Input definition for the Apify Console
 - `Dockerfile` (if not present) - Container image definition
 
-## Step 3: Apply Language-Specific Changes
+## Step IMPLEMENT: Apply Language-Specific Changes
 
 Choose based on your project's language:
 
@@ -106,7 +106,7 @@ Choose based on your project's language:
 | Python | `pip install apify` | `async with Actor:` |
 | Other | Use CLI in wrapper script | `apify actor:get-input` / `apify actor:push-data` |
 
-## Steps 4-6: Configure Schemas
+## Step CONFIGURE: Configure Schemas
 
 See [schemas-and-output.md](references/schemas-and-output.md) for detailed configuration of:
 - Input schema (`.actor/input_schema.json`)
@@ -116,7 +116,7 @@ See [schemas-and-output.md](references/schemas-and-output.md) for detailed confi
 
 Validate schemas against `@apify/json_schemas` npm package.
 
-## Step 7: Test Locally
+## Step TEST: Test Locally
 
 Run the actor with inline input (for JS/TS and Python actors):
 
@@ -132,7 +132,7 @@ apify run --input-file ./test-input.json
 
 **Important:** Always use `apify run`, not `npm start` or `python main.py`. The CLI sets up the proper environment and storage.
 
-## Step 8: Deploy
+## Step DEPLOY: Deploy
 
 ```bash
 apify push

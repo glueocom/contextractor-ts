@@ -36,33 +36,39 @@ is generated from the schema at build time by
 ```ts
 interface ContextractorInputType {
   startUrls: Array<{ url: string }>;
+  crawlerType: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
+  renderingTypeDetectionPercentage: number;
   globs: Array<{ glob: string }>;
   excludes: Array<{ glob: string }>;
   pseudoUrls: Array<{ purl?: string }>;
   linkSelector: string;
   keepUrlFragments: boolean;
+  useSitemaps: boolean;
+  ignoreCanonicalUrl: boolean;
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
   maxPagesPerCrawl: number;
   maxResultsPerCrawl: number;
   maxCrawlingDepth: number;
+  initialConcurrency: number;
   maxConcurrency: number;
   maxRequestRetries: number;
   trafilaturaConfig?: Record<string, unknown>;
-  saveRawHtmlToKeyValueStore: boolean;
-  saveExtractedTextToKeyValueStore: boolean;
-  saveExtractedJsonToKeyValueStore: boolean;
-  saveExtractedMarkdownToKeyValueStore: boolean;
-  saveExtractedHtmlToKeyValueStore: boolean;
+  save: Array<'txt' | 'markdown' | 'json' | 'html' | 'original'>;
+  saveDestination: Array<'key-value-store' | 'dataset'>;
   datasetName?: string;
   keyValueStoreName?: string;
   requestQueueName?: string;
+  storeSkippedUrls: boolean;
   proxyConfiguration?: Record<string, unknown>;
   proxyRotation: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
   pageLoadTimeoutSecs: number;
+  blockMedia: boolean;
+  waitForSelector: string;
+  softWaitForSelector: string;
+  dynamicContentWaitSecs: number;
   waitUntil: 'NETWORKIDLE' | 'LOAD' | 'DOMCONTENTLOADED';
-  launcher: 'CHROMIUM' | 'FIREFOX';
   headless: boolean;
   ignoreCorsAndCsp: boolean;
   closeCookieModals: boolean;
@@ -119,4 +125,4 @@ tools/
 
 ## Docs version
 
-2026-05-02T21:48:37Z
+2026-05-12T17:30:34Z

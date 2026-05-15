@@ -1,5 +1,5 @@
 export type { RequestProvider } from 'crawlee';
-export { ProxyConfiguration } from 'crawlee';
+export { ProxyConfiguration, SitemapRequestList } from 'crawlee';
 export { getBlocker, installCookieDefences, rejectViaAutoconsent } from './browser/cookies.js';
 export type { ScrollConfig } from './browser/scroll.js';
 export { autoScroll } from './browser/scroll.js';

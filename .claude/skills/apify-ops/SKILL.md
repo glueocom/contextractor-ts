@@ -75,22 +75,22 @@ apify key-value-stores get-value <id> <key>
 
 ### Fix Build Errors (Git-based)
 
-1. **Commit and push** — Stage, commit, and push changes to Git
-2. **Wait for auto-build** — Apify webhook triggers build from Git
-3. **Check build status** — `apify builds ls --limit 3` until latest is `SUCCEEDED` or `FAILED`
-4. **If failed:** `apify builds log <buildId>`, fix locally, repeat from step 1
+- **Commit and push** — Stage, commit, and push changes to Git
+- **Wait for auto-build** — Apify webhook triggers build from Git
+- **Check build status** — `apify builds ls --limit 3` until latest is `SUCCEEDED` or `FAILED`
+- **If failed:** `apify builds log <buildId>`, fix locally, repeat from start
 
 ### Diagnose Failed Run
 
-1. **Get run info** — `mcpc --json @apify tools-call get-actor-run runId:="<runId>"`
-2. **Check log** — `apify runs log <runId>` (no mcpc equivalent for run logs)
-3. **Review input** — `apify key-value-stores get-value <storeId> INPUT`
-4. **Analyze output** — `mcpc --json @apify tools-call get-actor-output datasetId:="<datasetId>" limit:=20`
+- **Get run info** — `mcpc --json @apify tools-call get-actor-run runId:="<runId>"`
+- **Check log** — `apify runs log <runId>` (no mcpc equivalent for run logs)
+- **Review input** — `apify key-value-stores get-value <storeId> INPUT`
+- **Analyze output** — `mcpc --json @apify tools-call get-actor-output datasetId:="<datasetId>" limit:=20`
 
 ### Access Run Output
 
-1. **Get run details** — `mcpc --json @apify tools-call get-actor-run runId:="<runId>"` to obtain `defaultDatasetId`
-2. **Fetch items** — `mcpc --json @apify tools-call get-actor-output datasetId:="<datasetId>" limit:=100 fields:="title,url"`
+- **Get run details** — `mcpc --json @apify tools-call get-actor-run runId:="<runId>"` to obtain `defaultDatasetId`
+- **Fetch items** — `mcpc --json @apify tools-call get-actor-output datasetId:="<datasetId>" limit:=100 fields:="title,url"`
 
 ## Common Error Types
 
@@ -102,7 +102,7 @@ apify key-value-stores get-value <id> <key>
 | Cargo dependencies | `Cargo.toml` | Verify versions, run `cargo update` and `cargo build --workspace` |
 | Rust compile error | `src/*.rs` | Read full diagnostic, fix types, run `cargo check --workspace --all-targets` |
 | Cargo lints | `src/*.rs` | Run `cargo clippy --workspace --all-targets -- -D warnings` |
-| TS dependencies | `package.json` | Verify versions, run `npm ci` |
+| TS dependencies | `package.json` | Verify versions, run `pnpm install --frozen-lockfile` |
 | TypeScript types | `tools/**/*.ts` | Run `tsc --noEmit`, fix type errors |
 | Biome lint | `tools/**/*.ts` | Run `biome check --write tools/` |
 

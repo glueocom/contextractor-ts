@@ -62,7 +62,7 @@ At minimum the following READMEs are expected to exist:
 For each README found, sync:
 
 - The "built on" line — every README must say Contextractor is built on `rs-trafilatura` (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright).
-- Run `npm run docs:update` to regenerate every region between `<!-- @generated:start … -->` markers (CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, enum values). Fix only the surrounding prose and the disclaimer line — never edit between marker pairs by hand.
+- Run `pnpm docs:update` to regenerate every region between `<!-- @generated:start … -->` markers (CLI flags, Apify INPUT_SCHEMA fields, the `ContextractorInputType` interface, enum values). Fix only the surrounding prose and the disclaimer line — never edit between marker pairs by hand.
 - Per `.claude/rules/json-config-only.md`, document only JSON config files.
 - The TS engine config table (interface fields with type, default, description) lives in `packages/extraction/README.md`; the matching Apify input-schema field comes from the generated region in `apps/apify-actor/README.md`.
 - The engine/public output-format list — must be `txt | markdown | json | html`. The temporary XML / XML-TEI gap is documented once in `packages/extraction/README.md` and once in `CLAUDE.md`; do not repeat it elsewhere. CLI-only `--save` helpers such as `jsonl` or `all` may still appear where the README is documenting CLI orchestration rather than engine formats.
@@ -72,7 +72,7 @@ If a README does not yet have a section for the CLI, the engine config, or the "
 
 ## Step VERSION: Update Docs Version
 
-Run `/docs:update-docs-version` to update the "Docs version" timestamp at the end of the repo-root `README.md` **only if** Step SYNC regenerated markdown regions or you edited README prose in this command run. If `npm run docs:update` reports `0 file(s) updated` and you did not edit any README content, leave the existing timestamp unchanged so a clean rerun stays clean.
+Run `/docs:update-docs-version` to update the "Docs version" timestamp at the end of the repo-root `README.md` **only if** Step SYNC regenerated markdown regions or you edited README prose in this command run. If `pnpm docs:update` reports `0 file(s) updated` and you did not edit any README content, leave the existing timestamp unchanged so a clean rerun stays clean.
 
 ## Step VERIFY: Verify Consistency
 

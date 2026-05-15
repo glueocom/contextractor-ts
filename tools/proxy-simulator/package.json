@@ -1,0 +1,20 @@
+{
+  "name": "proxy-simulator",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Mock HTTP proxy simulator for testing proxy rotation across Contextractor entry points",
+  "main": "src/main.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "proxy-chain": "^2.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.6"
+  }
+}

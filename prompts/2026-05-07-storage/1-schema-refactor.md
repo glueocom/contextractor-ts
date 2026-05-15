@@ -8,7 +8,7 @@ Replace the five boolean save fields in the Actor input with a single `save` enu
 
 The npm package (`@contextractor/standalone`) is both a CLI tool and a Node.js library — it exports a programmatic API in addition to the binary.
 
-No backward compatibility is required. Break any existing API, CLI flags, Actor input, or Docker interface without hesitation — this is a clean cut.
+No backward compatibility is required. Break any existing API, CLI flags, or Actor input without hesitation — this is a clean cut.
 
 Fields to remove:
 
@@ -87,7 +87,7 @@ saveDestination: z
   .array(z.enum(['key-value-store', 'dataset']))
   .default(['key-value-store'])
   .describe(
-    'Where to save extracted content. Actor-only — the CLI always saves to disk.',
+    'Where to save extracted content. Supported by both Actor and CLI.',
   )
   .meta({
     title: 'Save to',
@@ -140,6 +140,12 @@ Remove the redundant `--format` option (it is an alias of `--save`):
 
 Update `--save` help: `markdown,html,txt,json,jsonl,all` → `markdown,html,txt,json,jsonl,original,all`
 
+Add `--save-destination <dest>` option (repeatable, default `key-value-store`):
+- Can be specified multiple times to enable multiple destinations simultaneously.
+- `key-value-store` (default): write each requested format as a KVS entry keyed `${urlToFilename(url)}.${ext}` (e.g. `example-com.md`) with the appropriate MIME content-type.
+- `dataset`: push each extraction result as a JSON record to the Crawlee dataset.
+- Both: `--save-destination key-value-store --save-destination dataset`.
+
 ### `apps/standalone/src/config.ts`
 
 `'txt'` is the canonical plain-text format — do not rename it. Add `'original'`:
@@ -161,4 +167,26 @@ Add `original` handling — no rename needed, `result.formats.txt` stays as is:
 - `validateSaveFormats(['txt'])` → expect `['txt']` (valid)
 - `validateSaveFormats(['text'])` → expect it to throw (`'text'` is not a valid format; alias removed)
 - Expand `all` expansion test: include `'txt'` and `'original'`
+
+## Unit Tests
+
+Write tests in the same response as the implementation. Place each test file next to its source.
+
+### `packages/schema/src/source-of-truth/input.test.ts` (new)
+
+- `save` default is `['markdown']`; accepts all five enum values (`txt`, `markdown`, `json`, `html`, `original`); rejects unknown strings
+- `saveDestination` default is `['key-value-store']`; accepts `'key-value-store'` and `'dataset'`; rejects unknown strings
+- The five removed boolean fields (`saveRawHtmlToKeyValueStore`, `saveExtractedTextToKeyValueStore`, `saveExtractedJsonToKeyValueStore`, `saveExtractedMarkdownToKeyValueStore`, `saveExtractedHtmlToKeyValueStore`) are not present on the inferred input type
+
+### `apps/apify-actor/src/config.test.ts` (new)
+
+- `save: ['txt', 'json']` → `formats` is `['txt', 'json']`
+- `save: ['original']` → after filtering, `formats` is empty → falls back to `['markdown']`
+- `save: ['txt', 'original', 'json']` → `original` filtered out → `formats` is `['txt', 'json']`
+
+### `apps/apify-actor/src/sinks.test.ts` (new)
+
+- `saveDestination: ['key-value-store']`: KVS `setValue` is called; dataset item contains only URL-reference fields, not raw string content
+- `saveDestination: ['dataset']`: content appears as string fields on the dataset item; KVS `setValue` is not called for content
+- `saveOriginal: true, saveDestination: ['key-value-store']`: KVS key for raw HTML is `${keyBase}-original.html`, not `${keyBase}-raw.html`
 

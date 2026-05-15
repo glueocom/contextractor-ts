@@ -50,13 +50,23 @@ describe('toApifyInputSchema', () => {
     expect(startUrls?.prefill).toEqual([{ url: 'https://blog.apify.com/what-is-web-scraping/' }]);
   });
 
-  it('emits launcher as a select with the documented enum and default', () => {
+  it('emits crawlerType as a select with the documented enum and default', () => {
     const out = toApifyInputSchema(ContextractorInput, { title: 'Contextractor' });
-    const launcher = out.properties.launcher;
-    expect(launcher?.editor).toBe('select');
-    expect(launcher?.enum).toEqual(['CHROMIUM', 'FIREFOX']);
-    expect(launcher?.enumTitles).toEqual(['Chromium', 'Firefox']);
-    expect(launcher?.default).toBe('CHROMIUM');
+    const crawlerType = out.properties.crawlerType;
+    expect(crawlerType?.editor).toBe('select');
+    expect(crawlerType?.enum).toEqual([
+      'playwright:adaptive',
+      'playwright:firefox',
+      'playwright:chromium',
+      'cheerio',
+    ]);
+    expect(crawlerType?.enumTitles).toEqual([
+      'Adaptive switching (Recommended)',
+      'Headless browser (Firefox+Playwright)',
+      'Headless browser (Chromium+Playwright)',
+      'Raw HTTP client (Cheerio)',
+    ]);
+    expect(crawlerType?.default).toBe('playwright:adaptive');
   });
 
   it('marks initialCookies as secret', () => {

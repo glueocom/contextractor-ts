@@ -11,7 +11,7 @@ Audit `.claude/`, `CLAUDE.md`, `.mcp.json`, `settings.json`. Does NOT touch `pro
 
 No args = full audit. With path = fix that file/folder only.
 
-## 1. Inventory
+## Step INVENTORY
 
 Run in parallel:
 
@@ -26,11 +26,11 @@ Also read: `CLAUDE.md`, `.claude/settings.json`, `.mcp.json`, `.claude/rules/*.m
 
 In path-specific mode, read only the target — skip to step 3.
 
-## 2. Codebase Scan
+## Step SCAN: Codebase Scan
 
 Read `package.json`, `src/` files, `.actor/actor.json` to build a technology domain map. Identify frameworks, tools, and key domains actually in use.
 
-## 3. Gap Analysis
+## Step ANALYZE: Gap Analysis
 
 Compare inventory against codebase. Find:
 
@@ -63,7 +63,7 @@ Compare inventory against codebase. Find:
 - Commands: must have `description`
 - All `skills:` references in agents must resolve to `.claude/skills/{name}/SKILL.md`
 
-## 4. Cleanup (Interactive)
+## Step CLEANUP: Cleanup (Interactive)
 
 Present findings in a table (file, lines, issue) and use `AskUserQuestion` to confirm: **delete**, **keep**, or **trim**.
 
@@ -73,7 +73,7 @@ After confirmation:
 - Trim bloated files
 - Sync `.mcp.json` ↔ `settings.json`
 
-## 5. Validate
+## Step VALIDATE
 
 ```bash
 # Skill references resolve

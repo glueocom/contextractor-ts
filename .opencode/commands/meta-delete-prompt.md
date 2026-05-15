@@ -12,42 +12,42 @@ Safely delete an agent, skill, command, or rule and clean up all references.
 
 ## Process
 
-1. **Validate target exists**
-   ```bash
-   test -f "$ARGUMENTS" || echo "File not found"
-   ```
+- **Validate target exists**
+  ```bash
+  test -f "$ARGUMENTS" || echo "File not found"
+  ```
 
-2. **Extract identifier**
-   - Agent: `name:` from frontmatter
-   - Skill: directory name or `name:` from frontmatter
-   - Command: filename without extension
-   - Rule: filename without extension
+- **Extract identifier**
+  - Agent: `name:` from frontmatter
+  - Skill: directory name or `name:` from frontmatter
+  - Command: filename without extension
+  - Rule: filename without extension
 
-3. **Find all references** (search all .md files)
-   ```bash
-   rg -l "<identifier>" --glob "*.md" .
-   rg -l "<filename>" --glob "*.md" .
-   rg -l "<path>" --glob "*.md" .
-   ```
+- **Find all references** (search all .md files)
+  ```bash
+  rg -l "<identifier>" --glob "*.md" .
+  rg -l "<filename>" --glob "*.md" .
+  rg -l "<path>" --glob "*.md" .
+  ```
 
-4. **Show references for confirmation**
-   - List all files containing references
-   - Show context snippets
-   - Ask user to confirm deletion
+- **Show references for confirmation**
+  - List all files containing references
+  - Show context snippets
+  - Ask user to confirm deletion
 
-5. **Remove references**
-   - Edit each file to remove/comment out references
-   - Handle: `skills:` lists, CLAUDE.md mentions, agent descriptions, imports
+- **Remove references**
+  - Edit each file to remove/comment out references
+  - Handle: `skills:` lists, CLAUDE.md mentions, agent descriptions, imports
 
-6. **Delete the file**
-   ```bash
-   rm "$ARGUMENTS"
-   ```
+- **Delete the file**
+  ```bash
+  rm "$ARGUMENTS"
+  ```
 
-7. **Clean up empty directories**
-   ```bash
-   find .claude -type d -empty -delete
-   ```
+- **Clean up empty directories**
+  ```bash
+  find .claude -type d -empty -delete
+  ```
 
 ## Reference Patterns to Search
 

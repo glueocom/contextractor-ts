@@ -7,6 +7,16 @@ _AM_OPENCODE_LIB=1
 # Launcher that sources .env before invoking opencode.
 _OPENCODE_BIN="$(dirname "${BASH_SOURCE[0]}")/../../../opencode/opencode.sh"
 
+# Resolve a cross-platform timeout command: prefer gtimeout (macOS coreutils),
+# fall back to timeout (Linux), or empty string (run without timeout limit).
+if command -v gtimeout >/dev/null 2>&1; then
+  _TIMEOUT_CMD="gtimeout"
+elif command -v timeout >/dev/null 2>&1; then
+  _TIMEOUT_CMD="timeout"
+else
+  _TIMEOUT_CMD=""
+fi
+
 # Run an opencode slash command in an isolated session.
 # Streams all output to stdout so it appears live in the terminal.
 # Times out after OPENCODE_TIMEOUT seconds (default: 600) so stalled steps
@@ -22,13 +32,20 @@ opencode_run() {
   fi
   echo ""
   echo "[opencode] Running $cmd ..."
-  timeout "$timeout_sec" "$_OPENCODE_BIN" run "$cmd" || {
-    local ec=$?
-    if [[ $ec -eq 124 ]]; then
-      echo "[opencode] TIMEOUT: $cmd timed out after ${timeout_sec}s — skipping"
-    else
-      echo "[opencode] SKIPPED: $cmd exited with code $ec"
-    fi
-    return 0
-  }
+  if [[ -n "$_TIMEOUT_CMD" ]]; then
+    $_TIMEOUT_CMD "$timeout_sec" "$_OPENCODE_BIN" run "$cmd" || {
+      local ec=$?
+      if [[ $ec -eq 124 ]]; then
+        echo "[opencode] TIMEOUT: $cmd timed out after ${timeout_sec}s — skipping"
+      else
+        echo "[opencode] SKIPPED: $cmd exited with code $ec"
+      fi
+      return 0
+    }
+  else
+    "$_OPENCODE_BIN" run "$cmd" || {
+      echo "[opencode] SKIPPED: $cmd exited with code $?"
+      return 0
+    }
+  fi
 }

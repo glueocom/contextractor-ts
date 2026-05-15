@@ -1,35 +1,46 @@
 # Storage Feature — Full Implementation
 
-Run all five steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
+> **TLDR**: Orchestrates a full feature build in seven ordered steps: remove Docker, refactor the schema, add a Crawlee-backed storage layer, create examples, then verify with two auto-fix passes and a full monorepo test suite.
+
+Run all steps in order. Each step must complete and pass before the next begins. Read each referenced file in full before executing it.
 
 ## What this builds
 
-- Unified `save` / `saveDestination` schema fields replacing four boolean save flags; `original` format for raw HTML
-- Apify/Crawlee-compatible local storage layer (`Dataset`, `KeyValueStore`), new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`, `serve`), and an HTTP API mirroring Apify v2
-- Docker image (multi-arch) and `docker-compose.yml`
-- Seven self-contained example projects under `examples/`
+- Unified `save` / `saveDestination` schema fields replacing five boolean save flags; `original` format for raw HTML
+- Crawlee-backed storage layer (`Dataset`, `KeyValueStore`) with new CLI subcommands (`extract`, `list`, `get`, `kvs`, `purge`, `storage-dir`); Crawlee types re-exported from the library
+- Four self-contained example projects under `examples/`
+
+Shipping targets: **Apify Actor** and **npm package** (CLI + library).
+
+## Step REMOVE-DOCKER: Remove Docker Distribution
+
+Read and execute [`0-remove-docker.md`](./0-remove-docker.md).
+
+Removes the Dockerfile, docker-compose.yml, Docker examples, Docker-mode serve logic, and all Docker references in specs and docs.
+
+Commit when complete.
 
 ## Step SCHEMA: Schema Refactor
 
 Read and execute [`1-schema-refactor.md`](./1-schema-refactor.md).
 
-Replaces the four boolean save fields with `save` (enum array) and `saveDestination`, adds the `original` format, restructures `packages/schema/src/` into `source-of-truth/` and `apify/` subdirectories, and adds a new output schema.
+Replaces the five boolean save fields with `save` (enum array) and `saveDestination`, adds the `original` format, restructures `packages/schema/src/` into `source-of-truth/` and `apify/` subdirectories, and adds a new output schema.
 
 Commit when complete.
 
-## Step STORAGE: Storage Layer, Serve, and Docker
+## Step STORAGE: Storage Layer
 
 Read and execute [`2-storage.md`](./2-storage.md).
 
-Builds the storage helper module, wires all new CLI subcommands, implements the `serve` HTTP API with npm/Docker security split, adds the Dockerfile and `docker-compose.yml`. Read the five research files in `./research/` before designing anything — they are referenced throughout.
+Builds the Crawlee-backed storage module, wires all new CLI subcommands, re-exports Crawlee types from the library. Read the six research files in `./research/` before designing anything — they are referenced throughout.
 
-Commit after each discrete implementation task (storage module, CLI wiring, serve, Dockerfile, docker-compose, README).
+Commit after each discrete implementation task (storage module, CLI wiring, README).
 
 ## Step EXAMPLES: Example Projects
 
 Read and execute [`3-examples.md`](./3-examples.md).
 
-Creates seven self-contained examples under `examples/`: `library-ts/`, `cli-npm/`, `cli-docker/`, `docker-compose/`, `docker-api-ts/`, `apify-api-ts/`, `cli-apify/`.
+Creates four self-contained examples under `examples/`: `library-ts/`, `cli-npm/`, `apify-api-ts/`, `cli-apify/`.
 
 Commit when complete.
 
@@ -45,6 +56,14 @@ Do not proceed to the next step until all criteria pass.
 
 Read and execute [`5-auto-fixing-examples.md`](./5-auto-fixing-examples.md).
 
-Reviews every example project for correctness (content, structure, security invariants), runs TypeScript compilation and docker-compose validation, and fixes every failure. Appends examples findings to `report.md`.
+Reviews every example project for correctness (content, structure, security invariants), runs TypeScript compilation, and fixes every failure. Appends examples findings to `report.md`.
+
+Do not mark complete until all checks pass.
+
+## Step UNIT-TESTS: Full Test Suite
+
+Read and execute [`6-unit-tests.md`](./6-unit-tests.md).
+
+Audits every package and app in the repo for unit test coverage gaps, writes missing tests, and ensures `pnpm build && pnpm lint && pnpm test && cargo test --workspace` all pass green.
 
 Do not mark complete until all checks pass.

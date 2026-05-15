@@ -3,48 +3,39 @@
   "fields": {
     "loadedUrl": {
       "type": "string",
-      "title": "Loaded URL",
       "description": "The URL that was loaded"
     },
     "httpStatus": {
       "type": "integer",
-      "title": "HTTP Status",
       "description": "HTTP response status code"
     },
     "loadedAt": {
       "type": "string",
-      "title": "Loaded At",
       "description": "ISO 8601 timestamp when the page was loaded"
     },
     "metadata": {
       "type": "object",
-      "title": "Metadata",
       "description": "Extracted page metadata"
     },
-    "rawHtml": {
+    "original": {
       "type": "object",
-      "title": "Raw HTML",
-      "description": "Info about raw HTML (hash, length, optionally key and url)"
+      "description": "Raw page HTML captured before extraction. Present when \"original\" is in save."
     },
-    "extractedMarkdown": {
+    "txt": {
       "type": "object",
-      "title": "Extracted Markdown",
-      "description": "Info about extracted Markdown content"
+      "description": "Extracted plain text. Present when \"txt\" is in save."
     },
-    "extractedText": {
+    "markdown": {
       "type": "object",
-      "title": "Extracted Text",
-      "description": "Info about extracted plain text content"
+      "description": "Extracted Markdown. Present when \"markdown\" is in save."
     },
-    "extractedJson": {
+    "json": {
       "type": "object",
-      "title": "Extracted JSON",
-      "description": "Info about extracted JSON content"
+      "description": "Extracted structured JSON with metadata. Present when \"json\" is in save."
     },
-    "extractedHtml": {
+    "html": {
       "type": "object",
-      "title": "Extracted HTML",
-      "description": "Info about extracted HTML content"
+      "description": "Cleaned extracted HTML. Present when \"html\" is in save."
     }
   },
   "views": {

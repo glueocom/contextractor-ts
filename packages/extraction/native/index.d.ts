@@ -26,8 +26,6 @@ export interface TrafilaturaConfig {
   onlyWithMetadata?: boolean
   /** Forward-compat — rs-trafilatura 0.2.x has no XML-TEI; flag is ignored. */
   teiValidation?: boolean
-  urlBlacklist?: Array<string>
-  authorBlacklist?: Array<string>
 }
 /** Options for a single extraction call. */
 export interface ExtractOptions {

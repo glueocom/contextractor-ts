@@ -9,4 +9,6 @@ export interface ExtractionResult {
   formats: Partial<Record<OutputFormat, string>>;
   rawHtmlHash: string;
   rawHtmlLength: number;
+  crawlDepth: number;
+  referrerUrl: string | null;
 }

@@ -29,8 +29,8 @@ describe('emitters', () => {
   it('enum-values lists enum fields with their titles', () => {
     const out = emitters['enum-values']?.();
     expect(out).toBeDefined();
-    expect(out).toContain('### `launcher`');
-    expect(out).toContain('| `CHROMIUM` | Chromium |');
+    expect(out).toContain('### `crawlerType`');
+    expect(out).toContain('| `playwright:adaptive` | Adaptive switching (Recommended) |');
     expect(out).toContain('### `waitUntil`');
     expect(out).toContain('### `proxyRotation`');
   });

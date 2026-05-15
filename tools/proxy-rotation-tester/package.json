@@ -1,0 +1,21 @@
+{
+  "name": "proxy-rotation-tester",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Test suite for proxy rotation across Contextractor entry points",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@contextractor/crawler": "workspace:*",
+    "@contextractor/extraction": "workspace:*",
+    "@contextractor/schema": "workspace:*",
+    "proxy-chain": "^2.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.3.3",
+    "vitest": "^4.1.6"
+  }
+}
