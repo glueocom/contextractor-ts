@@ -2,7 +2,7 @@
 
 > **TLDR**: Two surgical fixes for gaps left after the storage feature landed: exit code 2 for partial extraction failures and the missing `DatasetContent` re-export from the standalone library.
 
-These two fixes are independent of each other and orthogonal to `optimize-cli-args.md` — the exit code fix targets the `failedRecords` block at the end of `runExtractAction()` which `optimize-cli-args.md` does not touch; the re-export fix is in `index.ts` which that prompt does not touch.
+These two fixes are independent of each other and orthogonal to `1-optimize-cli-args.md` — the exit code fix targets the `failedRecords` block at the end of `runExtractAction()` which `1-optimize-cli-args.md` does not touch; the re-export fix is in `index.ts` which that prompt does not touch.
 
 Read `apps/standalone/src/cliProgram.ts` and `apps/standalone/src/index.ts` in full before making any change. Do not touch unrelated code.
 
@@ -32,7 +32,7 @@ History: the original implementation defined `DatasetContent` as an inline inter
 
 **File**: `apps/standalone/src/cliProgram.ts`
 
-`runExtractAction()` collects failures in `failedRecords` and pushes each to the local dataset (via `cli-unified-dataset.md`), then falls through — `runCli()` always exits 0 after `program.parseAsync()` returns. There is no mechanism to signal partial failure.
+`runExtractAction()` collects failures in `failedRecords` and pushes each to the local dataset (via `3-cli-unified-dataset.md`), then falls through — `runCli()` always exits 0 after `program.parseAsync()` returns. There is no mechanism to signal partial failure.
 
 `runExtractAction()` already calls `process.exit(1)` directly in several places (malformed proxy URL, schema parse failure). The consistent fix is a direct `process.exit(2)` at the end of the function, after the crawler has finished and all dataset writes have completed.
 

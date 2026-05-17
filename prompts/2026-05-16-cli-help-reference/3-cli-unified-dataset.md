@@ -113,7 +113,7 @@ if (failedRecords.length > 0) {
 }
 ```
 
-Keep the `failedRecords` array declaration and the push inside `onFailedRequest` — `failedRecords.length > 0` is the condition used by the exit code 2 fix (`implement-storage-gaps.md`).
+Keep the `failedRecords` array declaration and the push inside `onFailedRequest` — `failedRecords.length > 0` is the condition used by the exit code 2 fix (`4-implement-storage-gaps.md`).
 
 ### Skipped records
 

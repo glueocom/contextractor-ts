@@ -2,7 +2,7 @@
 
 > **TLDR**: Removes three backward-compat constructs that serve no purpose after clean-break changes: silent YAML config parsing in `loadConfigFile()`, the no-subcommand URL shorthand (`contextractor <url>` without `extract`), and the `normalizeConfigKeys` / `toCamelCase` snake_case normalization utilities.
 
-Items 1 and 2 (YAML, root shorthand) are independent and can run in any order. Item 3 (`normalizeConfigKeys`) depends on `optimize-cli-args.md` being applied first — it removes the `trafilaturaConfig` call sites that are the only callers.
+Items 1 and 2 (YAML, root shorthand) are independent and can run in any order. Item 3 (`normalizeConfigKeys`) depends on `1-optimize-cli-args.md` being applied first — it removes the `trafilaturaConfig` call sites that are the only callers.
 
 Read `apps/standalone/src/config.ts`, `apps/standalone/src/cliProgram.ts`, and `packages/extraction/src/index.ts` in full before making any change. Do not touch unrelated code.
 
@@ -75,23 +75,23 @@ Apply to every option-presence test in `cli.test.ts` that calls `program.options
 
 ## Drop: `normalizeConfigKeys` and `toCamelCase`
 
-**Prerequisite**: Apply `optimize-cli-args.md` first. It removes `trafilaturaConfig` from both apps' schemas and configs, eliminating the only callers of `normalizeConfigKeys`.
+**Prerequisite**: Apply `1-optimize-cli-args.md` first. It removes `trafilaturaConfig` from both apps' schemas and configs, eliminating the only callers of `normalizeConfigKeys`.
 
 **File**: `packages/extraction/src/index.ts`
 
 `normalizeConfigKeys()` is a public export that normalizes a `Record<string, unknown>` — accepting both snake_case and camelCase keys — and merges the result over `DEFAULT_CONFIG`. Its only callers after schema promotion are:
-- `apps/standalone/src/config.ts:146` — removed by `optimize-cli-args.md`
-- `apps/apify-actor/src/config.ts:31` — removed by `optimize-cli-args.md`
+- `apps/standalone/src/config.ts:146` — removed by `1-optimize-cli-args.md`
+- `apps/apify-actor/src/config.ts:31` — removed by `1-optimize-cli-args.md`
 
 Once those callers are gone, `normalizeConfigKeys` and its private `toCamelCase` helper are dead exports. Remove both from `packages/extraction/src/index.ts`.
 
-Verify first that `optimize-cli-args.md` has been applied:
+Verify first that `1-optimize-cli-args.md` has been applied:
 
 ```bash
 grep -rn 'normalizeConfigKeys' apps/
 ```
 
-Must return no matches before proceeding. If matches remain, apply `optimize-cli-args.md` first.
+Must return no matches before proceeding. If matches remain, apply `1-optimize-cli-args.md` first.
 
 **File**: `packages/extraction/src/index.test.ts`
 
