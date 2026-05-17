@@ -1,5 +1,5 @@
 import { realpathSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import path, { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -188,7 +188,7 @@ function addExtractionOptions(cmd: Command): Command {
       [] as string[],
     )
     .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .option('--store-skipped-urls', 'Write skipped-urls.json to output dir after crawl')
+    .option('--store-skipped-urls', 'Push skipped URL records to the dataset after crawl')
     .option(
       '--dynamic-content-wait <seconds>',
       'Seconds to wait for network idle after navigation (0 = disabled)',
@@ -420,8 +420,6 @@ async function runExtractAction(
     retryCount: number;
   }> = [];
 
-  const skippedRecords: Array<{ url: string; status: 'skipped'; skipReason: string }> = [];
-
   const crawler = createContextractorCrawler({
     startUrls: cfg.urls,
     sink,
@@ -468,31 +466,25 @@ async function runExtractAction(
         errorMessages: info.errorMessages,
         retryCount: info.retryCount,
       });
+      await ds.pushData({
+        url: info.url,
+        loadedUrl: info.loadedUrl,
+        status: 'failed',
+        errorMessages: info.errorMessages,
+        retryCount: info.retryCount,
+        crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      });
     },
     ...(opts.storeSkippedUrls
       ? {
           onSkippedUrl: (url, reason) => {
-            skippedRecords.push({ url, status: 'skipped', skipReason: reason });
+            void ds.pushData({ url, status: 'skipped', skipReason: reason });
           },
         }
       : {}),
   });
 
   await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));
-
-  if (failedRecords.length > 0) {
-    await mkdir(cfg.outputDir, { recursive: true });
-    const outPath = path.join(cfg.outputDir, 'failed-urls.json');
-    await writeFile(outPath, JSON.stringify(failedRecords, null, 2));
-    process.stderr.write(`Failed URLs written to ${outPath}\n`);
-  }
-
-  if (opts.storeSkippedUrls && skippedRecords.length > 0) {
-    await mkdir(cfg.outputDir, { recursive: true });
-    const outPath = path.join(cfg.outputDir, 'skipped-urls.json');
-    await writeFile(outPath, JSON.stringify(skippedRecords, null, 2));
-    process.stderr.write(`Skipped URLs written to ${outPath}\n`);
-  }
 
   process.stderr.write('Done.\n');
 }

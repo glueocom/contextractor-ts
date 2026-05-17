@@ -123,6 +123,22 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
   });
 
+  it('sets status success on dataset record', async () => {
+    const kvs = makeKvs();
+    const dataset = makeDataset();
+    const sink = createCrawleeStorageSink({
+      destinations: ['dataset'],
+      kvs: kvs as never,
+      dataset: dataset as never,
+      formats: ['txt'],
+    });
+
+    await sink(BASE_RESULT);
+
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect(item.status).toBe('success');
+  });
+
   it('includes metadata fields in dataset record', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();

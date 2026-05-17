@@ -46,6 +46,7 @@ export function createCrawleeStorageSink(opts: {
     if (toDataset) {
       const record: Record<string, unknown> = {
         url: result.url,
+        status: 'success',
         ...result.metadata,
         originalHash: result.rawHtmlHash,
         crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
