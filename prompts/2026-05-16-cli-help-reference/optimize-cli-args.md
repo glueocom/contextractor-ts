@@ -94,7 +94,17 @@ Remove `trafilaturaConfig`. Add these individual fields at the top level (defaul
 
 `favorPrecision` and `favorRecall` are subsumed by the `--mode` flag above — do not add them as schema fields. `teiValidation` is a forward-compat placeholder with no runtime effect — drop it.
 
-Group these under `apifyMeta({ sectionCaption: 'Content extraction' })` to preserve the Apify console section.
+For the Apify console, group all promoted fields under `apifyMeta({ sectionCaption: 'Content extraction' })`. Use appropriate editor overrides:
+- Boolean fields: no override needed (renders as toggle by default)
+- `targetLanguage`: `apifyMeta({ editor: 'textfield', sectionCaption: 'Content extraction' })`
+
+After updating the Zod schema, regenerate the Apify input schema:
+
+```bash
+pnpm --filter @contextractor/gen-input-schema start
+```
+
+This replaces the single `trafilaturaConfig` JSON editor entry with individual typed properties in `apps/apify-actor/.actor/input_schema.json`. Verify the output contains each promoted field at the top level and no longer contains `trafilaturaConfig`.
 
 ### In `apps/standalone/src/cliProgram.ts` — `buildSchemaOverrides()`
 
@@ -153,6 +163,78 @@ Apply in `apps/standalone/src/config.ts` and `apps/apify-actor/src/config.ts`.
 
 Before: `{ "trafilaturaConfig": { "includeTables": false } }`
 After: `{ "includeTables": false }` — top-level, consistent with all other fields.
+
+## Fix: `@contextractor/crawler` package API — `ContextractorCrawlerOptions`
+
+`ContextractorCrawlerOptions` in `packages/crawler/src/createCrawler.ts` currently exposes the internal binding type directly: `extractionConfig?: TrafilaturaConfig`. External callers must know about `TrafilaturaConfig` and construct it themselves. Replace with individual named options matching the promoted Zod schema fields. The `TrafilaturaConfig` assembly moves inside the package.
+
+### In `packages/crawler/src/createCrawler.ts`
+
+Replace `extractionConfig?: TrafilaturaConfig` in `ContextractorCrawlerOptions` with:
+
+```ts
+// Remove:
+//   extractionConfig?: TrafilaturaConfig;
+
+// Add (names match promoted Zod schema fields):
+mode?: 'precision' | 'balanced' | 'recall';
+fast?: boolean;
+includeComments?: boolean;
+includeTables?: boolean;
+includeImages?: boolean;
+includeFormatting?: boolean;
+includeLinks?: boolean;
+deduplicate?: boolean;
+targetLanguage?: string | null;
+withMetadata?: boolean;
+onlyWithMetadata?: boolean;
+```
+
+Add a private helper at the top of `createCrawler.ts` that assembles `TrafilaturaConfig` from the individual options:
+
+```ts
+import { DEFAULT_CONFIG, type TrafilaturaConfig } from '@contextractor/extraction';
+
+function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    fast: opts.fast ?? DEFAULT_CONFIG.fast,
+    favorPrecision: opts.mode === 'precision',
+    favorRecall: opts.mode === 'recall',
+    includeComments: opts.includeComments ?? DEFAULT_CONFIG.includeComments,
+    includeTables: opts.includeTables ?? DEFAULT_CONFIG.includeTables,
+    includeImages: opts.includeImages ?? DEFAULT_CONFIG.includeImages,
+    includeFormatting: opts.includeFormatting ?? DEFAULT_CONFIG.includeFormatting,
+    includeLinks: opts.includeLinks ?? DEFAULT_CONFIG.includeLinks,
+    deduplicate: opts.deduplicate ?? DEFAULT_CONFIG.deduplicate,
+    targetLanguage: opts.targetLanguage ?? DEFAULT_CONFIG.targetLanguage,
+    withMetadata: opts.withMetadata ?? DEFAULT_CONFIG.withMetadata,
+    onlyWithMetadata: opts.onlyWithMetadata ?? DEFAULT_CONFIG.onlyWithMetadata,
+    teiValidation: false,
+  };
+}
+```
+
+Replace each `extractionConfig: opts.extractionConfig` call site in `createContextractorCrawler()` with `extractionConfig: toTrafilaturaConfig(opts)`.
+
+### In `packages/crawler/src/handler.ts`
+
+The handler opts type (`HandlerOpts` or equivalent) currently takes `extractionConfig?: TrafilaturaConfig`. Since `toTrafilaturaConfig()` is called once in `createContextractorCrawler()`, pass the assembled `TrafilaturaConfig` through to the handler as before — no change needed in handler.ts beyond whatever type adjustments follow from the `createCrawler.ts` refactor.
+
+### In both apps — caller side
+
+The apps' `toExtractionConfig()` (or `buildCrawlerOpts()`) now passes individual fields to `createContextractorCrawler()` instead of a pre-assembled `TrafilaturaConfig`:
+
+```ts
+// Before:
+extractionConfig: toExtractionConfig(input),
+
+// After:
+mode: input.mode,
+fast: input.fast,
+includeComments: input.includeComments,
+// … one field per promoted schema field
+```
 
 ## Fix: Asymmetric boolean pairs (CLI flags)
 
@@ -270,5 +352,7 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 - Update `apps/standalone/SPEC.md` with renamed flags
 - Verify with `node apps/standalone/dist/cli.js --help` — old names must not appear
 - Run `grep -r 'include-tables\|with-metadata\|include-formatting\|proxy-urls\|--globs\|--excludes\|--precision\|--recall' apps/` — must return no matches (note: `--mode precision` and `--mode recall` are the new spellings and should appear instead)
-- Run `grep -rn 'trafilaturaConfig\|normalizeConfigKeys' apps/` — must return no matches; both are eliminated from the app layer (they may still appear in `packages/extraction/` as the internal binding helpers)
+- Run `grep -rn 'trafilaturaConfig\|normalizeConfigKeys' apps/` — must return no matches; both are eliminated from the app layer (they may still appear in `packages/extraction/` as internal binding helpers)
+- Run `grep -n 'extractionConfig' packages/crawler/src/createCrawler.ts` — must return no matches in `ContextractorCrawlerOptions`; `extractionConfig` may still appear inside `createContextractorCrawler()` as the assembled value passed to handlers
+- Verify `apps/apify-actor/.actor/input_schema.json` contains each promoted field (`fast`, `includeTables`, etc.) at the top level and no longer contains `trafilaturaConfig`
 - Run `grep -n 'default: \./output\|0 = unlimited\|0 = Crawlee default' apps/standalone/src/cliProgram.ts` — first two must return no matches; `"0 = Crawlee default"` on `--initial-concurrency` is the one intentional exception
