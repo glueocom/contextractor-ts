@@ -12,10 +12,6 @@ const WAIT_UNTIL_MAP = {
   DOMCONTENTLOADED: 'domcontentloaded',
 } as const;
 
-interface YamlModule {
-  parse(text: string): unknown;
-}
-
 function isSaveFormat(value: string): value is SaveFormat {
   switch (value) {
     case 'markdown':
@@ -159,19 +155,11 @@ export function buildCrawlConfig(
 export async function loadConfigFile(filePath: string): Promise<Partial<ContextractorInputType>> {
   const text = await readFile(filePath, 'utf8');
   const ext = path.extname(filePath).toLowerCase();
-  let data: unknown;
 
-  if (ext === '.json') {
-    data = JSON.parse(text);
-  } else if (ext === '.yaml' || ext === '.yml') {
-    data = await loadYaml(text);
-  } else {
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = await loadYaml(text);
-    }
+  if (ext === '.yaml' || ext === '.yml') {
+    throw new Error(`YAML config is not supported. Convert "${filePath}" to JSON format.`);
   }
+  const data = JSON.parse(text);
 
   if (!isRecord(data)) {
     return {};
@@ -179,30 +167,6 @@ export async function loadConfigFile(filePath: string): Promise<Partial<Contextr
   return data;
 }
 
-async function loadYaml(text: string): Promise<Record<string, unknown>> {
-  // Silent YAML support (per `.claude/rules/json-config-only.md`). Lazy-load
-  // through dynamic import so the package stays optional, then narrow the
-  // module shape at runtime without statically depending on `yaml`.
-  let mod: YamlModule | null = null;
-  try {
-    const imported: unknown = await import('yaml' as string);
-    mod = isYamlModule(imported) ? imported : null;
-  } catch {
-    mod = null;
-  }
-  if (!mod || typeof mod.parse !== 'function') {
-    throw new Error(
-      'YAML config requested but the optional `yaml` package is not installed; convert your config to JSON.',
-    );
-  }
-  const out = mod.parse(text);
-  return isRecord(out) ? out : {};
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function isYamlModule(value: unknown): value is YamlModule {
-  return isRecord(value) && typeof value.parse === 'function';
 }

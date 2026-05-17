@@ -187,39 +187,6 @@ export function getDefaultConfig(): TrafilaturaConfig {
   return { ...DEFAULT_CONFIG };
 }
 
-/**
- * Normalize a config dict from external input (JSON, API). Accepts both
- * camelCase and snake_case. Unknown / `null` / `undefined` values are
- * dropped. Returned object merges over `DEFAULT_CONFIG`.
- */
-export function normalizeConfigKeys(
-  input: Record<string, unknown> | null | undefined,
-): TrafilaturaConfig {
-  const out: TrafilaturaConfig = { ...DEFAULT_CONFIG };
-  if (!input) return out;
-
-  for (const [rawKey, rawValue] of Object.entries(input)) {
-    if (rawValue === undefined || rawValue === null) continue;
-    const camel = toCamelCase(rawKey);
-    if (camel in out) {
-      (out as unknown as Record<string, unknown>)[camel] = rawValue;
-    }
-  }
-  return out;
-}
-
-function toCamelCase(key: string): string {
-  if (!key.includes('_')) return key;
-  const parts = key.split('_');
-  if (!parts[0]) return key;
-  const head = parts[0];
-  const tail = parts
-    .slice(1)
-    .map((p) => (p.length === 0 ? '' : (p[0]?.toUpperCase() ?? '') + p.slice(1)))
-    .join('');
-  return head + tail;
-}
-
 function toNativeConfig(config: TrafilaturaConfig): NativeTrafilaturaConfig {
   const out: NativeTrafilaturaConfig = {
     fast: config.fast,

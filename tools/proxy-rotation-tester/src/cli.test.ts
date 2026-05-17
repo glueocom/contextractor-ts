@@ -65,6 +65,7 @@ describe('Proxy Rotation - CLI', () => {
           'node',
           [
             cliBin,
+            'extract',
             'http://example.com',
             '--output-dir',
             outputDir,

@@ -528,15 +528,6 @@ export function buildProgram(): Command {
     .description('Extract web content from URLs using configurable extraction options.')
     .version('0.1.0');
 
-  // Root command — backwards-compatible single-URL shorthand.
-  // `contextractor https://example.com` routes here (not a subcommand).
-  addExtractionOptions(program);
-  program
-    .argument('[urls...]', 'URLs to extract content from')
-    .action(async (urls: string[], opts: ExtractOpts) => {
-      await runExtractAction(urls, opts);
-    });
-
   // ---------------------------------------------------------------------------
   // extract subcommand — explicit named form
   // ---------------------------------------------------------------------------

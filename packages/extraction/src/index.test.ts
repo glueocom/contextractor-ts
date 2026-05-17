@@ -4,7 +4,6 @@ import {
   computeContentInfo,
   DEFAULT_CONFIG,
   getDefaultConfig,
-  normalizeConfigKeys,
   projectMetadata,
 } from './index.js';
 
@@ -65,18 +64,6 @@ describe('config helpers', () => {
     const b = getDefaultConfig();
     expect(a).toEqual(DEFAULT_CONFIG);
     expect(a).not.toBe(b);
-  });
-
-  it('normalizeConfigKeys accepts snake_case and camelCase', () => {
-    const out = normalizeConfigKeys({ favor_precision: true, includeImages: true });
-    expect(out.favorPrecision).toBe(true);
-    expect(out.includeImages).toBe(true);
-    expect(out.fast).toBe(DEFAULT_CONFIG.fast);
-  });
-
-  it('normalizeConfigKeys ignores unknown and null values', () => {
-    const out = normalizeConfigKeys({ unknownField: 'ignored', includeLinks: null });
-    expect(out.includeLinks).toBe(DEFAULT_CONFIG.includeLinks);
   });
 
   it('computeContentInfo returns a stable hash and byte length', () => {

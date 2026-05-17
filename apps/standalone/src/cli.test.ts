@@ -64,59 +64,57 @@ describe('FORMAT_EXTENSIONS', () => {
   });
 });
 
+function getExtractOptions(program: ReturnType<typeof buildProgram>): (string | undefined)[] {
+  const extract = program.commands.find((c) => c.name() === 'extract');
+  return extract?.options.map((o) => o.long) ?? [];
+}
+
 describe('buildProgram — --store-skipped-urls flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--store-skipped-urls');
+    expect(getExtractOptions(program)).toContain('--store-skipped-urls');
   });
 });
 
 describe('buildProgram — --wait-for-selector flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--wait-for-selector');
+    expect(getExtractOptions(program)).toContain('--wait-for-selector');
   });
 });
 
 describe('buildProgram — --soft-wait-for-selector flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--soft-wait-for-selector');
+    expect(getExtractOptions(program)).toContain('--soft-wait-for-selector');
   });
 });
 
 describe('buildProgram — --dynamic-content-wait flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--dynamic-content-wait');
+    expect(getExtractOptions(program)).toContain('--dynamic-content-wait');
   });
 });
 
 describe('buildProgram — --use-sitemaps flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--use-sitemaps');
+    expect(getExtractOptions(program)).toContain('--use-sitemaps');
   });
 });
 
 describe('buildProgram — --initial-concurrency flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--initial-concurrency');
+    expect(getExtractOptions(program)).toContain('--initial-concurrency');
   });
 });
 
 describe('buildProgram — --ignore-canonical-url flag', () => {
-  it('is a recognized option on the root command', () => {
+  it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    const allOptions = program.options.map((o) => o.long);
-    expect(allOptions).toContain('--ignore-canonical-url');
+    expect(getExtractOptions(program)).toContain('--ignore-canonical-url');
   });
 });
 

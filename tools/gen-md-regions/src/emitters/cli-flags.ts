@@ -8,7 +8,10 @@ export function emitCliFlags(): string {
   rows.push('| Option | Description |');
   rows.push('|--------|-------------|');
 
-  for (const option of program.options) {
+  const extract = program.commands.find((c) => c.name() === 'extract');
+  const options = extract?.options ?? program.options;
+
+  for (const option of options) {
     rows.push(`| ${formatFlags(option)} | ${formatDescription(option.description)} |`);
   }
 

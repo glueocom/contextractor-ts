@@ -5,8 +5,7 @@ Standalone TypeScript CLI for local content extraction. Also exports a programma
 ## Usage
 
 ```bash
-contextractor [OPTIONS] [URLS...]         # backwards-compatible root form
-contextractor extract [URLS...]           # explicit subcommand
+contextractor extract [URLS...]
 contextractor list [dataset]
 contextractor get <dataset> <index>
 contextractor kvs put|get|ls|rm
