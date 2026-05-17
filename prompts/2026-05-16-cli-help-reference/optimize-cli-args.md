@@ -1,5 +1,7 @@
 # Optimize CLI Arguments to Industry Standards
 
+> **TLDR**: Audit and fix `apps/standalone/src/cliProgram.ts` CLI flags to Commander.js v14 and GNU conventions. Covers: replacing `--precision`/`--recall` with `--mode <mode>`, promoting `trafilaturaConfig` fields to top-level schema, fixing asymmetric boolean pairs, switching comma-split flags to repeatable, exposing schema defaults in help output, and dropping low-value parameters.
+
 Audit and fix CLI flags in `apps/standalone/src/cliProgram.ts` to conform to Commander.js v14 and GNU/clig.dev conventions. Clean break — no deprecated aliases, no version bump needed yet.
 
 **Background reading:** `./context/extraction-mode-research.md` documents Trafilatura's three-state precision/recall axis, rs-trafilatura's `Options` surface, and the cross-library naming survey that underpins the `ExtractionMode` enum introduced below.
@@ -89,7 +91,7 @@ Remove `trafilaturaConfig`. Add these individual fields at the top level (defaul
 | `includeLinks` | `z.boolean()` | `true` | |
 | `deduplicate` | `z.boolean()` | `false` | |
 | `targetLanguage` | `z.string().nullable()` | `null` | |
-| `withMetadata` | `z.boolean()` | `false` | |
+| `withMetadata` | `z.boolean()` | `true` | |
 | `onlyWithMetadata` | `z.boolean()` | `false` | |
 
 `favorPrecision` and `favorRecall` are subsumed by the `--mode` flag above — do not add them as schema fields. `teiValidation` is a forward-compat placeholder with no runtime effect — drop it.
@@ -263,12 +265,12 @@ Comma-split breaks on values containing commas (proxy URLs). Repeatable is the c
 | `--globs <patterns>` (comma-split string) | `--glob <pattern>` (repeatable, uses `collect`) |
 | `--excludes <patterns>` (comma-split string) | `--exclude <pattern>` (repeatable, uses `collect`) |
 
-Use the existing `collect` helper (already used by `--save-destination`):
+Use the existing `collectValues` helper (already used by `--save-destination`):
 
 ```ts
-.option('--proxy <url>', 'Proxy URL (repeatable)', collect, [] as string[])
-.option('--glob <pattern>', 'Glob pattern to include (repeatable)', collect, [] as string[])
-.option('--exclude <pattern>', 'Glob pattern to exclude (repeatable)', collect, [] as string[])
+.option('--proxy <url>', 'Proxy URL (repeatable)', collectValues, [] as string[])
+.option('--glob <pattern>', 'Glob pattern to include (repeatable)', collectValues, [] as string[])
+.option('--exclude <pattern>', 'Glob pattern to exclude (repeatable)', collectValues, [] as string[])
 ```
 
 In `buildSchemaOverrides()`, remove `.split(',')` calls — values are already `string[]`:
