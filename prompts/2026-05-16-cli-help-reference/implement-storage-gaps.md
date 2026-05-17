@@ -32,11 +32,11 @@ History: the original implementation defined `DatasetContent` as an inline inter
 
 **File**: `apps/standalone/src/cliProgram.ts`
 
-`runExtractAction()` collects failures in `failedRecords`, writes `failed-urls.json` when any URL fails, then falls through — `runCli()` always exits 0 after `program.parseAsync()` returns. There is no mechanism to signal partial failure.
+`runExtractAction()` collects failures in `failedRecords` and pushes each to the local dataset (via `cli-unified-dataset.md`), then falls through — `runCli()` always exits 0 after `program.parseAsync()` returns. There is no mechanism to signal partial failure.
 
-`runExtractAction()` already calls `process.exit(1)` directly in several places (malformed proxy URL, schema parse failure). The consistent fix is a direct `process.exit(2)` at the end of the function, after all output files are written.
+`runExtractAction()` already calls `process.exit(1)` directly in several places (malformed proxy URL, schema parse failure). The consistent fix is a direct `process.exit(2)` at the end of the function, after the crawler has finished and all dataset writes have completed.
 
-Find the end of `runExtractAction()` — after the `failedRecords` block, the `skippedRecords` block, and the `Done.` stderr write. The final lines currently read:
+Find the end of `runExtractAction()` — after the `failedRecords` push block and the `Done.` stderr write. The final lines currently read:
 
 ```ts
   process.stderr.write('Done.\n');
@@ -51,7 +51,7 @@ Change to:
 }
 ```
 
-The `Done.` message must still print before the exit — exit code 2 means "completed with partial failures", not "crashed". All output files (`failed-urls.json`, `skipped-urls.json`) must be written before `process.exit(2)` is reached; the existing block order already ensures this.
+The `Done.` message must still print before the exit — exit code 2 means "completed with partial failures", not "crashed". All dataset writes complete inside `onFailedRequest` before `crawler.run()` returns, so `failedRecords.length > 0` is a safe check at this point.
 
 ### Step TEST: Verify Exit Code 2
 
@@ -111,4 +111,4 @@ If the module-level `vi.mock` calls interact with other tests in `cli.test.ts`, 
 - `pnpm test` — all tests pass; confirm the new tests are collected and run
 - `grep -n 'DatasetContent' apps/standalone/src/index.ts` — must return a match
 - `grep -n 'process.exit(2)' apps/standalone/src/cliProgram.ts` — must return a match at the end of `runExtractAction()`
-- Verify `Done.` still appears in stderr for both full-success and partial-failure runs (the exit must come after the write)
+- Verify `Done.` still appears in stderr for both full-success and partial-failure runs (the exit must come after the `Done.` write)
