@@ -345,6 +345,51 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 - `--headless`, `--close-cookie-modals` — pass `s.fieldName._def.defaultValue()` (both are `true`; non-obvious)
 - `--initial-concurrency` — keep description `"(0 = Crawlee default)"` as-is; `0` means Crawlee picks at runtime, not a static schema value
 
+## Drop: Remove low-value parameters
+
+See `./context/drop-suggestions-ressearch.md` for the full evidence behind these decisions.
+
+### Extraction settings — drop from schema, CLI, and `ContextractorCrawlerOptions`
+
+**`withMetadata` / `--with-metadata` / `--no-metadata`** — the Rust binding explicitly discards this field (`let _ = cfg.with_metadata`). rs-trafilatura always returns a `Metadata` struct regardless. The `DEFAULT_CONFIG` in TypeScript sets it to `true`, making it a lie that costs a flag. Drop from schema, CLI, and crawler API.
+
+**`teiValidation`** — the Rust binding explicitly discards this field (`let _ = cfg.tei_validation`). rs-trafilatura 0.2.x has no TEI XML output. Drop from schema, CLI, and crawler API.
+
+**`fast`** — the Rust binding maps `fast=true` to `rs.use_fallback_extraction = false`, which is architecturally different from Python trafilatura's `no_fallback` (which skips readability+justext). Users migrating from Python trafilatura will have false expectations. The flag has no meaningful real-world production use (HuggingFace `datatrove`, FineWeb, RefinedWeb all leave it off). Drop from schema, CLI, and crawler API.
+
+**`onlyWithMetadata`** — drops documents lacking date+title+url. Wrong abstraction level for a crawling tool: if the user enqueued a URL, they expect a result. Post-processing filters belong at the consumer layer. Drop from schema, CLI, and crawler API.
+
+**`includeFormatting`** — forced on for markdown output, meaningless for txt output, only matters for HTML output (edge case). Exposing it creates confusion without real control. Drop from schema, CLI, and crawler API. Internally, always pass `true` to the binding.
+
+**`deduplicate`** — segment-level deduplication within a single page extraction. Niche, hard to predict, and the right place to deduplicate is the pipeline layer (Crawlee already deduplicates URLs). Drop from schema, CLI, and crawler API. Internally, always pass `false`.
+
+### Schema-only — drop from `ContextractorInput` and Apify Actor
+
+**`pseudoUrls`** — legacy Apify Actor pattern predating glob support. Fully superseded by `globs` / `excludes`. Drop from the Zod schema and Apify input schema. No CLI flag exists for it.
+
+**`debugLog`** — Apify Actor diagnostic toggle. The CLI already has `-v, --verbose` for debug output. Drop from the Zod schema and Apify input schema; do not expose as a CLI flag.
+
+**`browserLog`** — Apify Actor diagnostic toggle (browser console messages in the run log). High-noise, low-value outside Apify's own diagnostics infrastructure. Drop from the Zod schema and Apify input schema.
+
+### CLI-only — drop from `addExtractionOptions()`
+
+**`--start-url <url>`** — redundant with the positional `[urls...]` argument. Both feed the same `collectedUrls` array in `runExtractAction()`. Drop the flag; positional args are the standard convention for URL inputs. Update the command description accordingly.
+
+### What the promoted extraction surface looks like after drops
+
+The `ContextractorCrawlerOptions` extraction fields (and corresponding Zod schema fields) reduce to:
+
+| Field | Default | Note |
+|---|---|---|
+| `mode` | `'balanced'` | replaces `favorPrecision` + `favorRecall` |
+| `includeComments` | `true` | |
+| `includeTables` | `true` | |
+| `includeImages` | `false` | |
+| `includeLinks` | `true` | |
+| `targetLanguage` | `null` | |
+
+`includeFormatting`, `deduplicate`, `withMetadata`, `onlyWithMetadata`, `fast`, `teiValidation` are all internal implementation details — hardcode them in `toTrafilaturaConfig()` (`includeFormatting: true`, `deduplicate: false`, etc.) and never expose them.
+
 ## After changes
 
 - `pnpm --filter @contextractor/standalone build` — must compile clean
