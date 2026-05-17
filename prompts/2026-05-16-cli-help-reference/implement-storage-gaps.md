@@ -1,8 +1,8 @@
 # Implement Storage Feature Missing Pieces
 
-> **TLDR**: Three surgical fixes for gaps left after the storage feature landed: exit code 2 for partial extraction failures, the missing `DatasetContent` re-export from the standalone library, and a backwards-compatibility test for the `contextractor <url>` no-subcommand shorthand.
+> **TLDR**: Two surgical fixes for gaps left after the storage feature landed: exit code 2 for partial extraction failures and the missing `DatasetContent` re-export from the standalone library.
 
-These fixes are independent of each other. All three are compatible with and orthogonal to `optimize-cli-args.md` — the exit code fix targets the `failedRecords` block at the end of `runExtractAction()` which `optimize-cli-args.md` does not touch; the re-export fix is in `index.ts` which that prompt does not touch; the backwards-compat test uses only positional URLs and no flags.
+These two fixes are independent of each other and orthogonal to `optimize-cli-args.md` — the exit code fix targets the `failedRecords` block at the end of `runExtractAction()` which `optimize-cli-args.md` does not touch; the re-export fix is in `index.ts` which that prompt does not touch.
 
 Read `apps/standalone/src/cliProgram.ts` and `apps/standalone/src/index.ts` in full before making any change. Do not touch unrelated code.
 
@@ -104,44 +104,6 @@ describe('exit code — partial failure', () => {
 ```
 
 If the module-level `vi.mock` calls interact with other tests in `cli.test.ts`, move this test to a separate `apps/standalone/src/exitCode.test.ts` file.
-
-## Fix: Backwards-compatibility test for contextractor URL shorthand
-
-**File**: `apps/standalone/src/cli.test.ts`
-
-The `contextractor https://example.com` shorthand — positional URL, no subcommand — must still route to `runExtractAction` and not be broken by the subcommand additions. No test currently covers this routing path.
-
-Add a structural test that verifies the root command still registers a variadic positional URL argument:
-
-```ts
-describe('backwards compatibility — positional URL shorthand', () => {
-  it('root command accepts positional URLs without a subcommand', () => {
-    const program = buildProgram();
-    const urlsArg = program.registeredArguments[0];
-    expect(urlsArg).toBeDefined();
-    expect(urlsArg?.variadic).toBe(true);
-    expect(urlsArg?._name).toBe('urls');
-  });
-});
-```
-
-This verifies the wiring has not been removed or replaced with a required subcommand. It is a structural test only — it does not verify file output.
-
-Byte-level output verification (as originally specified in `2-storage.md`) requires mocking the full crawler and Crawlee storage APIs. If that test infrastructure is added (e.g., for the exit code 2 test), extend it to verify that the default `outputDir` resolves to `'./output'` and that the crawler is called with the provided URL:
-
-```ts
-it('routes positional URL to extract action with default output dir', async () => {
-  const { createContextractorCrawler } = await import('@contextractor/crawler');
-  await buildProgram().parseAsync(['https://example.com'], { from: 'user' });
-  expect(createContextractorCrawler).toHaveBeenCalledWith(
-    expect.objectContaining({ startUrls: ['https://example.com'] }),
-  );
-});
-```
-
-This second test only works when the crawler and storage mocks from the exit code 2 test are active. Share the mock setup rather than duplicating it.
-
-The test must not reference flag names that `optimize-cli-args.md` renames (`--precision`, `--recall`, `--include-tables`, `--with-metadata`, `--proxy-urls`, `--globs`, `--excludes`, `--start-url`). The positional URL path uses none of them.
 
 ## After changes
 
