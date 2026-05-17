@@ -27,7 +27,8 @@ RUN corepack enable && pnpm install
 # Copy sources needed for the build.
 COPY tsconfig.json ./
 COPY packages/schema/ packages/schema/
-COPY packages/extraction/ packages/extraction/
+COPY packages/extraction/src/ packages/extraction/src/
+COPY packages/extraction/tsconfig.json packages/extraction/
 COPY packages/crawler/ packages/crawler/
 COPY apps/standalone/ apps/standalone/
 COPY apps/apify-actor/ apps/apify-actor/
