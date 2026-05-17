@@ -137,46 +137,62 @@ Update `ExtractOpts`: `proxyUrls?: string` → `proxy?: string[]`; `globs?: stri
 
 ## Fix: Show defaults and required indicators in help output
 
-Commander.js v14 auto-appends `(default: value)` to help text when a default is passed at option-definition time. Currently, most options omit the default from the Commander call (leaving it to the schema layer at runtime), so help output shows nothing. Fix the options where the default is known statically.
+Commander.js v14 auto-appends `(default: value)` to help text when a default is passed at option-definition time. Nearly all defaults already live in `packages/schema/src/source-of-truth/input.ts` — that is the single source of truth. Do not hardcode values in Commander calls; read them from the schema so a change propagates automatically to `--help`.
 
-**String options with a static default** — pass the default as the third arg to `.option()`, and remove any manual "(default: …)" from the description string:
+**Pattern — read schema defaults in `cliProgram.ts`** (`ContextractorInput` is already imported):
+
+```ts
+const s = ContextractorInput.shape;
+// s.headless._def.defaultValue()           → true
+// s.maxPagesPerCrawl._def.defaultValue()   → 0
+// s.pageLoadTimeoutSecs._def.defaultValue() → 60
+// s.maxConcurrency._def.defaultValue()     → 50
+```
+
+**Numeric options where `0` has a special meaning** — use `.default(value, 'label')` for a human-readable label:
+
+```ts
+new Option('--max-pages <n>', 'Max pages to crawl', toInt)
+  .default(s.maxPagesPerCrawl._def.defaultValue(), 'unlimited')
+// help → --max-pages <n>  Max pages to crawl (default: unlimited)
+```
+
+**Numeric options with a meaningful non-zero default** — pass schema value directly:
+
+```ts
+new Option('--page-load-timeout <secs>', 'Page load timeout in seconds', toInt)
+  .default(s.pageLoadTimeoutSecs._def.defaultValue())
+// help → --page-load-timeout <secs>  Page load timeout in seconds (default: 60)
+```
+
+**Boolean flags with a non-obvious `true` default** — `headless` and `closeCookieModals` both default to `true` in the schema. Pass the schema value so `--help` reveals this:
+
+```ts
+.option('--headless', 'Run browser in headless mode', s.headless._def.defaultValue())
+// help → --headless  Run browser in headless mode (default: true)
+```
+
+Omit explicit defaults for boolean flags whose schema default is `false` — that is the obvious assumption and adding `(default: false)` to every flag is noise.
+
+**Enum/choice options** — the `--mode` option introduced in this prompt already uses the correct pattern (`.choices([...]).default('balanced')`); `balanced` has no schema field yet so hardcoding is appropriate here.
+
+**CLI-only options with no schema equivalent** — hardcode the default since there is no schema field to reference:
 
 ```ts
 .option('-o, --output-dir <dir>', 'Output directory', './output')
-// help → -o, --output-dir <dir>  Output directory (default: "./output")
 ```
 
-**Enum/choice options** — Commander renders choices and default together automatically; the `--mode` option introduced in this prompt already uses this correctly:
+Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from description text for options migrated to Commander defaults — the annotation will be auto-generated.
 
-```ts
-.addOption(
-  new Option('--mode <mode>', 'Extraction mode: …')
-    .choices(['precision', 'balanced', 'recall'])
-    .default('balanced'),
-)
-// help → --mode <mode>  Extraction mode: … (choices: "precision", "balanced", "recall", default: "balanced")
-```
+**Required indicators** — the `<angle bracket>` convention in the flag string is the universal signal. Commander's `.requiredOption()` enforces absence at parse time but adds no visual marker in help — this matches Docker, kubectl, and gh. Contextractor has no unconditionally required options (URLs are positional), so `.requiredOption()` is not needed. The existing `<bracket>` notation is sufficient.
 
-**Numeric options where `0` has a special meaning** — use the two-arg `default(value, 'label')` form to show a human-readable label instead of the raw number:
+**Options to update** in `addExtractionOptions()` (read all values from `ContextractorInput.shape`):
 
-```ts
-.addOption(new Option('--max-pages <n>', 'Max pages to crawl', toInt).default(0, 'unlimited'))
-.addOption(new Option('--max-results <n>', 'Max results per crawl', toInt).default(0, 'unlimited'))
-```
-
-**Boolean flags** — omit explicit defaults for flags where `false` is obvious (i.e., most toggles). Only add `.default(true)` where the flag is on by default and that would surprise a user.
-
-**Required indicators** — the `<angle bracket>` convention in the flag string is the universal signal for "this option needs a value if used." Commander's `.requiredOption()` enforces absence at parse time with an error, but adds no visual marker in help text — this is correct behavior shared by Docker, kubectl, and gh. Do not add manual `(required)` to description text unless the requirement is genuinely non-obvious to users.
-
-Contextractor has no unconditionally required options (URLs are positional), so `.requiredOption()` is not needed anywhere. The existing `<bracket>` notation is sufficient.
-
-**Options to update** in `addExtractionOptions()`:
-
-- `--output-dir` — pass `'./output'` as the third arg; remove `"(default: ./output)"` from description string
-- `--max-pages` — convert to `new Option(..., toInt).default(0, 'unlimited')`; remove `"(0 = unlimited)"` from description string
-- `--max-results` — same as `--max-pages`
-- `--initial-concurrency` — keep current description `"(0 = Crawlee default)"`; the default is a Crawlee runtime constant, not a static value
-- All other numeric options whose defaults come from the schema layer at runtime — keep the description text as-is; do not guess at defaults
+- `--output-dir` — hardcode `'./output'` (CLI-only); remove `"(default: ./output)"` from description
+- `--max-pages`, `--max-results`, `--crawl-depth` — `.default(schema value, 'unlimited')`; remove `"(0 = …)"` from description
+- `--page-load-timeout`, `--max-concurrency`, `--max-retries`, `--max-scroll-height` — `.default(schema value)`
+- `--headless`, `--close-cookie-modals` — pass `s.fieldName._def.defaultValue()` (both are `true`; non-obvious)
+- `--initial-concurrency` — keep description `"(0 = Crawlee default)"` as-is; `0` means Crawlee picks at runtime, not a static schema value
 
 ## After changes
 
@@ -185,4 +201,4 @@ Contextractor has no unconditionally required options (URLs are positional), so 
 - Update `apps/standalone/SPEC.md` with renamed flags
 - Verify with `node apps/standalone/dist/cli.js --help` — old names must not appear
 - Run `grep -r 'include-tables\|with-metadata\|include-formatting\|proxy-urls\|--globs\|--excludes\|--precision\|--recall' apps/` — must return no matches (note: `--mode precision` and `--mode recall` are the new spellings and should appear instead)
-- Run `grep -r 'default: \./output\|0 = unlimited' apps/standalone/src/cliProgram.ts` — must return no matches (defaults now expressed via Commander API, not description strings)
+- Run `grep -n 'default: \./output\|0 = unlimited\|0 = Crawlee default' apps/standalone/src/cliProgram.ts` — first two must return no matches; `"0 = Crawlee default"` on `--initial-concurrency` is the one intentional exception
