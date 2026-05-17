@@ -69,38 +69,107 @@ if (opts.mode && opts.mode !== 'balanced') {
 
 Keep `--fast` as a separate boolean flag — it's an algorithm-selection / speed knob orthogonal to the precision/recall axis (see §5.5 of the research note).
 
-## Fix: Asymmetric boolean pairs
+## Fix: Promote `trafilaturaConfig` fields to top-level schema
 
-Rename in `addExtractionOptions()`. Symmetric pairs: base name is the concept, `--no-` is the negation.
+`trafilaturaConfig` is currently a loose `Record<string, unknown>` blob in `ContextractorInput` — a JSON editor in the Apify console, an opaque key in config files, and an intermediate assembly target in the CLI. Promote every field to a first-class top-level Zod field. Apply to both the standalone CLI and the Apify Actor.
 
-| Old | New |
-|---|---|
-| `--include-tables` | `--tables` (pairs with existing `--no-tables`) |
-| `--include-formatting` | `--formatting` (pairs with existing `--no-formatting`) |
-| `--with-metadata` | `--metadata` (pairs with existing `--no-metadata`) |
-| `--include-images` | `--images` + add `--no-images` immediately after |
+The internal `TrafilaturaConfig` interface and `DEFAULT_CONFIG` in `packages/extraction/src/index.ts` are the rs-trafilatura binding layer — they stay. Only the user-facing schema surface changes.
 
-Commander auto-generates camelCase property names: `--tables` → `opts.tables`, etc.
+### In `packages/schema/src/source-of-truth/input.ts`
 
-## Fix: Dual-property shadowing bug in `buildSchemaOverrides()`
+Remove `trafilaturaConfig`. Add these individual fields at the top level (defaults from `DEFAULT_CONFIG` in `@contextractor/extraction`):
 
-The asymmetric pairs above created two properties per concept, with the second silently overwriting the first. After renaming, remove stale lines and keep only the camelCase-from-flag property:
+| Schema field | Type | Default | Note |
+|---|---|---|---|
+| `fast` | `z.boolean()` | `false` | |
+| `includeComments` | `z.boolean()` | `true` | |
+| `includeTables` | `z.boolean()` | `true` | |
+| `includeImages` | `z.boolean()` | `false` | |
+| `includeFormatting` | `z.boolean()` | `true` | |
+| `includeLinks` | `z.boolean()` | `true` | |
+| `deduplicate` | `z.boolean()` | `false` | |
+| `targetLanguage` | `z.string().nullable()` | `null` | |
+| `withMetadata` | `z.boolean()` | `false` | |
+| `onlyWithMetadata` | `z.boolean()` | `false` | |
+
+`favorPrecision` and `favorRecall` are subsumed by the `--mode` flag above — do not add them as schema fields. `teiValidation` is a forward-compat placeholder with no runtime effect — drop it.
+
+Group these under `apifyMeta({ sectionCaption: 'Content extraction' })` to preserve the Apify console section.
+
+### In `apps/standalone/src/cliProgram.ts` — `buildSchemaOverrides()`
+
+Remove the entire `tcfg` block. Map each CLI flag directly to a top-level `out` field. The CLI flag names translate to schema field names at this boundary (e.g., `opts.tables` → `out.includeTables`):
 
 ```ts
-// Remove these stale lines:
-if (opts.includeTables !== undefined) tcfg.includeTables = opts.includeTables;
-if (opts.includeFormatting !== undefined) tcfg.includeFormatting = opts.includeFormatting;
-if (opts.withMetadata !== undefined) tcfg.withMetadata = opts.withMetadata;
-if (opts.includeImages !== undefined) tcfg.includeImages = opts.includeImages; // if present
+// Remove entirely:
+// const tcfg: Record<string, unknown> = {};
+// if (...) tcfg.X = ...;
+// if (Object.keys(tcfg).length > 0) out.trafilaturaConfig = tcfg;
 
-// Keep only these (renamed properties):
-if (opts.tables !== undefined) tcfg.includeTables = opts.tables;
-if (opts.formatting !== undefined) tcfg.includeFormatting = opts.formatting;
-if (opts.metadata !== undefined) tcfg.withMetadata = opts.metadata;
-if (opts.images !== undefined) tcfg.includeImages = opts.images;
+// Add flat mappings:
+if (opts.fast !== undefined) out.fast = opts.fast;
+if (opts.tables !== undefined) out.includeTables = opts.tables;
+if (opts.images !== undefined) out.includeImages = opts.images;
+if (opts.formatting !== undefined) out.includeFormatting = opts.formatting;
+if (opts.links === false) out.includeLinks = false;
+if (opts.comments === false) out.includeComments = false;
+if (opts.deduplicate !== undefined) out.deduplicate = opts.deduplicate;
+if (opts.targetLanguage !== undefined) out.targetLanguage = opts.targetLanguage;
+if (opts.metadata !== undefined) out.withMetadata = opts.metadata;
 ```
 
-Update `ExtractOpts` interface: remove `includeTables`, `includeFormatting`, `withMetadata`; add `images?: boolean`.
+Also remove the `trafilaturaConfig` layering logic in `runExtractAction()` — the top-level `{ ...fromFile, ...fromCli }` spread handles all fields uniformly once the subtype is gone.
+
+### In both apps — building `TrafilaturaConfig` for the crawler
+
+Replace `normalizeConfigKeys(input.trafilaturaConfig)` with a direct typed mapping from the promoted top-level fields. The `mode` field translates to `favorPrecision`/`favorRecall` here:
+
+```ts
+import { DEFAULT_CONFIG, type TrafilaturaConfig } from '@contextractor/extraction';
+
+function toExtractionConfig(input: ContextractorInputType): TrafilaturaConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    fast: input.fast,
+    favorPrecision: input.mode === 'precision',
+    favorRecall: input.mode === 'recall',
+    includeComments: input.includeComments,
+    includeTables: input.includeTables,
+    includeImages: input.includeImages,
+    includeFormatting: input.includeFormatting,
+    includeLinks: input.includeLinks,
+    deduplicate: input.deduplicate,
+    targetLanguage: input.targetLanguage,
+    withMetadata: input.withMetadata,
+    onlyWithMetadata: input.onlyWithMetadata,
+    teiValidation: false,
+  };
+}
+```
+
+Apply in `apps/standalone/src/config.ts` and `apps/apify-actor/src/config.ts`.
+
+### Config file format (breaking change, clean break)
+
+Before: `{ "trafilaturaConfig": { "includeTables": false } }`
+After: `{ "includeTables": false }` — top-level, consistent with all other fields.
+
+## Fix: Asymmetric boolean pairs (CLI flags)
+
+Rename in `addExtractionOptions()`. Symmetric pairs: base name is the concept, `--no-` is the negation. The corresponding schema field names keep their descriptive form (`includeTables`, `withMetadata`, etc.) — translation happens in `buildSchemaOverrides()`.
+
+| Old CLI flag | New CLI flag | Schema field |
+|---|---|---|
+| `--include-tables` | `--tables` (pairs with existing `--no-tables`) | `includeTables` |
+| `--include-formatting` | `--formatting` (pairs with existing `--no-formatting`) | `includeFormatting` |
+| `--with-metadata` | `--metadata` (pairs with existing `--no-metadata`) | `withMetadata` |
+| `--include-images` | `--images` + add `--no-images` immediately after | `includeImages` |
+
+Commander auto-generates camelCase property names from the flag: `--tables` → `opts.tables`.
+
+## Fix: Dual-property shadowing bug in `buildSchemaOverrides()` — subsumed
+
+This bug (two `ExtractOpts` properties mapping to the same `tcfg` key) is eliminated entirely by the trafilaturaConfig promotion fix above: the `tcfg` intermediate object no longer exists. Update `ExtractOpts` interface: remove `includeTables`, `includeFormatting`, `withMetadata`; add `images?: boolean`; the rest map directly to top-level schema fields.
 
 ## Fix: Comma-separated multi-value flags → repeatable
 
@@ -201,4 +270,5 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 - Update `apps/standalone/SPEC.md` with renamed flags
 - Verify with `node apps/standalone/dist/cli.js --help` — old names must not appear
 - Run `grep -r 'include-tables\|with-metadata\|include-formatting\|proxy-urls\|--globs\|--excludes\|--precision\|--recall' apps/` — must return no matches (note: `--mode precision` and `--mode recall` are the new spellings and should appear instead)
+- Run `grep -rn 'trafilaturaConfig\|normalizeConfigKeys' apps/` — must return no matches; both are eliminated from the app layer (they may still appear in `packages/extraction/` as the internal binding helpers)
 - Run `grep -n 'default: \./output\|0 = unlimited\|0 = Crawlee default' apps/standalone/src/cliProgram.ts` — first two must return no matches; `"0 = Crawlee default"` on `--initial-concurrency` is the one intentional exception
