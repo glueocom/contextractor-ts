@@ -17,6 +17,9 @@
 **/test-suites-output
 **/*.tsbuildinfo
 
+# Test fixtures — not needed in Docker; HTML files trigger a Biome 2.4.15 Linux panic.
+**/test/fixtures
+
 # Misc.
 prompts
 LICENSE
