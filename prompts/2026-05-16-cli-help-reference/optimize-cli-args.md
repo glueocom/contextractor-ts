@@ -2,12 +2,72 @@
 
 Audit and fix CLI flags in `apps/standalone/src/cliProgram.ts` to conform to Commander.js v14 and GNU/clig.dev conventions. Clean break — no deprecated aliases, no version bump needed yet.
 
+**Background reading:** `./extraction-mode-research.md` documents Trafilatura's three-state precision/recall axis, rs-trafilatura's `Options` surface, and the cross-library naming survey that underpins the `ExtractionMode` enum introduced below.
+
 ## Non-issues (leave as-is)
 
 - `-V, --version` — correct; `-V` avoids conflict with `-v` (verbose). docker, kubectl, gh all use only `--version` long form.
 - `--headless` / `--no-headless` — correct GNU negation. Never use `--headless=true/false`; Commander ignores the value and only checks presence.
 - `--block-media` / `--no-block-media` — correct symmetric pair.
 - `--no-links`, `--no-comments` — correct; Commander makes the positive the default implicitly.
+
+## Fix: Collapse `--precision` / `--recall` into `--mode <mode>`
+
+The current CLI exposes `--precision` and `--recall` as two independent boolean flags, mirroring Trafilatura's legacy `favor_precision` / `favor_recall` Python API. This is the wrong surface for a CLI: the two booleans collapse into a three-state internal `focus` field (`"precision" | "balanced" | "recall"`) in `trafilatura/settings.py`, the upstream CLI itself uses an `add_mutually_exclusive_group()` to forbid setting both, and rs-trafilatura's boolean pair is a legacy artifact. See `./extraction-mode-research.md` for the full evidence.
+
+Replace the two flags with a single Commander `.option('--mode <mode>', …)` that accepts one of three string values, defaults to `balanced`, and validates the value with Commander's `choices()`. The CLI surface stops conflating two flags into one logical knob, eliminates the silently-undefined `(true, true)` combination, and matches the wording of Trafilatura's own internal `focus` field and go-trafilatura's `ExtractionFocus` enum.
+
+| Old | New |
+|---|---|
+| `--precision` (boolean) | `--mode precision` |
+| `--recall` (boolean) | `--mode recall` |
+| *(implicit when neither is set)* | `--mode balanced` *(explicit default)* |
+
+In `addExtractionOptions()`:
+
+```ts
+import { Option } from 'commander';
+
+// remove:
+//   .option('--precision', 'High precision mode (less noise)')
+//   .option('--recall', 'High recall mode (more content)')
+
+// add:
+.addOption(
+  new Option('--mode <mode>', 'Extraction mode: precision (less noise), balanced (default), or recall (more content)')
+    .choices(['precision', 'balanced', 'recall'] as const)
+    .default('balanced'),
+)
+```
+
+Update the `ExtractOpts` interface: remove `precision?: boolean` and `recall?: boolean`; add:
+
+```ts
+export type ExtractionMode = 'precision' | 'balanced' | 'recall';
+
+export interface ExtractOpts {
+  // …
+  mode?: ExtractionMode;
+}
+```
+
+In `buildSchemaOverrides()`, replace the two boolean checks with a single mapping:
+
+```ts
+// remove:
+//   if (opts.precision) tcfg.favorPrecision = true;
+//   if (opts.recall)    tcfg.favorRecall    = true;
+
+// add:
+if (opts.mode && opts.mode !== 'balanced') {
+  tcfg.favorPrecision = opts.mode === 'precision';
+  tcfg.favorRecall    = opts.mode === 'recall';
+}
+```
+
+(The `!== 'balanced'` guard keeps the override map sparse: balanced is the library default, so emitting neither key preserves any value set by a higher-precedence config layer.)
+
+Keep `--fast` as a separate boolean flag — it's an algorithm-selection / speed knob orthogonal to the precision/recall axis (see §5.5 of the research note).
 
 ## Fix: Asymmetric boolean pairs
 
@@ -81,4 +141,4 @@ Update `ExtractOpts`: `proxyUrls?: string` → `proxy?: string[]`; `globs?: stri
 - `pnpm test` — all tests must pass; update any test using old flag names
 - Update `apps/standalone/SPEC.md` with renamed flags
 - Verify with `node apps/standalone/dist/cli.js --help` — old names must not appear
-- Run `grep -r 'include-tables\|with-metadata\|include-formatting\|proxy-urls\|--globs\|--excludes' apps/` — must return no matches
+- Run `grep -r 'include-tables\|with-metadata\|include-formatting\|proxy-urls\|--globs\|--excludes\|--precision\|--recall' apps/` — must return no matches (note: `--mode precision` and `--mode recall` are the new spellings and should appear instead)
