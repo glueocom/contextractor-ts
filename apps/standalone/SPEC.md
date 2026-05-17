@@ -79,6 +79,8 @@ Controlled by `--save-destination` (default `key-value-store`):
 
 Storage errors (write failures) are logged to stderr and do not abort extraction.
 
+The CLI exits with code `2` when at least one request fails (partial failure); `0` on full success; `1` on fatal startup errors.
+
 ## Storage directory resolution
 
 Five-level precedence (first match wins):
@@ -105,7 +107,7 @@ See `tools/proxy-rotation-tester/README.md` for test documentation.
 - `program` — pre-built program instance (from `./cli.js`)
 - `configureStorage(storageDir)` — sets Crawlee `localDataDirectory` and `purgeOnStart: false`
 - `resolveStorageDir(flagValue?)` — five-level storage dir resolution
-- `Dataset`, `KeyValueStore`, `Configuration` — re-exported from `crawlee`
+- `Dataset`, `DatasetContent`, `KeyValueStore`, `Configuration` — re-exported from `crawlee`
 
 ## Sinks
 

@@ -514,6 +514,7 @@ async function runExtractAction(
   await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));
 
   process.stderr.write('Done.\n');
+  if (failedRecords.length > 0) process.exit(2);
 }
 
 // ---------------------------------------------------------------------------
