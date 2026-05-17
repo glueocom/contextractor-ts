@@ -261,6 +261,7 @@ Comma-split breaks on values containing commas (proxy URLs). Repeatable is the c
 
 | Old | New |
 |---|---|
+| `--save <formats>` (comma-split string) | `--save <format>` (repeatable, uses `collect`) |
 | `--proxy-urls <urls>` (comma-split string) | `--proxy <url>` (repeatable, uses `collect`) |
 | `--globs <patterns>` (comma-split string) | `--glob <pattern>` (repeatable, uses `collect`) |
 | `--excludes <patterns>` (comma-split string) | `--exclude <pattern>` (repeatable, uses `collect`) |
@@ -268,12 +269,21 @@ Comma-split breaks on values containing commas (proxy URLs). Repeatable is the c
 Use the existing `collectValues` helper (already used by `--save-destination`):
 
 ```ts
+.option('--save <format>', 'Output format: markdown, txt, json, html, original (repeatable)', collectValues, s.save._def.defaultValue())
 .option('--proxy <url>', 'Proxy URL (repeatable)', collectValues, [] as string[])
 .option('--glob <pattern>', 'Glob pattern to include (repeatable)', collectValues, [] as string[])
 .option('--exclude <pattern>', 'Glob pattern to exclude (repeatable)', collectValues, [] as string[])
 ```
 
-In `buildSchemaOverrides()`, remove `.split(',')` calls — values are already `string[]`:
+The `--save` default reads from the Zod schema (`s.save._def.defaultValue()` → `['markdown']`), so `--help` shows `(default: markdown)` and omitting `--save` produces markdown output automatically. This is the same default the Apify Actor and npm library already use via the schema — no change needed in those layers.
+
+In `buildSchemaOverrides()`, remove the `.split(',')` call for `save` — the value is already `string[]`:
+
+```ts
+if (opts.save?.length) save = validateSaveFormats(opts.save);
+```
+
+Remove `.split(',')` calls for the other flags too — values are already `string[]`:
 
 ```ts
 if (opts.glob?.length) out.globs = opts.glob.map((s) => ({ glob: s }));
@@ -286,7 +296,7 @@ In `resolveCliOnly()`:
 const proxyUrls = opts.proxy ?? [];
 ```
 
-Update `ExtractOpts`: `proxyUrls?: string` → `proxy?: string[]`; `globs?: string` → `glob?: string[]`; `excludes?: string` → `exclude?: string[]`.
+Update `ExtractOpts`: `save?: string` → `save?: string[]`; `proxyUrls?: string` → `proxy?: string[]`; `globs?: string` → `glob?: string[]`; `excludes?: string` → `exclude?: string[]`.
 
 ## Fix: Show defaults and required indicators in help output
 
@@ -341,6 +351,7 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 
 **Options to update** in `addExtractionOptions()` (read all values from `ContextractorInput.shape`):
 
+- `--save` — use `s.save._def.defaultValue()` (resolves to `['markdown']`); Commander auto-appends `(default: markdown)` to help; covered by the repeatable flags section above
 - `--output-dir` — hardcode `'./output'` (CLI-only); remove `"(default: ./output)"` from description
 - `--max-pages`, `--max-results`, `--crawl-depth` — `.default(schema value, 'unlimited')`; remove `"(0 = …)"` from description
 - `--page-load-timeout`, `--max-concurrency`, `--max-retries`, `--max-scroll-height` — `.default(schema value)`
@@ -403,3 +414,5 @@ The `ContextractorCrawlerOptions` extraction fields (and corresponding Zod schem
 - Run `grep -n 'extractionConfig' packages/crawler/src/createCrawler.ts` — must return no matches in `ContextractorCrawlerOptions`; `extractionConfig` may still appear inside `createContextractorCrawler()` as the assembled value passed to handlers
 - Verify `apps/apify-actor/.actor/input_schema.json` contains each promoted field (`fast`, `includeTables`, etc.) at the top level and no longer contains `trafilaturaConfig`
 - Run `grep -n 'default: \./output\|0 = unlimited\|0 = Crawlee default' apps/standalone/src/cliProgram.ts` — first two must return no matches; `"0 = Crawlee default"` on `--initial-concurrency` is the one intentional exception
+- Run `grep -n '\.split.*save\|save.*split' apps/standalone/src/cliProgram.ts` — must return no matches; `--save` is now repeatable so no split needed
+- Verify `node apps/standalone/dist/cli.js extract --help` shows `(default: markdown)` for `--save` and that omitting `--save` produces `*.md` output files
