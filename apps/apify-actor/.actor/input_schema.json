@@ -54,13 +54,6 @@
       "editor": "globs",
       "default": []
     },
-    "pseudoUrls": {
-      "title": "Pseudo-URLs",
-      "type": "array",
-      "description": "Pseudo-URLs to match links in the page that you want to enqueue. Alternative to glob patterns. Combine with Link selector to tell the scraper where to find links.",
-      "editor": "pseudoUrls",
-      "default": []
-    },
     "linkSelector": {
       "title": "Link Selector",
       "type": "string",
@@ -166,12 +159,51 @@
       "minimum": 0,
       "maximum": 9007199254740991
     },
-    "trafilaturaConfig": {
+    "mode": {
       "sectionCaption": "Content extraction",
-      "title": "Trafilatura options",
-      "type": "object",
-      "description": "rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, deduplicate, targetLanguage, withMetadata, onlyWithMetadata, teiValidation.",
-      "editor": "json"
+      "title": "Extraction mode",
+      "type": "string",
+      "description": "Extraction mode. precision minimizes noise (may miss some content); recall maximizes content (may include noise); balanced is the default.",
+      "editor": "select",
+      "default": "balanced",
+      "enum": ["precision", "balanced", "recall"],
+      "enumTitles": ["Precision (less noise)", "Balanced (default)", "Recall (more content)"]
+    },
+    "includeComments": {
+      "sectionCaption": "Content extraction",
+      "title": "Include comments",
+      "type": "boolean",
+      "description": "Include HTML comments in the extracted text.",
+      "editor": "checkbox",
+      "default": true
+    },
+    "includeTables": {
+      "title": "Include tables",
+      "type": "boolean",
+      "description": "Include table content in the extracted text.",
+      "editor": "checkbox",
+      "default": true
+    },
+    "includeImages": {
+      "title": "Include images",
+      "type": "boolean",
+      "description": "Include image alt text and captions in the extracted text.",
+      "editor": "checkbox",
+      "default": false
+    },
+    "includeLinks": {
+      "title": "Include links",
+      "type": "boolean",
+      "description": "Include hyperlinks in the extracted text.",
+      "editor": "checkbox",
+      "default": true
+    },
+    "targetLanguage": {
+      "title": "Target language",
+      "type": "string",
+      "description": "Filter extracted content by language code (e.g. \"en\"). Leave empty to accept any language.",
+      "editor": "textfield",
+      "default": ""
     },
     "save": {
       "sectionCaption": "Output settings",
@@ -333,21 +365,6 @@
       "title": "Ignore SSL errors",
       "type": "boolean",
       "description": "Ignore SSL certificate errors. Use at your own risk.",
-      "editor": "checkbox",
-      "default": false
-    },
-    "debugLog": {
-      "sectionCaption": "Diagnostics",
-      "title": "Debug log",
-      "type": "boolean",
-      "description": "Include debug messages in the log output.",
-      "editor": "checkbox",
-      "default": false
-    },
-    "browserLog": {
-      "title": "Browser log",
-      "type": "boolean",
-      "description": "Include browser console messages in the log. May flood logs with errors at high concurrency.",
       "editor": "checkbox",
       "default": false
     }

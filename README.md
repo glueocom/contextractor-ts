@@ -40,7 +40,6 @@ interface ContextractorInputType {
   renderingTypeDetectionPercentage: number;
   globs: Array<{ glob: string }>;
   excludes: Array<{ glob: string }>;
-  pseudoUrls: Array<{ purl?: string }>;
   linkSelector: string;
   keepUrlFragments: boolean;
   useSitemaps: boolean;
@@ -54,7 +53,12 @@ interface ContextractorInputType {
   initialConcurrency: number;
   maxConcurrency: number;
   maxRequestRetries: number;
-  trafilaturaConfig?: Record<string, unknown>;
+  mode: 'precision' | 'balanced' | 'recall';
+  includeComments: boolean;
+  includeTables: boolean;
+  includeImages: boolean;
+  includeLinks: boolean;
+  targetLanguage: string;
   save: Array<'txt' | 'markdown' | 'json' | 'html' | 'original'>;
   saveDestination: Array<'key-value-store' | 'dataset'>;
   datasetName?: string;
@@ -75,8 +79,6 @@ interface ContextractorInputType {
   maxScrollHeightPixels: number;
   userAgent: string;
   ignoreSslErrors: boolean;
-  debugLog: boolean;
-  browserLog: boolean;
 }
 ```
 

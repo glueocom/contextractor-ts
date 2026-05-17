@@ -81,11 +81,17 @@ describe('toApifyInputSchema', () => {
     expect(proxy?.sectionCaption).toBe('Proxy');
   });
 
-  it('routes trafilaturaConfig through the json editor and Content extraction section', () => {
+  it('routes mode through the select editor and Content extraction section', () => {
     const out = toApifyInputSchema(ContextractorInput, { title: 'Contextractor' });
-    const tc = out.properties.trafilaturaConfig;
-    expect(tc?.editor).toBe('json');
-    expect(tc?.sectionCaption).toBe('Content extraction');
+    const mode = out.properties.mode;
+    expect(mode?.editor).toBe('select');
+    expect(mode?.sectionCaption).toBe('Content extraction');
+    expect(mode?.enum).toEqual(['precision', 'balanced', 'recall']);
+    expect(mode?.enumTitles).toEqual([
+      'Precision (less noise)',
+      'Balanced (default)',
+      'Recall (more content)',
+    ]);
   });
 
   it('preserves boolean defaults (closeCookieModals = true)', () => {

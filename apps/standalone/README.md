@@ -117,13 +117,12 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 |--------|-------------|
 | `--version`, `-V` | output the version number |
 | `--config`, `-c` | Path to JSON config file |
-| `--start-url` | Start URL (alternative to positional URL) |
-| `--output-dir`, `-o` | Output directory (default: ./output) |
+| `--output-dir`, `-o` | Output directory |
 | `--max-pages` | Max pages to crawl (0 = unlimited) |
 | `--crawl-depth` | Max link depth from start URLs (0 = start only) |
 | `--headless` | Run browser in headless mode |
 | `--no-headless` | Run browser with UI |
-| `--proxy-urls` | Comma-separated proxy URLs |
+| `--proxy` | Proxy URL (repeatable) |
 | `--proxy-rotation` | Proxy rotation: recommended, per_request, until_failure |
 | `--crawler-type` | Crawler engine: adaptive, firefox, chromium, cheerio |
 | `--rendering-detection-pct` | Rendering type detection percentage (adaptive only) |
@@ -136,8 +135,8 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--max-scroll-height` | Max scroll height in pixels |
 | `--ignore-ssl-errors` | Skip SSL certificate verification |
 | `--user-agent` | Custom User-Agent string |
-| `--globs` | Comma-separated glob patterns to include |
-| `--excludes` | Comma-separated glob patterns to exclude |
+| `--glob` | Glob pattern to include (repeatable) |
+| `--exclude` | Glob pattern to exclude (repeatable) |
 | `--link-selector` | CSS selector for links to follow |
 | `--keep-url-fragments` | Preserve URL fragments |
 | `--use-sitemaps` | Discover and enqueue URLs from sitemap.xml at each start URL domain root |
@@ -148,25 +147,19 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--max-concurrency` | Max parallel requests |
 | `--max-retries` | Max request retries |
 | `--max-results` | Max results per crawl (0 = unlimited) |
-| `--save` | Output formats: markdown,html,txt,json,original,all |
-| `--precision` | High precision mode (less noise) |
-| `--recall` | High recall mode (more content) |
-| `--fast` | Fast extraction mode (less thorough) |
+| `--save` | Output format: markdown, txt, json, html, original, all (repeatable) |
+| `--mode` | Extraction mode: precision (less noise), balanced (default), or recall (more content) |
 | `--no-links` | Exclude links from output |
 | `--no-comments` | Exclude comments from output |
-| `--include-tables` | Include tables in output |
 | `--no-tables` | Exclude tables from output |
-| `--include-images` | Include image descriptions |
-| `--include-formatting` | Preserve text formatting |
-| `--no-formatting` | Drop text formatting |
-| `--deduplicate` | Deduplicate extracted content |
+| `--images` | Include image alt text and captions |
+| `--no-images` | Exclude image alt text and captions (default) |
 | `--target-language` | Filter by language (e.g. en) |
-| `--with-metadata` | Extract metadata along with content |
 | `--no-metadata` | Skip metadata extraction |
 | `--verbose`, `-v` | Enable verbose logging |
 | `--save-destination` | Where to save: key-value-store\|dataset (repeatable) |
 | `--storage-dir` | Override Crawlee storage directory |
-| `--store-skipped-urls` | Write skipped-urls.json to output dir after crawl |
+| `--store-skipped-urls` | Push skipped URL records to the dataset after crawl |
 | `--dynamic-content-wait` | Seconds to wait for network idle after navigation (0 = disabled) |
 | `--wait-for-selector` | CSS selector to wait for before extracting (fails on timeout) |
 | `--soft-wait-for-selector` | CSS selector to wait for before extracting (continues on timeout) |
@@ -218,6 +211,14 @@ stripped by `parse()`.
 | `playwright:firefox` | Headless browser (Firefox+Playwright) |
 | `playwright:chromium` | Headless browser (Chromium+Playwright) |
 | `cheerio` | Raw HTTP client (Cheerio) |
+
+### `mode` (default `balanced`)
+
+| Value | Title |
+|-------|-------|
+| `precision` | Precision (less noise) |
+| `balanced` | Balanced (default) |
+| `recall` | Recall (more content) |
 
 ### `proxyRotation` (default `RECOMMENDED`)
 

@@ -37,7 +37,7 @@ type Sink<T> = (result: T) => Promise<void>;
 
 - `createHandler(opts)` — `RequestHandler<PlaywrightCrawlingContext>` for `PlaywrightCrawler` paths
 - `createAdaptiveHandler(opts)` — `RequestHandler<AdaptivePlaywrightCrawlerContext>`; uses `parseWithCheerio()` to get HTML; does not access `page` directly
-- `createCheerioHandler(opts)` — `RequestHandler<CheerioCrawlingContext>`; gets HTML via `$('html').prop('outerHTML')`; no scroll or browserLog
+- `createCheerioHandler(opts)` — `RequestHandler<CheerioCrawlingContext>`; gets HTML via `$('html').prop('outerHTML')`; no scroll
 
 ## Browser behaviour
 
@@ -47,7 +47,7 @@ type Sink<T> = (result: T) => Promise<void>;
 
 ## Key options (`ContextractorCrawlerOptions`)
 
-`startUrls`, `sink`, `extractionConfig`, `formats`, `scroll`, `cookieStrategy`, `sessionPool`, `maxPages`, `maxRetries`, `initialConcurrency` (maps to Crawlee `minConcurrency`; only applied when > 0), `maxConcurrency`, `pageLoadTimeoutSecs`, `blockMedia`, `headless`, `crawlerType`, `renderingTypeDetectionPercentage`, `ignoreSslErrors`, `bypassCSP`, `initialCookies`, `extraHTTPHeaders`, `userAgent`, `linkSelector`, `maxCrawlingDepth`, `maxResults`, `globs`, `excludes`, `keepUrlFragments`, `proxyConfiguration`, `requestQueue`, `browserLog`, `respectRobotsTxt`, `onFailedRequest`, `onSkippedUrl`, `dynamicContentWaitSecs` (Playwright only; seconds to wait for network idle after navigation before extraction; also doubles as the timeout for `waitForSelector`/`softWaitForSelector`; 0 disables; default `0`), `waitForSelector` (Playwright only; CSS selector to await before extraction; request fails on timeout), `softWaitForSelector` (Playwright only; like `waitForSelector` but continues on timeout).
+`startUrls`, `sink`, `formats`, `mode` (`'precision' | 'balanced' | 'recall'`; translated to `favorPrecision`/`favorRecall` in `TrafilaturaConfig`), `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `scroll`, `cookieStrategy`, `sessionPool`, `maxPages`, `maxRetries`, `initialConcurrency` (maps to Crawlee `minConcurrency`; only applied when > 0), `maxConcurrency`, `pageLoadTimeoutSecs`, `blockMedia`, `headless`, `crawlerType`, `renderingTypeDetectionPercentage`, `ignoreSslErrors`, `bypassCSP`, `initialCookies`, `extraHTTPHeaders`, `userAgent`, `linkSelector`, `maxCrawlingDepth`, `maxResults`, `globs`, `excludes`, `keepUrlFragments`, `proxyConfiguration`, `requestQueue`, `respectRobotsTxt`, `onFailedRequest`, `onSkippedUrl`, `dynamicContentWaitSecs` (Playwright only; seconds to wait for network idle after navigation before extraction; also doubles as the timeout for `waitForSelector`/`softWaitForSelector`; 0 disables; default `0`), `waitForSelector` (Playwright only; CSS selector to await before extraction; request fails on timeout), `softWaitForSelector` (Playwright only; like `waitForSelector` but continues on timeout).
 
 - `onFailedRequest?: (info: { url, loadedUrl, errorMessages, retryCount }) => Promise<void>` — called after all retries are exhausted for a request
 - `onSkippedUrl?: (url: string, reason: string) => void` — called synchronously during `enqueueLinks` when a URL is skipped (glob filter, robots.txt, depth limit, or concurrency cap)

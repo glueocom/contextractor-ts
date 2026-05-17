@@ -27,7 +27,6 @@ interface HandlerOpts {
   globs?: string[];
   excludes?: string[];
   keepUrlFragments?: boolean;
-  browserLog?: boolean;
   onSkippedUrl?: (url: string, reason: string) => void;
   waitForSelector?: string;
   softWaitForSelector?: string;
@@ -51,12 +50,6 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
     if (opts.maxResults && resultCount >= opts.maxResults) {
       log.info(`Max results (${opts.maxResults}) reached, stopping.`);
       return;
-    }
-
-    if (opts.browserLog) {
-      page.on('console', (message) => {
-        log.info(`[Browser] ${message.type()}: ${message.text()}`);
-      });
     }
 
     if (opts.scroll) {

@@ -1,4 +1,8 @@
-import type { OutputFormat, TrafilaturaConfig } from '@contextractor/extraction';
+import {
+  DEFAULT_CONFIG,
+  type OutputFormat,
+  type TrafilaturaConfig,
+} from '@contextractor/extraction';
 import type {
   AdaptivePlaywrightCrawlerOptions,
   PlaywrightHook,
@@ -23,8 +27,13 @@ import type { ExtractionResult, Sink } from './sinks/types.js';
 export interface ContextractorCrawlerOptions {
   startUrls: string[];
   sink: Sink<ExtractionResult>;
-  extractionConfig?: TrafilaturaConfig;
   formats?: OutputFormat[];
+  mode?: 'precision' | 'balanced' | 'recall';
+  includeComments?: boolean;
+  includeTables?: boolean;
+  includeImages?: boolean;
+  includeLinks?: boolean;
+  targetLanguage?: string;
   scroll?: ScrollConfig;
   cookieStrategy?: 'ghostery' | 'autoconsent' | 'none';
   sessionPool?: boolean | SessionPoolOptions;
@@ -66,7 +75,6 @@ export interface ContextractorCrawlerOptions {
   requestQueue?: RequestProvider;
   requestList?: SitemapRequestList;
   blockMedia?: boolean;
-  browserLog?: boolean;
   respectRobotsTxt?: boolean;
   dynamicContentWaitSecs?: number;
   waitForSelector?: string;
@@ -79,6 +87,28 @@ export interface ContextractorCrawlerOptions {
   }) => Promise<void>;
   onSkippedUrl?: (url: string, reason: string) => void;
   ignoreCanonicalUrl?: boolean;
+}
+
+function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    favorPrecision: opts.mode === 'precision',
+    favorRecall: opts.mode === 'recall',
+    includeComments: opts.includeComments ?? DEFAULT_CONFIG.includeComments,
+    includeTables: opts.includeTables ?? DEFAULT_CONFIG.includeTables,
+    includeImages: opts.includeImages ?? DEFAULT_CONFIG.includeImages,
+    includeFormatting: true,
+    includeLinks: opts.includeLinks ?? DEFAULT_CONFIG.includeLinks,
+    deduplicate: false,
+    targetLanguage:
+      opts.targetLanguage !== undefined && opts.targetLanguage !== ''
+        ? opts.targetLanguage
+        : DEFAULT_CONFIG.targetLanguage,
+    withMetadata: true,
+    onlyWithMetadata: false,
+    fast: false,
+    teiValidation: false,
+  };
 }
 
 // From @apify/scraper-tools SESSION_MAX_USAGE_COUNTS (apify/actor-scraper).
@@ -97,7 +127,7 @@ export function createContextractorCrawler(
 
   if (crawlerType === 'cheerio') {
     const handler = createCheerioHandler({
-      extractionConfig: opts.extractionConfig,
+      extractionConfig: toTrafilaturaConfig(opts),
       sink: opts.sink,
       formats,
       maxResults: opts.maxResults,
@@ -243,7 +273,7 @@ export function createContextractorCrawler(
         : [];
 
     const adaptiveHandler = createAdaptiveHandler({
-      extractionConfig: opts.extractionConfig,
+      extractionConfig: toTrafilaturaConfig(opts),
       sink: opts.sink,
       formats,
       maxResults: opts.maxResults,
@@ -306,7 +336,7 @@ export function createContextractorCrawler(
       : [];
 
   const handler = createHandler({
-    extractionConfig: opts.extractionConfig,
+    extractionConfig: toTrafilaturaConfig(opts),
     sink: opts.sink,
     scroll: opts.scroll,
     formats,
@@ -316,7 +346,6 @@ export function createContextractorCrawler(
     globs: opts.globs,
     excludes: opts.excludes,
     keepUrlFragments: opts.keepUrlFragments,
-    browserLog: opts.browserLog,
     onSkippedUrl: opts.onSkippedUrl,
     dynamicContentWaitSecs: opts.dynamicContentWaitSecs,
     waitForSelector: opts.waitForSelector,

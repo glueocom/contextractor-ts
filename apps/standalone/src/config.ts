@@ -1,6 +1,5 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { normalizeConfigKeys, type TrafilaturaConfig } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
 export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'original';
@@ -53,7 +52,12 @@ interface CrawlConfig {
   outputDir: string;
   crawlDepth: number;
   headless: boolean;
-  trafilaturaConfig: TrafilaturaConfig;
+  mode: 'precision' | 'balanced' | 'recall';
+  includeComments: boolean;
+  includeTables: boolean;
+  includeImages: boolean;
+  includeLinks: boolean;
+  targetLanguage: string;
 
   // Browser.
   crawlerType: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
@@ -143,7 +147,12 @@ export function buildCrawlConfig(
     waitForSelector: input.waitForSelector,
     softWaitForSelector: input.softWaitForSelector,
     ignoreCanonicalUrl: input.ignoreCanonicalUrl,
-    trafilaturaConfig: normalizeConfigKeys(input.trafilaturaConfig),
+    mode: input.mode,
+    includeComments: input.includeComments,
+    includeTables: input.includeTables,
+    includeImages: input.includeImages,
+    includeLinks: input.includeLinks,
+    targetLanguage: input.targetLanguage,
   };
 }
 

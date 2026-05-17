@@ -85,17 +85,6 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'globs' }),
     }),
 
-  pseudoUrls: z
-    .array(z.object({ purl: z.string().optional() }).loose())
-    .default([])
-    .describe(
-      'Pseudo-URLs to match links in the page that you want to enqueue. Alternative to glob patterns. Combine with Link selector to tell the scraper where to find links.',
-    )
-    .meta({
-      title: 'Pseudo-URLs',
-      ...apifyMeta({ editor: 'pseudoUrls' }),
-    }),
-
   linkSelector: z
     .string()
     .default('')
@@ -212,16 +201,52 @@ export const ContextractorInput = z.object({
     .describe('Maximum number of retries for failed requests on network, proxy, or server errors.')
     .meta({ title: 'Max request retries' }),
 
-  trafilaturaConfig: z
-    .record(z.string(), z.unknown())
-    .optional()
+  mode: z
+    .enum(['precision', 'balanced', 'recall'])
+    .default('balanced')
     .describe(
-      'rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, deduplicate, targetLanguage, withMetadata, onlyWithMetadata, teiValidation.',
+      'Extraction mode. precision minimizes noise (may miss some content); recall maximizes content (may include noise); balanced is the default.',
     )
     .meta({
-      title: 'Trafilatura options',
-      ...apifyMeta({ editor: 'json', sectionCaption: 'Content extraction' }),
+      title: 'Extraction mode',
+      ...apifyMeta({
+        editor: 'select',
+        sectionCaption: 'Content extraction',
+        enumTitles: ['Precision (less noise)', 'Balanced (default)', 'Recall (more content)'],
+      }),
     }),
+
+  includeComments: z
+    .boolean()
+    .default(true)
+    .describe('Include HTML comments in the extracted text.')
+    .meta({ title: 'Include comments', ...apifyMeta({ sectionCaption: 'Content extraction' }) }),
+
+  includeTables: z
+    .boolean()
+    .default(true)
+    .describe('Include table content in the extracted text.')
+    .meta({ title: 'Include tables' }),
+
+  includeImages: z
+    .boolean()
+    .default(false)
+    .describe('Include image alt text and captions in the extracted text.')
+    .meta({ title: 'Include images' }),
+
+  includeLinks: z
+    .boolean()
+    .default(true)
+    .describe('Include hyperlinks in the extracted text.')
+    .meta({ title: 'Include links' }),
+
+  targetLanguage: z
+    .string()
+    .default('')
+    .describe(
+      'Filter extracted content by language code (e.g. "en"). Leave empty to accept any language.',
+    )
+    .meta({ title: 'Target language', ...apifyMeta({ editor: 'textfield' }) }),
 
   save: z
     .array(z.enum(['txt', 'markdown', 'json', 'html', 'original']))
@@ -420,23 +445,6 @@ export const ContextractorInput = z.object({
     .default(false)
     .describe('Ignore SSL certificate errors. Use at your own risk.')
     .meta({ title: 'Ignore SSL errors' }),
-
-  debugLog: z
-    .boolean()
-    .default(false)
-    .describe('Include debug messages in the log output.')
-    .meta({
-      title: 'Debug log',
-      ...apifyMeta({ sectionCaption: 'Diagnostics' }),
-    }),
-
-  browserLog: z
-    .boolean()
-    .default(false)
-    .describe(
-      'Include browser console messages in the log. May flood logs with errors at high concurrency.',
-    )
-    .meta({ title: 'Browser log' }),
 });
 
 export type ContextractorInputType = z.infer<typeof ContextractorInput>;

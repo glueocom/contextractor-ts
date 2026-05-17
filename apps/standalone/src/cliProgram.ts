@@ -9,7 +9,7 @@ import {
   ProxyConfiguration,
 } from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { Dataset, KeyValueStore, SitemapRequestList } from 'crawlee';
 import {
   buildCrawlConfig,
@@ -122,15 +122,23 @@ function toCsv(items: Record<string, unknown>[]): string {
 // ---------------------------------------------------------------------------
 
 function addExtractionOptions(cmd: Command): Command {
+  const s = ContextractorInput.shape;
   return cmd
     .option('-c, --config <path>', 'Path to JSON config file')
-    .option('--start-url <url>', 'Start URL (alternative to positional URL)')
-    .option('-o, --output-dir <dir>', 'Output directory (default: ./output)')
-    .option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)', toInt)
-    .option('--crawl-depth <n>', 'Max link depth from start URLs (0 = start only)', toInt)
-    .option('--headless', 'Run browser in headless mode')
+    .option('-o, --output-dir <dir>', 'Output directory', './output')
+    .addOption(
+      new Option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)')
+        .argParser(toInt)
+        .default(s.maxPagesPerCrawl._def.defaultValue, 'unlimited'),
+    )
+    .addOption(
+      new Option('--crawl-depth <n>', 'Max link depth from start URLs (0 = start only)')
+        .argParser(toInt)
+        .default(s.maxCrawlingDepth._def.defaultValue, 'unlimited'),
+    )
+    .option('--headless', 'Run browser in headless mode', s.headless._def.defaultValue)
     .option('--no-headless', 'Run browser with UI')
-    .option('--proxy-urls <urls>', 'Comma-separated proxy URLs')
+    .option('--proxy <url>', 'Proxy URL (repeatable)', collectValues, [] as string[])
     .option(
       '--proxy-rotation <strategy>',
       'Proxy rotation: recommended, per_request, until_failure',
@@ -142,16 +150,34 @@ function addExtractionOptions(cmd: Command): Command {
       toInt,
     )
     .option('--wait-until <event>', 'Page load event: networkidle, load, domcontentloaded')
-    .option('--page-load-timeout <secs>', 'Page load timeout in seconds', toInt)
+    .addOption(
+      new Option('--page-load-timeout <secs>', 'Page load timeout in seconds')
+        .argParser(toInt)
+        .default(s.pageLoadTimeoutSecs._def.defaultValue),
+    )
     .option('--block-media', 'Block images, stylesheets, fonts, PDFs, and ZIPs')
     .option('--no-block-media', 'Do not block media requests (default)')
     .option('--ignore-cors', 'Disable CORS/CSP restrictions')
-    .option('--close-cookie-modals', 'Auto-dismiss cookie banners')
+    .option(
+      '--close-cookie-modals',
+      'Auto-dismiss cookie banners',
+      s.closeCookieModals._def.defaultValue,
+    )
     .option('--max-scroll-height <px>', 'Max scroll height in pixels', toInt)
     .option('--ignore-ssl-errors', 'Skip SSL certificate verification')
     .option('--user-agent <ua>', 'Custom User-Agent string')
-    .option('--globs <patterns>', 'Comma-separated glob patterns to include')
-    .option('--excludes <patterns>', 'Comma-separated glob patterns to exclude')
+    .option(
+      '--glob <pattern>',
+      'Glob pattern to include (repeatable)',
+      collectValues,
+      [] as string[],
+    )
+    .option(
+      '--exclude <pattern>',
+      'Glob pattern to exclude (repeatable)',
+      collectValues,
+      [] as string[],
+    )
     .option('--link-selector <css>', 'CSS selector for links to follow')
     .option('--keep-url-fragments', 'Preserve URL fragments')
     .option(
@@ -162,30 +188,48 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--cookies <json>', 'JSON array of cookie objects')
     .option('--headers <json>', 'JSON object of custom HTTP headers')
     .option('--initial-concurrency <n>', 'Initial parallel requests (0 = Crawlee default)', toInt)
-    .option('--max-concurrency <n>', 'Max parallel requests', toInt)
-    .option('--max-retries <n>', 'Max request retries', toInt)
-    .option('--max-results <n>', 'Max results per crawl (0 = unlimited)', toInt)
-    .option('--save <formats>', 'Output formats: markdown,html,txt,json,original,all')
-    .option('--precision', 'High precision mode (less noise)')
-    .option('--recall', 'High recall mode (more content)')
-    .option('--fast', 'Fast extraction mode (less thorough)')
+    .addOption(
+      new Option('--max-concurrency <n>', 'Max parallel requests')
+        .argParser(toInt)
+        .default(s.maxConcurrency._def.defaultValue),
+    )
+    .addOption(
+      new Option('--max-retries <n>', 'Max request retries')
+        .argParser(toInt)
+        .default(s.maxRequestRetries._def.defaultValue),
+    )
+    .addOption(
+      new Option('--max-results <n>', 'Max results per crawl (0 = unlimited)')
+        .argParser(toInt)
+        .default(s.maxResultsPerCrawl._def.defaultValue, 'unlimited'),
+    )
+    .option(
+      '--save <format>',
+      'Output format: markdown, txt, json, html, original, all (repeatable)',
+      collectValues,
+      s.save._def.defaultValue,
+    )
+    .addOption(
+      new Option(
+        '--mode <mode>',
+        'Extraction mode: precision (less noise), balanced (default), or recall (more content)',
+      )
+        .choices(['precision', 'balanced', 'recall'])
+        .default('balanced'),
+    )
     .option('--no-links', 'Exclude links from output')
     .option('--no-comments', 'Exclude comments from output')
-    .option('--include-tables', 'Include tables in output')
     .option('--no-tables', 'Exclude tables from output')
-    .option('--include-images', 'Include image descriptions')
-    .option('--include-formatting', 'Preserve text formatting')
-    .option('--no-formatting', 'Drop text formatting')
-    .option('--deduplicate', 'Deduplicate extracted content')
+    .option('--images', 'Include image alt text and captions')
+    .option('--no-images', 'Exclude image alt text and captions (default)')
     .option('--target-language <lang>', 'Filter by language (e.g. en)')
-    .option('--with-metadata', 'Extract metadata along with content')
     .option('--no-metadata', 'Skip metadata extraction')
     .option('-v, --verbose', 'Enable verbose logging')
     .option(
       '--save-destination <dest>',
       'Where to save: key-value-store|dataset (repeatable)',
       collectValues,
-      [] as string[],
+      s.saveDestination._def.defaultValue,
     )
     .option('--storage-dir <path>', 'Override Crawlee storage directory')
     .option('--store-skipped-urls', 'Push skipped URL records to the dataset after crawl')
@@ -230,8 +274,8 @@ function buildSchemaOverrides(opts: ExtractOpts): Partial<ContextractorInputType
   if (opts.maxScrollHeight !== undefined) out.maxScrollHeightPixels = opts.maxScrollHeight;
   if (opts.ignoreSslErrors !== undefined) out.ignoreSslErrors = opts.ignoreSslErrors;
   if (opts.userAgent !== undefined) out.userAgent = opts.userAgent;
-  if (opts.globs) out.globs = opts.globs.split(',').map((s) => ({ glob: s.trim() }));
-  if (opts.excludes) out.excludes = opts.excludes.split(',').map((s) => ({ glob: s.trim() }));
+  if (opts.glob?.length) out.globs = opts.glob.map((s) => ({ glob: s }));
+  if (opts.exclude?.length) out.excludes = opts.exclude.map((s) => ({ glob: s }));
   if (opts.linkSelector !== undefined) out.linkSelector = opts.linkSelector;
   if (opts.keepUrlFragments !== undefined) out.keepUrlFragments = opts.keepUrlFragments;
   if (opts.useSitemaps !== undefined) out.useSitemaps = opts.useSitemaps;
@@ -247,22 +291,12 @@ function buildSchemaOverrides(opts: ExtractOpts): Partial<ContextractorInputType
   if (opts.softWaitForSelector !== undefined) out.softWaitForSelector = opts.softWaitForSelector;
   if (opts.ignoreCanonicalUrl !== undefined) out.ignoreCanonicalUrl = opts.ignoreCanonicalUrl;
 
-  const tcfg: Record<string, unknown> = {};
-  if (opts.fast !== undefined) tcfg.fast = opts.fast;
-  if (opts.precision !== undefined) tcfg.favorPrecision = opts.precision;
-  if (opts.recall !== undefined) tcfg.favorRecall = opts.recall;
-  if (opts.includeTables !== undefined) tcfg.includeTables = opts.includeTables;
-  if (opts.tables !== undefined) tcfg.includeTables = opts.tables;
-  if (opts.includeImages !== undefined) tcfg.includeImages = opts.includeImages;
-  if (opts.includeFormatting !== undefined) tcfg.includeFormatting = opts.includeFormatting;
-  if (opts.formatting !== undefined) tcfg.includeFormatting = opts.formatting;
-  if (opts.deduplicate !== undefined) tcfg.deduplicate = opts.deduplicate;
-  if (opts.targetLanguage !== undefined) tcfg.targetLanguage = opts.targetLanguage;
-  if (opts.metadata !== undefined) tcfg.withMetadata = opts.metadata;
-  if (opts.withMetadata !== undefined) tcfg.withMetadata = opts.withMetadata;
-  if (opts.links === false) tcfg.includeLinks = false;
-  if (opts.comments === false) tcfg.includeComments = false;
-  if (Object.keys(tcfg).length > 0) out.trafilaturaConfig = tcfg;
+  if (opts.mode !== undefined) out.mode = opts.mode as ContextractorInputType['mode'];
+  if (opts.tables !== undefined) out.includeTables = opts.tables;
+  if (opts.images !== undefined) out.includeImages = opts.images;
+  if (opts.links === false) out.includeLinks = false;
+  if (opts.comments === false) out.includeComments = false;
+  if (opts.targetLanguage !== undefined) out.targetLanguage = opts.targetLanguage;
 
   return out;
 }
@@ -273,14 +307,9 @@ function resolveCliOnly(opts: ExtractOpts, input: ContextractorInputType): CliOn
     .filter((u): u is string => typeof u === 'string' && u.length > 0);
 
   let save: SaveFormat[] = ['markdown'];
-  if (opts.save) save = validateSaveFormats(opts.save.split(','));
+  if (opts.save?.length) save = validateSaveFormats(opts.save);
 
-  const proxyUrls = opts.proxyUrls
-    ? opts.proxyUrls
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-    : [];
+  const proxyUrls = opts.proxy ?? [];
 
   return {
     urls,
@@ -312,7 +341,6 @@ async function runExtractAction(
   const fromCli = buildSchemaOverrides(opts);
 
   const collectedUrls = [...urls];
-  if (opts.startUrl) collectedUrls.push(opts.startUrl);
 
   if (inputFile) {
     const text = await readFile(inputFile, 'utf8');
@@ -326,11 +354,6 @@ async function runExtractAction(
   if (collectedUrls.length > 0) fromCli.startUrls = collectedUrls.map((url) => ({ url }));
 
   const layered: Record<string, unknown> = { ...fromFile, ...fromCli };
-  const fileTrafilatura = fromFile.trafilaturaConfig ?? {};
-  const cliTrafilatura = fromCli.trafilaturaConfig ?? {};
-  if (Object.keys(fileTrafilatura).length || Object.keys(cliTrafilatura).length) {
-    layered.trafilaturaConfig = { ...fileTrafilatura, ...cliTrafilatura };
-  }
 
   const startUrlsLayered = Array.isArray(layered.startUrls) ? layered.startUrls : undefined;
   if (!startUrlsLayered || startUrlsLayered.length === 0) {
@@ -350,8 +373,7 @@ async function runExtractAction(
   const cliOnly = resolveCliOnly(opts, parsed.data);
   const cfg = buildCrawlConfig(parsed.data, cliOnly);
 
-  const destinations =
-    (opts.saveDestination ?? []).length > 0 ? (opts.saveDestination ?? []) : ['key-value-store'];
+  const destinations = opts.saveDestination ?? ['key-value-store'];
 
   const kvs = await KeyValueStore.open('default');
   const ds = await Dataset.open(datasetName ?? 'default');
@@ -380,14 +402,14 @@ async function runExtractAction(
         parsedUrl = new URL(raw);
       } catch {
         console.error(
-          `--proxy-urls: malformed URL "${raw}". ` +
+          `--proxy: malformed URL "${raw}". ` +
             `Expected http://user:pass@host:port (also accepts https://, socks4://, socks5://).`,
         );
         process.exit(1);
       }
       if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(parsedUrl.protocol)) {
         console.error(
-          `--proxy-urls: unsupported scheme "${parsedUrl.protocol}" in "${raw}". ` +
+          `--proxy: unsupported scheme "${parsedUrl.protocol}" in "${raw}". ` +
             `Use http://, https://, socks4:// or socks5://. ` +
             `Apify Proxy configuration is only supported in the Apify Actor build.`,
         );
@@ -398,7 +420,7 @@ async function runExtractAction(
   } else if (cliOnly.proxyRotation && cliOnly.proxyRotation !== 'RECOMMENDED') {
     console.warn(
       `Warning: --proxy-rotation=${cliOnly.proxyRotation} has no effect ` +
-        `without --proxy-urls; running without proxy.`,
+        `without --proxy; running without proxy.`,
     );
   }
 
@@ -426,7 +448,12 @@ async function runExtractAction(
     formats: cfg.save.filter(
       (format): format is Exclude<SaveFormat, 'original'> => format !== 'original',
     ),
-    extractionConfig: cfg.trafilaturaConfig,
+    mode: cfg.mode,
+    includeComments: cfg.includeComments,
+    includeTables: cfg.includeTables,
+    includeImages: cfg.includeImages,
+    includeLinks: cfg.includeLinks,
+    targetLanguage: cfg.targetLanguage,
     cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',
     scroll: cfg.maxScrollHeight > 0 ? { maxScrollHeight: cfg.maxScrollHeight } : undefined,
     headless: cfg.headless,
@@ -766,12 +793,11 @@ export function isMainEntry(metaUrl: string, argv1 = process.argv[1]): boolean {
 
 interface ExtractOpts {
   config?: string;
-  startUrl?: string;
   outputDir?: string;
   maxPages?: number;
   crawlDepth?: number;
   headless?: boolean;
-  proxyUrls?: string;
+  proxy?: string[];
   proxyRotation?: string;
   crawlerType?: string;
   renderingDetectionPct?: number;
@@ -783,8 +809,8 @@ interface ExtractOpts {
   maxScrollHeight?: number;
   ignoreSslErrors?: boolean;
   userAgent?: string;
-  globs?: string;
-  excludes?: string;
+  glob?: string[];
+  exclude?: string[];
   linkSelector?: string;
   keepUrlFragments?: boolean;
   useSitemaps?: boolean;
@@ -795,21 +821,14 @@ interface ExtractOpts {
   maxConcurrency?: number;
   maxRetries?: number;
   maxResults?: number;
-  save?: string;
-  precision?: boolean;
-  recall?: boolean;
-  fast?: boolean;
+  save?: string[];
+  mode?: string;
   links?: boolean;
   comments?: boolean;
-  includeTables?: boolean;
   tables?: boolean;
-  includeImages?: boolean;
-  includeFormatting?: boolean;
-  formatting?: boolean;
-  deduplicate?: boolean;
+  images?: boolean;
   targetLanguage?: string;
   metadata?: boolean;
-  withMetadata?: boolean;
   verbose?: boolean;
   saveDestination?: string[];
   storageDir?: string;

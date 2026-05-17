@@ -43,7 +43,6 @@ the table below is auto-rebuilt from that schema by
 | `renderingTypeDetectionPercentage` | integer | `10` | (Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower. |
 | `globs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
 | `excludes` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
-| `pseudoUrls` | array | `[]` | Pseudo-URLs to match links in the page that you want to enqueue. Alternative to glob patterns. Combine with Link selector to tell the scraper where to find links. |
 | `linkSelector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
 | `keepUrlFragments` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
 | `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
@@ -57,7 +56,12 @@ the table below is auto-rebuilt from that schema by
 | `initialConcurrency` | integer | `0` | Initial number of browser pages or HTTP clients running in parallel. Crawlee auto-scales up to maxConcurrency. 0 lets Crawlee pick the default. |
 | `maxConcurrency` | integer | `50` | Maximum number of browser pages running in parallel. This setting is useful to avoid overloading target websites and getting blocked. |
 | `maxRequestRetries` | integer | `3` | Maximum number of retries for failed requests on network, proxy, or server errors. |
-| `trafilaturaConfig` | object | _optional_ | rs-trafilatura extraction settings. Leave empty for balanced defaults. Keys: fast, favorPrecision, favorRecall, includeComments, includeTables, includeImages, includeFormatting, includeLinks, dedupli… |
+| `mode` | enum (`precision` \| `balanced` \| `recall`) | `"balanced"` | Extraction mode. precision minimizes noise (may miss some content); recall maximizes content (may include noise); balanced is the default. |
+| `includeComments` | boolean | `true` | Include HTML comments in the extracted text. |
+| `includeTables` | boolean | `true` | Include table content in the extracted text. |
+| `includeImages` | boolean | `false` | Include image alt text and captions in the extracted text. |
+| `includeLinks` | boolean | `true` | Include hyperlinks in the extracted text. |
+| `targetLanguage` | string | `""` | Filter extracted content by language code (e.g. "en"). Leave empty to accept any language. |
 | `save` | array | `["markdown"]` | Output formats to extract and save. "original" saves the raw page HTML before extraction. |
 | `saveDestination` | array | `["key-value-store"]` | Where to save extracted content. Supported by both Actor and CLI. |
 | `datasetName` | string | _optional_ | Name or ID of the dataset for storing results. Leave empty to use the default run dataset. |
@@ -78,8 +82,6 @@ the table below is auto-rebuilt from that schema by
 | `maxScrollHeightPixels` | integer | `5000` | Maximum pixels to scroll down the page until all content is loaded. Setting to 0 disables scrolling. |
 | `userAgent` | string | `""` | Custom User-Agent string for the browser. Leave empty to use the default browser User-Agent. |
 | `ignoreSslErrors` | boolean | `false` | Ignore SSL certificate errors. Use at your own risk. |
-| `debugLog` | boolean | `false` | Include debug messages in the log output. |
-| `browserLog` | boolean | `false` | Include browser console messages in the log. May flood logs with errors at high concurrency. |
 
 <!-- @generated:end name="apify-input-schema" -->
 

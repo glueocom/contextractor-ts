@@ -5,7 +5,7 @@ import type {
   RequestProvider,
   Sink,
 } from '@contextractor/crawler';
-import { normalizeConfigKeys, type OutputFormat } from '@contextractor/extraction';
+import type { OutputFormat } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
 const WAIT_UNTIL_MAP = {
@@ -28,7 +28,12 @@ export function buildCrawlerOpts(
     startUrls: [],
     sink,
     formats,
-    extractionConfig: normalizeConfigKeys(input.trafilaturaConfig),
+    mode: input.mode,
+    includeComments: input.includeComments,
+    includeTables: input.includeTables,
+    includeImages: input.includeImages,
+    includeLinks: input.includeLinks,
+    targetLanguage: input.targetLanguage,
     cookieStrategy: input.closeCookieModals ? 'ghostery' : 'none',
     scroll:
       input.maxScrollHeightPixels > 0
@@ -58,7 +63,6 @@ export function buildCrawlerOpts(
     proxyRotation,
     requestQueue,
     blockMedia: input.blockMedia,
-    browserLog: input.browserLog,
     respectRobotsTxt: input.respectRobotsTxtFile,
     dynamicContentWaitSecs: input.dynamicContentWaitSecs,
     waitForSelector: input.waitForSelector || undefined,

@@ -56,8 +56,8 @@ describe('Proxy Rotation - CLI', () => {
 
   it('should extract content through proxy via CLI', async () => {
     const outputDir = join(tempDir, 'output');
-    const proxyUrls = proxyPorts.map((port) => `http://127.0.0.1:${port}`).join(',');
     const cliBin = join(REPO_ROOT, 'apps/standalone/dist/cli.js');
+    const proxyArgs = proxyPorts.flatMap((port) => ['--proxy', `http://127.0.0.1:${port}`]);
 
     const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(
       (resolve) => {
@@ -68,8 +68,7 @@ describe('Proxy Rotation - CLI', () => {
             'http://example.com',
             '--output-dir',
             outputDir,
-            '--proxy-urls',
-            proxyUrls,
+            ...proxyArgs,
             '--proxy-rotation',
             'recommended',
             '--save',

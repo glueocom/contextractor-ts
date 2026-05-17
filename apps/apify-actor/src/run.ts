@@ -21,7 +21,6 @@ export async function runActor(): Promise<void> {
   }
 
   const input = parsed.data;
-  if (input.debugLog) log.setLevel(log.LEVELS.DEBUG);
 
   const startUrls = input.startUrls
     .map((u) => u?.url)

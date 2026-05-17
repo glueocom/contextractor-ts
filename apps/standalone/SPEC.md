@@ -27,7 +27,7 @@ Options: all extraction flags (`--save`, `--max-pages`, `--headless`, `--crawler
 - `--dataset <name>` — named dataset for Crawlee storage (default `default`)
 - `--save-destination <dest>` — repeatable; `key-value-store` (default) or `dataset`
 - `--storage-dir <path>` — override Crawlee storage directory
-- `--use-sitemaps` — fetch `sitemap.xml` at each start URL domain root and enqueue matching URLs (filtered by `--globs` / `--excludes`) in addition to link-following
+- `--use-sitemaps` — fetch `sitemap.xml` at each start URL domain root and enqueue matching URLs (filtered by `--glob` / `--exclude`) in addition to link-following
 - `--store-skipped-urls` — push skipped URL records (`status: 'skipped'`) to the Crawlee dataset after the crawl
 - `--initial-concurrency <n>` — initial parallel requests; Crawlee auto-scales up to `--max-concurrency`; `0` (default) lets Crawlee pick the starting concurrency
 - `--block-media` / `--no-block-media` — block images, stylesheets, fonts, PDFs, and ZIPs (no effect for `cheerio`)
@@ -60,7 +60,7 @@ Prints the resolved Crawlee storage directory and exits.
 
 `defaults (Zod schema) → config file (JSON) → CLI args`
 
-Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--save`, `--save-destination`, `--proxy-urls`) are not accepted in the config file. Unknown keys are stripped by `ContextractorInput.parse()`.
+Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--save`, `--save-destination`, `--proxy`) are not accepted in the config file. Unknown keys are stripped by `ContextractorInput.parse()`.
 
 ## Output
 
