@@ -13,6 +13,8 @@ COPY packages/schema/package.json packages/schema/
 COPY packages/extraction/native/npm/linux-x64-gnu/ packages/extraction/native/npm/linux-x64-gnu/
 COPY packages/extraction/native/npm/linux-arm64-gnu/ packages/extraction/native/npm/linux-arm64-gnu/
 COPY packages/extraction/native/package.json packages/extraction/native/
+COPY packages/extraction/native/index.d.ts packages/extraction/native/
+COPY packages/extraction/native/index.js packages/extraction/native/
 COPY packages/extraction/package.json packages/extraction/
 COPY packages/crawler/package.json packages/crawler/
 COPY apps/standalone/package.json apps/standalone/
