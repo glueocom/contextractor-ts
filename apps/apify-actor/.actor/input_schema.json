@@ -178,7 +178,7 @@
       "title": "Save formats",
       "type": "array",
       "description": "Output formats to extract and save. \"original\" saves the raw page HTML before extraction.",
-      "editor": "checkboxes",
+      "editor": "select",
       "default": ["markdown"],
       "items": {
         "type": "string",
@@ -190,7 +190,7 @@
       "title": "Save to",
       "type": "array",
       "description": "Where to save extracted content. Supported by both Actor and CLI.",
-      "editor": "checkboxes",
+      "editor": "select",
       "default": ["key-value-store"],
       "items": {
         "type": "string",

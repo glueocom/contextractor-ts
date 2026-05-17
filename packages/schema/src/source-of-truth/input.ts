@@ -232,7 +232,7 @@ export const ContextractorInput = z.object({
     .meta({
       title: 'Save formats',
       ...apifyMeta({
-        editor: 'checkboxes',
+        editor: 'select',
         sectionCaption: 'Output settings',
         enumTitles: ['Plain text', 'Markdown', 'JSON', 'HTML', 'Original HTML'],
       }),
@@ -245,7 +245,7 @@ export const ContextractorInput = z.object({
     .meta({
       title: 'Save to',
       ...apifyMeta({
-        editor: 'checkboxes',
+        editor: 'select',
         enumTitles: ['Key-value store', 'Dataset'],
       }),
     }),

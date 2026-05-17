@@ -203,7 +203,7 @@
             "type": "object",
             "properties": {
                 "type": { "enum": ["array"] },
-                "editor": { "enum": ["json", "requestListSources", "pseudoUrls", "globs", "keyValue", "stringList", "fileupload", "select", "schemaBased", "hidden", "checkboxes"] },
+                "editor": { "enum": ["json", "requestListSources", "pseudoUrls", "globs", "keyValue", "stringList", "fileupload", "select", "schemaBased", "hidden"] },
                 "isSecret": { "type": "boolean" }
             },
             "required": ["type", "title", "description", "editor"],
@@ -240,13 +240,6 @@
                                 "required": ["editor"],
                                 "properties": {
                                     "editor": { "enum": ["select"] },
-                                    "items": { "$ref": "#/definitions/arrayItemsSelect" }
-                                }
-                            },
-                            {
-                                "required": ["editor"],
-                                "properties": {
-                                    "editor": { "enum": ["checkboxes"] },
                                     "items": { "$ref": "#/definitions/arrayItemsSelect" }
                                 }
                             },

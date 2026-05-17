@@ -141,21 +141,28 @@ function normalizeProperty(raw: Record<string, unknown>): Record<string, unknown
     delete out.propertyNames;
   }
 
-  // The existing INPUT_SCHEMA omits `items` for top-level arrays — Apify
-  // infers item shape from `editor`. Strip to keep the snapshot stable,
-  // except for `checkboxes` which needs `items.enum` to render options.
+  // For array+select with an enum on items, Apify's `arrayItemsSelect`
+  // definition requires items to be present. Keep items in that case;
+  // strip items for all other array editors (Apify infers from `editor`).
+  const isArraySelectWithEnum =
+    type === 'array' &&
+    out.editor === 'select' &&
+    typeof out.items === 'object' &&
+    out.items !== null &&
+    Array.isArray((out.items as Record<string, unknown>).enum);
+
   if (
     type !== undefined &&
     TYPES_WITH_TOP_LEVEL_ITEMS_STRIPPED.has(type) &&
-    out.editor !== 'checkboxes'
+    !isArraySelectWithEnum
   ) {
     delete out.items;
   }
 
-  // For checkboxes, move `enumTitles` from the top level into `items.enumTitles`
-  // so Apify renders human-readable labels next to each checkbox.
+  // Move `enumTitles` from the top level into `items.enumTitles` so Apify
+  // renders human-readable labels in the multi-select picker.
   if (
-    out.editor === 'checkboxes' &&
+    isArraySelectWithEnum &&
     Array.isArray(out.enumTitles) &&
     typeof out.items === 'object' &&
     out.items !== null
