@@ -20,12 +20,14 @@ vi.mock('./sinks.js', () => ({
 }));
 
 vi.mock('@contextractor/crawler', async (importOriginal) => {
-  type Opts = { onFailedRequest?: (info: {
-    url: string;
-    loadedUrl: string | null;
-    errorMessages: string[];
-    retryCount: number;
-  }) => Promise<void> };
+  type Opts = {
+    onFailedRequest?: (info: {
+      url: string;
+      loadedUrl: string | null;
+      errorMessages: string[];
+      retryCount: number;
+    }) => Promise<void>;
+  };
   const original = await importOriginal<typeof import('@contextractor/crawler')>();
   return {
     ...original,
@@ -43,10 +45,11 @@ vi.mock('@contextractor/crawler', async (importOriginal) => {
 });
 
 describe('runExtractAction — exit code 2 on partial failure', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn<typeof process, 'exit'>>;
+  let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+    // biome-ignore lint/suspicious/noExplicitAny: process.exit is NodeJS.Process.exit, not assignable to keyof Process in older @types/node
+    exitSpy = vi.spyOn(process, 'exit' as any).mockImplementation(() => undefined);
   });
 
   afterEach(() => {
