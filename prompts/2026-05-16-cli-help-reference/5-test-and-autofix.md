@@ -174,7 +174,7 @@ Run a second crawl with explicit new schema fields to confirm the promoted extra
 ```bash
 mcpc --json @apify tools-call call-actor \
   actor:="glueo/contextractor-test" \
-  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxRequestsPerCrawl":1,"save":["markdown"],"mode":"precision","includeComments":false}'
+  input:='{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxPagesPerCrawl":1,"save":["markdown"],"mode":"precision","includeComments":false}'
 ```
 
 Verify the run succeeds and the dataset item reflects the extraction settings (leaner output with fewer comments due to precision mode).

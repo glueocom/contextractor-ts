@@ -88,7 +88,7 @@ describe('exit code — partial failure', () => {
       const actual = await importOriginal<typeof import('crawlee')>();
       return {
         ...actual,
-        Dataset: { open: vi.fn().mockResolvedValue({ getData: vi.fn(), drop: vi.fn() }) },
+        Dataset: { open: vi.fn().mockResolvedValue({ getData: vi.fn(), pushData: vi.fn(), drop: vi.fn() }) },
         KeyValueStore: { open: vi.fn().mockResolvedValue({ getValue: vi.fn(), setValue: vi.fn(), forEachKey: vi.fn() }) },
         Configuration: { getGlobalConfig: vi.fn(() => ({ set: vi.fn() })) },
       };
@@ -96,7 +96,7 @@ describe('exit code — partial failure', () => {
 
     const { buildProgram } = await import('./cliProgram.js');
     const program = buildProgram();
-    await program.parseAsync(['https://example.com'], { from: 'user' });
+    await program.parseAsync(['extract', 'https://example.com'], { from: 'user' });
 
     expect(exitSpy).toHaveBeenCalledWith(2);
   });

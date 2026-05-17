@@ -269,13 +269,13 @@ Comma-split breaks on values containing commas (proxy URLs). Repeatable is the c
 Use the existing `collectValues` helper (already used by `--save-destination`):
 
 ```ts
-.option('--save <format>', 'Output format: markdown, txt, json, html, original (repeatable)', collectValues, s.save._def.defaultValue())
+.option('--save <format>', 'Output format: markdown, txt, json, html, original (repeatable)', collectValues, s.save._def.defaultValue)
 .option('--proxy <url>', 'Proxy URL (repeatable)', collectValues, [] as string[])
 .option('--glob <pattern>', 'Glob pattern to include (repeatable)', collectValues, [] as string[])
 .option('--exclude <pattern>', 'Glob pattern to exclude (repeatable)', collectValues, [] as string[])
 ```
 
-The `--save` default reads from the Zod schema (`s.save._def.defaultValue()` → `['markdown']`), so `--help` shows `(default: markdown)` and omitting `--save` produces markdown output automatically. This is the same default the Apify Actor and npm library already use via the schema — no change needed in those layers.
+The `--save` default reads from the Zod schema (`s.save._def.defaultValue` → `['markdown']`), so `--help` shows `(default: markdown)` and omitting `--save` produces markdown output automatically. This is the same default the Apify Actor and npm library already use via the schema — no change needed in those layers.
 
 In `buildSchemaOverrides()`, remove the `.split(',')` call for `save` — the value is already `string[]`:
 
@@ -306,17 +306,17 @@ Commander.js v14 auto-appends `(default: value)` to help text when a default is 
 
 ```ts
 const s = ContextractorInput.shape;
-// s.headless._def.defaultValue()           → true
-// s.maxPagesPerCrawl._def.defaultValue()   → 0
-// s.pageLoadTimeoutSecs._def.defaultValue() → 60
-// s.maxConcurrency._def.defaultValue()     → 50
+// s.headless._def.defaultValue           → true
+// s.maxPagesPerCrawl._def.defaultValue   → 0
+// s.pageLoadTimeoutSecs._def.defaultValue → 60
+// s.maxConcurrency._def.defaultValue     → 50
 ```
 
 **Numeric options where `0` has a special meaning** — use `.default(value, 'label')` for a human-readable label:
 
 ```ts
 new Option('--max-pages <n>', 'Max pages to crawl', toInt)
-  .default(s.maxPagesPerCrawl._def.defaultValue(), 'unlimited')
+  .default(s.maxPagesPerCrawl._def.defaultValue, 'unlimited')
 // help → --max-pages <n>  Max pages to crawl (default: unlimited)
 ```
 
@@ -324,14 +324,14 @@ new Option('--max-pages <n>', 'Max pages to crawl', toInt)
 
 ```ts
 new Option('--page-load-timeout <secs>', 'Page load timeout in seconds', toInt)
-  .default(s.pageLoadTimeoutSecs._def.defaultValue())
+  .default(s.pageLoadTimeoutSecs._def.defaultValue)
 // help → --page-load-timeout <secs>  Page load timeout in seconds (default: 60)
 ```
 
 **Boolean flags with a non-obvious `true` default** — `headless` and `closeCookieModals` both default to `true` in the schema. Pass the schema value so `--help` reveals this:
 
 ```ts
-.option('--headless', 'Run browser in headless mode', s.headless._def.defaultValue())
+.option('--headless', 'Run browser in headless mode', s.headless._def.defaultValue)
 // help → --headless  Run browser in headless mode (default: true)
 ```
 
@@ -351,8 +351,8 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 
 **Options to update** in `addExtractionOptions()` (read all values from `ContextractorInput.shape`):
 
-- `--save` — use `s.save._def.defaultValue()` (resolves to `['markdown']`); Commander auto-appends `(default: markdown)` to help; covered by the repeatable flags section above
-- `--save-destination` — already repeatable, but its Commander default is `[] as string[]` instead of the schema default; replace with `s.saveDestination._def.defaultValue()` (resolves to `['key-value-store']`); then remove the manual fallback in `runExtractAction()` at the `destinations` assignment — `opts.saveDestination` will never be empty after this change:
+- `--save` — use `s.save._def.defaultValue` (resolves to `['markdown']`); Commander auto-appends `(default: markdown)` to help; covered by the repeatable flags section above
+- `--save-destination` — already repeatable, but its Commander default is `[] as string[]` instead of the schema default; replace with `s.saveDestination._def.defaultValue` (resolves to `['key-value-store']`); then remove the manual fallback in `runExtractAction()` at the `destinations` assignment — `opts.saveDestination` will never be empty after this change:
 
   ```ts
   // Before:
@@ -366,7 +366,7 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 - `--output-dir` — hardcode `'./output'` (CLI-only); remove `"(default: ./output)"` from description
 - `--max-pages`, `--max-results`, `--crawl-depth` — `.default(schema value, 'unlimited')`; remove `"(0 = …)"` from description
 - `--page-load-timeout`, `--max-concurrency`, `--max-retries`, `--max-scroll-height` — `.default(schema value)`
-- `--headless`, `--close-cookie-modals` — pass `s.fieldName._def.defaultValue()` (both are `true`; non-obvious)
+- `--headless`, `--close-cookie-modals` — pass `s.fieldName._def.defaultValue` (both are `true`; non-obvious)
 - `--initial-concurrency` — keep description `"(0 = Crawlee default)"` as-is; `0` means Crawlee picks at runtime, not a static schema value
 
 ## Drop: Remove low-value parameters
