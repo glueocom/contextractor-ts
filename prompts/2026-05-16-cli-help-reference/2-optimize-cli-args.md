@@ -352,6 +352,17 @@ Remove any manual `"(default: …)"` or `"(0 = unlimited)"` strings from descrip
 **Options to update** in `addExtractionOptions()` (read all values from `ContextractorInput.shape`):
 
 - `--save` — use `s.save._def.defaultValue()` (resolves to `['markdown']`); Commander auto-appends `(default: markdown)` to help; covered by the repeatable flags section above
+- `--save-destination` — already repeatable, but its Commander default is `[] as string[]` instead of the schema default; replace with `s.saveDestination._def.defaultValue()` (resolves to `['key-value-store']`); then remove the manual fallback in `runExtractAction()` at the `destinations` assignment — `opts.saveDestination` will never be empty after this change:
+
+  ```ts
+  // Before:
+  const destinations =
+    (opts.saveDestination ?? []).length > 0 ? (opts.saveDestination ?? []) : ['key-value-store'];
+
+  // After:
+  const destinations = opts.saveDestination;
+  ```
+
 - `--output-dir` — hardcode `'./output'` (CLI-only); remove `"(default: ./output)"` from description
 - `--max-pages`, `--max-results`, `--crawl-depth` — `.default(schema value, 'unlimited')`; remove `"(0 = …)"` from description
 - `--page-load-timeout`, `--max-concurrency`, `--max-retries`, `--max-scroll-height` — `.default(schema value)`
