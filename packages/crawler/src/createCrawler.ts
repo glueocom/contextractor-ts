@@ -256,6 +256,7 @@ export function createContextractorCrawler(
     });
     const adaptiveCrawler = new AdaptivePlaywrightCrawler({
       ...baseOptions,
+      preventDirectStorageAccess: false,
       renderingTypeDetectionRatio: (opts.renderingTypeDetectionPercentage ?? 10) / 100,
       ...(adaptivePreHooks.length > 0 ? { preNavigationHooks: adaptivePreHooks } : {}),
       ...(adaptivePostHooks.length > 0 ? { postNavigationHooks: adaptivePostHooks } : {}),
