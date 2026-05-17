@@ -178,15 +178,25 @@
       "title": "Save formats",
       "type": "array",
       "description": "Output formats to extract and save. \"original\" saves the raw page HTML before extraction.",
-      "editor": "json",
-      "default": ["markdown"]
+      "editor": "checkboxes",
+      "default": ["markdown"],
+      "items": {
+        "type": "string",
+        "enum": ["txt", "markdown", "json", "html", "original"],
+        "enumTitles": ["Plain text", "Markdown", "JSON", "HTML", "Original HTML"]
+      }
     },
     "saveDestination": {
       "title": "Save to",
       "type": "array",
       "description": "Where to save extracted content. Supported by both Actor and CLI.",
-      "editor": "json",
-      "default": ["key-value-store"]
+      "editor": "checkboxes",
+      "default": ["key-value-store"],
+      "items": {
+        "type": "string",
+        "enum": ["key-value-store", "dataset"],
+        "enumTitles": ["Key-value store", "Dataset"]
+      }
     },
     "datasetName": {
       "title": "Dataset name",

@@ -11,6 +11,7 @@ export interface ApifyMeta {
     | 'checkbox'
     | 'select'
     | 'json'
+    | 'checkboxes'
     | 'datepicker'
     | 'requestListSources'
     | 'pseudoUrls'

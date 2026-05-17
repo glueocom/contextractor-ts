@@ -142,9 +142,26 @@ function normalizeProperty(raw: Record<string, unknown>): Record<string, unknown
   }
 
   // The existing INPUT_SCHEMA omits `items` for top-level arrays — Apify
-  // infers item shape from `editor`. Strip to keep the snapshot stable.
-  if (type !== undefined && TYPES_WITH_TOP_LEVEL_ITEMS_STRIPPED.has(type)) {
+  // infers item shape from `editor`. Strip to keep the snapshot stable,
+  // except for `checkboxes` which needs `items.enum` to render options.
+  if (
+    type !== undefined &&
+    TYPES_WITH_TOP_LEVEL_ITEMS_STRIPPED.has(type) &&
+    out.editor !== 'checkboxes'
+  ) {
     delete out.items;
+  }
+
+  // For checkboxes, move `enumTitles` from the top level into `items.enumTitles`
+  // so Apify renders human-readable labels next to each checkbox.
+  if (
+    out.editor === 'checkboxes' &&
+    Array.isArray(out.enumTitles) &&
+    typeof out.items === 'object' &&
+    out.items !== null
+  ) {
+    (out.items as Record<string, unknown>).enumTitles = out.enumTitles;
+    delete out.enumTitles;
   }
 
   // Apify accepts `minItems`/`maxItems` on arrays per the meta-schema, but the
