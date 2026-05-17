@@ -135,6 +135,49 @@ const proxyUrls = opts.proxy ?? [];
 
 Update `ExtractOpts`: `proxyUrls?: string` → `proxy?: string[]`; `globs?: string` → `glob?: string[]`; `excludes?: string` → `exclude?: string[]`.
 
+## Fix: Show defaults and required indicators in help output
+
+Commander.js v14 auto-appends `(default: value)` to help text when a default is passed at option-definition time. Currently, most options omit the default from the Commander call (leaving it to the schema layer at runtime), so help output shows nothing. Fix the options where the default is known statically.
+
+**String options with a static default** — pass the default as the third arg to `.option()`, and remove any manual "(default: …)" from the description string:
+
+```ts
+.option('-o, --output-dir <dir>', 'Output directory', './output')
+// help → -o, --output-dir <dir>  Output directory (default: "./output")
+```
+
+**Enum/choice options** — Commander renders choices and default together automatically; the `--mode` option introduced in this prompt already uses this correctly:
+
+```ts
+.addOption(
+  new Option('--mode <mode>', 'Extraction mode: …')
+    .choices(['precision', 'balanced', 'recall'])
+    .default('balanced'),
+)
+// help → --mode <mode>  Extraction mode: … (choices: "precision", "balanced", "recall", default: "balanced")
+```
+
+**Numeric options where `0` has a special meaning** — use the two-arg `default(value, 'label')` form to show a human-readable label instead of the raw number:
+
+```ts
+.addOption(new Option('--max-pages <n>', 'Max pages to crawl', toInt).default(0, 'unlimited'))
+.addOption(new Option('--max-results <n>', 'Max results per crawl', toInt).default(0, 'unlimited'))
+```
+
+**Boolean flags** — omit explicit defaults for flags where `false` is obvious (i.e., most toggles). Only add `.default(true)` where the flag is on by default and that would surprise a user.
+
+**Required indicators** — the `<angle bracket>` convention in the flag string is the universal signal for "this option needs a value if used." Commander's `.requiredOption()` enforces absence at parse time with an error, but adds no visual marker in help text — this is correct behavior shared by Docker, kubectl, and gh. Do not add manual `(required)` to description text unless the requirement is genuinely non-obvious to users.
+
+Contextractor has no unconditionally required options (URLs are positional), so `.requiredOption()` is not needed anywhere. The existing `<bracket>` notation is sufficient.
+
+**Options to update** in `addExtractionOptions()`:
+
+- `--output-dir` — pass `'./output'` as the third arg; remove `"(default: ./output)"` from description string
+- `--max-pages` — convert to `new Option(..., toInt).default(0, 'unlimited')`; remove `"(0 = unlimited)"` from description string
+- `--max-results` — same as `--max-pages`
+- `--initial-concurrency` — keep current description `"(0 = Crawlee default)"`; the default is a Crawlee runtime constant, not a static value
+- All other numeric options whose defaults come from the schema layer at runtime — keep the description text as-is; do not guess at defaults
+
 ## After changes
 
 - `pnpm --filter @contextractor/standalone build` — must compile clean
@@ -142,3 +185,4 @@ Update `ExtractOpts`: `proxyUrls?: string` → `proxy?: string[]`; `globs?: stri
 - Update `apps/standalone/SPEC.md` with renamed flags
 - Verify with `node apps/standalone/dist/cli.js --help` — old names must not appear
 - Run `grep -r 'include-tables\|with-metadata\|include-formatting\|proxy-urls\|--globs\|--excludes\|--precision\|--recall' apps/` — must return no matches (note: `--mode precision` and `--mode recall` are the new spellings and should appear instead)
+- Run `grep -r 'default: \./output\|0 = unlimited' apps/standalone/src/cliProgram.ts` — must return no matches (defaults now expressed via Commander API, not description strings)
