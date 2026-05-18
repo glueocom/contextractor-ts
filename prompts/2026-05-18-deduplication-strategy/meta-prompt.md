@@ -1,3 +1,14 @@
+see thosse ressearches 
+- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/context/research-claude-code.md`
+- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/context/research-claude-desktop.md`
+
+save a prompt to one file at `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/prompt.md
+
+The prompt must: 
+- implement or fix deduplication in contextractor CLI NPM lib and apify actor
+- add a parameter to clI. Decite if the parameter should be just boolean like or if it should be some enumeration like "none" "basic" "full" (figure out the enumeration names, those are examples only)
+- update all the docs SPEC.md and readme files, update the messages in the CLI what is writting to the user
+
 # Contextractor Deduplication Strategy Design
 
 **Project**: [Contextractor](https://www.contextractor.com/) — Apify Actor + standalone CLI built on:
