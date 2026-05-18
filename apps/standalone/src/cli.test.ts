@@ -118,6 +118,13 @@ describe('buildProgram — --ignore-canonical-url flag', () => {
   });
 });
 
+describe('buildProgram — removed stale flags', () => {
+  it('does not expose --no-metadata on the extract subcommand', () => {
+    const program = buildProgram();
+    expect(getExtractOptions(program)).not.toContain('--no-metadata');
+  });
+});
+
 describe('urlToFilename', () => {
   it('strips protocol and replaces non-alphanumeric chars', () => {
     expect(urlToFilename('https://example.com/path/to/page')).toBe('example-com-path-to-page');

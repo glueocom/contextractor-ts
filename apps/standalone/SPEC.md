@@ -57,9 +57,9 @@ Prints the resolved Crawlee storage directory and exits.
 
 ## Config merge order
 
-`defaults (Zod schema) → config file (JSON) → CLI args`
+`schema defaults → config file (JSON) → explicit CLI args`
 
-Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--save`, `--save-destination`, `--proxy`) are not accepted in the config file. Unknown keys are stripped by `ContextractorInput.parse()`.
+Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--proxy`, `--dataset`) are not accepted in the config file. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config. Unknown keys are stripped by `ContextractorInput.parse()`.
 
 ## Output
 
@@ -69,13 +69,15 @@ One file per crawled page in the output directory, named from a URL slug (e.g. `
 
 ### Crawlee storage output
 
-Controlled by `--save-destination` (default `key-value-store`):
+Controlled by `saveDestination` / `--save-destination` (default `key-value-store`):
 
 - **`key-value-store`** — KVS key `${slug}.${ext}` (or `${slug}-original.html` for `original` format)
 - **`dataset`** — All three crawl outcomes land in the default (or named) dataset and are queryable via `contextractor list`:
   - `status: 'success'` — extracted record with `url`, metadata fields, `originalHash`, `crawl: { depth, referrerUrl }`, content per format, and `{format}Hash` fields
   - `status: 'failed'` — always pushed; record has `url`, `loadedUrl`, `errorMessages`, `retryCount`, `crawledAt` (ISO 8601)
   - `status: 'skipped'` — pushed only when `--store-skipped-urls` is set; record has `url` and `skipReason`
+
+`datasetName`, `keyValueStoreName`, and `requestQueueName` are taken from the shared input schema when present; the CLI-only `--dataset` flag overrides `datasetName` for the output dataset.
 
 Storage errors (write failures) are logged to stderr and do not abort extraction.
 

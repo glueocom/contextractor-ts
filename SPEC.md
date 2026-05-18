@@ -76,38 +76,24 @@ Canonical definition: `packages/schema/src/source-of-truth/input.ts` (`Contextra
 
 `apps/apify-actor/.actor/input_schema.json` is generated at build time by `@contextractor/gen-input-schema`. The input table in `apps/apify-actor/README.md` is auto-rebuilt from the same schema by `@contextractor/gen-md-regions`.
 
-### `trafilaturaConfig`
+### Content extraction fields
 
-Pass as a JSON object; leave empty for balanced defaults.
+The public input surface exposes first-class top-level extraction fields rather than a nested `trafilaturaConfig` object:
 
-| Field             | Type    | Default | Description                           |
-| ----------------- | ------- | ------- | ------------------------------------- |
-| fast              | boolean | `false` | Fast mode (less thorough)             |
-| favorPrecision    | boolean | `false` | High precision, less noise            |
-| favorRecall       | boolean | `false` | High recall, more content             |
-| includeComments   | boolean | `true`  | Include comments                      |
-| includeTables     | boolean | `true`  | Include tables                        |
-| includeImages     | boolean | `false` | Include images                        |
-| includeFormatting | boolean | `true`  | Preserve formatting                   |
-| includeLinks      | boolean | `true`  | Include links                         |
-| deduplicate       | boolean | `false` | Deduplicate content                   |
-| targetLanguage    | string  | `null`  | Target language code                  |
-| withMetadata      | boolean | `true`  | Forward-compat — always extracted     |
-| onlyWithMetadata  | boolean | `false` | Return only if metadata found         |
-| teiValidation     | boolean | `false` | Forward-compat — accepted but ignored |
+- `mode` — `'precision' | 'balanced' | 'recall'` (default `'balanced'`)
+- `includeComments` — boolean, default `true`
+- `includeTables` — boolean, default `true`
+- `includeImages` — boolean, default `false`
+- `includeLinks` — boolean, default `true`
+- `targetLanguage` — string, default `''` (empty means accept any language)
 
-Keys accept both camelCase and snake_case; snake_case is normalized internally.
-
-Backward-compat presets:
-- `{}` or omitted → balanced default
-- `{"favorPrecision": true}` → high precision mode
-- `{"favorRecall": true}` → high recall mode
+Internal binding-only knobs (`favorPrecision`, `favorRecall`, `includeFormatting`, `withMetadata`, `onlyWithMetadata`, `teiValidation`, `deduplicate`, `fast`) remain inside `@contextractor/extraction` / `@contextractor/crawler` and are not part of the user-facing schema.
 
 ### Standalone CLI config file
 
-The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--save`, `--proxy-urls`) are not accepted in the config file.
+The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags are `--output-dir`, `--proxy`, and the named-dataset override `--dataset`. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config.
 
-Config merge order: `config file → CLI args → ContextractorInput.parse()`.
+Config merge order: `schema defaults → config file → explicit CLI args`.
 
 ## Output Schema
 
@@ -177,7 +163,9 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 
 **File output** (default, backwards-compatible): one file per crawled page in `--output-dir` (default `./output/`), named from a URL slug (e.g. `example-com-page.md`). Metadata header prepended to text-format outputs when available.
 
-**Crawlee storage** (controlled by `--save-destination`): KVS keys use URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry `url`, metadata, `originalHash` (MD5 of raw HTML), per-format content as inline strings, and a `{format}Hash` field alongside each saved format.
+**Crawlee storage** (controlled by `saveDestination` / `--save-destination`): KVS keys use URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry all crawl outcomes — `status: 'success'` for extracted pages with metadata, `originalHash`, inline content, and `{format}Hash` fields; `status: 'failed'` for exhausted retries; and optional `status: 'skipped'` records when skipped-URL recording is enabled.
+
+The standalone CLI exits with code `2` when at least one request fails after retries, while still flushing dataset/KVS output for the rest of the crawl.
 
 ## Build
 

@@ -13,15 +13,14 @@ Playwright).
 ## Usage
 
 ```bash
-contextractor [OPTIONS] [URLS...]         # backwards-compatible shorthand
-contextractor extract [URLS...]           # explicit extract subcommand
+contextractor extract [URLS...]
 ```
 
 ```bash
-contextractor https://example.com
-contextractor https://example.com --precision --save json -o ./results
+contextractor extract https://example.com
+contextractor extract https://example.com --mode precision --save json -o ./results
 contextractor extract https://example.com --save-destination dataset
-contextractor --config config.json --max-pages 10
+contextractor extract --config config.json --max-pages 10
 ```
 
 ## Subcommands
@@ -29,6 +28,11 @@ contextractor --config config.json --max-pages 10
 ### `extract`
 
 Extract content from one or more URLs and save to storage.
+
+When `saveDestination` includes `dataset`, successful pages are pushed with
+`status: 'success'`, failed requests are always pushed with `status: 'failed'`,
+and skipped URLs can be recorded with `--store-skipped-urls`. The CLI exits
+with code `2` when at least one request fails after retries.
 
 ```bash
 contextractor extract https://example.com
@@ -96,18 +100,23 @@ Storage directory is resolved in this order (first match wins):
 `@contextractor/standalone` re-exports Crawlee's storage types for library consumers:
 
 ```typescript
-import { Dataset, KeyValueStore, Configuration } from '@contextractor/standalone';
+import {
+  Dataset,
+  type DatasetContent,
+  KeyValueStore,
+  Configuration,
+} from '@contextractor/standalone';
 
 const ds = await Dataset.open('my-dataset');
-await ds.forEach((item) => console.log(item));
+await ds.forEach((item: DatasetContent) => console.log(item));
 
 const kvs = await KeyValueStore.open('default');
 const value = await kvs.getValue('my-key');
 ```
 
 The CLI flag list below is generated from the same Commander program the
-binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
-`--no-metadata`, `--no-links`, `--no-comments`) appear as separate rows.
+binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
+`--no-links`, `--no-comments`) appear as separate rows.
 
 <!-- @generated:start name="cli-flags" -->
 
@@ -115,7 +124,8 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 
 | Option | Description |
 |--------|-------------|
-| `--version`, `-V` | output the version number |
+| `--input-file` | Read URLs (one per line) from a file |
+| `--dataset` | Route output to a named dataset (default: default) |
 | `--config`, `-c` | Path to JSON config file |
 | `--output-dir`, `-o` | Output directory |
 | `--max-pages` | Max pages to crawl (0 = unlimited) |
@@ -155,7 +165,6 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-formatting`,
 | `--images` | Include image alt text and captions |
 | `--no-images` | Exclude image alt text and captions (default) |
 | `--target-language` | Filter by language (e.g. en) |
-| `--no-metadata` | Skip metadata extraction |
 | `--verbose`, `-v` | Enable verbose logging |
 | `--save-destination` | Where to save: key-value-store\|dataset (repeatable) |
 | `--storage-dir` | Override Crawlee storage directory |
@@ -174,8 +183,9 @@ schema in
 [`@contextractor/schema`](../../packages/schema/README.md), so
 keys use the same camelCase shape as the
 [Apify input schema](../apify-actor/README.md#input). Orchestration
-flags (`--output-dir`, `--save`, `--proxy-urls`) are CLI-only and must be set
-on the command line.
+flags (`--output-dir`, `--proxy`) are CLI-only and must be set on the command
+line. Shared schema fields like `save`, `saveDestination`, `datasetName`,
+`keyValueStoreName`, and `requestQueueName` are accepted in the JSON config.
 
 **Breaking change.** The legacy snake_case shape and the nested `proxy: {
 urls, rotation }` block from the Python release are no longer accepted by the
@@ -184,18 +194,18 @@ shared CLI input schema. Convert to the Apify-input camelCase shape below.
 ```json
 {
   "startUrls": [{ "url": "https://example.com" }],
-  "headless": true,
+  "headless": false,
   "maxPagesPerCrawl": 10,
-  "trafilaturaConfig": {
-    "favorPrecision": true,
-    "includeImages": false
-  }
+  "mode": "recall",
+  "includeImages": true,
+  "save": ["txt"],
+  "saveDestination": ["dataset"],
+  "datasetName": "my-archive"
 }
 ```
 
-Config merge order: `config file → CLI args → ContextractorInput.parse()`.
-Defaults come from the Zod schema's `.default(...)` calls; unknown keys are
-stripped by `parse()`.
+Config merge order: `schema defaults → config file → explicit CLI args`.
+Unknown keys are stripped by `ContextractorInput.parse()`.
 
 ## Enum values
 
@@ -249,5 +259,5 @@ stripped by `parse()`.
 ```bash
 pnpm install
 pnpm --filter @contextractor/standalone build
-node apps/standalone/dist/cli.js https://example.com -o /tmp/contextractor
+node apps/standalone/dist/cli.js extract https://example.com -o /tmp/contextractor
 ```

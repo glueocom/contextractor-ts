@@ -18,7 +18,7 @@ This monorepo hosts:
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`.
+`txt`, `markdown`, `json`, `html`, `original` (raw page HTML).
 
 ## Input schema
 

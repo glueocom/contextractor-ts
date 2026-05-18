@@ -33,9 +33,10 @@ All fields nullable: `title`, `author`, `date` (ISO 8601), `description`, `siten
 
 ### Other exports
 
-- `normalizeConfigKeys(input)` — accepts camelCase or snake_case keys; merges over `DEFAULT_CONFIG`; drops unknown and `null`/`undefined` values
 - `DEFAULT_CONFIG` — frozen balanced-defaults object
 - `getDefaultConfig()` — returns a mutable copy of `DEFAULT_CONFIG`
+- `computeContentInfo(content)` — returns stable MD5 hash + UTF-8 byte length
+- `projectMetadata(meta)` — projects `Metadata` to the flat dataset-oriented metadata shape
 
 ## Native binding
 

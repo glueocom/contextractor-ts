@@ -19,7 +19,6 @@ import {
   type OutputFormat,
   type TrafilaturaConfig,
   getDefaultConfig,
-  normalizeConfigKeys,
   computeContentInfo,
   projectMetadata,
 } from '@contextractor/extraction';
@@ -49,6 +48,7 @@ Top-level helper exports:
 
 - `computeContentInfo(content)` — stable hash + byte length helper.
 - `projectMetadata(meta)` — dataset-oriented metadata projection.
+- `getDefaultConfig()` — fresh mutable copy of `DEFAULT_CONFIG`.
 
 ## Supported output formats
 

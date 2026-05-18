@@ -8,7 +8,7 @@ Playwright).
 
 ## Supported output formats
 
-`txt`, `markdown`, `json`, `html`.
+`txt`, `markdown`, `json`, `html`, `original` (raw page HTML).
 
 ## Local prerequisites
 
@@ -85,16 +85,14 @@ the table below is auto-rebuilt from that schema by
 
 <!-- @generated:end name="apify-input-schema" -->
 
-`trafilaturaConfig` keys (all optional, balanced defaults when omitted):
-`fast`, `favorPrecision`, `favorRecall`, `includeComments`, `includeTables`,
-`includeImages`, `includeFormatting`, `includeLinks`, `deduplicate`,
-`targetLanguage`, `withMetadata`, `onlyWithMetadata`, `teiValidation`.
-
 ## Output
 
-Per-page dataset entry with `loadedUrl`, `loadedAt`, `httpStatus`, `metadata`
-(title, author, publishedAt, description, siteName, lang), and `originalHash`
-(32-char MD5 hex of the raw HTML, always present).
+Successful dataset entries include `status: 'success'` together with
+`loadedUrl`, `loadedAt`, `httpStatus`, `metadata` (title, author,
+publishedAt, description, siteName, lang), and `originalHash` (32-char MD5
+hex of the raw HTML, always present). Failed requests are stored as
+`status: 'failed'` records after retries are exhausted, and skipped URLs can
+be recorded as `status: 'skipped'` when `storeSkippedUrls` is enabled.
 
 When `saveDestination` includes `dataset`: each enabled format (`markdown`,
 `txt`, `json`, `html`) appears as an inline string alongside a

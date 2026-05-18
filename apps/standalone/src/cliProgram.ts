@@ -10,7 +10,7 @@ import {
 } from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
 import { Command, Option } from 'commander';
-import { Dataset, KeyValueStore, SitemapRequestList } from 'crawlee';
+import { Dataset, KeyValueStore, RequestQueue, SitemapRequestList } from 'crawlee';
 import {
   buildCrawlConfig,
   type CliOnlyOverrides,
@@ -223,7 +223,6 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--images', 'Include image alt text and captions')
     .option('--no-images', 'Exclude image alt text and captions (default)')
     .option('--target-language <lang>', 'Filter by language (e.g. en)')
-    .option('--no-metadata', 'Skip metadata extraction')
     .option('-v, --verbose', 'Enable verbose logging')
     .option(
       '--save-destination <dest>',
@@ -256,60 +255,129 @@ function addExtractionOptions(cmd: Command): Command {
 // Schema mapping helpers
 // ---------------------------------------------------------------------------
 
-function buildSchemaOverrides(opts: ExtractOpts): Partial<ContextractorInputType> {
+function isCliOverride(command: Command | undefined, optionName: string): boolean {
+  return command?.getOptionValueSource(optionName) === 'cli';
+}
+
+function getExplicitRepeatedValues(command: Command | undefined, longFlag: string): string[] {
+  const parent = command?.parent as (Command & { rawArgs?: string[] }) | undefined;
+  const current = command as (Command & { rawArgs?: string[] }) | undefined;
+  const rawArgs = parent?.rawArgs ?? current?.rawArgs ?? [];
+  const values: string[] = [];
+
+  for (let index = 0; index < rawArgs.length; index++) {
+    const arg = rawArgs[index];
+    if (arg === undefined) continue;
+    if (arg === longFlag) {
+      const value = rawArgs[index + 1];
+      if (value !== undefined) values.push(value);
+      index++;
+      continue;
+    }
+    if (arg.startsWith(`${longFlag}=`)) {
+      values.push(arg.slice(longFlag.length + 1));
+    }
+  }
+
+  return values;
+}
+
+function buildSchemaOverrides(
+  opts: ExtractOpts,
+  command?: Command,
+): Partial<ContextractorInputType> {
   const out: Partial<ContextractorInputType> = {};
 
-  if (opts.maxPages !== undefined) out.maxPagesPerCrawl = opts.maxPages;
-  if (opts.crawlDepth !== undefined) out.maxCrawlingDepth = opts.crawlDepth;
-  if (opts.headless !== undefined) out.headless = opts.headless;
-  if (opts.crawlerType) out.crawlerType = parseCrawlerType(opts.crawlerType);
-  if (opts.renderingDetectionPct !== undefined)
+  if (isCliOverride(command, 'maxPages')) out.maxPagesPerCrawl = opts.maxPages;
+  if (isCliOverride(command, 'crawlDepth')) out.maxCrawlingDepth = opts.crawlDepth;
+  if (isCliOverride(command, 'headless')) out.headless = opts.headless;
+  if (isCliOverride(command, 'crawlerType') && opts.crawlerType) {
+    out.crawlerType = parseCrawlerType(opts.crawlerType);
+  }
+  if (isCliOverride(command, 'renderingDetectionPct')) {
     out.renderingTypeDetectionPercentage = opts.renderingDetectionPct;
-  if (opts.waitUntil) out.waitUntil = parseWaitUntil(opts.waitUntil);
-  if (opts.proxyRotation) out.proxyRotation = parseProxyRotation(opts.proxyRotation);
-  if (opts.pageLoadTimeout !== undefined) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
-  if (opts.blockMedia !== undefined) out.blockMedia = opts.blockMedia;
-  if (opts.ignoreCors !== undefined) out.ignoreCorsAndCsp = opts.ignoreCors;
-  if (opts.closeCookieModals !== undefined) out.closeCookieModals = opts.closeCookieModals;
-  if (opts.maxScrollHeight !== undefined) out.maxScrollHeightPixels = opts.maxScrollHeight;
-  if (opts.ignoreSslErrors !== undefined) out.ignoreSslErrors = opts.ignoreSslErrors;
-  if (opts.userAgent !== undefined) out.userAgent = opts.userAgent;
-  if (opts.glob?.length) out.globs = opts.glob.map((s) => ({ glob: s }));
-  if (opts.exclude?.length) out.excludes = opts.exclude.map((s) => ({ glob: s }));
-  if (opts.linkSelector !== undefined) out.linkSelector = opts.linkSelector;
-  if (opts.keepUrlFragments !== undefined) out.keepUrlFragments = opts.keepUrlFragments;
-  if (opts.useSitemaps !== undefined) out.useSitemaps = opts.useSitemaps;
-  if (opts.respectRobotsTxt !== undefined) out.respectRobotsTxtFile = opts.respectRobotsTxt;
-  if (opts.cookies) out.initialCookies = parseJsonArray(opts.cookies, '--cookies');
-  if (opts.headers) out.customHttpHeaders = parseStringRecord(opts.headers, '--headers');
-  if (opts.initialConcurrency !== undefined) out.initialConcurrency = opts.initialConcurrency;
-  if (opts.maxConcurrency !== undefined) out.maxConcurrency = opts.maxConcurrency;
-  if (opts.maxRetries !== undefined) out.maxRequestRetries = opts.maxRetries;
-  if (opts.maxResults !== undefined) out.maxResultsPerCrawl = opts.maxResults;
-  if (opts.dynamicContentWait !== undefined) out.dynamicContentWaitSecs = opts.dynamicContentWait;
-  if (opts.waitForSelector !== undefined) out.waitForSelector = opts.waitForSelector;
-  if (opts.softWaitForSelector !== undefined) out.softWaitForSelector = opts.softWaitForSelector;
-  if (opts.ignoreCanonicalUrl !== undefined) out.ignoreCanonicalUrl = opts.ignoreCanonicalUrl;
+  }
+  if (isCliOverride(command, 'waitUntil') && opts.waitUntil) {
+    out.waitUntil = parseWaitUntil(opts.waitUntil);
+  }
+  if (isCliOverride(command, 'proxyRotation') && opts.proxyRotation) {
+    out.proxyRotation = parseProxyRotation(opts.proxyRotation);
+  }
+  if (isCliOverride(command, 'pageLoadTimeout')) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
+  if (isCliOverride(command, 'blockMedia')) out.blockMedia = opts.blockMedia;
+  if (isCliOverride(command, 'ignoreCors')) out.ignoreCorsAndCsp = opts.ignoreCors;
+  if (isCliOverride(command, 'closeCookieModals')) {
+    out.closeCookieModals = opts.closeCookieModals;
+  }
+  if (isCliOverride(command, 'maxScrollHeight')) out.maxScrollHeightPixels = opts.maxScrollHeight;
+  if (isCliOverride(command, 'ignoreSslErrors')) out.ignoreSslErrors = opts.ignoreSslErrors;
+  if (isCliOverride(command, 'userAgent')) out.userAgent = opts.userAgent;
+  if (isCliOverride(command, 'glob') && opts.glob?.length) {
+    out.globs = opts.glob.map((s) => ({ glob: s }));
+  }
+  if (isCliOverride(command, 'exclude') && opts.exclude?.length) {
+    out.excludes = opts.exclude.map((s) => ({ glob: s }));
+  }
+  if (isCliOverride(command, 'linkSelector')) out.linkSelector = opts.linkSelector;
+  if (isCliOverride(command, 'keepUrlFragments')) out.keepUrlFragments = opts.keepUrlFragments;
+  if (isCliOverride(command, 'useSitemaps')) out.useSitemaps = opts.useSitemaps;
+  if (isCliOverride(command, 'respectRobotsTxt')) {
+    out.respectRobotsTxtFile = opts.respectRobotsTxt;
+  }
+  if (isCliOverride(command, 'cookies') && opts.cookies) {
+    out.initialCookies = parseJsonArray(opts.cookies, '--cookies');
+  }
+  if (isCliOverride(command, 'headers') && opts.headers) {
+    out.customHttpHeaders = parseStringRecord(opts.headers, '--headers');
+  }
+  if (isCliOverride(command, 'initialConcurrency'))
+    out.initialConcurrency = opts.initialConcurrency;
+  if (isCliOverride(command, 'maxConcurrency')) out.maxConcurrency = opts.maxConcurrency;
+  if (isCliOverride(command, 'maxRetries')) out.maxRequestRetries = opts.maxRetries;
+  if (isCliOverride(command, 'maxResults')) out.maxResultsPerCrawl = opts.maxResults;
+  if (isCliOverride(command, 'dynamicContentWait')) {
+    out.dynamicContentWaitSecs = opts.dynamicContentWait;
+  }
+  if (isCliOverride(command, 'waitForSelector')) out.waitForSelector = opts.waitForSelector;
+  if (isCliOverride(command, 'softWaitForSelector')) {
+    out.softWaitForSelector = opts.softWaitForSelector;
+  }
+  if (isCliOverride(command, 'ignoreCanonicalUrl')) {
+    out.ignoreCanonicalUrl = opts.ignoreCanonicalUrl;
+  }
 
-  if (opts.mode !== undefined) out.mode = opts.mode as ContextractorInputType['mode'];
-  if (opts.tables !== undefined) out.includeTables = opts.tables;
-  if (opts.images !== undefined) out.includeImages = opts.images;
-  if (opts.links === false) out.includeLinks = false;
-  if (opts.comments === false) out.includeComments = false;
-  if (opts.targetLanguage !== undefined) out.targetLanguage = opts.targetLanguage;
+  if (isCliOverride(command, 'mode')) out.mode = opts.mode as ContextractorInputType['mode'];
+  if (isCliOverride(command, 'tables')) out.includeTables = opts.tables;
+  if (isCliOverride(command, 'images')) out.includeImages = opts.images;
+  if (isCliOverride(command, 'links')) out.includeLinks = opts.links;
+  if (isCliOverride(command, 'comments')) out.includeComments = opts.comments;
+  if (isCliOverride(command, 'targetLanguage')) out.targetLanguage = opts.targetLanguage;
+  if (isCliOverride(command, 'saveDestination')) {
+    out.saveDestination = getExplicitRepeatedValues(
+      command,
+      '--save-destination',
+    ) as ContextractorInputType['saveDestination'];
+  }
+  if (isCliOverride(command, 'storeSkippedUrls')) out.storeSkippedUrls = opts.storeSkippedUrls;
 
   return out;
 }
 
-function resolveCliOnly(opts: ExtractOpts, input: ContextractorInputType): CliOnlyOverrides {
+function resolveCliOnly(
+  opts: ExtractOpts,
+  input: ContextractorInputType,
+  command?: Command,
+): CliOnlyOverrides {
   const urls = input.startUrls
     .map((u) => u.url)
     .filter((u): u is string => typeof u === 'string' && u.length > 0);
 
-  let save: SaveFormat[] = ['markdown'];
-  if (opts.save?.length) save = validateSaveFormats(opts.save);
+  let save = input.save as SaveFormat[];
+  if (isCliOverride(command, 'save')) {
+    save = validateSaveFormats(getExplicitRepeatedValues(command, '--save'));
+  }
 
-  const proxyUrls = opts.proxy ?? [];
+  const proxyUrls = isCliOverride(command, 'proxy') ? (opts.proxy ?? []) : [];
 
   return {
     urls,
@@ -329,6 +397,7 @@ async function runExtractAction(
   opts: ExtractOpts,
   inputFile?: string,
   datasetName?: string,
+  command?: Command,
 ): Promise<void> {
   if (opts.verbose) process.env.LOG_LEVEL = 'DEBUG';
 
@@ -338,7 +407,7 @@ async function runExtractAction(
   const fromFile: Partial<ContextractorInputType> = opts.config
     ? await loadConfigFile(opts.config)
     : {};
-  const fromCli = buildSchemaOverrides(opts);
+  const fromCli = buildSchemaOverrides(opts, command);
 
   const collectedUrls = [...urls];
 
@@ -370,13 +439,16 @@ async function runExtractAction(
     process.exit(1);
   }
 
-  const cliOnly = resolveCliOnly(opts, parsed.data);
+  const cliOnly = resolveCliOnly(opts, parsed.data, command);
   const cfg = buildCrawlConfig(parsed.data, cliOnly);
 
-  const destinations = opts.saveDestination ?? ['key-value-store'];
+  const destinations = parsed.data.saveDestination;
 
-  const kvs = await KeyValueStore.open('default');
-  const ds = await Dataset.open(datasetName ?? 'default');
+  const kvs = await KeyValueStore.open(parsed.data.keyValueStoreName ?? 'default');
+  const ds = await Dataset.open(datasetName ?? parsed.data.datasetName ?? 'default');
+  const requestQueue = parsed.data.requestQueueName
+    ? await RequestQueue.open(parsed.data.requestQueueName)
+    : undefined;
 
   const formats = cfg.save.length > 0 ? cfg.save.join(', ') : 'markdown';
   process.stderr.write(`Extracting ${cfg.urls.length} URL(s) → ${cfg.outputDir}/ [${formats}]\n`);
@@ -485,6 +557,7 @@ async function runExtractAction(
     ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
     proxyConfiguration,
     proxyRotation: cliOnly.proxyRotation,
+    requestQueue,
     onFailedRequest: async (info) => {
       failedRecords.push({
         url: info.url,
@@ -502,7 +575,7 @@ async function runExtractAction(
         crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       });
     },
-    ...(opts.storeSkippedUrls
+    ...(parsed.data.storeSkippedUrls
       ? {
           onSkippedUrl: (url, reason) => {
             void ds.pushData({ url, status: 'skipped', skipReason: reason });
@@ -539,8 +612,12 @@ export function buildProgram(): Command {
   extract.option('--dataset <name>', 'Route output to a named dataset (default: default)');
   addExtractionOptions(extract);
   extract.action(
-    async (urls: string[], opts: ExtractOpts & { inputFile?: string; dataset?: string }) => {
-      await runExtractAction(urls, opts, opts.inputFile, opts.dataset);
+    async (
+      urls: string[],
+      opts: ExtractOpts & { inputFile?: string; dataset?: string },
+      command: Command,
+    ) => {
+      await runExtractAction(urls, opts, opts.inputFile, opts.dataset, command);
     },
   );
   program.addCommand(extract);
@@ -820,7 +897,6 @@ interface ExtractOpts {
   tables?: boolean;
   images?: boolean;
   targetLanguage?: string;
-  metadata?: boolean;
   verbose?: boolean;
   saveDestination?: string[];
   storageDir?: string;
