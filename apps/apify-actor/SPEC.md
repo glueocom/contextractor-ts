@@ -35,7 +35,7 @@ Every record has a `status` field. Three record shapes are possible:
 
 ## Config
 
-`buildCrawlerOpts(input, sink, proxyConfig, requestQueue, proxyRotation?)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`. Passes `crawlerType`, `renderingTypeDetectionPercentage`, `blockMedia`, `initialConcurrency`, `dynamicContentWaitSecs`, `waitForSelector`, `softWaitForSelector`, and `ignoreCanonicalUrl` directly from input.
+`buildCrawlerOpts(input, sink, proxyConfig, requestQueue, proxyRotation?)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`. Passes `mode`, `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `crawlerType`, `renderingTypeDetectionPercentage`, `blockMedia`, `initialConcurrency`, `dynamicContentWaitSecs`, `waitForSelector`, `softWaitForSelector`, and `ignoreCanonicalUrl` directly from input.
 
 ## Entry point
 
