@@ -67,6 +67,6 @@ export function buildCrawlerOpts(
     dynamicContentWaitSecs: input.dynamicContentWaitSecs,
     waitForSelector: input.waitForSelector || undefined,
     softWaitForSelector: input.softWaitForSelector || undefined,
-    ignoreCanonicalUrl: input.ignoreCanonicalUrl,
+    deduplication: input.deduplication,
   };
 }

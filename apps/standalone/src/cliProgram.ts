@@ -245,9 +245,11 @@ function addExtractionOptions(cmd: Command): Command {
       '--soft-wait-for-selector <selector>',
       'CSS selector to wait for before extracting (continues on timeout)',
     )
-    .option(
-      '--ignore-canonical-url',
-      'Disable canonical URL deduplication — extract every loaded URL even if its canonical was already extracted',
+    .addOption(
+      new Option(
+        '--deduplication <level>',
+        'Deduplication level: minimal, basic (default), or full',
+      ).choices(['minimal', 'basic', 'full']),
     );
 }
 
@@ -342,8 +344,8 @@ function buildSchemaOverrides(
   if (isCliOverride(command, 'softWaitForSelector')) {
     out.softWaitForSelector = opts.softWaitForSelector;
   }
-  if (isCliOverride(command, 'ignoreCanonicalUrl')) {
-    out.ignoreCanonicalUrl = opts.ignoreCanonicalUrl;
+  if (isCliOverride(command, 'deduplication') && opts.deduplication !== undefined) {
+    out.deduplication = opts.deduplication as ContextractorInputType['deduplication'];
   }
 
   if (isCliOverride(command, 'mode')) out.mode = opts.mode as ContextractorInputType['mode'];
@@ -553,7 +555,7 @@ async function runExtractAction(
     dynamicContentWaitSecs: cfg.dynamicContentWaitSecs > 0 ? cfg.dynamicContentWaitSecs : undefined,
     waitForSelector: cfg.waitForSelector || undefined,
     softWaitForSelector: cfg.softWaitForSelector || undefined,
-    ignoreCanonicalUrl: cfg.ignoreCanonicalUrl,
+    deduplication: cfg.deduplication,
     ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
     proxyConfiguration,
     proxyRotation: cliOnly.proxyRotation,
@@ -904,7 +906,7 @@ interface ExtractOpts {
   dynamicContentWait?: number;
   waitForSelector?: string;
   softWaitForSelector?: string;
-  ignoreCanonicalUrl?: boolean;
+  deduplication?: string;
 }
 
 interface ListOpts {

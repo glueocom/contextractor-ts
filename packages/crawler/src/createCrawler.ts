@@ -86,7 +86,7 @@ export interface ContextractorCrawlerOptions {
     retryCount: number;
   }) => Promise<void>;
   onSkippedUrl?: (url: string, reason: string) => void;
-  ignoreCanonicalUrl?: boolean;
+  deduplication?: 'minimal' | 'basic' | 'full';
 }
 
 function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConfig {
@@ -124,6 +124,9 @@ export function createContextractorCrawler(
   const crawlerType = opts.crawlerType ?? 'playwright:adaptive';
   const cookieStrategy = opts.cookieStrategy ?? 'ghostery';
   const formats = opts.formats ?? ['markdown'];
+  const deduplication: 'minimal' | 'basic' | 'full' = opts.deduplication ?? 'basic';
+  const seenCanonicals = new Set<string>();
+  const seenContentHashes = new Set<string>();
 
   if (crawlerType === 'cheerio') {
     const handler = createCheerioHandler({
@@ -137,6 +140,9 @@ export function createContextractorCrawler(
       excludes: opts.excludes,
       keepUrlFragments: opts.keepUrlFragments,
       onSkippedUrl: opts.onSkippedUrl,
+      deduplication,
+      seenCanonicals,
+      seenContentHashes,
     });
 
     const crawler = new CheerioCrawler({
@@ -283,6 +289,9 @@ export function createContextractorCrawler(
       excludes: opts.excludes,
       keepUrlFragments: opts.keepUrlFragments,
       onSkippedUrl: opts.onSkippedUrl,
+      deduplication,
+      seenCanonicals,
+      seenContentHashes,
     });
     const adaptiveCrawler = new AdaptivePlaywrightCrawler({
       ...baseOptions,
@@ -350,7 +359,9 @@ export function createContextractorCrawler(
     dynamicContentWaitSecs: opts.dynamicContentWaitSecs,
     waitForSelector: opts.waitForSelector,
     softWaitForSelector: opts.softWaitForSelector,
-    ignoreCanonicalUrl: opts.ignoreCanonicalUrl,
+    deduplication,
+    seenCanonicals,
+    seenContentHashes,
   });
 
   const crawler = new PlaywrightCrawler({

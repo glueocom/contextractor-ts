@@ -110,13 +110,26 @@ export const ContextractorInput = z.object({
     )
     .meta({ title: 'Use sitemaps' }),
 
-  ignoreCanonicalUrl: z
-    .boolean()
-    .default(false)
+  deduplication: z
+    .enum(['minimal', 'basic', 'full'])
+    .default('basic')
     .describe(
-      'If enabled, the crawler ignores the canonical URL declared in the page and always extracts content for every loaded URL. By default, pages whose canonical URL has already been extracted are skipped.',
+      "Deduplication level applied on top of Crawlee's built-in URL deduplication. " +
+        'basic (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
+        'full: also skip pages whose extracted text content matches a previously extracted page. ' +
+        "minimal: disable additional deduplication — only Crawlee's URL dedup remains active.",
     )
-    .meta({ title: 'Ignore canonical URLs' }),
+    .meta({
+      title: 'Deduplication',
+      ...apifyMeta({
+        editor: 'select',
+        enumTitles: [
+          'Minimal — URL only',
+          'Basic — canonical URL (default)',
+          'Full — canonical URL + content hash',
+        ],
+      }),
+    }),
 
   respectRobotsTxtFile: z
     .boolean()

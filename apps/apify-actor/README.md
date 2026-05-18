@@ -46,7 +46,7 @@ the table below is auto-rebuilt from that schema by
 | `linkSelector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
 | `keepUrlFragments` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
 | `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
-| `ignoreCanonicalUrl` | boolean | `false` | If enabled, the crawler ignores the canonical URL declared in the page and always extracts content for every loaded URL. By default, pages whose canonical URL has already been extracted are skipped. |
+| `deduplication` | enum (`minimal` \| `basic` \| `full`) | `"basic"` | Deduplication level applied on top of Crawlee's built-in URL deduplication. basic (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. full: also skip p… |
 | `respectRobotsTxtFile` | boolean | `false` | If enabled, the crawler will consult the robots.txt file for each domain before crawling pages. |
 | `initialCookies` | array | _optional_ | Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For e… |
 | `customHttpHeaders` | object | _optional_ | HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to… |

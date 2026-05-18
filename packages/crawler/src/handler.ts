@@ -31,13 +31,31 @@ interface HandlerOpts {
   waitForSelector?: string;
   softWaitForSelector?: string;
   dynamicContentWaitSecs?: number;
-  ignoreCanonicalUrl?: boolean;
+  deduplication: 'minimal' | 'basic' | 'full';
+  seenCanonicals: Set<string>;
+  seenContentHashes: Set<string>;
+}
+
+function checkAndRecordCanonical(
+  html: string,
+  url: string,
+  seenCanonicals: Set<string>,
+): { skip: boolean; canonical?: string } {
+  const canonicalMatch =
+    html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ??
+    html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
+  const canonical = canonicalMatch?.[1];
+  if (canonical === undefined) return { skip: false };
+  if (canonical !== url && seenCanonicals.has(canonical)) {
+    return { skip: true, canonical };
+  }
+  seenCanonicals.add(canonical);
+  return { skip: false, canonical };
 }
 
 export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawlingContext> {
   const extractor = new ContentExtractor(opts.extractionConfig);
   let resultCount = 0;
-  const seenCanonicals = new Set<string>();
 
   return async (context: PlaywrightCrawlingContext): Promise<void> => {
     const { page, request, log } = context;
@@ -75,17 +93,11 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
 
     const html = await page.content();
 
-    if (!opts.ignoreCanonicalUrl) {
-      const canonicalMatch =
-        html.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ??
-        html.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
-      const canonical = canonicalMatch?.[1];
-      if (canonical !== undefined) {
-        if (canonical !== url && seenCanonicals.has(canonical)) {
-          log.info(`Skipping ${url} — duplicate of canonical ${canonical}`);
-          return;
-        }
-        seenCanonicals.add(canonical);
+    if (opts.deduplication !== 'minimal') {
+      const { skip, canonical } = checkAndRecordCanonical(html, url, opts.seenCanonicals);
+      if (skip) {
+        log.info(`Skipping ${url} — duplicate of canonical ${canonical}`);
+        return;
       }
     }
 
@@ -96,6 +108,18 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
     for (const fmt of opts.formats) {
       const extracted = extractor.extract(html, { url, format: fmt });
       if (extracted?.content) formats[fmt] = extracted.content;
+    }
+
+    if (opts.deduplication === 'full') {
+      const extractedText = Object.values(formats).join('\n');
+      if (extractedText.length > 0) {
+        const { hash: contentHash } = computeContentInfo(extractedText);
+        if (opts.seenContentHashes.has(contentHash)) {
+          log.info(`Skipping ${url} — duplicate content hash`);
+          return;
+        }
+        opts.seenContentHashes.add(contentHash);
+      }
     }
 
     await opts.sink({
@@ -169,6 +193,15 @@ export function createCheerioHandler(opts: HandlerOpts): RequestHandler<CheerioC
     }
 
     const html = context.$('html').prop('outerHTML') ?? '';
+
+    if (opts.deduplication !== 'minimal') {
+      const { skip, canonical } = checkAndRecordCanonical(html, url, opts.seenCanonicals);
+      if (skip) {
+        log.info(`Skipping ${url} — duplicate of canonical ${canonical}`);
+        return;
+      }
+    }
+
     const { hash: rawHtmlHash, length: rawHtmlLength } = computeContentInfo(html);
     const metadata = projectMetadata(extractor.extractMetadata(html, url));
 
@@ -176,6 +209,18 @@ export function createCheerioHandler(opts: HandlerOpts): RequestHandler<CheerioC
     for (const fmt of opts.formats) {
       const extracted = extractor.extract(html, { url, format: fmt });
       if (extracted?.content) formats[fmt] = extracted.content;
+    }
+
+    if (opts.deduplication === 'full') {
+      const extractedText = Object.values(formats).join('\n');
+      if (extractedText.length > 0) {
+        const { hash: contentHash } = computeContentInfo(extractedText);
+        if (opts.seenContentHashes.has(contentHash)) {
+          log.info(`Skipping ${url} — duplicate content hash`);
+          return;
+        }
+        opts.seenContentHashes.add(contentHash);
+      }
     }
 
     await opts.sink({
@@ -223,6 +268,15 @@ export function createAdaptiveHandler(
 
     const $ = await context.parseWithCheerio();
     const html = $.html() ?? '';
+
+    if (opts.deduplication !== 'minimal') {
+      const { skip, canonical } = checkAndRecordCanonical(html, url, opts.seenCanonicals);
+      if (skip) {
+        log.info(`Skipping ${url} — duplicate of canonical ${canonical}`);
+        return;
+      }
+    }
+
     const { hash: rawHtmlHash, length: rawHtmlLength } = computeContentInfo(html);
     const metadata = projectMetadata(extractor.extractMetadata(html, url));
 
@@ -230,6 +284,18 @@ export function createAdaptiveHandler(
     for (const fmt of opts.formats) {
       const extracted = extractor.extract(html, { url, format: fmt });
       if (extracted?.content) formats[fmt] = extracted.content;
+    }
+
+    if (opts.deduplication === 'full') {
+      const extractedText = Object.values(formats).join('\n');
+      if (extractedText.length > 0) {
+        const { hash: contentHash } = computeContentInfo(extractedText);
+        if (opts.seenContentHashes.has(contentHash)) {
+          log.info(`Skipping ${url} — duplicate content hash`);
+          return;
+        }
+        opts.seenContentHashes.add(contentHash);
+      }
     }
 
     await opts.sink({

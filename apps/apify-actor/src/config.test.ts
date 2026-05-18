@@ -31,7 +31,7 @@ const BASE_INPUT: ContextractorInputType = {
   dynamicContentWaitSecs: 0,
   useSitemaps: false,
   initialConcurrency: 0,
-  ignoreCanonicalUrl: false,
+  deduplication: 'basic',
   storeSkippedUrls: false,
   mode: 'balanced',
   includeComments: true,
@@ -55,6 +55,14 @@ describe('buildCrawlerOpts blockMedia pass-through', () => {
     const input: ContextractorInputType = { ...BASE_INPUT, blockMedia: true };
     const opts = buildCrawlerOpts(input, FAKE_SINK);
     expect(opts.blockMedia).toBe(true);
+  });
+});
+
+describe('buildCrawlerOpts deduplication pass-through', () => {
+  it.each(['minimal', 'basic', 'full'] as const)('passes deduplication: "%s"', (level) => {
+    const input: ContextractorInputType = { ...BASE_INPUT, deduplication: level };
+    const opts = buildCrawlerOpts(input, FAKE_SINK);
+    expect(opts.deduplication).toBe(level);
   });
 });
 

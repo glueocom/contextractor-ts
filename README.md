@@ -43,7 +43,7 @@ interface ContextractorInputType {
   linkSelector: string;
   keepUrlFragments: boolean;
   useSitemaps: boolean;
-  ignoreCanonicalUrl: boolean;
+  deduplication: 'minimal' | 'basic' | 'full';
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;

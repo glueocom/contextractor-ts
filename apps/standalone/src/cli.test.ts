@@ -111,10 +111,16 @@ describe('buildProgram — --initial-concurrency flag', () => {
   });
 });
 
-describe('buildProgram — --ignore-canonical-url flag', () => {
+describe('buildProgram — --deduplication flag', () => {
   it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    expect(getExtractOptions(program)).toContain('--ignore-canonical-url');
+    expect(getExtractOptions(program)).toContain('--deduplication');
+  });
+  it.each(['minimal', 'basic', 'full'])('accepts "%s" as a valid choice', (level) => {
+    const program = buildProgram();
+    const extract = program.commands.find((c) => c.name() === 'extract');
+    const opt = extract?.options.find((o) => o.long === '--deduplication');
+    expect(opt?.argChoices).toContain(level);
   });
 });
 

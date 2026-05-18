@@ -75,12 +75,18 @@
       "editor": "checkbox",
       "default": false
     },
-    "ignoreCanonicalUrl": {
-      "title": "Ignore canonical URLs",
-      "type": "boolean",
-      "description": "If enabled, the crawler ignores the canonical URL declared in the page and always extracts content for every loaded URL. By default, pages whose canonical URL has already been extracted are skipped.",
-      "editor": "checkbox",
-      "default": false
+    "deduplication": {
+      "title": "Deduplication",
+      "type": "string",
+      "description": "Deduplication level applied on top of Crawlee's built-in URL deduplication. basic (default): skip pages whose <link rel=\"canonical\"> was already extracted, across all handler types. full: also skip pages whose extracted text content matches a previously extracted page. minimal: disable additional deduplication — only Crawlee's URL dedup remains active.",
+      "editor": "select",
+      "default": "basic",
+      "enum": ["minimal", "basic", "full"],
+      "enumTitles": [
+        "Minimal — URL only",
+        "Basic — canonical URL (default)",
+        "Full — canonical URL + content hash"
+      ]
     },
     "respectRobotsTxtFile": {
       "title": "Respect robots.txt",

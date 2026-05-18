@@ -51,7 +51,7 @@ type Sink<T> = (result: T) => Promise<void>;
 
 - `onFailedRequest?: (info: { url, loadedUrl, errorMessages, retryCount }) => Promise<void>` — called after all retries are exhausted for a request
 - `onSkippedUrl?: (url: string, reason: string) => void` — called synchronously during `enqueueLinks` when a URL is skipped (glob filter, robots.txt, depth limit, or concurrency cap)
-- `ignoreCanonicalUrl?: boolean` (default `false`) — when `false`, `createHandler` maintains a `seenCanonicals` Set for the lifetime of the crawl; after `page.content()` it extracts the `<link rel="canonical">` href and skips the page if that canonical was already seen (and the canonical differs from the current URL); when `true`, the check is disabled and every loaded URL is extracted; Playwright-only (`createCheerioHandler` and `createAdaptiveHandler` are not affected)
+- `deduplication?: 'minimal' | 'basic' | 'full'` (default `'basic'`) — controls post-fetch deduplication layered on top of Crawlee's built-in URL dedup. `createContextractorCrawler` initialises shared `seenCanonicals: Set<string>` and `seenContentHashes: Set<string>` and passes them to all three handler factories. `'minimal'`: no additional dedup beyond Crawlee URL dedup. `'basic'`: skips pages whose `<link rel="canonical">` was already seen and differs from the current URL; applies to all three handler types. `'full'`: additionally skips pages whose extracted text content hash was already seen.
 
 ## Proxy Configuration
 

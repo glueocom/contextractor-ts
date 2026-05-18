@@ -33,7 +33,7 @@ Options: all extraction flags (`--save`, `--max-pages`, `--headless`, `--crawler
 - `--dynamic-content-wait <seconds>` — seconds to wait for network idle after navigation; also sets the timeout for `--wait-for-selector` / `--soft-wait-for-selector`; 0 disables (Playwright only)
 - `--wait-for-selector <selector>` — CSS selector to wait for before extracting; request fails and is retried if selector does not appear within the timeout (Playwright only)
 - `--soft-wait-for-selector <selector>` — like `--wait-for-selector` but continues extraction even if the selector does not appear (Playwright only)
-- `--ignore-canonical-url` — disable canonical URL deduplication; by default, pages whose `<link rel="canonical">` was already extracted are skipped (Playwright only)
+- `--deduplication <level>` — deduplication level: `minimal` (URL dedup only), `basic` (default, canonical URL dedup across all handler types), or `full` (canonical URL + content hash dedup)
 
 ### `list`
 

@@ -172,7 +172,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--dynamic-content-wait` | Seconds to wait for network idle after navigation (0 = disabled) |
 | `--wait-for-selector` | CSS selector to wait for before extracting (fails on timeout) |
 | `--soft-wait-for-selector` | CSS selector to wait for before extracting (continues on timeout) |
-| `--ignore-canonical-url` | Disable canonical URL deduplication — extract every loaded URL even if its canonical was already extracted |
+| `--deduplication` | Deduplication level: minimal, basic (default), or full |
 
 <!-- @generated:end name="cli-flags" -->
 
@@ -221,6 +221,14 @@ Unknown keys are stripped by `ContextractorInput.parse()`.
 | `playwright:firefox` | Headless browser (Firefox+Playwright) |
 | `playwright:chromium` | Headless browser (Chromium+Playwright) |
 | `cheerio` | Raw HTTP client (Cheerio) |
+
+### `deduplication` (default `basic`)
+
+| Value | Title |
+|-------|-------|
+| `minimal` | Minimal — URL only |
+| `basic` | Basic — canonical URL (default) |
+| `full` | Full — canonical URL + content hash |
 
 ### `mode` (default `balanced`)
 

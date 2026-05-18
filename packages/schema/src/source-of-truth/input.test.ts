@@ -117,15 +117,15 @@ describe('ContextractorInput — initialConcurrency field', () => {
   });
 });
 
-describe('ContextractorInput — ignoreCanonicalUrl field', () => {
-  it('defaults to false', () => {
-    const result = ContextractorInput.parse(BASE);
-    expect(result.ignoreCanonicalUrl).toBe(false);
+describe('ContextractorInput — deduplication field', () => {
+  it('defaults to "basic"', () => {
+    expect(ContextractorInput.parse(BASE).deduplication).toBe('basic');
   });
-
-  it('accepts true', () => {
-    const result = ContextractorInput.parse({ ...BASE, ignoreCanonicalUrl: true });
-    expect(result.ignoreCanonicalUrl).toBe(true);
+  it.each(['minimal', 'basic', 'full'] as const)('accepts "%s"', (level) => {
+    expect(ContextractorInput.parse({ ...BASE, deduplication: level }).deduplication).toBe(level);
+  });
+  it('rejects unknown values', () => {
+    expect(() => ContextractorInput.parse({ ...BASE, deduplication: 'aggressive' })).toThrow();
   });
 });
 

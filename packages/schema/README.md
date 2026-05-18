@@ -48,7 +48,7 @@ interface ContextractorInputType {
   linkSelector: string;
   keepUrlFragments: boolean;
   useSitemaps: boolean;
-  ignoreCanonicalUrl: boolean;
+  deduplication: 'minimal' | 'basic' | 'full';
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
@@ -103,6 +103,14 @@ interface ContextractorInputType {
 | `playwright:firefox` | Headless browser (Firefox+Playwright) |
 | `playwright:chromium` | Headless browser (Chromium+Playwright) |
 | `cheerio` | Raw HTTP client (Cheerio) |
+
+### `deduplication` (default `basic`)
+
+| Value | Title |
+|-------|-------|
+| `minimal` | Minimal — URL only |
+| `basic` | Basic — canonical URL (default) |
+| `full` | Full — canonical URL + content hash |
 
 ### `mode` (default `balanced`)
 

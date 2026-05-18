@@ -89,8 +89,8 @@ interface CrawlConfig {
   waitForSelector: string;
   softWaitForSelector: string;
 
-  // Canonical deduplication.
-  ignoreCanonicalUrl: boolean;
+  // Deduplication.
+  deduplication: 'minimal' | 'basic' | 'full';
 
   // Output formats.
   save: SaveFormat[];
@@ -142,7 +142,7 @@ export function buildCrawlConfig(
     dynamicContentWaitSecs: input.dynamicContentWaitSecs,
     waitForSelector: input.waitForSelector,
     softWaitForSelector: input.softWaitForSelector,
-    ignoreCanonicalUrl: input.ignoreCanonicalUrl,
+    deduplication: input.deduplication,
     mode: input.mode,
     includeComments: input.includeComments,
     includeTables: input.includeTables,
