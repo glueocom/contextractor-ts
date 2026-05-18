@@ -1,15 +1,36 @@
-Contextractor https://www.contextractor.com/ is based on https://github.com/Murrough-Foley/rs-trafilatura
+# Contextractor Deduplication Strategy Design
 
-both have some deduplication functionality (verify this claim).
+**Project**: [Contextractor](https://www.contextractor.com/) — Apify Actor + standalone CLI built on:
+- [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) — Rust extraction engine
+- [Crawlee](https://crawlee.dev/) — Playwright/Cheerio crawler
 
-Design a way how to integrate that functionality
+## Verified: Both libraries have deduplication, but of different kinds
 
-What is the best Approach?
+**Trafilatura deduplication** (content-level, intra-document):
+- LRU cache frequency counter — exact text match, not fuzzy/near-duplicate
+- Drops repeated paragraphs/elements within a single extraction call (not cross-document)
+- Controlled via `Options { deduplicate: bool, dedup_cache_size: usize, max_duplicate_ratio: f64 }`
+- Default: disabled (`deduplicate: false`)
 
-A) combine Traffilatura deduplication functionality with Crawlee deduplication functionality, deeply investigate how
+**Crawlee deduplication** (URL-level):
+- RequestQueue deduplicates on `uniqueKey` (normalized URL by default — lowercase, ordered query params, fragment stripped)
+- Always on — duplicate URLs are silently dropped before crawling
 
-B) use only Traffilatura deduplication functionality drop Crawlee deduplication functionality, deeply investigate how
+**What Contextractor already adds on top**:
+- Canonical URL deduplication: reads `<link rel="canonical">`, tracks seen canonicals in a `Set<string>`, skips pages whose canonical was already extracted
+- Enabled by default; disabled by `--ignore-canonical-url`
+- **Gap**: only implemented in the Playwright handler — not in Cheerio or Adaptive handlers
 
-C) use only Crawlee deduplication functionality drop Crawlee deduplication functionality, deeply investigate how
+## Design Task
 
-D) something else?
+Design an integrated deduplication strategy for Contextractor. Deeply investigate each option:
+
+**A)** Combine Trafilatura's intra-document content deduplication with Crawlee's URL deduplication — enable both, investigate how they complement each other and what each covers
+
+**B)** Use only Trafilatura's content deduplication, drop reliance on Crawlee's URL deduplication
+
+**C)** Use only Crawlee's URL deduplication, drop Trafilatura's content deduplication entirely
+
+**D)** Something else? (e.g., cross-document content hash deduplication using already-computed MD5 hashes per extraction, SimHash near-duplicate detection, extending canonical URL dedup to all handler types)
+
+For each option assess: what problem it solves, what it leaves uncovered, implementation complexity, performance implications (in-memory vs persistent, per-document vs crawler-wide), and whether it should be user-configurable or always-on.
