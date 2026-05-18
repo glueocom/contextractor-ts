@@ -17,14 +17,12 @@ Add a `deduplication` enum parameter to the Contextractor CLI, Apify Actor, and 
 ## Design
 
 ```
-deduplication: 'url' | 'canonical' | 'content'   default: 'canonical'
+deduplication: 'minimal' | 'basic' | 'full'   default: 'basic'
 ```
 
-- `'url'` — only Crawlee's built-in URL dedup (pre-fetch, always active)
-- `'canonical'` — + canonical URL dedup in all three handler types
-- `'content'` — + cross-document content hash dedup: skip sink write when extracted text hash was already seen
-
-Names follow the dominant convention in crawler tooling (Elastic, Firecrawl, Nutch): each value names the highest-active dedup layer, not a quality tier.
+- `'minimal'` — only Crawlee's built-in URL dedup (pre-fetch, always active)
+- `'basic'` — + canonical URL dedup in all three handler types
+- `'full'` — + cross-document content hash dedup: skip sink write when extracted text hash was already seen
 
 **Do not** enable Trafilatura's `deduplicate` flag — leave `deduplicate: false` hardcoded in `createCrawler.ts`. That is intra-document element dedup (internal to trafilatura), unrelated to cross-document dedup.
 
@@ -50,19 +48,19 @@ Names follow the dominant convention in crawler tooling (Elastic, Firecrawl, Nut
 
 ```ts
 deduplication: z
-  .enum(['url', 'canonical', 'content'])
-  .default('canonical')
+  .enum(['minimal', 'basic', 'full'])
+  .default('basic')
   .describe(
     'Deduplication level applied on top of Crawlee\'s built-in URL deduplication. ' +
-    'canonical (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
-    'content: also skip pages whose extracted text content matches a previously extracted page. ' +
-    'url: disable additional deduplication — only Crawlee\'s URL dedup remains active.',
+    'basic (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
+    'full: also skip pages whose extracted text content matches a previously extracted page. ' +
+    'minimal: disable additional deduplication — only Crawlee\'s URL dedup remains active.',
   )
   .meta({
     title: 'Deduplication',
     ...apifyMeta({
       editor: 'select',
-      enumTitles: ['URL only', 'Canonical URL (default)', 'Content hash'],
+      enumTitles: ['Minimal — URL only', 'Basic — canonical URL (default)', 'Full — canonical URL + content hash'],
     }),
   }),
 ```
@@ -72,7 +70,7 @@ deduplication: z
 **Update `HandlerOpts`**: remove `ignoreCanonicalUrl?: boolean`, add:
 
 ```ts
-deduplication: 'url' | 'canonical' | 'content';
+deduplication: 'minimal' | 'basic' | 'full';
 seenCanonicals: Set<string>;
 seenContentHashes: Set<string>;
 ```
@@ -103,7 +101,7 @@ function checkAndRecordCanonical(
 - Replace the existing canonical block (lines 78–90) with:
 
 ```ts
-if (opts.deduplication !== 'url') {
+if (opts.deduplication !== 'minimal') {
   const { skip, canonical } = checkAndRecordCanonical(html, url, opts.seenCanonicals);
   if (skip) {
     log.info(`Skipping ${url} — duplicate of canonical ${canonical}`);
@@ -115,7 +113,7 @@ if (opts.deduplication !== 'url') {
 - After `formats` is populated, before `opts.sink(...)`, add:
 
 ```ts
-if (opts.deduplication === 'content') {
+if (opts.deduplication === 'full') {
   const extractedText = Object.values(formats).join('\n');
   if (extractedText.length > 0) {
     const { hash: contentHash } = computeContentInfo(extractedText);
@@ -137,13 +135,13 @@ if (opts.deduplication === 'content') {
 **Add**:
 
 ```ts
-deduplication?: 'url' | 'canonical' | 'content';
+deduplication?: 'minimal' | 'basic' | 'full';
 ```
 
 **At the top of `createContextractorCrawler`**, after formats resolution, add:
 
 ```ts
-const deduplication: 'url' | 'canonical' | 'content' = opts.deduplication ?? 'canonical';
+const deduplication: 'minimal' | 'basic' | 'full' = opts.deduplication ?? 'basic';
 const seenCanonicals = new Set<string>();
 const seenContentHashes = new Set<string>();
 ```
@@ -166,14 +164,14 @@ Remove any remaining `ignoreCanonicalUrl` pass-throughs from all handler constru
 
 ```ts
 .addOption(
-  new Option('--deduplication <level>', 'Deduplication level: url, canonical (default), or content')
-    .choices(['url', 'canonical', 'content'])
+  new Option('--deduplication <level>', 'Deduplication level: minimal, basic (default), or full')
+    .choices(['minimal', 'basic', 'full'])
 )
 ```
 
 **Remove** `ignoreCanonicalUrl` from `ExtractOpts` and from `buildSchemaOverrides`.
 
-**Add** `deduplication?: 'url' | 'canonical' | 'content'` to `ExtractOpts`. In `buildSchemaOverrides`, add:
+**Add** `deduplication?: 'minimal' | 'basic' | 'full'` to `ExtractOpts`. In `buildSchemaOverrides`, add:
 
 ```ts
 if (opts.deduplication !== undefined) out.deduplication = opts.deduplication;
@@ -186,7 +184,7 @@ if (opts.deduplication !== undefined) out.deduplication = opts.deduplication;
 **Add** to `CrawlConfig`:
 
 ```ts
-deduplication: 'url' | 'canonical' | 'content';
+deduplication: 'minimal' | 'basic' | 'full';
 ```
 
 In `buildCrawlConfig`, add:
@@ -221,10 +219,10 @@ deduplication: input.deduplication,
 
 ```ts
 describe('ContextractorInput — deduplication field', () => {
-  it('defaults to "canonical"', () => {
-    expect(ContextractorInput.parse(BASE).deduplication).toBe('canonical');
+  it('defaults to "basic"', () => {
+    expect(ContextractorInput.parse(BASE).deduplication).toBe('basic');
   });
-  it.each(['url', 'canonical', 'content'] as const)('accepts "%s"', (level) => {
+  it.each(['minimal', 'basic', 'full'] as const)('accepts "%s"', (level) => {
     expect(ContextractorInput.parse({ ...BASE, deduplication: level }).deduplication).toBe(level);
   });
   it('rejects unknown values', () => {
@@ -239,21 +237,21 @@ Test `checkAndRecordCanonical` behavior indirectly via `createCheerioHandler`. U
 
 Test groups:
 
-- `deduplication: 'canonical'` — two pages with same canonical, different URLs → first extracted, second skipped
-- `deduplication: 'url'` — same two pages → both extracted
-- `deduplication: 'content'` — two pages with identical extracted text, different URLs/canonicals → first extracted, second skipped (content hash match)
-- `deduplication: 'canonical'` — identical content, no canonical → both extracted (content hash only active in `'content'`)
+- `deduplication: 'basic'` — two pages with same canonical, different URLs → first extracted, second skipped
+- `deduplication: 'minimal'` — same two pages → both extracted
+- `deduplication: 'full'` — two pages with identical extracted text, different URLs/canonicals → first extracted, second skipped (content hash match)
+- `deduplication: 'basic'` — identical content, no canonical → both extracted (content hash only active in `'full'`)
 - shared `seenCanonicals` — confirm state accumulates across calls to the same handler instance
 
 If the native `.node` binary is not available in the test environment, skip content hash tests with `it.skip` and a comment explaining why.
 
 ### `apps/apify-actor/src/config.test.ts`
 
-**Remove** `ignoreCanonicalUrl` from `BASE_INPUT`. Add `deduplication: 'canonical'` instead.
+**Remove** `ignoreCanonicalUrl` from `BASE_INPUT`. Add `deduplication: 'basic'` instead.
 
 **Remove** any existing `ignoreCanonicalUrl` tests.
 
-Add a `describe` block testing that `buildCrawlerOpts` passes `deduplication` values (`'url'`, `'canonical'`, `'content'`) through correctly.
+Add a `describe` block testing that `buildCrawlerOpts` passes `deduplication` values (`'minimal'`, `'basic'`, `'full'`) through correctly.
 
 ### `apps/standalone/src/cli.test.ts`
 
