@@ -390,12 +390,29 @@ ls /tmp/dedup-test-benchmark | wc -l   # expect ≤ 755
 
 **Expected:** output file count ≤ 755. If the count significantly exceeds 755, content-hash dedup is not working. If the count is much lower, canonical dedup has false positives.
 
+### Autofix loop
+
+Run each test, check the output against the expected result, and **fix any failing implementation before proceeding**. Do not skip or defer failures. The loop for each test is:
+
+```
+1. Run the CLI command
+2. Check output count and log messages against expectations
+3. If failing: read the relevant source files, identify the bug, fix it
+4. Re-run the failing test
+5. Repeat until the test passes
+6. Re-run all previous tests to confirm no regression
+7. Move to the next test
+```
+
+All five tests must pass before the implementation is considered complete.
+
 ### Failure interpretation
 
 From the research:
-- Dedup fails on scrapeme.live but passes on toscrape → content fingerprinting broken; check `seenContentHashes` logic
-- Dedup passes on product pages but duplicates appear on listing/category pages → canonical check not firing in Cheerio/Adaptive handlers — check handler wiring in `createCrawler.ts`
-- `deduplication: 'minimal'` still deduplicating → check that `checkAndRecordCanonical` is guarded by `opts.deduplication !== 'minimal'`
+- Dedup fails on scrapeme.live but passes on toscrape → content fingerprinting broken; check `seenContentHashes` logic in handler `'full'` branch
+- Dedup passes on product pages but duplicates appear on listing/category pages → canonical check not firing in Cheerio/Adaptive handlers; check handler wiring in `createCrawler.ts`
+- `deduplication: 'minimal'` still deduplicating → `checkAndRecordCanonical` guard incorrect; verify `opts.deduplication !== 'minimal'` condition
+- Benchmark produces far fewer than 755 → canonical dedup false-positiving on listing pages; the canonical check must only skip when `canonical !== url` AND canonical is already in `seenCanonicals`
 
 ## Invariants
 
