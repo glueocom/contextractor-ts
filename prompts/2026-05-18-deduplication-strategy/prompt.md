@@ -297,6 +297,106 @@ pnpm test           # full test suite
 pnpm lint           # Biome
 ```
 
+## Step VALIDATE — End-to-end Deduplication Tests
+
+Reference: `prompts/2026-05-18-deduplication-strategy/context/test-sites.md` — identifies the industry-standard public scraping sandboxes and exactly which URL patterns trigger each dedup scenario.
+
+Run these after all unit tests pass. Build the standalone CLI first (`pnpm --filter @contextractor/standalone build`), then run:
+
+```bash
+CLI="node apps/standalone/dist/cli.js"
+```
+
+### Test MINIMAL — dedup disabled beyond URL normalization
+
+Uses **quotes.toscrape.com** (Scrapy's official tutorial target). The same 10 quotes appear on both `/` and `/page/1/` — two distinct crawlable URLs that return identical content.
+
+```bash
+$CLI extract \
+  --url 'https://quotes.toscrape.com/' \
+  --url 'https://quotes.toscrape.com/page/1/' \
+  --deduplication minimal \
+  --max-crawling-depth 0 \
+  --format txt \
+  --output-dir /tmp/dedup-test-minimal
+```
+
+**Expected:** two output files — one for each URL. Both contain the same 10 quotes. Deduplication does not suppress either.
+
+### Test BASIC-canonical — canonical URL dedup across handlers
+
+Uses **scrapeme.live** which emits `<link rel="canonical">` on every product page. The Bulbasaur product page is reachable under 6+ listing URLs (category pokemon, category seed, tags bulbasaur/overgrow/seed, and shop pagination) all pointing to the same canonical `https://scrapeme.live/shop/Bulbasaur/`.
+
+```bash
+$CLI extract \
+  --url 'https://scrapeme.live/shop/Bulbasaur/' \
+  --url 'https://scrapeme.live/product-category/pokemon/' \
+  --url 'https://scrapeme.live/product-category/seed/' \
+  --deduplication basic \
+  --max-crawling-depth 0 \
+  --format txt \
+  --output-dir /tmp/dedup-test-basic
+```
+
+**Expected:** one Bulbasaur product file (the first URL hit), then skipped on subsequent encounters. Log must contain `Skipping … — duplicate of canonical https://scrapeme.live/shop/Bulbasaur/`. Three input URLs → one product output.
+
+### Test BASIC-tracking — URL normalization with tracking params
+
+Uses **books.toscrape.com** which returns byte-identical HTML for the same page regardless of query params but ships **no** `rel=canonical` tag — so Crawlee's URL dedup must handle the normalization. Verify that `?utm_source=x` does not produce a duplicate record.
+
+```bash
+$CLI extract \
+  --url 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html' \
+  --url 'https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html?utm_source=newsletter&ref=email' \
+  --deduplication basic \
+  --max-crawling-depth 0 \
+  --format txt \
+  --output-dir /tmp/dedup-test-basic-tracking
+```
+
+**Expected:** one output file — Crawlee's built-in URL normalization (query params sorted, no UTM stripping by default) should treat these as different URLs and both will be fetched; the canonical check will not fire (no canonical tag). This test validates that `deduplication: 'basic'` does NOT collapse tracking-param variants — that is expected behavior and not a bug. Document this in the output.
+
+### Test FULL-content — content hash dedup across tag pages
+
+Uses **quotes.toscrape.com** where the Einstein quote (`"The world as we have created it..."`) appears on at least four tag pages plus the main pagination. With `deduplication: 'full'`, the first page extraction succeeds; all subsequent pages containing the same extracted text block are skipped.
+
+```bash
+$CLI extract \
+  --url 'https://quotes.toscrape.com/' \
+  --url 'https://quotes.toscrape.com/tag/change/page/1/' \
+  --url 'https://quotes.toscrape.com/tag/world/page/1/' \
+  --url 'https://quotes.toscrape.com/tag/thinking/page/1/' \
+  --deduplication full \
+  --max-crawling-depth 0 \
+  --format txt \
+  --output-dir /tmp/dedup-test-full
+```
+
+**Expected:** fewer output files than input URLs. The log must contain `Skipping … — duplicate content hash` for at least two of the four tag pages (they return identical extracted quote text). The first URL's content appears exactly once in the output.
+
+### Test FULL-benchmark — 755 unique products on scrapeme.live
+
+The definitive correctness benchmark. scrapeme.live has exactly 755 products (per its own "Showing 1–16 of 755 results" banner). With `deduplication: 'full'`, crawling from the shop root with unlimited depth should yield exactly 755 unique product records regardless of how many listing/category/tag URLs the crawler visits. Add a 2–3 s delay to respect the site (per the research).
+
+```bash
+$CLI extract \
+  --url 'https://scrapeme.live/shop/' \
+  --deduplication full \
+  --max-crawling-depth 3 \
+  --format txt \
+  --output-dir /tmp/dedup-test-benchmark
+ls /tmp/dedup-test-benchmark | wc -l   # expect ≤ 755
+```
+
+**Expected:** output file count ≤ 755. If the count significantly exceeds 755, content-hash dedup is not working. If the count is much lower, canonical dedup has false positives.
+
+### Failure interpretation
+
+From the research:
+- Dedup fails on scrapeme.live but passes on toscrape → content fingerprinting broken; check `seenContentHashes` logic
+- Dedup passes on product pages but duplicates appear on listing/category pages → canonical check not firing in Cheerio/Adaptive handlers — check handler wiring in `createCrawler.ts`
+- `deduplication: 'minimal'` still deduplicating → check that `checkAndRecordCanonical` is guarded by `opts.deduplication !== 'minimal'`
+
 ## Invariants
 
 - Do not change `ExtractionResult` shape — dedup is a crawl-time concern, not output
