@@ -14,6 +14,8 @@ Add a `deduplication` enum parameter to the Contextractor CLI, Apify Actor, and 
 
 **Remove all old deduplication functionality** — delete `ignoreCanonicalUrl` from every layer it touches: schema, crawler options, CLI, config, tests, and docs. This is a greenfield replacement, not an extension.
 
+**Do not care about backward compatibility.** This is a breaking change and that is intentional. Do not add migration shims, deprecation warnings, or fallback handling for old field names.
+
 ## Design
 
 ```
