@@ -1,12 +1,14 @@
 see those researches
 - `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/context/research-claude-code.md`
 - `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/context/research-claude-desktop.md`
+- `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/context/ressearch-by-gpt.md` (specially focus on this as it is written by another model - GPT)
 
 save a prompt to one file at `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-18-deduplication-strategy/prompt.md`
 
 The prompt must:
 - implement or fix deduplication in contextractor CLI NPM lib and Apify Actor
 - add a parameter to CLI — decide if it should be a boolean or an enumeration like `"none" | "basic" | "full"` (figure out the right names)
+- reference the ressearches
 - update all docs: SPEC.md files, READMEs, and CLI user-facing messages
 
 # Contextractor Deduplication — Context
