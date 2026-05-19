@@ -20,11 +20,11 @@ Orchestrates full proxy rotation testing across Apify Actor, CLI, and npm librar
 
 ## What This Does
 
-1. **Setup**: Start mock HTTP proxy servers on ports 8081–8090
+1. **Setup**: Start mock HTTP proxy servers on ports 8081–8099
 2. **Test**: Run all three test suites in sequence:
-   - Library tests (direct API)
-   - CLI tests (standalone command)
-   - Actor tests (local Actor run)
+   - Library tests (direct API) — flat proxy rotation + tiered proxy
+   - CLI tests (standalone command) — flat proxy rotation + `--proxy-tier` + `--proxy-tiers`
+   - Actor tests (local Actor run) — flat proxy rotation + `tieredProxyUrls` input + mutual exclusivity validation
 3. **Auto-fix**: If any test fails, re-run tests once (unless `--no-fix` is passed)
 4. **Cleanup**: Stop proxy servers, remove temporary directories
 5. **Report**: Display summary with pass/fail counts and test details
@@ -50,9 +50,9 @@ The command:
 
 ## Test Files
 
-- **Library tests** (`tools/proxy-rotation-tester/src/lib.test.ts`): Direct API testing
-- **CLI tests** (`tools/proxy-rotation-tester/src/cli.test.ts`): Standalone CLI testing
-- **Actor tests** (`tools/proxy-rotation-tester/src/actor.test.ts`): Apify Actor testing
+- **Library tests** (`tools/proxy-rotation-tester/src/lib.test.ts`): Direct API — flat rotation (ports 8081–8083), tiered proxies (ports 8091–8094)
+- **CLI tests** (`tools/proxy-rotation-tester/src/cli.test.ts`): Standalone CLI — flat rotation (ports 8084–8086), `--proxy-tier` and `--proxy-tiers` (ports 8095–8097)
+- **Actor tests** (`tools/proxy-rotation-tester/src/actor.test.ts`): Apify Actor — flat rotation (ports 8087–8089), `tieredProxyUrls` input and mutual exclusivity validation (ports 8098–8099)
 
 ## Expected Output
 
@@ -60,19 +60,19 @@ Success:
 ```
 PROXY ROTATION TEST SUITE
 ✅ All tests passed
-  - lib.test.ts: 4 passed
-  - cli.test.ts: 1 passed
-  - actor.test.ts: 2 passed
-Total: 7 passed
+  - lib.test.ts: 3 passed
+  - cli.test.ts: 3 passed
+  - actor.test.ts: 4 passed
+Total: 10 passed
 ```
 
 Failure (before auto-fix):
 ```
 PROXY ROTATION TEST SUITE
 ❌ Tests failed
-  - lib.test.ts: 4 passed
+  - lib.test.ts: 3 passed
   - cli.test.ts: FAILED (1 failed)
-  - actor.test.ts: 2 passed
+  - actor.test.ts: 4 passed
 
 Retrying failed tests...
 ✅ Retry successful

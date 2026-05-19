@@ -600,6 +600,27 @@ pnpm test
 PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1 pnpm --filter proxy-rotation-tester test
 ```
 
+## Step PROXY_TEST_COMMAND: Validate with /proxy-test
+
+After all tests pass, run the `/proxy-test` slash command to execute the full proxy rotation suite end-to-end (all three entry points, auto-fix on failure):
+
+```
+/proxy-test
+```
+
+This command starts mock proxy servers on ports 8081–8099, runs all three test suites (library, CLI, Actor) including the new tiered proxy tests, auto-fixes failures, and reports a pass/fail summary. Expected output when implementation is correct:
+
+```
+PROXY ROTATION TEST SUITE
+✅ All tests passed
+  - lib.test.ts: 3 passed
+  - cli.test.ts: 3 passed
+  - actor.test.ts: 4 passed
+Total: 10 passed
+```
+
+If `/proxy-test` reports failures, fix the underlying issues and re-run before proceeding to Step DOCS.
+
 ## Step DOCS: Regenerate Documentation
 
 ```bash
