@@ -1,5 +1,5 @@
 
-look on those porojects source code input and uotput schemas
+look on those porojects source code input and output schemas
 
 
 - look on `/Users/miroslavsekera/r/actor-scraper/packages/actor-scraper/playwright-scraper` `https://apify.com/apify/playwright-scraper` (note that this is not exaclty purpose like contextractor, but is opensource)
@@ -13,11 +13,11 @@ ressearch:
 - are the current features implemented correctly?
 - does contextractor has any useless (or too  niche) features?
 
-create a promt that will add missing features. the promt must also test the implementation locally and on apify platgorm. the promt must also update all applicable SPEC.md and README.md files and other doc files
+create a promt that will add missing features. the promt must also test the implementation locally and on apify platgorm. the promt must also update all applicable SPEC.md and README.md files and other doc files, save the resulting prompt to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/compare-funtionality.md`
+
 
 review and fix if required `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/storage-vs-output.md` - make sure it is not contradicting integrated, autofix problems
 
-save the resulting prompt to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/compare-funtionality.md`
 
 create  '/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/master.md' master prompt that will call both promts
 
