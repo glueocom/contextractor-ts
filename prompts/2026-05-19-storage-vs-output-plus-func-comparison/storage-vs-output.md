@@ -105,7 +105,7 @@ Add a unit test if one doesn't exist.
 Surfaced by `context/storage-only-verdict.md` but deferred:
 
 - 9MB dataset-item JSON limit with `--save-destination=dataset` + `original` on long pages — mirror Website Content Crawler's `htmlUrl` overflow pattern.
-- `crawler.exportData('./run-{timestamp}.jsonl')` for a single consolidated per-run artifact alongside the dataset (idiomatic Crawlee, but `contextractor list/get` already covers consumption).
+- `crawler.exportData('./run-{timestamp}.json')` for a single consolidated per-run artifact alongside the dataset (idiomatic Crawlee, but `contextractor list/get` already covers consumption).
 
 ## Docs to Update
 
