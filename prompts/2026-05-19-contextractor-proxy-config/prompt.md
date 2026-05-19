@@ -12,10 +12,12 @@ Reference report: `prompts/2026-05-19-contextractor-proxy-config/context/report.
 - `apps/apify-actor/src/config.ts` — `buildCrawlerOpts`
 - `apps/standalone/src/cliProgram.ts` — CLI flags and proxy block
 - `apps/standalone/src/config.ts` — `CrawlConfig`, `CliOnlyOverrides`, `buildCrawlConfig`
+- `tools/proxy-simulator/src/main.ts` — `createProxySimulator(config)` API; exports `ProxySimulator` with `start()`, `stop()`, `ports[]`, `proxies[]`
+- `tools/proxy-simulator/package.json` — package name `proxy-simulator`, workspace package
+- `tools/proxy-rotation-tester/package.json` — dependencies to update
 - `tools/proxy-rotation-tester/src/lib.test.ts`
 - `tools/proxy-rotation-tester/src/cli.test.ts`
 - `tools/proxy-rotation-tester/src/actor.test.ts`
-- `tools/proxy-simulator/src/main.ts`
 
 ## Step SCHEMA: Add Three New Fields to Zod Source of Truth
 
@@ -313,6 +315,47 @@ maxSessionRotations: input.maxSessionRotations,
 
 Note: `maxSessionRotations` has a Zod default of 10, so it is always present on `ContextractorInputType`.
 
+## Step PROXY_SIMULATOR: Wire proxy-simulator into proxy-rotation-tester
+
+### Add dependency
+
+In `tools/proxy-rotation-tester/package.json`, add to `dependencies`:
+
+```json
+"proxy-simulator": "workspace:*"
+```
+
+Run `pnpm install` from the repo root to link it.
+
+### Refactor existing inline server setup in all three test files
+
+Each existing test file (`lib.test.ts`, `cli.test.ts`, `actor.test.ts`) currently sets up `proxy-chain` `Server` instances directly in `beforeAll`/`afterAll`. Replace every inline server block with `createProxySimulator` from `proxy-simulator`. The simulator produces identical HTML responses (port number in body) so all existing assertions remain valid.
+
+Pattern to apply for each describe block's `beforeAll`/`afterAll`:
+
+```typescript
+// Remove:
+import { Server } from 'proxy-chain';
+const servers: Server[] = [];
+const proxyPorts = [...];
+beforeAll(async () => {
+  for (const port of proxyPorts) {
+    const server = new Server({ port, prepareRequestFunction: () => ({ customResponseFunction: () => ({...}) }) });
+    await server.listen();
+    servers.push(server);
+  }
+});
+afterAll(async () => { for (const server of servers) await server.close(true); });
+
+// Replace with:
+import { createProxySimulator } from 'proxy-simulator';
+let sim: Awaited<ReturnType<typeof createProxySimulator>>;
+beforeAll(async () => { sim = await createProxySimulator({ startPort: <first port>, portCount: <count> }); await sim.start(); });
+afterAll(async () => { await sim.stop(); });
+```
+
+Use `sim.ports` and `sim.proxies` in place of the manually constructed `proxyPorts` and `proxyUrls` arrays. Port ranges per describe block must match those in the test (lib: 8081–8083, cli: 8084–8086, actor: 8087–8089). Remove the `proxy-chain` import from each file once no direct `Server` usage remains.
+
 ## Step PROXY_ROTATION_TESTS: Add Tiered Proxy Tests
 
 ### `tools/proxy-rotation-tester/src/lib.test.ts`
@@ -321,43 +364,24 @@ Add a new `describe` block using ports 8091–8094 (no conflict with existing 80
 
 ```typescript
 describe('Proxy Rotation - Library (Tiered Proxies)', () => {
-  const servers: Server[] = [];
-  const tier0Ports = [8091, 8092];
-  const tier1Ports = [8093, 8094];
-  const allPorts = [...tier0Ports, ...tier1Ports];
+  let sim: Awaited<ReturnType<typeof createProxySimulator>>;
 
   beforeAll(async () => {
-    for (const port of allPorts) {
-      const server = new Server({
-        port,
-        prepareRequestFunction: () => ({
-          customResponseFunction: () => ({
-            statusCode: 200,
-            headers: { 'Content-Type': 'text/html' },
-            body: `<!DOCTYPE html><html><head><title>Proxy ${port}</title></head><body><article><p>Intercepted by proxy on port ${port}</p></article></body></html>`,
-          }),
-        }),
-      });
-      await server.listen();
-      servers.push(server);
-    }
+    sim = await createProxySimulator({ startPort: 8091, portCount: 4 });
+    await sim.start();
   });
 
-  afterAll(async () => {
-    for (const server of servers) await server.close(true);
-  });
+  afterAll(async () => { await sim.stop(); });
 
   it('should route requests through tiered proxies', async () => {
     const sink = memorySink();
     const startUrls = ['http://example.com'];
+    const [p0a, p0b, p1a, p1b] = sim.proxies;
     const crawler = createContextractorCrawler({
       startUrls,
       crawlerType: 'cheerio',
       proxyConfiguration: new ProxyConfiguration({
-        tieredProxyUrls: [
-          tier0Ports.map((p) => `http://127.0.0.1:${p}`),
-          tier1Ports.map((p) => `http://127.0.0.1:${p}`),
-        ],
+        tieredProxyUrls: [[p0a, p0b], [p1a, p1b]],
       }),
       formats: ['txt'],
       sink,
@@ -367,7 +391,7 @@ describe('Proxy Rotation - Library (Tiered Proxies)', () => {
 
     expect(sink.results.length).toBeGreaterThan(0);
     const content = sink.results[0]?.formats?.txt ?? '';
-    const usedPort = allPorts.some((port) => content.includes(port.toString()));
+    const usedPort = sim.ports.some((port) => content.includes(port.toString()));
     expect(usedPort, `Content did not include any proxy port. Content: "${content.slice(0, 300)}"`).toBe(true);
   });
 }, 60_000);
@@ -379,30 +403,17 @@ Add a new `describe` block using ports 8095–8097 (no conflict with existing 80
 
 ```typescript
 describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
-  const servers: Server[] = [];
-  const proxyPorts = [8095, 8096, 8097];
+  let sim: Awaited<ReturnType<typeof createProxySimulator>>;
   let tempDir: string;
 
   beforeAll(async () => {
     tempDir = mkdtempSync(join(REPO_ROOT, 'tmp-cli-tiered-test-'));
-    for (const port of proxyPorts) {
-      const server = new Server({
-        port,
-        prepareRequestFunction: () => ({
-          customResponseFunction: () => ({
-            statusCode: 200,
-            headers: { 'Content-Type': 'text/html' },
-            body: `<!DOCTYPE html><html><head><title>Proxy ${port}</title></head><body><article><p>Intercepted by proxy on port ${port}</p></article></body></html>`,
-          }),
-        }),
-      });
-      await server.listen();
-      servers.push(server);
-    }
+    sim = await createProxySimulator({ startPort: 8095, portCount: 3 });
+    await sim.start();
   });
 
   afterAll(async () => {
-    for (const server of servers) await server.close(true);
+    await sim.stop();
     try { rmSync(tempDir, { recursive: true }); } catch { /* ignore */ }
   });
 
@@ -417,11 +428,9 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
           [
             cliBin, 'extract', 'http://example.com',
             '--output-dir', outputDir,
-            '--proxy-tier', `http://127.0.0.1:${proxyPorts[0]},http://127.0.0.1:${proxyPorts[1]}`,
-            '--proxy-tier', `http://127.0.0.1:${proxyPorts[2]}`,
-            '--save', 'txt',
-            '--max-pages', '1',
-            '--crawler-type', 'cheerio',
+            '--proxy-tier', `${sim.proxies[0]},${sim.proxies[1]}`,
+            '--proxy-tier', sim.proxies[2]!,
+            '--save', 'txt', '--max-pages', '1', '--crawler-type', 'cheerio',
           ],
           { env: { ...process.env, PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK: '1', CRAWLEE_STORAGE_DIR: join(tempDir, 'crawlee-tier-flag') } },
         );
@@ -436,14 +445,14 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
     const files = readdirSync(outputDir).filter((f) => f.endsWith('.txt'));
     expect(files.length).toBeGreaterThan(0);
     const content = readFileSync(join(outputDir, files[0]), 'utf-8');
-    const usedPort = proxyPorts.some((port) => content.includes(port.toString()));
+    const usedPort = sim.ports.some((port) => content.includes(port.toString()));
     expect(usedPort, `No proxy port found in content: ${content.slice(0, 200)}`).toBe(true);
   });
 
   it('should route requests through tiered proxies via --proxy-tiers JSON flag', async () => {
     const outputDir = join(tempDir, 'output-tier-json');
     const cliBin = join(REPO_ROOT, 'apps/standalone/dist/cli.js');
-    const tiers = JSON.stringify([[`http://127.0.0.1:${proxyPorts[0]}`], [`http://127.0.0.1:${proxyPorts[1]}`]]);
+    const tiers = JSON.stringify([[sim.proxies[0]], [sim.proxies[1]]]);
 
     const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(
       (resolve) => {
@@ -453,9 +462,7 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
             cliBin, 'extract', 'http://example.com',
             '--output-dir', outputDir,
             '--proxy-tiers', tiers,
-            '--save', 'txt',
-            '--max-pages', '1',
-            '--crawler-type', 'cheerio',
+            '--save', 'txt', '--max-pages', '1', '--crawler-type', 'cheerio',
           ],
           { env: { ...process.env, PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK: '1', CRAWLEE_STORAGE_DIR: join(tempDir, 'crawlee-tier-json') } },
         );
@@ -470,7 +477,7 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
     const files = readdirSync(outputDir).filter((f) => f.endsWith('.txt'));
     expect(files.length).toBeGreaterThan(0);
     const content = readFileSync(join(outputDir, files[0]), 'utf-8');
-    const usedPort = proxyPorts.some((port) => content.includes(port.toString()));
+    const usedPort = sim.ports.some((port) => content.includes(port.toString()));
     expect(usedPort, `No proxy port found in content: ${content.slice(0, 200)}`).toBe(true);
   });
 }, 60_000);
@@ -484,30 +491,15 @@ Add two new tests inside the existing `describe('Proxy Rotation - Apify Actor')`
 
 ```typescript
 it('should route requests through tiered proxies via tieredProxyUrls input', async () => {
-  const tieredPorts = [8098, 8099];
-  const tieredServers: Server[] = [];
-  for (const port of tieredPorts) {
-    const server = new Server({
-      port,
-      prepareRequestFunction: () => ({
-        customResponseFunction: () => ({
-          statusCode: 200,
-          headers: { 'Content-Type': 'text/html' },
-          body: `<!DOCTYPE html><html><head><title>Proxy ${port}</title></head><body><article><p>Intercepted by proxy on port ${port}</p></article></body></html>`,
-        }),
-      }),
-    });
-    await server.listen();
-    tieredServers.push(server);
-  }
-
+  const tieredSim = await createProxySimulator({ startPort: 8098, portCount: 2 });
+  await tieredSim.start();
   try {
     const result = await runActor(storageDir, {
       startUrls: [{ url: 'http://example.com' }],
       maxRequestsPerCrawl: 1,
       save: ['txt'],
       crawlerType: 'cheerio',
-      tieredProxyUrls: [[`http://127.0.0.1:${tieredPorts[0]}`], [`http://127.0.0.1:${tieredPorts[1]}`]],
+      tieredProxyUrls: [[tieredSim.proxies[0]], [tieredSim.proxies[1]]],
     });
 
     expect(
@@ -520,10 +512,10 @@ it('should route requests through tiered proxies via tieredProxyUrls input', asy
     expect(files.length).toBeGreaterThan(0);
     const datasetFile = JSON.parse(readFileSync(join(datasetPath, files[0]), 'utf-8'));
     const content = typeof datasetFile.txt === 'string' ? datasetFile.txt : JSON.stringify(datasetFile);
-    const usedPort = tieredPorts.some((port) => content.includes(port.toString()));
+    const usedPort = tieredSim.ports.some((port) => content.includes(port.toString()));
     expect(usedPort, `Proxy port not found in dataset. content: ${content.slice(0, 300)}`).toBe(true);
   } finally {
-    for (const server of tieredServers) await server.close(true);
+    await tieredSim.stop();
   }
 });
 ```
@@ -532,24 +524,30 @@ it('should route requests through tiered proxies via tieredProxyUrls input', asy
 
 ```typescript
 it('should reject input when both tieredProxyUrls and useApifyProxy are set', async () => {
-  const result = await runActor(storageDir, {
-    startUrls: [{ url: 'http://example.com' }],
-    maxRequestsPerCrawl: 1,
-    save: ['txt'],
-    crawlerType: 'cheerio',
-    tieredProxyUrls: [['http://127.0.0.1:8098']],
-    proxyConfiguration: { useApifyProxy: true },
-  });
+  const tieredSim = await createProxySimulator({ startPort: 8098, portCount: 1 });
+  await tieredSim.start();
+  try {
+    const result = await runActor(storageDir, {
+      startUrls: [{ url: 'http://example.com' }],
+      maxRequestsPerCrawl: 1,
+      save: ['txt'],
+      crawlerType: 'cheerio',
+      tieredProxyUrls: [[tieredSim.proxies[0]]],
+      proxyConfiguration: { useApifyProxy: true },
+    });
 
-  const hasError =
-    result.stderr.toLowerCase().includes('mutually exclusive') ||
-    result.stdout.toLowerCase().includes('mutually exclusive') ||
-    result.stderr.toLowerCase().includes('error') ||
-    result.stdout.includes('exitCode: 1');
-  expect(
-    hasError,
-    `Expected Actor to reject conflicting input. stdout: ${result.stdout.slice(-300)}\nstderr: ${result.stderr.slice(-200)}`,
-  ).toBe(true);
+    const hasError =
+      result.stderr.toLowerCase().includes('mutually exclusive') ||
+      result.stdout.toLowerCase().includes('mutually exclusive') ||
+      result.stderr.toLowerCase().includes('error') ||
+      result.stdout.includes('exitCode: 1');
+    expect(
+      hasError,
+      `Expected Actor to reject conflicting input. stdout: ${result.stdout.slice(-300)}\nstderr: ${result.stderr.slice(-200)}`,
+    ).toBe(true);
+  } finally {
+    await tieredSim.stop();
+  }
 });
 ```
 
