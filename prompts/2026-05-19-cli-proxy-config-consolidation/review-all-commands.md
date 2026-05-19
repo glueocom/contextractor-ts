@@ -1,6 +1,8 @@
 # CLI Command Review — All Commands
 
-> **TLDR**: Audit and fix usability, documentation, and consistency issues across all contextractor CLI commands (`list`, `get`, `kvs`, `purge`, `storage-dir`) and remaining issues in `extract`. Applies the same improvement principles as the proxy consolidation: remove redundancy, fix undocumented defaults, improve naming.
+> **TLDR**: Four targeted fixes: (1) adds `(default: 1000)` to `list --limit` help text in `cliProgram.ts`; (2) renames `kvs ls --exclusive-start-key` to `--after` in `cliProgram.ts`; (3) appends a ps/history security note to `--cookies` and `--headers` help strings in `cliProgram.ts`; (4) drops the echoed value from the `--proxy-rotation` warning message. Corresponding updates to `standalone/README.md` and `SPEC.md`.
+
+> **Note:** This is a greenfield project — no backward compatibility requirements.
 
 This prompt is a follow-up to `implement.md` (proxy consolidation). That prompt handles `--proxy-tier`/`--proxy-tiers` removal from `extract`. This prompt covers everything else.
 
@@ -93,7 +95,7 @@ new: '--limit <n>', 'Max items to return (default: 1000)'
 
 **Problem:** `--exclusive-start-key <key>` in `kvs ls` is a DynamoDB-style pagination parameter name that is unfamiliar outside that ecosystem. The implementation is a client-side filter (`key <= exclusiveStartKey`), not a true server-side cursor. The intent is simply "list keys after this key alphabetically."
 
-**Fix:** Rename the flag from `--exclusive-start-key` to `--after`. This is a breaking change for any scripts using `--exclusive-start-key`.
+**Fix:** Rename the flag from `--exclusive-start-key` to `--after`.
 
 In `cliProgram.ts`, change:
 ```
@@ -194,7 +196,6 @@ Fix any TypeScript type errors (most likely: `opts.exclusiveStartKey` renamed to
 fix(standalone): cli usability and documentation fixes
 
 - list: document hidden default limit of 1000 in --limit help text
-- list: confirm --format default (jsonl) is visible in help
 - kvs ls: rename --exclusive-start-key to --after for clarity (breaking)
 - extract: add ps/history security note to --cookies and --headers help text
 - extract: simplify --proxy-rotation warning to avoid echoing internal casing

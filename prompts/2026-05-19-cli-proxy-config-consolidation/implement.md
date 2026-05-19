@@ -1,8 +1,10 @@
 # CLI Proxy Config Consolidation — Implementation
 
-> **TLDR**: Remove `--proxy-tier` and `--proxy-tiers` from the standalone CLI (breaking change). Tiered proxy config moves to the `-c, --config` JSON file under the existing `tieredProxyUrls` field. Updates code, tests, docs, and runs the full test suite including proxy rotation tests.
+> **TLDR**: Removes `--proxy-tier` and `--proxy-tiers` from `cliProgram.ts` (`addExtractionOptions`, `buildSchemaOverrides`, `ExtractOpts`), updates two error messages in `runExtractAction`, adds `--proxy` + `tieredProxyUrls` conflict validation, replaces two proxy-tier tests in `proxy-rotation-tester` with a single config-file test, and removes the flags from `standalone/README.md` and `SPEC.md`.
 
-Remove `--proxy-tier` and `--proxy-tiers` from the standalone CLI. Keep `--proxy` (repeatable flat list) + `--proxy-rotation` + `-c, --config` (full tiered proxy support via `tieredProxyUrls` field). This is a breaking change to the CLI; the `tieredProxyUrls` Zod field and Apify Actor input remain unchanged.
+> **Note:** This is a greenfield project — no backward compatibility requirements.
+
+Remove `--proxy-tier` and `--proxy-tiers` from the standalone CLI. Keep `--proxy` (repeatable flat list) + `--proxy-rotation` + `-c, --config` (full tiered proxy support via `tieredProxyUrls` field). The `tieredProxyUrls` Zod field and Apify Actor input remain unchanged.
 
 Research backing this decision: `prompts/2026-05-19-cli-proxy-config-consolidation/context/`.
 
@@ -269,5 +271,4 @@ tieredProxyUrls. The --proxy flag (flat list) and tieredProxyUrls in
 config are mutually exclusive — the CLI now validates this explicitly.
 
 BREAKING CHANGE: --proxy-tier and --proxy-tiers are removed.
-Migration: use `tieredProxyUrls` in your JSON config file.
 ```
