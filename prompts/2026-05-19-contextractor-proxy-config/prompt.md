@@ -578,6 +578,20 @@ In the proxy section, document:
 
 In the proxy section, document the four new CLI flags: `--proxy-tier`, `--proxy-tiers`, `--session-pool-name`, `--max-session-rotations`. Document precedence: `--proxy-tiers` JSON > `--proxy-tier` repeated > `--proxy` flat.
 
+Also update the "Config merge order" section: `--proxy-tier` and `--proxy-tiers` are CLI-only (they translate to `tieredProxyUrls` via `buildSchemaOverrides`; no direct config-file equivalent). Add them to the CLI-only flags list alongside `--output-dir`, `--proxy`, and `--dataset`.
+
+### Root `SPEC.md`
+
+In the "Standalone CLI config file" subsection under "Input Schema", the sentence listing CLI-only flags currently reads:
+
+`CLI-only flags are --output-dir, --proxy, and the named-dataset override --dataset.`
+
+Update it to include the new CLI-only tier flags:
+
+`CLI-only flags are --output-dir, --proxy, --proxy-tier, --proxy-tiers, and the named-dataset override --dataset.`
+
+`--session-pool-name` and `--max-session-rotations` map to schema fields — they are accepted in the config file and must not appear in this list.
+
 ## Step VERIFY: Build, Lint, and Test
 
 Run in order, fixing all failures before moving to the next step:
@@ -619,11 +633,31 @@ Total: 10 passed
 
 If `/proxy-test` reports failures, fix the underlying issues and re-run before proceeding to Step DOCS.
 
-## Step DOCS: Regenerate Documentation
+## Step DOCS: Regenerate Documentation and Update READMEs
+
+### Auto-generated sections
 
 ```bash
 pnpm docs:update
 ```
+
+Updates all `@generated` markdown blocks:
+- `packages/schema/README.md` — `@generated:input-type` block gains `tieredProxyUrls?`, `tieredProxyConfig?`, `sessionPoolName?`, `maxSessionRotations`
+- `apps/apify-actor/README.md` — `@generated:apify-input-schema` table gains the four new proxy fields
+- `apps/standalone/README.md` — `@generated:cli-flags` table gains `--proxy-tier`, `--proxy-tiers`, `--session-pool-name`, `--max-session-rotations` rows
+
+### Manual: `tools/proxy-rotation-tester/README.md`
+
+Three sections need manual updates after the new tiered proxy tests are added:
+
+**Test Coverage** — add to each suite's bullet list:
+- Library Tests: "Tiered proxy routing via `tieredProxyUrls`"
+- CLI Tests: replace stale `--proxy-configuration` reference with `--proxy`; add "Tiered proxy flags (`--proxy-tier`, `--proxy-tiers`)"
+- Actor Tests: add "Tiered proxy routing via `tieredProxyUrls` input" and "Mutual exclusivity validation (`tieredProxyUrls` + `useApifyProxy: true`)"
+
+**Test Fixture** — update port list from "ports 8081, 8082, 8083" to "ports 8081–8099 (flat rotation: 8081–8089 across suites; tiered proxies: 8091–8094 lib, 8095–8097 cli, 8098–8099 actor)"
+
+**Expected Output** — update test counts to reflect 10 total tests (lib: 3, cli: 3, actor: 4)
 
 ## Step COMMIT
 
