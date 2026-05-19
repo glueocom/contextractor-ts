@@ -44,7 +44,6 @@ Compare inventory against codebase. Find:
 - `.mcp.json` stale tool category names — verify `--tools` flags match current MCP server docs
 - `.mcp.json` deprecated transport — prefer `type: http` with hosted URL over stdio `npx` when available
 - Skills with stale SDK API references — grep for method names and verify against installed package versions
-- `AGENTS.md` CLI commands that don't match current `apify help` output (e.g., missing `--resurrect`, wrong subcommand names)
 - `CLAUDE.md` missing mcpc usage block under MCP servers section — agents should prefer mcpc over direct MCP tool calls
 - `CLAUDE.md` missing `## Security` section with scraped-data handling rules
 - `CLAUDE.md` missing Crawlee llms.txt resource links
