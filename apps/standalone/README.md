@@ -127,7 +127,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--input-file` | Read URLs (one per line) from a file |
 | `--dataset` | Route output to a named dataset (default: default) |
 | `--config`, `-c` | Path to JSON config file |
-| `--output-dir`, `-o` | Output directory |
+| `--clean` | Purge default storage before extracting (datasets, KVS, request queues) |
 | `--max-pages` | Max pages to crawl (0 = unlimited) |
 | `--crawl-depth` | Max link depth from start URLs (0 = start only) |
 | `--headless` | Run browser in headless mode |
@@ -187,7 +187,7 @@ schema in
 [`@contextractor/schema`](../../packages/schema/README.md), so
 keys use the same camelCase shape as the
 [Apify input schema](../apify-actor/README.md#input). Orchestration
-flags (`--output-dir`, `--proxy`) are CLI-only and must be set on the command
+flags (`--proxy`, `--clean`) are CLI-only and must be set on the command
 line. Shared schema fields like `save`, `saveDestination`, `datasetName`,
 `keyValueStoreName`, and `requestQueueName` are accepted in the JSON config.
 

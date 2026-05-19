@@ -1,12 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import type { ExtractionResult } from '@contextractor/crawler';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createCliSink, createCrawleeStorageSink } from './sinks.js';
+import { describe, expect, it, vi } from 'vitest';
+import { createCrawleeStorageSink, urlToFilename } from './sinks.js';
 
 const BASE_RESULT: ExtractionResult = {
   url: 'https://example.com/page',
+  loadedUrl: 'https://example.com/page',
   html: '<html>raw</html>',
   rawHtmlHash: 'abc',
   rawHtmlLength: 10,
@@ -22,6 +20,28 @@ const BASE_RESULT: ExtractionResult = {
   crawlDepth: 0,
   referrerUrl: null,
 };
+
+// --- urlToFilename ---
+
+describe('urlToFilename', () => {
+  it('strips protocol and replaces non-alphanumeric chars', () => {
+    expect(urlToFilename('https://example.com/a/b')).toBe('example-com-a-b');
+  });
+
+  it('strips trailing separators', () => {
+    expect(urlToFilename('https://example.com/')).toBe('example-com');
+  });
+
+  it('lowercases the slug', () => {
+    expect(urlToFilename('https://Example.COM/Page')).toBe('example-com-page');
+  });
+
+  it('truncates slugs over 100 chars and appends md5 hash', () => {
+    const slug = urlToFilename(`https://example.com/${'x'.repeat(120)}`);
+    expect(slug.length).toBeLessThanOrEqual(110);
+    expect(slug).toMatch(/-[0-9a-f]{8}$/);
+  });
+});
 
 // --- createCrawleeStorageSink ---
 
@@ -100,7 +120,7 @@ describe('createCrawleeStorageSink — KVS destination', () => {
 });
 
 describe('createCrawleeStorageSink — dataset destination', () => {
-  it('pushes a record with url and format content', async () => {
+  it('pushes a record with url, loadedUrl, and format content', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -115,12 +135,35 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(dataset.items).toHaveLength(1);
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe(BASE_RESULT.url);
+    expect(item.loadedUrl).toBe(BASE_RESULT.loadedUrl);
     expect(item.txt).toBe('Hello world');
     expect(kvs.setValue).not.toHaveBeenCalled();
     expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
     expect(typeof item.txtHash).toBe('string');
     expect(item.txtHash as string).toHaveLength(32);
     expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
+  });
+
+  it('url and loadedUrl are distinct when redirected', async () => {
+    const redirectedResult: ExtractionResult = {
+      ...BASE_RESULT,
+      url: 'https://example.com/old',
+      loadedUrl: 'https://example.com/new',
+    };
+    const kvs = makeKvs();
+    const dataset = makeDataset();
+    const sink = createCrawleeStorageSink({
+      destinations: ['dataset'],
+      kvs: kvs as never,
+      dataset: dataset as never,
+      formats: ['txt'],
+    });
+
+    await sink(redirectedResult);
+
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect(item.url).toBe('https://example.com/old');
+    expect(item.loadedUrl).toBe('https://example.com/new');
   });
 
   it('sets status success on dataset record', async () => {
@@ -216,35 +259,5 @@ describe('createCrawleeStorageSink — error isolation', () => {
     expect(dataset.items).toHaveLength(1);
 
     stderrSpy.mockRestore();
-  });
-});
-
-// --- createCliSink ---
-
-describe('createCliSink', () => {
-  let tmpDir: string;
-
-  beforeEach(() => {
-    tmpDir = mkdtempSync(path.join(os.tmpdir(), 'standalone-sinks-test-'));
-  });
-
-  afterEach(() => {
-    rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  it('writes txt file when format is txt', async () => {
-    const sink = createCliSink({ outDir: tmpDir, formats: ['txt'] });
-    await sink(BASE_RESULT);
-    const slug = 'example-com-page';
-    const content = readFileSync(path.join(tmpDir, `${slug}.txt`), 'utf8');
-    expect(content).toContain('Hello world');
-  });
-
-  it('writes raw HTML file for original format', async () => {
-    const sink = createCliSink({ outDir: tmpDir, formats: ['original'] });
-    await sink(BASE_RESULT);
-    const slug = 'example-com-page';
-    const content = readFileSync(path.join(tmpDir, `${slug}-raw.html`), 'utf8');
-    expect(content).toBe('<html>raw</html>');
   });
 });

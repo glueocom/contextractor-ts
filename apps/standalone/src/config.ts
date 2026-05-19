@@ -45,7 +45,6 @@ export function validateSaveFormats(formats: string[]): SaveFormat[] {
 interface CrawlConfig {
   urls: string[];
   maxPages: number;
-  outputDir: string;
   crawlDepth: number;
   headless: boolean;
   mode: 'precision' | 'balanced' | 'recall';
@@ -102,7 +101,6 @@ interface CrawlConfig {
 
 export interface CliOnlyOverrides {
   urls: string[];
-  outputDir: string;
   save: SaveFormat[];
   proxyUrls: string[];
   proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
@@ -116,7 +114,6 @@ export function buildCrawlConfig(
 ): CrawlConfig {
   return {
     urls: cli.urls,
-    outputDir: cli.outputDir,
     save: cli.save,
 
     headless: input.headless,

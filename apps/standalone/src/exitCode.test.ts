@@ -19,7 +19,6 @@ vi.mock('./storage/index.js', () => ({
 }));
 
 vi.mock('./sinks.js', () => ({
-  createCliSink: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
   createCrawleeStorageSink: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
 }));
 

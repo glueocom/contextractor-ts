@@ -11,7 +11,7 @@ It owns the browser-facing pieces of the re-architecture:
 - `createContextractorCrawler()` and `buildRequests()`
 - Cookie defences via Ghostery and optional autoconsent fallback
 - Built-in scrolling via Crawlee `infiniteScroll()`
-- Shared sink helpers: `fileSink()`, `memorySink()`, and `Sink<T>`
+- Shared sink helpers: `memorySink()` and `Sink<T>`
 
 App-specific sinks stay outside this package:
 

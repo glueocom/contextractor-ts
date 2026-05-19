@@ -11,9 +11,9 @@ const HTML_WITH_CANONICAL = (canonical: string): string =>
 const HTML_NO_CANONICAL =
   '<html><body><article><h1>Article</h1><p>This article has no canonical link tag. It contains enough content for extraction. Multiple sentences ensure the extractor has material to work with.</p></article></body></html>';
 
-function makeContext(html: string, url: string): CheerioCrawlingContext {
+function makeContext(html: string, url: string, loadedUrl?: string): CheerioCrawlingContext {
   return {
-    request: { url, userData: {} },
+    request: { url, loadedUrl: loadedUrl ?? url, userData: {} },
     log: { info: () => {}, debug: () => {}, warning: () => {}, error: () => {} },
     $: (selector: string) => ({
       prop: (attr: string) => (selector === 'html' && attr === 'outerHTML' ? html : undefined),
@@ -136,6 +136,45 @@ describe("deduplication: 'full' — content hash dedup", () => {
       expect(sink.results[0].url).toBe('https://example.com/a');
     },
   );
+});
+
+describe('loadedUrl — final URL after redirects', () => {
+  it('result.loadedUrl equals request.loadedUrl when different from request.url', async () => {
+    const seenCanonicals = new Set<string>();
+    const sink = memorySink<ExtractionResult>();
+    const handler = createCheerioHandler({
+      formats: [],
+      sink,
+      deduplication: 'minimal',
+      seenCanonicals,
+      seenContentHashes: new Set(),
+    });
+
+    await handler(
+      makeContext(HTML_NO_CANONICAL, 'https://example.com/old', 'https://example.com/new'),
+    );
+
+    expect(sink.results[0]?.url).toBe('https://example.com/old');
+    expect(sink.results[0]?.loadedUrl).toBe('https://example.com/new');
+  });
+
+  it('result.loadedUrl falls back to request.url when loadedUrl is absent', async () => {
+    const seenCanonicals = new Set<string>();
+    const sink = memorySink<ExtractionResult>();
+    const handler = createCheerioHandler({
+      formats: [],
+      sink,
+      deduplication: 'minimal',
+      seenCanonicals,
+      seenContentHashes: new Set(),
+    });
+
+    // makeContext sets loadedUrl === url when no loadedUrl arg is given
+    await handler(makeContext(HTML_NO_CANONICAL, 'https://example.com/page'));
+
+    expect(sink.results[0]?.url).toBe('https://example.com/page');
+    expect(sink.results[0]?.loadedUrl).toBe('https://example.com/page');
+  });
 });
 
 describe('shared seenCanonicals — state accumulates across calls', () => {

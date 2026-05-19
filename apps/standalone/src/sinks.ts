@@ -1,6 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { type ExtractionResult, fileSink, type Sink, urlToFilename } from '@contextractor/crawler';
+import { createHash } from 'node:crypto';
+import type { ExtractionResult, Sink } from '@contextractor/crawler';
 import { computeContentInfo } from '@contextractor/extraction';
 import type { Dataset, KeyValueStore } from 'crawlee';
 import type { SaveFormat } from './config.js';
@@ -12,6 +11,16 @@ const KVS_FORMAT_INFO: Readonly<Record<string, { ext: string; contentType: strin
   html: { ext: 'html', contentType: 'text/html; charset=utf-8' },
   original: { ext: 'html', contentType: 'text/html; charset=utf-8' },
 };
+
+export function urlToFilename(url: string): string {
+  let slug = url.toLowerCase().replace(/^https?:\/\//, '');
+  slug = slug.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (slug.length > 100) {
+    const hash = createHash('md5').update(url).digest('hex').slice(0, 8);
+    slug = `${slug.slice(0, 100)}-${hash}`;
+  }
+  return slug;
+}
 
 export function createCrawleeStorageSink(opts: {
   destinations: string[];
@@ -46,6 +55,7 @@ export function createCrawleeStorageSink(opts: {
     if (toDataset) {
       const record: Record<string, unknown> = {
         url: result.url,
+        loadedUrl: result.loadedUrl,
         status: 'success',
         ...result.metadata,
         originalHash: result.rawHtmlHash,
@@ -66,39 +76,5 @@ export function createCrawleeStorageSink(opts: {
         );
       }
     }
-  };
-}
-
-export function createCliSink(opts: {
-  outDir: string;
-  formats: SaveFormat[];
-}): Sink<ExtractionResult> {
-  const { outDir, formats } = opts;
-  const sinks: Array<Sink<ExtractionResult>> = [];
-
-  const fileFormats = formats.filter(
-    (format): format is Exclude<SaveFormat, 'original'> => format !== 'original',
-  );
-  if (fileFormats.length > 0) {
-    sinks.push(fileSink({ outDir, formats: fileFormats }));
-  }
-
-  if (formats.includes('original')) {
-    sinks.push(originalSink(outDir));
-  }
-
-  return async (result) => {
-    for (const sink of sinks) {
-      await sink(result);
-    }
-  };
-}
-
-function originalSink(outDir: string): Sink<ExtractionResult> {
-  return async (result) => {
-    const resolvedOutDir = path.resolve(outDir);
-    await mkdir(resolvedOutDir, { recursive: true });
-    const slug = urlToFilename(result.url);
-    await writeFile(path.join(resolvedOutDir, `${slug}-raw.html`), result.html, 'utf8');
   };
 }

@@ -13,6 +13,7 @@ import type {
 import {
   AdaptivePlaywrightCrawler,
   CheerioCrawler,
+  log,
   PlaywrightCrawler,
   playwrightUtils,
   Request,
@@ -124,6 +125,17 @@ export function createContextractorCrawler(
   opts: ContextractorCrawlerOptions,
 ): CheerioCrawler | AdaptivePlaywrightCrawler | PlaywrightCrawler {
   const crawlerType = opts.crawlerType ?? 'playwright:adaptive';
+
+  if (
+    opts.blockMedia &&
+    crawlerType !== 'playwright:chromium' &&
+    crawlerType !== 'playwright:adaptive'
+  ) {
+    log.warning(
+      `blockMedia has no effect with crawlerType: ${crawlerType}. It only works with playwright:chromium and playwright:adaptive.`,
+    );
+  }
+
   const cookieStrategy = opts.cookieStrategy ?? 'ghostery';
   const formats = opts.formats ?? ['markdown'];
   const deduplication: 'minimal' | 'basic' | 'full' = opts.deduplication ?? 'basic';

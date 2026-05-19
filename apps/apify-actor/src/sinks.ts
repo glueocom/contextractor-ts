@@ -50,7 +50,8 @@ export function createApifySink(opts: ApifySinkOpts): Sink<ExtractionResult> {
     const keyBase = createHash('md5').update(result.url).digest('hex').slice(0, 16);
 
     const data: Record<string, unknown> = {
-      loadedUrl: result.url,
+      url: result.url,
+      loadedUrl: result.loadedUrl,
       status: 'success',
       loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
       metadata: result.metadata,

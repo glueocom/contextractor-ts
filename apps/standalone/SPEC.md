@@ -19,12 +19,13 @@ Full flag reference: auto-generated table in `apps/standalone/README.md`.
 
 ### `extract`
 
-Extracts content from one or more URLs. Writes to the file output directory (`--output-dir`, default `./output/`) and/or Crawlee storage (Dataset / KeyValueStore), depending on `--save-destination`.
+Extracts content from one or more URLs. Writes to Crawlee storage (Dataset or Key-Value Store), depending on `--save-destination`.
 
 Options: all extraction flags (`--save`, `--max-pages`, `--headless`, `--crawler-type`, `--rendering-detection-pct`, etc.) plus:
 - `--input-file <file>` — read URLs line by line from a file
 - `--dataset <name>` — named dataset for Crawlee storage (default `default`)
 - `--save-destination <dest>` — repeatable; `key-value-store` (default) or `dataset`
+- `--clean` — purge default Dataset, Key-Value Store, and Request Queue before extracting
 - `--storage-dir <path>` — override Crawlee storage directory
 - `--use-sitemaps` — fetch `sitemap.xml` at each start URL domain root and enqueue matching URLs (filtered by `--glob` / `--exclude`) in addition to link-following
 - `--store-skipped-urls` — push skipped URL records (`status: 'skipped'`) to the Crawlee dataset after the crawl
@@ -63,15 +64,9 @@ Prints the resolved Crawlee storage directory and exits.
 
 `schema defaults → config file (JSON) → explicit CLI args`
 
-Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--output-dir`, `--proxy`, `--proxy-tier`, `--proxy-tiers`, `--dataset`) are not accepted in the config file. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config. Unknown keys are stripped by `ContextractorInput.parse()`.
+Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--proxy`, `--proxy-tier`, `--proxy-tiers`, `--dataset`) are not accepted in the config file. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config. Unknown keys are stripped by `ContextractorInput.parse()`.
 
 ## Output
-
-### File output (backwards-compatible)
-
-One file per crawled page in the output directory, named from a URL slug (e.g. `example-com-page.md`). When metadata is available, a header (title, author, date, URL) is prepended to text-format outputs. Supported save formats: `txt`, `markdown`, `json`, `html`, `original`.
-
-### Crawlee storage output
 
 Controlled by `saveDestination` / `--save-destination` (default `key-value-store`):
 
@@ -117,5 +112,4 @@ See `tools/proxy-rotation-tester/README.md` for test documentation.
 
 ## Sinks
 
-- `createCliSink({ outDir, formats })` — composes `fileSink` and `originalSink` for file output
 - `createCrawleeStorageSink({ destinations, kvs, dataset, formats })` — routes to KVS and/or Dataset; errors are caught and logged to stderr

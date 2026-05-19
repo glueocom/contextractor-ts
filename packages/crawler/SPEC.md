@@ -22,14 +22,13 @@ Maps URL strings to `Request[]` for `crawler.run()`.
 type Sink<T> = (result: T) => Promise<void>;
 ```
 
-`createContextractorCrawler` accepts a `sink: Sink<ExtractionResult>`. Two built-in sinks:
+`createContextractorCrawler` accepts a `sink: Sink<ExtractionResult>`. Built-in sink:
 
-- `fileSink({ outDir, formats? })` — writes one file per page per format to disk (standalone CLI)
 - `memorySink()` — accumulates results in memory (tests)
 
 ### `ExtractionResult` (sink input)
 
-`url`, `html`, `rawHtmlHash`, `rawHtmlLength`, `formats: Partial<Record<OutputFormat, string>>`, `metadata: Metadata`, `crawlDepth: number` (link distance from start URL; 0 for start URLs), `referrerUrl: string | null` (URL of the linking page; `null` for start URLs).
+`url` (original request URL), `loadedUrl` (final URL after redirects), `html`, `rawHtmlHash`, `rawHtmlLength`, `formats: Partial<Record<OutputFormat, string>>`, `metadata: Metadata`, `crawlDepth: number` (link distance from start URL; 0 for start URLs), `referrerUrl: string | null` (URL of the linking page; `null` for start URLs).
 
 `crawlDepth` and `referrerUrl` are read from `request.userData` at handler entry and propagated via `enqueueLinks` `userData: { depth, referrerUrl }` so every enqueued child carries the correct values.
 
@@ -52,6 +51,7 @@ type Sink<T> = (result: T) => Promise<void>;
 - `onFailedRequest?: (info: { url, loadedUrl, errorMessages, retryCount }) => Promise<void>` — called after all retries are exhausted for a request
 - `onSkippedUrl?: (url: string, reason: string) => void` — called synchronously during `enqueueLinks` when a URL is skipped (glob filter, robots.txt, depth limit, or concurrency cap)
 - `deduplication?: 'minimal' | 'basic' | 'full'` (default `'basic'`) — controls post-fetch deduplication layered on top of Crawlee's built-in URL dedup. `createContextractorCrawler` initialises shared `seenCanonicals: Set<string>` and `seenContentHashes: Set<string>` and passes them to all three handler factories. `'minimal'`: no additional dedup beyond Crawlee URL dedup. `'basic'`: skips pages whose `<link rel="canonical">` was already seen and differs from the current URL; applies to all three handler types. `'full'`: additionally skips pages whose extracted text content hash was already seen.
+- `blockMedia?: boolean` — when `true`, blocks images, stylesheets, fonts, PDFs, and ZIPs. Only effective with `playwright:chromium` and `playwright:adaptive`; setting it with `cheerio` or `playwright:firefox` emits a `log.warning`.
 
 ## Proxy Configuration
 

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import {
   buildRequests,
   createContextractorCrawler,
-  type ExtractionResult,
   ProxyConfiguration,
 } from '@contextractor/crawler';
 import { ContextractorInput, type ContextractorInputType } from '@contextractor/schema';
@@ -18,7 +17,7 @@ import {
   type SaveFormat,
   validateSaveFormats,
 } from './config.js';
-import { createCliSink, createCrawleeStorageSink } from './sinks.js';
+import { createCrawleeStorageSink } from './sinks.js';
 import { configureStorage, resolveStorageDir } from './storage/index.js';
 
 // ---------------------------------------------------------------------------
@@ -125,7 +124,7 @@ function addExtractionOptions(cmd: Command): Command {
   const s = ContextractorInput.shape;
   return cmd
     .option('-c, --config <path>', 'Path to JSON config file')
-    .option('-o, --output-dir <dir>', 'Output directory', './output')
+    .option('--clean', 'Purge default storage before extracting (datasets, KVS, request queues)')
     .addOption(
       new Option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)')
         .argParser(toInt)
@@ -414,7 +413,6 @@ function resolveCliOnly(
 
   return {
     urls,
-    outputDir: opts.outputDir ?? './output',
     save,
     proxyUrls,
     proxyRotation: input.proxyRotation,
@@ -483,21 +481,30 @@ async function runExtractAction(
     ? await RequestQueue.open(parsed.data.requestQueueName)
     : undefined;
 
-  const formats = cfg.save.length > 0 ? cfg.save.join(', ') : 'markdown';
-  process.stderr.write(`Extracting ${cfg.urls.length} URL(s) → ${cfg.outputDir}/ [${formats}]\n`);
+  if (opts.clean) {
+    await rm(path.join(storageDir, 'datasets', 'default'), { recursive: true, force: true });
+    await rm(path.join(storageDir, 'key_value_stores', 'default'), {
+      recursive: true,
+      force: true,
+    });
+    await rm(path.join(storageDir, 'request_queues', 'default'), {
+      recursive: true,
+      force: true,
+    });
+  }
 
-  const fileSinkInstance = createCliSink({ outDir: cfg.outputDir, formats: cfg.save });
-  const storageSinkInstance = createCrawleeStorageSink({
+  const formats = cfg.save.length > 0 ? cfg.save.join(', ') : 'markdown';
+  const destLabel = destinations.join(', ') || 'key-value-store';
+  process.stderr.write(
+    `Extracting ${cfg.urls.length} URL(s) → storage [${destLabel}] [${formats}]\n`,
+  );
+
+  const sink = createCrawleeStorageSink({
     destinations,
     kvs,
     dataset: ds,
     formats: cfg.save,
   });
-
-  const sink = async (result: ExtractionResult): Promise<void> => {
-    await fileSinkInstance(result);
-    await storageSinkInstance(result);
-  };
 
   let proxyConfiguration: ProxyConfiguration | undefined;
   if (parsed.data.tieredProxyUrls) {
@@ -918,7 +925,7 @@ export function isMainEntry(metaUrl: string, argv1 = process.argv[1]): boolean {
 
 interface ExtractOpts {
   config?: string;
-  outputDir?: string;
+  clean?: boolean;
   maxPages?: number;
   crawlDepth?: number;
   headless?: boolean;

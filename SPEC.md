@@ -26,8 +26,8 @@ Data flow:
 
 ```
 Input URLs → [SitemapRequestList (optional)] → PlaywrightCrawler → ContentExtractor (TS) → sink
-                                                                                           ├── KVS + Dataset       (Actor)
-                                                                                           └── files + KVS/Dataset (CLI)
+                                                                                           ├── KVS + Dataset (Actor)
+                                                                                           └── KVS + Dataset (CLI)
 ```
 
 When `useSitemaps` is enabled, `SitemapRequestList.open()` fetches `sitemap.xml` at each start URL's domain root and feeds discovered URLs into the crawler alongside the explicit start URLs.
@@ -91,7 +91,7 @@ Internal binding-only knobs (`favorPrecision`, `favorRecall`, `includeFormatting
 
 ### Standalone CLI config file
 
-The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags are `--output-dir`, `--proxy`, `--proxy-tier`, `--proxy-tiers`, and the named-dataset override `--dataset`. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config.
+The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags are `--proxy`, `--proxy-tier`, `--proxy-tiers`, `--clean`, and the named-dataset override `--dataset`. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config.
 
 Config merge order: `schema defaults → config file → explicit CLI args`.
 
@@ -103,6 +103,7 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
 
 ```json
 {
+  "url": "https://example.com/page",
   "loadedUrl": "https://example.com/page",
   "loadedAt": "2026-04-27T18:58:36Z",
   "metadata": {
@@ -130,6 +131,7 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
 
 ```json
 {
+  "url": "https://example.com/page",
   "loadedUrl": "https://example.com/page",
   "loadedAt": "2026-04-27T18:58:36Z",
   "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "lang": "en" },
@@ -161,9 +163,9 @@ Storage keys use the first 16 hex characters of an MD5 over the URL:
 
 ### Standalone CLI — output
 
-**File output** (default, backwards-compatible): one file per crawled page in `--output-dir` (default `./output/`), named from a URL slug (e.g. `example-com-page.md`). Metadata header prepended to text-format outputs when available.
+Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS keys use a URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry `url`, `loadedUrl`, `status: 'success'` with metadata, `originalHash`, inline content, and `{format}Hash` fields; `status: 'failed'` for exhausted retries; and optional `status: 'skipped'` records when `--store-skipped-urls` is set.
 
-**Crawlee storage** (controlled by `saveDestination` / `--save-destination`): KVS keys use URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry all crawl outcomes — `status: 'success'` for extracted pages with metadata, `originalHash`, inline content, and `{format}Hash` fields; `status: 'failed'` for exhausted retries; and optional `status: 'skipped'` records when skipped-URL recording is enabled.
+`--clean` purges the default Dataset, Key-Value Store, and Request Queue before extraction begins.
 
 The standalone CLI exits with code `2` when at least one request fails after retries, while still flushing dataset/KVS output for the rest of the crawl.
 

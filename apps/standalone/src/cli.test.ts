@@ -1,15 +1,14 @@
-import { FORMAT_EXTENSIONS, urlToFilename } from '@contextractor/crawler';
 import { ContextractorInput } from '@contextractor/schema';
 import { describe, expect, it } from 'vitest';
 import { buildProgram } from './cliProgram.js';
 import { buildCrawlConfig, validateSaveFormats } from './config.js';
+import { urlToFilename } from './sinks.js';
 
 describe('config helpers', () => {
   it('buildCrawlConfig produces balanced defaults from a minimal startUrls payload', () => {
     const input = ContextractorInput.parse({ startUrls: [{ url: 'https://example.com' }] });
     const cfg = buildCrawlConfig(input, {
       urls: ['https://example.com'],
-      outputDir: './output',
       save: ['markdown'],
       proxyUrls: [],
     });
@@ -18,7 +17,6 @@ describe('config helpers', () => {
     expect(cfg.initialConcurrency).toBe(0);
     expect(cfg.maxConcurrency).toBe(50);
     expect(cfg.headless).toBe(true);
-    expect(cfg.outputDir).toBe('./output');
     expect(cfg.crawlerType).toBe('playwright:adaptive');
     expect(cfg.renderingTypeDetectionPercentage).toBe(10);
     expect(cfg.waitUntil).toBe('load');
@@ -55,12 +53,6 @@ describe('config helpers', () => {
     for (const r of rejected) {
       expect(() => validateSaveFormats([r])).toThrow(/Unknown save format/);
     }
-  });
-});
-
-describe('FORMAT_EXTENSIONS', () => {
-  it('contains exactly the supported set', () => {
-    expect(Object.keys(FORMAT_EXTENSIONS).sort()).toEqual(['html', 'json', 'markdown', 'txt']);
   });
 });
 

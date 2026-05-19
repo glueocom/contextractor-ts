@@ -60,6 +60,7 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
   return async (context: PlaywrightCrawlingContext): Promise<void> => {
     const { page, request, log } = context;
     const url = request.url;
+    const loadedUrl = request.loadedUrl ?? request.url;
     const crawlDepth = typeof request.userData?.depth === 'number' ? request.userData.depth : 0;
     const referrerUrl =
       typeof request.userData?.referrerUrl === 'string' ? request.userData.referrerUrl : null;
@@ -124,6 +125,7 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
 
     await opts.sink({
       url,
+      loadedUrl,
       html,
       metadata,
       formats,
@@ -182,6 +184,7 @@ export function createCheerioHandler(opts: HandlerOpts): RequestHandler<CheerioC
   return async (context: CheerioCrawlingContext): Promise<void> => {
     const { request, log } = context;
     const url = request.url;
+    const loadedUrl = request.loadedUrl ?? request.url;
     const crawlDepth = typeof request.userData?.depth === 'number' ? request.userData.depth : 0;
     const referrerUrl =
       typeof request.userData?.referrerUrl === 'string' ? request.userData.referrerUrl : null;
@@ -225,6 +228,7 @@ export function createCheerioHandler(opts: HandlerOpts): RequestHandler<CheerioC
 
     await opts.sink({
       url,
+      loadedUrl,
       html,
       metadata,
       formats,
@@ -256,6 +260,7 @@ export function createAdaptiveHandler(
   return async (context: LoadedContext<AdaptivePlaywrightCrawlerContext>): Promise<void> => {
     const { request, log } = context;
     const url = request.url;
+    const loadedUrl = request.loadedUrl ?? request.url;
     const crawlDepth = typeof request.userData?.depth === 'number' ? request.userData.depth : 0;
     const referrerUrl =
       typeof request.userData?.referrerUrl === 'string' ? request.userData.referrerUrl : null;
@@ -300,6 +305,7 @@ export function createAdaptiveHandler(
 
     await opts.sink({
       url,
+      loadedUrl,
       html,
       metadata,
       formats,
