@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Remove the `output/` directory and file sink from the standalone CLI. All extracted content goes exclusively through Crawlee storage (Dataset and Key-Value Store). The `saveDestination` schema default remains `key-value-store`.
+Remove the `output/` directory and file sink from the standalone CLI. All extracted content goes exclusively through Crawlee storage (Dataset and Key-Value Store). The `saveDestination` schema default remains `key-value-store`. Additional required config changes (`purgeOnStart`, storage dir location, KVS slugging) and follow-up scope come from `context/storage-only-verdict.md`.
 
 ## Goal
 
@@ -14,6 +14,7 @@ Read before implementing:
 
 - `prompts/2026-05-19-storage-vs-output-plus-func-comparison/context/research.md` — storage vs output architecture analysis
 - `prompts/2026-05-19-storage-vs-output-plus-func-comparison/context/industry-research.md` — industry conventions verdict
+- `prompts/2026-05-19-storage-vs-output-plus-func-comparison/context/storage-only-verdict.md` — Crawlee docs/community research, risks, and required config changes
 
 ## Background
 
@@ -72,12 +73,46 @@ The schema default for `saveDestination` remains `key-value-store`. Do not chang
 
 `original` saves raw HTML. Previously this went to `output/{slug}-raw.html`. After this change, `original` only makes sense as a KVS entry (`{slug}-original.html`). Verify `save: ['original']` alone (without other formats) still works correctly via `createCrawleeStorageSink`. If `original` is not meaningful in dataset-only mode, document that.
 
+## Required configuration changes
+
+Three additions from `context/storage-only-verdict.md` (see verdict §8 "Specific risks and mitigations" for full rationale and severity) ride along with this change:
+
+### 1. Disable `purgeOnStart` (critical)
+
+Crawlee defaults to purging all storage at the start of every run. Without `output/` as a parallel sink, the next `contextractor extract` silently destroys the previous result. At the crawler bootstrap (standalone CLI only — the Actor handles purge platform-side):
+
+```ts
+Configuration.getGlobalConfig().set('purgeOnStart', false);
+```
+
+Add `--clean` (or `--fresh`) flag on `extract` to opt back into a purge for users who want a clean run.
+
+### 2. Verify storage dir stays out of CWD
+
+`resolveStorageDir()` already defaults to `$XDG_DATA_HOME/contextractor/storage`. Confirm this still resolves correctly after the `--output-dir` / `outputDir` removal — no change expected, just guard against accidental regression to `./storage`. Reason: `storage/` mixes user-facing dataset/KVS records with `request_queues/` and SDK statistics files; in CWD it invites manual browsing and `.DS_Store`-class crashes (apify/crawlee#1985).
+
+### 3. KVS slugger correctness
+
+If `urlToFilename` is retained for KVS key generation, verify it:
+- lowercases the key (KVS keys are case-preserved on disk; collides on APFS/NTFS)
+- strips characters outside `[a-zA-Z0-9!\-_.'()]` (Crawlee's allowed key charset)
+- truncates to ≤256 chars
+
+Add a unit test if one doesn't exist.
+
+## Out of scope (follow-up prompts)
+
+Surfaced by `context/storage-only-verdict.md` but deferred:
+
+- 9MB dataset-item JSON limit with `--save-destination=dataset` + `original` on long pages — mirror Website Content Crawler's `htmlUrl` overflow pattern.
+- `crawler.exportData('./run-{timestamp}.jsonl')` for a single consolidated per-run artifact alongside the dataset (idiomatic Crawlee, but `contextractor list/get` already covers consumption).
+
 ## Docs to Update
 
 Update all of the following in the **same response** as the code change:
 
-- `apps/standalone/SPEC.md` — remove `output/` section, `--output-dir` option, file output descriptions; update "Output" section to describe storage-only access; update CLI-only flags list
-- `apps/standalone/README.md` — remove `--output-dir` from usage examples and flag table; add `contextractor list` / `contextractor get` workflow as the primary output access path
+- `apps/standalone/SPEC.md` — remove `output/` section, `--output-dir` option, file output descriptions; update "Output" section to describe storage-only access; update CLI-only flags list; document new `--clean` flag and `purgeOnStart: false` default
+- `apps/standalone/README.md` — remove `--output-dir` from usage examples and flag table; add `contextractor list` / `contextractor get` workflow as the **primary** output access path; mention raw `storage/` layout only in an "Advanced" section with a warning that the layout is a Crawlee implementation detail subject to change across major versions
 - `packages/crawler/SPEC.md` — remove `fileSink` from public API section; keep `urlToFilename` only if still exported
 - `SPEC.md` (root) — remove `--output-dir` from CLI-only flags list; update any mention of `output/` directory
 - `apps/apify-actor/SPEC.md` — no change needed (Actor never used `output/`)
@@ -110,6 +145,11 @@ After local tests pass, run `/platform:deploy-and-test` to verify the Actor stil
 - `contextractor list` and `contextractor get` return the extracted content
 - `--output-dir` flag no longer exists
 - `fileSink` is no longer exported from `@contextractor/crawler`
+- `purgeOnStart` is `false` on the standalone CLI; `--clean` flag re-enables purging for a single run
+- Storage dir continues to resolve to `$XDG_DATA_HOME/contextractor/storage` (not `./storage`) when nothing is configured
+- Running `contextractor extract a.com` then `contextractor extract b.com` preserves `a.com`'s data in storage
 - All SPEC.md and README.md files reflect the new storage-only model
 - `pnpm build`, `pnpm lint`, `pnpm test` all pass
 - Platform Actor build and smoke test succeed
+
+_Risk-driven criteria (rows 5–7) trace to `context/storage-only-verdict.md` §8._
