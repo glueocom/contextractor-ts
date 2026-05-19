@@ -13,7 +13,7 @@ ressearch:
 - are the current features implemented correctly?
 - does contextractor has any useless (or too  niche) features?
 
-create a promt that will add missing features. the promt must also test the implementation locally and on apify platgorm. the promt must also update all applicable SPEC.md and README.md files and other doc files, save the resulting prompt to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/compare-funtionality.md`
+create a promt that will add missing features, remove useless features or fix existing. features. the promt must also test the implementation locally and on apify platgorm. the promt must also update all applicable SPEC.md and README.md files and other doc files, save the resulting prompt to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/compare-funtionality.md`
 
 
 review and fix if required `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-storage-vs-output-plus-func-comparison/storage-vs-output.md` - make sure it is not contradicting integrated, autofix problems
