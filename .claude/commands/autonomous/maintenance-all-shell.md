@@ -4,7 +4,7 @@ allowed-tools: Bash(bash:*), Bash(pnpm:*), Bash(cargo:*), Read, Edit, Write
 model: sonnet
 ---
 
-**Only run this command if you are Claude Code. If you are any other agent (opencode or otherwise), skip this command entirely and report it as skipped.**
+**Only run this command if you are Claude Code.**
 
 Run the full autonomous/maintenance pipeline (`dev-utils/autonomous/run-all.sh`). If any step fails, diagnose the root cause, apply a targeted fix, and re-run. Repeat until all steps pass or 5 iterations are exhausted.
 
@@ -28,17 +28,16 @@ Capture all output for the DIAGNOSE step.
 If `EXIT:0`, skip to Step REPORT.
 
 Check the output for:
-- Non-zero `EXIT:` code — find which sub-script failed (claude-meta, claude, sync, opencode)
+- Non-zero `EXIT:` code — find which sub-script failed (claude-meta, claude)
 - `jq: parse error` — stream-json output is malformed; fix `dev-utils/autonomous/maintenance/lib/claude.sh` (wrong flags or `2>&1` redirecting stderr into the pipe)
-- `Error:` lines from `claude` or `opencode` — fix the flag in the relevant lib file
+- `Error:` lines from `claude` — fix the flag in the relevant lib file
 - `command not found` — a required binary is missing; record in report and skip to Step REPORT
 - `bash: ...` errors — fix the responsible shell script
 
 Files most likely to need fixing:
 - `dev-utils/autonomous/maintenance/lib/claude.sh`
-- `dev-utils/autonomous/maintenance/lib/opencode.sh`
 - `dev-utils/autonomous/run-all.sh`
-- `dev-utils/autonomous/maintenance/claude.sh`, `opencode.sh`, `claude-meta.sh`, `sync.sh`
+- `dev-utils/autonomous/maintenance/claude.sh`, `claude-meta.sh`
 
 ## Step FIX: Apply targeted fix
 
@@ -49,7 +48,7 @@ Read the failing file, apply the minimal fix using Edit. Return to Step RUN. Fix
 Save `autonomous-task-output/claude-maintenance-all-shell/reports/run-all-report.md` with:
 - Date/time of run
 - Total iterations needed
-- Each sub-script result (claude-meta, claude, sync, opencode): pass / fail / skipped
+- Each sub-script result (claude-meta, claude): pass / fail / skipped
 - All fixes applied (file path, what changed, why)
 - Final exit status
 

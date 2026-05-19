@@ -11,7 +11,6 @@ Execute assigned tasks autonomously without user interaction. Save structured ou
 
 Determine `{agent}` from the AI tool running this command:
 - Claude Code → `claude`
-- opencode → `opencode`
 - Any other tool → use the tool's lowercase name
 
 All output goes to `autonomous-task-output/{agent}/` at the repo root:

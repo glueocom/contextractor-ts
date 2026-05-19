@@ -15,8 +15,7 @@
     "format": "biome format --write .",
     "check": "biome check .",
     "docs:update": "pnpm -F @contextractor/gen-md-regions start",
-    "docs:check": "pnpm docs:update && git diff --exit-code -- '**/*.md'",
-    "opencode:sync": "pnpm -F @contextractor/opencode-sync start"
+    "docs:check": "pnpm docs:update && git diff --exit-code -- '**/*.md'"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",

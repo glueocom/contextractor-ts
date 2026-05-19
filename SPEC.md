@@ -64,7 +64,6 @@ Internal tooling under `tools/` for development, testing, and code generation:
 - **`gen-input-schema`** — generates `apps/apify-actor/.actor/input_schema.json` from the Zod schema
 - **`gen-md-regions`** — auto-regenerates markdown sections in READMEs from schemas and JSON outputs
 - **`platform-test-runner`** — orchestrates integration tests against Apify Platform
-- **`opencode-sync`** — mirrors `.claude/` config to `.opencode/` for opencode AI tool
 - **`proxy-simulator`** — mock HTTP proxy server for testing proxy rotation
 - **`proxy-rotation-tester`** — comprehensive test suite for proxy rotation across all entry points
 

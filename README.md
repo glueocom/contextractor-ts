@@ -125,8 +125,7 @@ packages/
 tools/
 ├── platform-test-runner/       # TypeScript test orchestrator
 ├── gen-input-schema/           # Generates .actor/input_schema.json from Zod schema
-├── gen-md-regions/             # Rewrites @generated markdown regions in READMEs
-└── opencode-sync/              # Mirrors .claude/ to .opencode/ for opencode AI tool
+└── gen-md-regions/             # Rewrites @generated markdown regions in READMEs
 ```
 
 ## Docs version

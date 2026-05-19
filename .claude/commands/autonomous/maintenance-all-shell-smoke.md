@@ -4,7 +4,7 @@ allowed-tools: Bash(bash:*), Read, Edit
 model: sonnet
 ---
 
-**Only run this command if you are Claude Code. If you are any other agent (opencode or otherwise), skip this command entirely and report it as skipped.**
+**Only run this command if you are Claude Code.**
 
 Run the autonomous/maintenance pipeline in STUB_MODE. If it fails, diagnose and fix the root cause, then re-run. Repeat until all steps pass or 5 iterations are exhausted.
 
@@ -20,7 +20,7 @@ echo "EXIT:$?"
 Check the output for:
 - Non-zero `EXIT:` code
 - `jq: parse error` — stream-json output is not valid JSON; fix `dev-utils/autonomous/maintenance/lib/claude.sh` (wrong flags or `2>&1` redirecting stderr into the pipe)
-- `Error:` lines from `claude` or `opencode` — fix the flag causing the error in the relevant lib file
+- `Error:` lines from `claude` — fix the flag causing the error in the relevant lib file
 - `command not found` — a required binary is missing; report it
 - Script-level `bash: ...` errors — fix the shell script responsible
 
@@ -30,8 +30,7 @@ Read the failing file, apply the minimal fix using Edit, then return to Step RUN
 
 Files most likely to need fixing:
 - `dev-utils/autonomous/maintenance/lib/claude.sh` — claude invocation flags
-- `dev-utils/autonomous/maintenance/lib/opencode.sh` — opencode invocation flags
-- `dev-utils/autonomous/run-all.sh`, `dev-utils/autonomous/maintenance/claude.sh`, `opencode.sh`, `claude-meta.sh`, `sync.sh`
+- `dev-utils/autonomous/run-all.sh`, `dev-utils/autonomous/maintenance/claude.sh`, `claude-meta.sh`
 
 ## Step VERIFY: Confirm success
 

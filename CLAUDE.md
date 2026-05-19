@@ -16,7 +16,6 @@ tools/
 ├── platform-test-runner/      # test orchestrator
 ├── gen-input-schema/          # generates .actor/input_schema.json from Zod schema
 ├── gen-md-regions/            # rewrites @generated markdown regions in READMEs
-├── opencode-sync/             # mirrors .claude/ to .opencode/ for opencode AI tool
 ├── proxy-simulator/           # mock HTTP proxy server for testing
 └── proxy-rotation-tester/     # proxy rotation test suite for all entry points
 ```
@@ -28,7 +27,6 @@ pnpm build                                                 # Build all TS packag
 pnpm test                                                  # All vitest tests (via turbo)
 pnpm lint                                                  # Biome lint (via turbo)
 pnpm docs:update                                           # Regenerate @generated markdown regions
-pnpm opencode:sync                                         # Mirror .claude/ to .opencode/
 pnpm --filter @contextractor/extraction-native build:rebuild # Build napi-rs .node
 cargo build --workspace                                    # Build napi-rs crate
 cargo test --workspace                                     # Cargo tests

@@ -26,7 +26,6 @@ Run each sub-command sequentially in this order. If a command fails, log the fai
 - `/autonomous:maintenance:sync:gui` — verify internal consistency
 - `/autonomous:maintenance:sync:docs` — sync READMEs
 - `/autonomous:maintenance:sync:spec` — sync SPEC.md files
-- `/autonomous:meta:sync-opencode` — sync to opencode
 - `/autonomous:maintenance:test:local` — build + unit tests + lint autofix
 - `/autonomous:maintenance:test:typescript-autofix` — TypeScript review
 - `/autonomous:maintenance:test:dead-code-autofix` — dead code cleanup
