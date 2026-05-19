@@ -43,6 +43,29 @@ tieredProxyUrls: z
   }),
 ```
 
+### Field `tieredProxyConfig`
+
+Apify-specific alternative to `tieredProxyUrls` for tiering between different Apify proxy configurations (groups, countries). Each element is an Apify `ProxyConfigurationOptions` object minus core Crawlee fields. The Apify SDK converts it to `tieredProxyUrls` internally.
+
+```typescript
+tieredProxyConfig: z
+  .array(z.record(z.string(), z.unknown()))
+  .min(1)
+  .optional()
+  .describe(
+    'Tiered Apify proxy configurations for automatic escalation. An array of Apify proxy ' +
+    'configuration objects; Crawlee starts on tier 0 and escalates per domain on block detection. ' +
+    'Each element accepts the same fields as proxyConfiguration (groups, countryCode, password, etc.) ' +
+    'but not proxyUrls or tieredProxyUrls. Example: ' +
+    '[{"groups":["RESIDENTIAL"]},{"groups":["DATACENTER"]}]. ' +
+    'Takes precedence over tieredProxyUrls if both are set. Requires Apify Proxy access.',
+  )
+  .meta({
+    title: 'Tiered Apify proxy config',
+    ...apifyMeta({ editor: 'json', sectionCaption: 'Proxy', isSecret: true, prefill: [] }),
+  }),
+```
+
 ### Field `sessionPoolName`
 
 ```typescript
@@ -87,7 +110,7 @@ After editing, regenerate the Apify input schema:
 pnpm --filter @contextractor/gen-input-schema generate
 ```
 
-Verify `apps/apify-actor/.actor/input_schema.json` now contains `tieredProxyUrls`, `sessionPoolName`, and `maxSessionRotations` fields.
+Verify `apps/apify-actor/.actor/input_schema.json` now contains `tieredProxyUrls`, `tieredProxyConfig`, `sessionPoolName`, and `maxSessionRotations` fields.
 
 ## Step CRAWLER: Extend ContextractorCrawlerOptions
 
@@ -149,7 +172,11 @@ With:
 
 ```typescript
 let proxyConfig: Awaited<ReturnType<typeof Actor.createProxyConfiguration>> | undefined;
-if (input.tieredProxyUrls) {
+if (input.tieredProxyUrls && input.tieredProxyConfig) {
+  log.error('tieredProxyUrls and tieredProxyConfig are mutually exclusive. Remove one of them.');
+  await Actor.exit({ exitCode: 1 });
+  process.exit(1);
+} else if (input.tieredProxyUrls) {
   if (input.proxyConfiguration && (input.proxyConfiguration as Record<string, unknown>)['useApifyProxy'] === true) {
     log.error('tieredProxyUrls and proxyConfiguration.useApifyProxy are mutually exclusive. Remove one of them.');
     await Actor.exit({ exitCode: 1 });
@@ -158,12 +185,20 @@ if (input.tieredProxyUrls) {
   proxyConfig = await Actor.createProxyConfiguration({
     tieredProxyUrls: input.tieredProxyUrls as (string | null)[][],
   });
+} else if (input.tieredProxyConfig) {
+  proxyConfig = await Actor.createProxyConfiguration({
+    tieredProxyConfig: input.tieredProxyConfig as ProxyConfigurationOptions[],
+  });
 } else if (input.proxyConfiguration) {
   proxyConfig = await Actor.createProxyConfiguration(
     input.proxyConfiguration as ProxyConfigurationOptions,
   );
 }
 ```
+
+Proxy construction precedence: `tieredProxyUrls` (custom URL tiers) → `tieredProxyConfig` (Apify proxy tiers) → flat `proxyConfiguration`. `tieredProxyUrls` and `tieredProxyConfig` are mutually exclusive and produce an immediate error if both are set. `tieredProxyUrls` combined with `useApifyProxy: true` is also rejected.
+
+Note: `tieredProxyConfig` is Apify-SDK-specific — it is converted to `tieredProxyUrls` internally by the SDK via `_generateTieredProxyUrls`. It is not available in the standalone CLI (no Apify proxy off-platform).
 
 ## Step CLI: Add New Flags to cliProgram.ts
 
@@ -524,7 +559,7 @@ Note: `runActor` kills the process via `SIGTERM` after detecting completion or o
 
 ### `packages/schema/SPEC.md`
 
-In the proxy section, add entries for `tieredProxyUrls` (optional, `(string|null)[][]`, Apify JSON editor, secret), `sessionPoolName` (optional, string, 3–200 chars, alphanumeric/dash/underscore), and `maxSessionRotations` (integer, 0–20, default 10).
+In the proxy section, add entries for `tieredProxyUrls` (optional, `(string|null)[][]`, Apify JSON editor, secret), `tieredProxyConfig` (optional, `object[]`, Apify JSON editor, secret, Actor-only), `sessionPoolName` (optional, string, 3–200 chars, alphanumeric/dash/underscore), and `maxSessionRotations` (integer, 0–20, default 10).
 
 ### `packages/crawler/SPEC.md`
 
@@ -533,8 +568,11 @@ In the `ContextractorCrawlerOptions` section, add `sessionPoolName?: string` (se
 ### `apps/apify-actor/SPEC.md`
 
 In the proxy section, document:
-- `tieredProxyUrls` input field, how it maps to `Actor.createProxyConfiguration({ tieredProxyUrls })`
-- Mutual exclusivity rule: `tieredProxyUrls` + `proxyConfiguration.useApifyProxy: true` → Actor exits with error
+- `tieredProxyUrls` — custom URL tiers, maps to `Actor.createProxyConfiguration({ tieredProxyUrls })`
+- `tieredProxyConfig` — Apify proxy tiers (groups/countries), maps to `Actor.createProxyConfiguration({ tieredProxyConfig })`; converted to `tieredProxyUrls` internally by the Apify SDK
+- Precedence: `tieredProxyUrls` → `tieredProxyConfig` → flat `proxyConfiguration`
+- Mutual exclusivity rules: `tieredProxyUrls` + `tieredProxyConfig` → error; `tieredProxyUrls` + `useApifyProxy: true` → error
+- `tieredProxyConfig` is Actor-only (not in the standalone CLI)
 - `sessionPoolName` wires into `sessionPoolOptions.persistStateKey`
 - `maxSessionRotations` passes through `buildCrawlerOpts` to the crawler
 
