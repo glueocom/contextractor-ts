@@ -1,10 +1,10 @@
-# Compare Functionality: Add Missing Features and Fix Bugs
+# Compare Functionality: Fix Bugs and Align Output
+
+## TLDR
+
+Fix two bugs identified by comparing contextractor against `apify/website-content-crawler` and `apify/playwright-scraper`. No new features are added. Changes are limited to the crawler handler, sinks, and `ExtractionResult` type.
 
 ## Context
-
-This prompt is based on a comparison of contextractor against `apify/playwright-scraper`
-(local: `/Users/miroslavsekera/r/actor-scraper/packages/actor-scraper/playwright-scraper`)
-and `apify/website-content-crawler`.
 
 Read before implementing:
 
@@ -18,23 +18,15 @@ Read before implementing:
 
 ## Research Findings
 
-### Features missing from contextractor
+### Features compared
 
-Compared to `apify/website-content-crawler` and `apify/playwright-scraper`, contextractor
-is missing:
+Compared contextractor against `apify/website-content-crawler` and `apify/playwright-scraper`
+(local: `/Users/miroslavsekera/r/actor-scraper/packages/actor-scraper/playwright-scraper`).
+All existing contextractor features are purposeful. No features need to be added or removed.
 
-- `useLlmsTxt` — WCC crawls `/llms.txt` files at domain roots; high value given contextractor's AI extraction purpose
-- `clickElementsCssSelector` — WCC and playwright-scraper both click collapsed accordions/tabs before extraction; ensures complete content
-- `saveScreenshots` — WCC saves screenshots to KVS; useful for QA and multimodal AI pipelines
-- `keepElementsCssSelector` — WCC scopes extraction to matching elements; lets users target `article.main-content` instead of full page
-- `removeElementsCssSelector` — WCC removes unwanted elements before extraction; complements trafilatura's noise removal
-
-Not adding (reviewed and rejected): jsdom crawler type (cheerio covers static HTML), `expandIframes`
-(niche), `aggressivePrune` (covered by `mode: 'precision'`), `minFileDownloadSpeedKBps`
-(operational niche), `reuseStoredDetectionResults` (complex optimization), `pageFunction`/hooks
-(out of scope for a content extractor).
-
-All existing contextractor features are purposeful. No features need to be removed.
+Reviewed and rejected: `useLlmsTxt`, `clickElementsCssSelector`, `saveScreenshots`,
+`keepElementsCssSelector`, `removeElementsCssSelector`, jsdom crawler type, `expandIframes`,
+`aggressivePrune`, `minFileDownloadSpeedKBps`, `reuseStoredDetectionResults`, `pageFunction`/hooks.
 
 ### Bugs to fix
 
@@ -57,42 +49,6 @@ is detected.
 
 ## Implementation Steps
 
-### Step SCHEMA: Add new input fields
-
-File: `packages/schema/src/source-of-truth/input.ts`
-
-Add to the crawling section (after `useSitemaps`):
-
-```typescript
-useLlmsTxt: z.boolean().default(false)
-  .describe('If enabled, crawl /llms.txt files at each start URL\'s domain root and enqueue the URLs listed in them.'),
-```
-
-Add to the extraction section:
-
-```typescript
-clickElementsCssSelector: z.string().default('')
-  .describe('CSS selector for elements to click before extraction (expands accordions, tabs, etc.). Playwright only — ignored for cheerio.'),
-keepElementsCssSelector: z.string().default('')
-  .describe('Scope extraction to matching elements only. Leave empty to extract full page. Applied before trafilatura.'),
-removeElementsCssSelector: z.string().default('')
-  .describe('Remove matching elements before extraction (e.g. "nav, footer, .ads"). Applied before trafilatura.'),
-```
-
-Add to the output section (after `save`):
-
-```typescript
-saveScreenshots: z.boolean().default(false)
-  .describe('Save a screenshot of each page to the key-value store as {hash}-screenshot.png. Playwright only.'),
-```
-
-After editing the schema, regenerate the JSON and README table:
-
-```bash
-pnpm --filter @contextractor/gen-input-schema start
-pnpm docs:update
-```
-
 ### Step TYPES: Extend ExtractionResult
 
 File: `packages/crawler/src/sinks/types.ts`
@@ -108,11 +64,11 @@ export interface ExtractionResult {
 }
 ```
 
-### Step HANDLER: Pass loadedUrl and implement new features
+### Step HANDLER: Fix loadedUrl
 
 File: `packages/crawler/src/handler.ts`
 
-**Fix `loadedUrl`:** capture both URLs from the request:
+Capture both URLs from the request:
 
 ```typescript
 const url = request.url;
@@ -130,69 +86,11 @@ await opts.sink({
 });
 ```
 
-**`clickElementsCssSelector`:** after dynamic content waits and selector waits, before
-calling `page.content()`, add:
-
-```typescript
-if (opts.clickElementsCssSelector && page) {
-  await page.$$eval(opts.clickElementsCssSelector, (els) =>
-    els.forEach((el) => (el as HTMLElement).click())
-  ).catch(() => {});
-  // brief settle for click effects
-  await page.waitForTimeout(200).catch(() => {});
-}
-```
-
-Guard with `if (opts.clickElementsCssSelector)` and only apply when a `page` is available
-(Playwright context). Cheerio context does not have `page`.
-
-**`keepElementsCssSelector` and `removeElementsCssSelector`:** after `const html = await page.content()`,
-apply CSS filtering using `cheerio` (already a workspace dependency):
-
-```typescript
-let processedHtml = html;
-if (opts.keepElementsCssSelector || opts.removeElementsCssSelector) {
-  const $ = load(html);
-  if (opts.keepElementsCssSelector) {
-    const kept = $(opts.keepElementsCssSelector).toString();
-    processedHtml = kept || html;
-  }
-  if (opts.removeElementsCssSelector) {
-    $(opts.removeElementsCssSelector).remove();
-    processedHtml = $.html();
-  }
-}
-```
-
-Use `processedHtml` instead of `html` for extraction; keep the original `html` in the sink
-for `rawHtmlHash` computation and `original` saving.
-
-**`saveScreenshots`:** after pushing the result to the sink, capture and save the screenshot:
-
-```typescript
-if (opts.saveScreenshots && page) {
-  const screenshotBuffer = await page.screenshot({ fullPage: false }).catch(() => null);
-  if (screenshotBuffer) {
-    const screenshotKey = `${keyBase}-screenshot.png`;
-    await opts.onScreenshot?.(screenshotKey, screenshotBuffer);
-  }
-}
-```
-
-Add an optional `onScreenshot` callback to `HandlerOpts` so the Actor/CLI sinks can save it.
-Alternatively, include `screenshotKey` and `screenshotBuffer` in `ExtractionResult` if simpler.
-
-### Step CRAWLER: Add useLlmsTxt and blockMedia warning
+### Step CRAWLER: Add blockMedia warning
 
 File: `packages/crawler/src/createCrawler.ts`
 
-**`useLlmsTxt`:** before starting the crawler, if `opts.useLlmsTxt` is true, fetch
-`{origin}/llms.txt` for each unique domain in `startUrls`. Parse Markdown links
-(`[label](url)`) to extract URLs. Enqueue them via the request queue, filtered by
-`globs`/`excludes`. Use `fetch` or a minimal HTTP GET (no browser needed). Handle
-fetch failures silently (llms.txt is optional).
-
-**`blockMedia` warning:** when `opts.blockMedia && crawlerType !== 'playwright:chromium' && crawlerType !== 'playwright:adaptive'`, emit:
+When `opts.blockMedia && crawlerType !== 'playwright:chromium' && crawlerType !== 'playwright:adaptive'`, emit:
 
 ```typescript
 log.warning(
@@ -205,8 +103,7 @@ log.warning(
 
 File: `apps/apify-actor/src/sinks.ts`
 
-In `createApifySink`, change the dataset record to use `result.loadedUrl` for `loadedUrl`
-and add `url: result.url`:
+In `createApifySink`, update the dataset record:
 
 ```typescript
 const data: Record<string, unknown> = {
@@ -221,14 +118,11 @@ File: `apps/standalone/src/sinks.ts`
 
 Apply the same change to `createCrawleeStorageSink`.
 
-For `saveScreenshots`: if `result.screenshotKey` is set and destination includes `key-value-store`,
-store the screenshot buffer and add a `screenshotUrl` field to the dataset record.
-
 ### Step TESTS: Update and add tests
 
-- `packages/crawler/src/handler.test.ts` — add tests for `loadedUrl` fix (verify redirect URL propagates), `clickElementsCssSelector`, `keepElementsCssSelector`, `removeElementsCssSelector`
-- `packages/crawler/src/createCrawler.test.ts` (if exists, otherwise create) — test `blockMedia` warning and `useLlmsTxt` URL parsing
-- `apps/apify-actor/src/sinks.test.ts` — add tests verifying `url` and `loadedUrl` are distinct and correct
+- `packages/crawler/src/handler.test.ts` — add tests verifying `loadedUrl` reflects final URL after redirects and `url` holds the original
+- `packages/crawler/src/createCrawler.test.ts` (if exists, otherwise create) — test `blockMedia` warning emitted for cheerio and Firefox; not emitted for `playwright:chromium`
+- `apps/apify-actor/src/sinks.test.ts` — add tests verifying `url` and `loadedUrl` are distinct and correct in dataset record
 - `apps/standalone/src/sinks.test.ts` — same
 
 ### Step LOCAL: Build and test locally
@@ -260,20 +154,16 @@ contextractor extract https://example.com --save txt --max-pages 1 \
 
 Verify in the Apify Console run:
 - Dataset records include both `url` and `loadedUrl` fields
-- New schema fields appear in the Actor input UI
 - `blockMedia` warning appears in logs when triggered
 
 ### Step DOCS: Update all documentation
 
 Update in the **same response** as the code changes:
 
-- `packages/schema/SPEC.md` — add new fields to public API section
-- `packages/crawler/SPEC.md` — add `useLlmsTxt`, `clickElementsCssSelector`, `saveScreenshots`, `keepElementsCssSelector`, `removeElementsCssSelector` to crawler options; add `blockMedia` warning behavior
-- `apps/apify-actor/SPEC.md` — update dataset record shape: add `url` field; fix `loadedUrl` description; add `screenshotUrl` field for `saveScreenshots`; add new config fields to Config section
-- `apps/standalone/SPEC.md` — add new CLI flags; update output schema with `url` and `loadedUrl` fix
-- `SPEC.md` (root) — update Input Schema section with new fields; update Output Schema `loadedUrl` description
-- `apps/apify-actor/README.md` — auto-regenerated via `pnpm docs:update`; run after schema change
-- `apps/standalone/README.md` — update flag table and output description
+- `packages/crawler/SPEC.md` — add `blockMedia` warning behavior; update `ExtractionResult` to show `loadedUrl` field
+- `apps/apify-actor/SPEC.md` — update dataset record shape: add `url` field; fix `loadedUrl` description
+- `apps/standalone/SPEC.md` — update output schema with `url` and `loadedUrl` fix
+- `SPEC.md` (root) — update Output Schema `loadedUrl` description; add `url` field
 
 Run after all code changes:
 
@@ -281,18 +171,16 @@ Run after all code changes:
 pnpm docs:update
 ```
 
+## Conflict Notes
+
+- This prompt runs after Part 1 (`storage-vs-output.md`). Do not reference `output/`, `--output-dir`, `createCliSink`, or `fileSink` — these are deleted by Part 1.
+- All test commands must use `--save-destination dataset` (or `key-value-store`) explicitly.
+- `saveDestination` schema default is `key-value-store` — do not change it.
+
 ## Success Criteria
 
-- `url` (original requested URL) and `loadedUrl` (final URL after redirects) are both present
-  in all success dataset records and contain distinct values when redirects occur
-- `useLlmsTxt: true` causes the crawler to fetch `/llms.txt` at each domain root and enqueue
-  the URLs found in it
-- `clickElementsCssSelector` causes Playwright to click matching elements before extraction
-- `keepElementsCssSelector` scopes the HTML passed to trafilatura
-- `removeElementsCssSelector` strips matching elements before extraction
-- `saveScreenshots: true` saves a screenshot per page to KVS and adds `screenshotUrl` to the
-  dataset record
+- `url` (original requested URL) and `loadedUrl` (final URL after redirects) are both present in all success dataset records and contain distinct values when redirects occur
 - `blockMedia: true` with cheerio or Firefox emits a warning log
 - `pnpm build`, `pnpm lint`, `pnpm test` all pass
 - Platform Actor build and smoke test succeed
-- All SPEC.md and README.md files reflect the changes
+- All SPEC.md files listed in Step DOCS reflect the changes

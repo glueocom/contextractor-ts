@@ -1,5 +1,9 @@
 # Remove output/ — Route Everything Through Crawlee Storage
 
+## TLDR
+
+Remove the `output/` directory and file sink from the standalone CLI. All extracted content goes exclusively through Crawlee storage (Dataset and Key-Value Store). The `saveDestination` schema default remains `key-value-store`.
+
 ## Goal
 
 Remove the `output/` directory concept from the standalone CLI completely. All extracted content goes exclusively through Crawlee's `storage/` abstraction (Dataset and Key-Value Store). Users query results via `contextractor list` and `contextractor get`.
@@ -62,7 +66,7 @@ The CLI currently double-writes every extraction to both `output/` (flat files) 
 
 ## `--save-destination` default
 
-With no file output, the default `saveDestination` should be reviewed. `dataset` is more queryable (`contextractor list`, `contextractor get`) than `key-value-store` (blobs addressed by key). Consider changing the default from `key-value-store` to `dataset`, but check whether the Actor's default is also changing — the schema default applies to both. If changing the Actor default is a breaking change, keep `key-value-store` as schema default and override the CLI default separately.
+The schema default for `saveDestination` remains `key-value-store`. Do not change it — altering the Actor's default is a breaking change. Both `dataset` and `key-value-store` remain valid destinations after this change.
 
 ## `original` format consideration
 
