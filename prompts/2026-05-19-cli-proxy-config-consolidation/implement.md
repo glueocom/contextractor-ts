@@ -250,7 +250,7 @@ Autofix any failures before proceeding.
 ## Step TEST-ACTOR: Local Actor Run
 
 ```bash
-apify run
+cd apps/apify-actor && apify run
 ```
 
 Verify the Actor starts and processes URLs. A minimal run is sufficient.
