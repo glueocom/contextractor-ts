@@ -155,6 +155,17 @@ Verify the generated `apps/apify-actor/.actor/input_schema.json` now shows lower
 
 In `apps/standalone/README.md`, add a "Config file key reference" section (or table) documenting the mapping above. Place it near the existing "Options" table. Use the table format from the research findings section above. Keep it concise — just the non-obvious mappings where the flag name differs from the schema key.
 
+### Fix DOCS-2: Update all SPEC.md and README.md files
+
+After the code changes, search for any remaining references to SCREAMING `waitUntil` values across the full repo:
+
+```bash
+grep -r "NETWORKIDLE\|DOMCONTENTLOADED\|WAIT_UNTIL" --include="*.md" .
+grep -r "NETWORKIDLE\|DOMCONTENTLOADED\|WAIT_UNTIL" --include="*.ts" .
+```
+
+Update every file found (`apps/apify-actor/README.md`, `apps/standalone/SPEC.md`, `packages/schema/SPEC.md`, etc.) to use the lowercase values.
+
 ---
 
 ## Step ADDITIONAL ANALYSIS: Agent must verify these

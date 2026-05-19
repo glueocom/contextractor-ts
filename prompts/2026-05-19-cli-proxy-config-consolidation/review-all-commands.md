@@ -166,6 +166,16 @@ new: | `--after` | List keys alphabetically after this key |
 
 Update the `kvs ls` description and the `list` description to reflect the rename and the documented default.
 
+### All other SPEC.md and README.md files
+
+After the specific updates above, search for any remaining references across the full repo:
+
+```bash
+grep -r "exclusive-start-key" --include="*.md" .
+```
+
+Update every file found to use `--after` instead.
+
 ---
 
 ## Step TEST-LOCAL: Build and Verify

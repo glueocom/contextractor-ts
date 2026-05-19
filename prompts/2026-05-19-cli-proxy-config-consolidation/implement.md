@@ -143,6 +143,16 @@ To:
 CLI-only flags (`--proxy`, `--dataset`) are not accepted in the config file.
 ```
 
+### All other SPEC.md and README.md files
+
+After the specific updates above, search for any remaining references across the full repo:
+
+```bash
+grep -r "proxy-tier\|proxy-tiers" --include="*.md" .
+```
+
+Update every file found (`apps/apify-actor/README.md`, `packages/schema/SPEC.md`, etc.) to remove or replace mentions of the removed flags.
+
 ---
 
 ## Step TEST-LOCAL: Build and Lint
