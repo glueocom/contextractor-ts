@@ -174,8 +174,7 @@ pnpm docs:update
 ## Conflict Notes
 
 - This prompt runs after Part 1 (`storage-vs-output.md`). Do not reference `output/`, `--output-dir`, `createCliSink`, or `fileSink` — these are deleted by Part 1.
-- All test commands must use `--save-destination dataset` (or `key-value-store`) explicitly.
-- `saveDestination` schema default is `key-value-store` — do not change it.
+- `saveDestination` schema default is `dataset` (changed from `key-value-store` by Part 1).
 
 ## Success Criteria
 

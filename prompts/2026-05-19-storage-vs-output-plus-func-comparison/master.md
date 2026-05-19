@@ -1,5 +1,9 @@
 # Master: Modernize Contextractor
 
+## Scope
+
+Greenfield project — no backward compatibility required. Apply all breaking changes without preservation constraints.
+
 ## TLDR
 
 Two sequential parts — run in order, Part 1 must pass before Part 2 starts.

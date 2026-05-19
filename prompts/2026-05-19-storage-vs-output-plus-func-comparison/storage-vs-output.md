@@ -2,7 +2,7 @@
 
 ## TLDR
 
-Remove the `output/` directory and file sink from the standalone CLI. All extracted content goes exclusively through Crawlee storage (Dataset and Key-Value Store). The `saveDestination` schema default remains `key-value-store`. Additional required config changes (`purgeOnStart`, storage dir location, KVS slugging) and follow-up scope come from `context/storage-only-verdict.md`.
+Remove the `output/` directory and file sink from the standalone CLI. All extracted content goes exclusively through Crawlee storage (Dataset and Key-Value Store). Change the `saveDestination` schema default to `dataset`. Additional required config changes (`purgeOnStart`, storage dir location, KVS slugging) and follow-up scope come from `context/storage-only-verdict.md`.
 
 ## Goal
 
@@ -67,7 +67,7 @@ The CLI currently double-writes every extraction to both `output/` (flat files) 
 
 ## `--save-destination` default
 
-The schema default for `saveDestination` remains `key-value-store`. Do not change it — altering the Actor's default is a breaking change. Both `dataset` and `key-value-store` remain valid destinations after this change.
+Change the schema default for `saveDestination` to `dataset`. This is a breaking change — apply it. Both `dataset` and `key-value-store` remain valid destinations.
 
 ## `original` format consideration
 
@@ -149,6 +149,7 @@ After local tests pass, run `/platform:deploy-and-test` to verify the Actor stil
 - Storage dir continues to resolve to `$XDG_DATA_HOME/contextractor/storage` (not `./storage`) when nothing is configured
 - Running `contextractor extract a.com` then `contextractor extract b.com` preserves `a.com`'s data in storage
 - All SPEC.md and README.md files reflect the new storage-only model
+- `saveDestination` schema default is `dataset`
 - `pnpm build`, `pnpm lint`, `pnpm test` all pass
 - Platform Actor build and smoke test succeed
 
