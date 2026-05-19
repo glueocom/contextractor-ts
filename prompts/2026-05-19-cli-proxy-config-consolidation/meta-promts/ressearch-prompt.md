@@ -1,4 +1,4 @@
-do a ressearch, save the ressearch to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-cli-proxy-config-consolidation/context`
+do a ressearch, save the ressearch to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-cli-proxy-config-consolidation/context/ressearch-consolidation-by-claude-code.md`
 
 it seems there is redundant proxy configuration params. There is both `--proxy <url> ` and `--proxy-tier <tier>` and also `--proxy-tiers <json> `
 
