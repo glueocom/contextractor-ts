@@ -23,7 +23,7 @@ Orchestrates full proxy rotation testing across Apify Actor, CLI, and npm librar
 1. **Setup**: Start mock HTTP proxy servers on ports 8081–8099
 2. **Test**: Run all three test suites in sequence:
    - Library tests (direct API) — flat proxy rotation + tiered proxy
-   - CLI tests (standalone command) — flat proxy rotation + `--proxy-tier` + `--proxy-tiers`
+   - CLI tests (standalone command) — flat proxy rotation + tiered proxy via `--config tieredProxyUrls`
    - Actor tests (local Actor run) — flat proxy rotation + `tieredProxyUrls` input + mutual exclusivity validation
 3. **Auto-fix**: If any test fails, re-run tests once (unless `--no-fix` is passed)
 4. **Cleanup**: Stop proxy servers, remove temporary directories
@@ -51,7 +51,7 @@ The command:
 ## Test Files
 
 - **Library tests** (`tools/proxy-rotation-tester/src/lib.test.ts`): Direct API — flat rotation (ports 8081–8083), tiered proxies (ports 8091–8094)
-- **CLI tests** (`tools/proxy-rotation-tester/src/cli.test.ts`): Standalone CLI — flat rotation (ports 8084–8086), `--proxy-tier` and `--proxy-tiers` (ports 8095–8097)
+- **CLI tests** (`tools/proxy-rotation-tester/src/cli.test.ts`): Standalone CLI — flat rotation (ports 8084–8086), tiered proxy via `--config tieredProxyUrls` (ports 8095–8097)
 - **Actor tests** (`tools/proxy-rotation-tester/src/actor.test.ts`): Apify Actor — flat rotation (ports 8087–8089), `tieredProxyUrls` input and mutual exclusivity validation (ports 8098–8099)
 
 ## Expected Output

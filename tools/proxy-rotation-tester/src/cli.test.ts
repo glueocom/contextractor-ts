@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createProxySimulator } from 'proxy-simulator';
@@ -118,9 +118,12 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
     }
   });
 
-  it('should route requests through tiered proxies via --proxy-tier flag', async () => {
-    const storageDir = join(tempDir, 'crawlee-tier-flag');
+  it('should route requests through tiered proxies via --config tieredProxyUrls', async () => {
+    const storageDir = join(tempDir, 'crawlee-tier-config');
     const cliBin = join(REPO_ROOT, 'apps/standalone/dist/cli.js');
+    const configPath = join(tempDir, 'proxy-config.json');
+    const tieredProxyUrls = [[sim.proxies[0]!], [sim.proxies[1]!]];
+    writeFileSync(configPath, JSON.stringify({ tieredProxyUrls }));
 
     const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(
       (resolve) => {
@@ -130,62 +133,8 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
             cliBin,
             'extract',
             'http://example.com',
-            '--proxy-tier',
-            `${sim.proxies[0]},${sim.proxies[1]}`,
-            '--proxy-tier',
-            sim.proxies[2]!,
-            '--save',
-            'txt',
-            '--save-destination',
-            'dataset',
-            '--max-pages',
-            '1',
-            '--crawler-type',
-            'cheerio',
-          ],
-          {
-            env: {
-              ...process.env,
-              PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK: '1',
-              CRAWLEE_STORAGE_DIR: storageDir,
-            },
-          },
-        );
-        let stdout = '';
-        let stderr = '';
-        child.stdout?.on('data', (d: Buffer) => {
-          stdout += String(d);
-        });
-        child.stderr?.on('data', (d: Buffer) => {
-          stderr += String(d);
-        });
-        child.on('close', (code) => resolve({ stdout, stderr, exitCode: code ?? 1 }));
-      },
-    );
-
-    expect(result.exitCode, `CLI stderr: ${result.stderr}`).toBe(0);
-    const rawItem = readFirstDatasetItem(storageDir);
-    const item = JSON.parse(rawItem) as Record<string, unknown>;
-    const content = String(item.txt ?? '');
-    const usedPort = sim.ports.some((port) => content.includes(port.toString()));
-    expect(usedPort, `No proxy port found in content: ${content.slice(0, 200)}`).toBe(true);
-  });
-
-  it('should route requests through tiered proxies via --proxy-tiers JSON flag', async () => {
-    const storageDir = join(tempDir, 'crawlee-tier-json');
-    const cliBin = join(REPO_ROOT, 'apps/standalone/dist/cli.js');
-    const tiers = JSON.stringify([[sim.proxies[0]!], [sim.proxies[1]!]]);
-
-    const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(
-      (resolve) => {
-        const child = spawn(
-          'node',
-          [
-            cliBin,
-            'extract',
-            'http://example.com',
-            '--proxy-tiers',
-            tiers,
+            '--config',
+            configPath,
             '--save',
             'txt',
             '--save-destination',

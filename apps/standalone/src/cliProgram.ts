@@ -142,13 +142,6 @@ function addExtractionOptions(cmd: Command): Command {
       '--proxy-rotation <strategy>',
       'Proxy rotation: recommended, per_request, until_failure',
     )
-    .option(
-      '--proxy-tier <tier>',
-      'Proxy tier: comma-separated URLs for one tier, empty string for no-proxy tier (repeatable)',
-      collectValues,
-      [] as string[],
-    )
-    .option('--proxy-tiers <json>', 'Tiered proxy URLs as JSON (string|null)[][]')
     .option('--session-pool-name <name>', 'Named session pool for cross-run session sharing')
     .addOption(
       new Option(
@@ -377,14 +370,6 @@ function buildSchemaOverrides(
   }
   if (isCliOverride(command, 'storeSkippedUrls')) out.storeSkippedUrls = opts.storeSkippedUrls;
 
-  if (isCliOverride(command, 'proxyTiers') && opts.proxyTiers) {
-    const parsed = parseJsonArray(opts.proxyTiers, '--proxy-tiers') as (string | null)[][];
-    out.tieredProxyUrls = parsed;
-  } else if (isCliOverride(command, 'proxyTier') && opts.proxyTier?.length) {
-    out.tieredProxyUrls = opts.proxyTier.map((tier) =>
-      tier === '' ? [null] : tier.split(',').map((u) => u.trim() || null),
-    );
-  }
   if (isCliOverride(command, 'sessionPoolName') && opts.sessionPoolName) {
     out.sessionPoolName = opts.sessionPoolName;
   }
@@ -471,6 +456,13 @@ async function runExtractAction(
   }
 
   const cliOnly = resolveCliOnly(opts, parsed.data, command);
+  if (cliOnly.proxyUrls.length > 0 && parsed.data.tieredProxyUrls) {
+    console.error(
+      'Error: --proxy and tieredProxyUrls in --config are mutually exclusive. ' +
+        'Use one or the other, not both.',
+    );
+    process.exit(1);
+  }
   const cfg = buildCrawlConfig(parsed.data, cliOnly);
 
   const destinations = parsed.data.saveDestination;
@@ -516,13 +508,11 @@ async function runExtractAction(
         try {
           parsedUrl = new URL(url);
         } catch {
-          console.error(`--proxy-tier/--proxy-tiers: malformed URL "${url}".`);
+          console.error(`tieredProxyUrls: malformed URL "${url}".`);
           process.exit(1);
         }
         if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(parsedUrl.protocol)) {
-          console.error(
-            `--proxy-tier/--proxy-tiers: unsupported scheme "${parsedUrl.protocol}" in "${url}".`,
-          );
+          console.error(`tieredProxyUrls: unsupported scheme "${parsedUrl.protocol}" in "${url}".`);
           process.exit(1);
         }
       }
@@ -968,8 +958,6 @@ interface ExtractOpts {
   waitForSelector?: string;
   softWaitForSelector?: string;
   deduplication?: string;
-  proxyTier?: string[];
-  proxyTiers?: string;
   sessionPoolName?: string;
   maxSessionRotations?: number;
 }

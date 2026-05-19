@@ -24,8 +24,7 @@ Direct tests of the Contextractor library API (`createContextractorCrawler`):
 
 Tests of the standalone CLI (`apps/standalone/`):
 - Flat proxy routing via `--proxy` flags and `--proxy-rotation recommended` (ports 8084–8086)
-- Tiered proxy routing via `--proxy-tier` flag (comma-separated URLs per tier, repeatable) (ports 8095–8097)
-- Tiered proxy routing via `--proxy-tiers` JSON flag (ports 8095–8097)
+- Tiered proxy routing via `--config tieredProxyUrls` (config file, ports 8095–8097)
 
 ### Actor Tests (`actor.test.ts`)
 

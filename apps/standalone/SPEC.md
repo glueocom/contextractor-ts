@@ -35,8 +35,6 @@ Options: all extraction flags (`--save`, `--max-pages`, `--headless`, `--crawler
 - `--wait-for-selector <selector>` — CSS selector to wait for before extracting; request fails and is retried if selector does not appear within the timeout (Playwright only)
 - `--soft-wait-for-selector <selector>` — like `--wait-for-selector` but continues extraction even if the selector does not appear (Playwright only)
 - `--deduplication <level>` — deduplication level: `minimal` (URL dedup only), `basic` (default, canonical URL dedup across all handler types), or `full` (canonical URL + content hash dedup)
-- `--proxy-tier <tier>` — repeatable; each use adds one proxy tier (comma-separated URLs, or `''` for a no-proxy tier); builds `tieredProxyUrls`; CLI-only
-- `--proxy-tiers <json>` — tiered proxy URLs as a JSON `(string|null)[][]`; overrides `--proxy-tier` if both are given; CLI-only
 - `--session-pool-name <name>` — named session pool for cross-run session sharing (`persistStateKey`)
 - `--max-session-rotations <n>` — max session rotations per request on block detection (default `10`)
 
@@ -64,7 +62,7 @@ Prints the resolved Crawlee storage directory and exits.
 
 `schema defaults → config file (JSON) → explicit CLI args`
 
-Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--proxy`, `--proxy-tier`, `--proxy-tiers`, `--dataset`) are not accepted in the config file. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config. Unknown keys are stripped by `ContextractorInput.parse()`.
+Config file: optional JSON file with the same camelCase shape as the Apify input schema. CLI-only flags (`--proxy`, `--dataset`) are not accepted in the config file. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config. Unknown keys are stripped by `ContextractorInput.parse()`.
 
 ## Output
 
