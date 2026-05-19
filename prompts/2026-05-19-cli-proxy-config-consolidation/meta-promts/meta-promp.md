@@ -1,6 +1,8 @@
 look on there ressearches: `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-cli-proxy-config-consolidation/context/ressearch-consolidation-by-claude-code.md` and `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-cli-proxy-config-consolidation/context/research.md`
 
-Create mplementation one file promt to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-cli-proxy-config-consolidation`. let the prompt also update README.md files and SPEC.md files and the CLI help and other all appůicable docs
+Create mplementation one file promt to `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-05-19-cli-proxy-config-consolidation`. let the prompt also update README.md files and SPEC.md files and the CLI help and other all appůicable docs. let the promt test itself locally and as a apify actor. also test proxy rotation using   `/Users/miroslavsekera/r/contextractor-ts/tools/proxy-rotation-tester` and `/Users/miroslavsekera/r/contextractor-ts/tools/proxy-simulator`. Autofix problems.
+
+ask questions if you need to
 
 ## Original question
 it seems there is redundant proxy configuration params. There is both `--proxy <url> ` and `--proxy-tier <tier>` and also `--proxy-tiers <json> `
