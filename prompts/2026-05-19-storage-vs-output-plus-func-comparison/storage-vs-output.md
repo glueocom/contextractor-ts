@@ -91,7 +91,7 @@ pnpm test
 Verify `contextractor extract` writes to storage only:
 
 ```bash
-contextractor extract https://example.com --save txt --max-pages 1 --crawler-type cheerio
+contextractor extract https://example.com --save txt --max-pages 1 --crawler-type cheerio --save-destination dataset
 contextractor list
 contextractor get default 0 | head -20
 ```
