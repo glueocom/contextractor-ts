@@ -91,7 +91,7 @@ Internal binding-only knobs (`favorPrecision`, `favorRecall`, `includeFormatting
 
 ### Standalone CLI config file
 
-The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags are `--output-dir`, `--proxy`, and the named-dataset override `--dataset`. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config.
+The CLI accepts an optional JSON config file with the same camelCase shape as the Apify input schema. CLI-only flags are `--output-dir`, `--proxy`, `--proxy-tier`, `--proxy-tiers`, and the named-dataset override `--dataset`. Shared schema fields like `save`, `saveDestination`, `datasetName`, `keyValueStoreName`, and `requestQueueName` are honored from config.
 
 Config merge order: `schema defaults → config file → explicit CLI args`.
 

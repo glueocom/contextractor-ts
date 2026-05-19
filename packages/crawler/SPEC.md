@@ -47,7 +47,7 @@ type Sink<T> = (result: T) => Promise<void>;
 
 ## Key options (`ContextractorCrawlerOptions`)
 
-`startUrls`, `sink`, `formats`, `mode` (`'precision' | 'balanced' | 'recall'`; translated to `favorPrecision`/`favorRecall` in `TrafilaturaConfig`), `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `scroll`, `cookieStrategy`, `sessionPool`, `maxPages`, `maxRetries`, `initialConcurrency` (maps to Crawlee `minConcurrency`; only applied when > 0), `maxConcurrency`, `pageLoadTimeoutSecs`, `blockMedia`, `headless`, `crawlerType`, `renderingTypeDetectionPercentage`, `ignoreSslErrors`, `bypassCSP`, `initialCookies`, `extraHTTPHeaders`, `userAgent`, `linkSelector`, `maxCrawlingDepth`, `maxResults`, `globs`, `excludes`, `keepUrlFragments`, `proxyConfiguration`, `requestQueue`, `respectRobotsTxt`, `onFailedRequest`, `onSkippedUrl`, `dynamicContentWaitSecs` (Playwright only; seconds to wait for network idle after navigation before extraction; also doubles as the timeout for `waitForSelector`/`softWaitForSelector`; 0 disables; default `0`), `waitForSelector` (Playwright only; CSS selector to await before extraction; request fails on timeout), `softWaitForSelector` (Playwright only; like `waitForSelector` but continues on timeout).
+`startUrls`, `sink`, `formats`, `mode` (`'precision' | 'balanced' | 'recall'`; translated to `favorPrecision`/`favorRecall` in `TrafilaturaConfig`), `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `scroll`, `cookieStrategy`, `sessionPool`, `sessionPoolName` (string; if set, used as `persistStateKey` in `sessionPoolOptions` to persist the session pool across runs), `maxSessionRotations` (int; default `10`; maps to Crawlee `maxSessionRotations`; controls how many times a session can be rotated per request on block detection), `maxPages`, `maxRetries`, `initialConcurrency` (maps to Crawlee `minConcurrency`; only applied when > 0), `maxConcurrency`, `pageLoadTimeoutSecs`, `blockMedia`, `headless`, `crawlerType`, `renderingTypeDetectionPercentage`, `ignoreSslErrors`, `bypassCSP`, `initialCookies`, `extraHTTPHeaders`, `userAgent`, `linkSelector`, `maxCrawlingDepth`, `maxResults`, `globs`, `excludes`, `keepUrlFragments`, `proxyConfiguration`, `requestQueue`, `respectRobotsTxt`, `onFailedRequest`, `onSkippedUrl`, `dynamicContentWaitSecs` (Playwright only; seconds to wait for network idle after navigation before extraction; also doubles as the timeout for `waitForSelector`/`softWaitForSelector`; 0 disables; default `0`), `waitForSelector` (Playwright only; CSS selector to await before extraction; request fails on timeout), `softWaitForSelector` (Playwright only; like `waitForSelector` but continues on timeout).
 
 - `onFailedRequest?: (info: { url, loadedUrl, errorMessages, retryCount }) => Promise<void>` — called after all retries are exhausted for a request
 - `onSkippedUrl?: (url: string, reason: string) => void` — called synchronously during `enqueueLinks` when a URL is skipped (glob filter, robots.txt, depth limit, or concurrency cap)
@@ -55,7 +55,9 @@ type Sink<T> = (result: T) => Promise<void>;
 
 ## Proxy Configuration
 
-Pass proxy URLs via `proxyConfiguration: { proxyUrls: [...] }`. Rotation mode is controlled by `proxyRotation`:
+Pass proxy URLs via `proxyConfiguration: new ProxyConfiguration({ proxyUrls: [...] })`. For tiered escalation, use `proxyConfiguration: new ProxyConfiguration({ tieredProxyUrls: [[tier0url, ...], [tier1url, ...]] })`. Crawlee starts on tier 0 and escalates per domain when block patterns are detected.
+
+Rotation mode is controlled by `proxyRotation`:
 
 - `'RECOMMENDED'` (default) — Crawlee's default rotation strategy
 - `'PER_REQUEST'` — new proxy session per request

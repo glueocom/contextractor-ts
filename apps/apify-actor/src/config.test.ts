@@ -19,6 +19,7 @@ const BASE_INPUT: ContextractorInputType = {
   renderingTypeDetectionPercentage: 10,
   waitUntil: 'LOAD',
   proxyRotation: 'RECOMMENDED',
+  maxSessionRotations: 10,
   pageLoadTimeoutSecs: 60,
   ignoreCorsAndCsp: false,
   closeCookieModals: true,

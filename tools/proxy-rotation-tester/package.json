@@ -11,7 +11,8 @@
     "@contextractor/crawler": "workspace:*",
     "@contextractor/extraction": "workspace:*",
     "@contextractor/schema": "workspace:*",
-    "proxy-chain": "^2.1.5"
+    "proxy-chain": "^2.1.5",
+    "proxy-simulator": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

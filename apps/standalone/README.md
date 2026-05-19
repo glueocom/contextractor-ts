@@ -134,6 +134,10 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--no-headless` | Run browser with UI |
 | `--proxy` | Proxy URL (repeatable) |
 | `--proxy-rotation` | Proxy rotation: recommended, per_request, until_failure |
+| `--proxy-tier` | Proxy tier: comma-separated URLs for one tier, empty string for no-proxy tier (repeatable) |
+| `--proxy-tiers` | Tiered proxy URLs as JSON (string\|null)[][] |
+| `--session-pool-name` | Named session pool for cross-run session sharing |
+| `--max-session-rotations` | Max session rotations per request on block detection |
 | `--crawler-type` | Crawler engine: adaptive, firefox, chromium, cheerio |
 | `--rendering-detection-pct` | Rendering type detection percentage (adaptive only) |
 | `--wait-until` | Page load event: networkidle, load, domcontentloaded |

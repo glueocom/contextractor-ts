@@ -352,6 +352,69 @@ export const ContextractorInput = z.object({
       }),
     }),
 
+  tieredProxyUrls: z
+    .array(z.array(z.string().url().nullable()).min(1))
+    .min(1)
+    .optional()
+    .describe(
+      'Tiered proxy URLs for automatic escalation. An array of tiers; each tier is a list of ' +
+        'proxy URLs (or null for "no proxy"). Crawling starts on tier 0; Crawlee escalates a domain ' +
+        'to a higher tier on block detection and probes lower tiers periodically to downshift. ' +
+        'Takes precedence over a flat custom proxy list. Not combinable with useApifyProxy: true ' +
+        'in proxyConfiguration.',
+    )
+    .meta({
+      title: 'Tiered proxy URLs',
+      ...apifyMeta({ editor: 'json', sectionCaption: 'Proxy', isSecret: true, prefill: [] }),
+    }),
+
+  tieredProxyConfig: z
+    .array(z.record(z.string(), z.unknown()))
+    .min(1)
+    .optional()
+    .describe(
+      'Tiered Apify proxy configurations for automatic escalation. An array of Apify proxy ' +
+        'configuration objects; Crawlee starts on tier 0 and escalates per domain on block detection. ' +
+        'Each element accepts the same fields as proxyConfiguration (groups, countryCode, password, etc.) ' +
+        'but not proxyUrls or tieredProxyUrls. Example: ' +
+        '[{"groups":["RESIDENTIAL"]},{"groups":["DATACENTER"]}]. ' +
+        'Takes precedence over tieredProxyUrls if both are set. Requires Apify Proxy access.',
+    )
+    .meta({
+      title: 'Tiered Apify proxy config',
+      ...apifyMeta({ editor: 'json', sectionCaption: 'Proxy', isSecret: true, prefill: [] }),
+    }),
+
+  sessionPoolName: z
+    .string()
+    .min(3)
+    .max(200)
+    .regex(/^[0-9A-Za-z_-]+$/)
+    .optional()
+    .describe(
+      'Name for a persistent, shared session pool. Sessions (IP + cookies) are saved under this ' +
+        'key and reused across Actor runs. Useful when proxies are frequently blocked — previously ' +
+        'working sessions are preferred over random ones.',
+    )
+    .meta({
+      title: 'Session pool name',
+      ...apifyMeta({ editor: 'textfield', sectionCaption: 'Proxy' }),
+    }),
+
+  maxSessionRotations: z
+    .int()
+    .min(0)
+    .max(20)
+    .default(10)
+    .describe(
+      'Maximum number of session (IP + browser fingerprint) rotations per request on block ' +
+        'detection. Independent of maxRequestRetries. Set to 0 to disable session rotation.',
+    )
+    .meta({
+      title: 'Max session rotations',
+      ...apifyMeta({ sectionCaption: 'Proxy' }),
+    }),
+
   pageLoadTimeoutSecs: z
     .int()
     .min(1)

@@ -94,6 +94,10 @@ interface CrawlConfig {
 
   // Output formats.
   save: SaveFormat[];
+
+  // Session pool.
+  sessionPoolName: string | undefined;
+  maxSessionRotations: number;
 }
 
 export interface CliOnlyOverrides {
@@ -149,6 +153,8 @@ export function buildCrawlConfig(
     includeImages: input.includeImages,
     includeLinks: input.includeLinks,
     targetLanguage: input.targetLanguage,
+    sessionPoolName: input.sessionPoolName,
+    maxSessionRotations: input.maxSessionRotations,
   };
 }
 

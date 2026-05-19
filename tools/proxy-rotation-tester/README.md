@@ -6,49 +6,48 @@ Comprehensive test suite for proxy rotation behavior across all three Contextrac
 
 This test suite verifies that:
 - Proxy configuration is correctly passed through each entry point
-- Proxies are correctly rotated according to the selected mode (RECOMMENDED, PER_REQUEST, UNTIL_FAILURE)
+- Proxies are correctly rotated according to the selected mode (`RECOMMENDED`, `PER_REQUEST`)
+- Tiered proxy escalation works via `tieredProxyUrls` for automatic domain-level escalation
 - Extracted content identifies which proxy was used
-- Each entry point handles proxy errors gracefully
+- Mutual exclusivity guards (`tieredProxyUrls` + `useApifyProxy`) are enforced at the Actor entry point
 
 ## Test Coverage
 
 ### Library Tests (`lib.test.ts`)
 
 Direct tests of the Contextractor library API (`createContextractorCrawler`):
-- Proxy configuration acceptance
-- Content extraction through proxies
-- Proxy rotation modes
-- Access to proxy info via Crawlee context
+- Content extraction through proxies (ports 8081–8083)
+- `PER_REQUEST` proxy rotation (ports 8081–8083)
+- Tiered proxy routing via `ProxyConfiguration({ tieredProxyUrls })` (ports 8091–8094)
 
 ### CLI Tests (`cli.test.ts`)
 
 Tests of the standalone CLI (`apps/standalone/`):
-- CLI flag parsing (`--proxy-configuration`, `--proxy-rotation`)
-- File-based proxy config loading
-- Output file generation with proxy-identified content
-- Error handling for missing/invalid proxy configuration
+- Flat proxy routing via `--proxy` flags and `--proxy-rotation recommended` (ports 8084–8086)
+- Tiered proxy routing via `--proxy-tier` flag (comma-separated URLs per tier, repeatable) (ports 8095–8097)
+- Tiered proxy routing via `--proxy-tiers` JSON flag (ports 8095–8097)
 
 ### Actor Tests (`actor.test.ts`)
 
 Tests of the Apify Actor (`apps/apify-actor/`):
-- Actor input validation with proxy configuration
-- Dataset output with proxy-identified content
-- Key-value store handling
-- Proxy rotation with Apify storage
+- Content extraction through flat proxy via `proxyConfiguration.proxyUrls` (ports 8087–8089)
+- `PER_REQUEST` rotation via flat proxy (ports 8087–8089)
+- Tiered proxy routing via `tieredProxyUrls` Actor input (ports 8098–8099)
+- Mutual exclusivity rejection: `tieredProxyUrls` + `proxyConfiguration.useApifyProxy: true` (ports 8098)
 
 ## Running Tests
 
 From the repo root:
 
 ```bash
-# Run all proxy rotation tests
-pnpm test --filter proxy-rotation-tester
+# Run all proxy rotation tests (preferred — uses /proxy-test command)
+/proxy-test
 
-# Run with verbose output
-pnpm test --filter proxy-rotation-tester -- --reporter=verbose
+# Run directly with vitest
+pnpm --filter proxy-rotation-tester exec vitest run
 
-# Run specific test file
-pnpm test --filter proxy-rotation-tester -- cli.test.ts
+# Run a specific test file
+pnpm --filter proxy-rotation-tester exec vitest run src/lib.test.ts
 ```
 
 ## Environment Requirements
@@ -63,27 +62,29 @@ Without this, Chromium silently bypasses proxies for localhost, preventing the t
 
 ## Test Fixture
 
+Tests use the `proxy-simulator` workspace package (`tools/proxy-simulator`), which starts lightweight HTTP proxy servers that return a custom HTML response embedding the proxy port number. This lets tests confirm which proxy tier actually handled each request by searching for the port number in extracted content.
+
 Each test suite:
-1. Starts mock HTTP proxy servers on ports 8081, 8082, 8083
+1. Starts mock proxy servers on its assigned port range (non-overlapping across test files)
 2. Runs the entry point with proxy configuration pointing to these mock proxies
-3. Verifies extracted content contains the proxy port number (proving the request went through that proxy)
+3. Verifies extracted content contains the proxy port number
 4. Stops the mock proxies and cleans up temporary files
+
+Port assignments (to prevent inter-file conflicts in parallel runs):
+- `lib.test.ts` flat tests: 8081–8083
+- `cli.test.ts` flat tests: 8084–8086
+- `actor.test.ts` flat tests: 8087–8089
+- `lib.test.ts` tiered tests: 8091–8094
+- `cli.test.ts` tiered tests: 8095–8097
+- `actor.test.ts` tiered tests: 8098–8099
 
 ## Expected Output
 
 Successful run:
-```
-✓ lib.test.ts (4 tests)
-  ✓ should extract content through a proxy
-  ✓ should rotate proxies with PER_REQUEST mode
-✓ cli.test.ts (1 test)
-  ✓ should extract content through proxy via CLI
-✓ actor.test.ts (2 tests)
-  ✓ should extract content through proxy via Actor
-  ✓ should rotate proxies with PER_REQUEST mode
 
+```
 Test Files  3 passed (3)
-Tests     7 passed (7)
+Tests     10 passed (10)
 ```
 
 ## Troubleshooting
@@ -91,21 +92,22 @@ Tests     7 passed (7)
 ### Tests timeout
 
 - Ensure Playwright/Chromium are installed: `pnpm install`
-- Check that mock proxy servers are starting: look for port binding errors in output
+- Check that mock proxy servers can bind to their assigned ports
 
 ### Tests fail with "no such file" for CLI or Actor
 
-- Run from the repo root
-- Ensure `apify` CLI is installed: `npm install -g apify-cli` (or use `npx apify`)
+- Build the standalone app: `pnpm build`
+- Ensure `apify` CLI is installed globally: `npm install -g apify-cli`
 
 ### Chromium bypasses proxies
 
 - Set `PLAYWRIGHT_DISABLE_FORCED_CHROMIUM_PROXIED_LOOPBACK=1`
-- This is usually set by the test runner, but check environment
+- The `/proxy-test` command sets this automatically
 
 ## Integration with /proxy-test Command
 
 These tests are orchestrated by the `/proxy-test` slash command (`.claude/commands/proxy-test.md`), which:
+- Sets required environment variables
 - Manages test lifecycle (setup, run, cleanup)
 - Auto-fixes failures (single retry)
 - Reports summary results

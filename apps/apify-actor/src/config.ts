@@ -68,5 +68,7 @@ export function buildCrawlerOpts(
     waitForSelector: input.waitForSelector || undefined,
     softWaitForSelector: input.softWaitForSelector || undefined,
     deduplication: input.deduplication,
+    sessionPoolName: input.sessionPoolName,
+    maxSessionRotations: input.maxSessionRotations,
   };
 }

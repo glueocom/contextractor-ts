@@ -38,9 +38,34 @@ export async function runActor(): Promise<void> {
   const requestQueue = input.requestQueueName
     ? await Actor.openRequestQueue(input.requestQueueName)
     : undefined;
-  const proxyConfig = input.proxyConfiguration
-    ? await Actor.createProxyConfiguration(input.proxyConfiguration as ProxyConfigurationOptions)
-    : undefined;
+  let proxyConfig: Awaited<ReturnType<typeof Actor.createProxyConfiguration>> | undefined;
+  if (input.tieredProxyUrls && input.tieredProxyConfig) {
+    log.error('tieredProxyUrls and tieredProxyConfig are mutually exclusive. Remove one of them.');
+    await Actor.exit({ exitCode: 1 });
+    process.exit(1);
+  } else if (input.tieredProxyUrls) {
+    if (
+      input.proxyConfiguration &&
+      (input.proxyConfiguration as Record<string, unknown>).useApifyProxy === true
+    ) {
+      log.error(
+        'tieredProxyUrls and proxyConfiguration.useApifyProxy are mutually exclusive. Remove one of them.',
+      );
+      await Actor.exit({ exitCode: 1 });
+      process.exit(1);
+    }
+    proxyConfig = await Actor.createProxyConfiguration({
+      tieredProxyUrls: input.tieredProxyUrls as (string | null)[][],
+    });
+  } else if (input.tieredProxyConfig) {
+    proxyConfig = await Actor.createProxyConfiguration({
+      tieredProxyConfig: input.tieredProxyConfig as ProxyConfigurationOptions[],
+    } as unknown as ProxyConfigurationOptions);
+  } else if (input.proxyConfiguration) {
+    proxyConfig = await Actor.createProxyConfiguration(
+      input.proxyConfiguration as ProxyConfigurationOptions,
+    );
+  }
 
   const sink = createApifySink({
     kvs,

@@ -72,6 +72,8 @@ export interface ContextractorCrawlerOptions {
    * Has no effect when `proxyConfiguration` is undefined.
    */
   proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
+  sessionPoolName?: string;
+  maxSessionRotations?: number;
   requestQueue?: RequestProvider;
   requestList?: SitemapRequestList;
   blockMedia?: boolean;
@@ -145,11 +147,18 @@ export function createContextractorCrawler(
       seenContentHashes,
     });
 
+    const cheerioSessionPoolOpts = {
+      ...(typeof opts.sessionPool === 'object' ? opts.sessionPool : {}),
+      ...(opts.sessionPoolName ? { persistStateKey: opts.sessionPoolName } : {}),
+    };
     const crawler = new CheerioCrawler({
       useSessionPool: opts.sessionPool !== false,
-      ...(typeof opts.sessionPool === 'object' ? { sessionPoolOptions: opts.sessionPool } : {}),
+      ...(Object.keys(cheerioSessionPoolOpts).length > 0
+        ? { sessionPoolOptions: cheerioSessionPoolOpts }
+        : {}),
       maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
       maxRequestRetries: opts.maxRetries ?? 3,
+      maxSessionRotations: opts.maxSessionRotations ?? 10,
       ...(opts.initialConcurrency ? { minConcurrency: opts.initialConcurrency } : {}),
       ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
       ...(opts.pageLoadTimeoutSecs !== undefined
@@ -200,9 +209,11 @@ export function createContextractorCrawler(
     ...(rotation === 'UNTIL_FAILURE' ? { maxPoolSize: 1 } : {}),
   };
 
-  const sessionPoolOptions = userSessionPoolOptions
-    ? { ...userSessionPoolOptions, ...rotationSessionPoolOptions }
-    : rotationSessionPoolOptions;
+  const sessionPoolOptions = {
+    ...(userSessionPoolOptions ? { ...userSessionPoolOptions } : {}),
+    ...rotationSessionPoolOptions,
+    ...(opts.sessionPoolName ? { persistStateKey: opts.sessionPoolName } : {}),
+  };
 
   const contextOptions: {
     bypassCSP?: boolean;
@@ -230,6 +241,7 @@ export function createContextractorCrawler(
     sessionPoolOptions,
     maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
     maxRequestRetries: opts.maxRetries ?? 3,
+    maxSessionRotations: opts.maxSessionRotations ?? 10,
     ...(opts.initialConcurrency ? { minConcurrency: opts.initialConcurrency } : {}),
     ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
     ...(opts.pageLoadTimeoutSecs !== undefined

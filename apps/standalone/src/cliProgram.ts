@@ -143,6 +143,22 @@ function addExtractionOptions(cmd: Command): Command {
       '--proxy-rotation <strategy>',
       'Proxy rotation: recommended, per_request, until_failure',
     )
+    .option(
+      '--proxy-tier <tier>',
+      'Proxy tier: comma-separated URLs for one tier, empty string for no-proxy tier (repeatable)',
+      collectValues,
+      [] as string[],
+    )
+    .option('--proxy-tiers <json>', 'Tiered proxy URLs as JSON (string|null)[][]')
+    .option('--session-pool-name <name>', 'Named session pool for cross-run session sharing')
+    .addOption(
+      new Option(
+        '--max-session-rotations <n>',
+        'Max session rotations per request on block detection',
+      )
+        .argParser(toInt)
+        .default(s.maxSessionRotations._def.defaultValue),
+    )
     .option('--crawler-type <type>', 'Crawler engine: adaptive, firefox, chromium, cheerio')
     .option(
       '--rendering-detection-pct <n>',
@@ -362,6 +378,21 @@ function buildSchemaOverrides(
   }
   if (isCliOverride(command, 'storeSkippedUrls')) out.storeSkippedUrls = opts.storeSkippedUrls;
 
+  if (isCliOverride(command, 'proxyTiers') && opts.proxyTiers) {
+    const parsed = parseJsonArray(opts.proxyTiers, '--proxy-tiers') as (string | null)[][];
+    out.tieredProxyUrls = parsed;
+  } else if (isCliOverride(command, 'proxyTier') && opts.proxyTier?.length) {
+    out.tieredProxyUrls = opts.proxyTier.map((tier) =>
+      tier === '' ? [null] : tier.split(',').map((u) => u.trim() || null),
+    );
+  }
+  if (isCliOverride(command, 'sessionPoolName') && opts.sessionPoolName) {
+    out.sessionPoolName = opts.sessionPoolName;
+  }
+  if (isCliOverride(command, 'maxSessionRotations')) {
+    out.maxSessionRotations = opts.maxSessionRotations;
+  }
+
   return out;
 }
 
@@ -469,7 +500,28 @@ async function runExtractAction(
   };
 
   let proxyConfiguration: ProxyConfiguration | undefined;
-  if (cliOnly.proxyUrls.length > 0) {
+  if (parsed.data.tieredProxyUrls) {
+    const tiers = parsed.data.tieredProxyUrls as (string | null)[][];
+    for (const tier of tiers) {
+      for (const url of tier) {
+        if (url === null) continue;
+        let parsedUrl: URL;
+        try {
+          parsedUrl = new URL(url);
+        } catch {
+          console.error(`--proxy-tier/--proxy-tiers: malformed URL "${url}".`);
+          process.exit(1);
+        }
+        if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(parsedUrl.protocol)) {
+          console.error(
+            `--proxy-tier/--proxy-tiers: unsupported scheme "${parsedUrl.protocol}" in "${url}".`,
+          );
+          process.exit(1);
+        }
+      }
+    }
+    proxyConfiguration = new ProxyConfiguration({ tieredProxyUrls: tiers });
+  } else if (cliOnly.proxyUrls.length > 0) {
     for (const raw of cliOnly.proxyUrls) {
       let parsedUrl: URL;
       try {
@@ -559,6 +611,8 @@ async function runExtractAction(
     ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
     proxyConfiguration,
     proxyRotation: cliOnly.proxyRotation,
+    sessionPoolName: cfg.sessionPoolName,
+    maxSessionRotations: cfg.maxSessionRotations,
     requestQueue,
     onFailedRequest: async (info) => {
       failedRecords.push({
@@ -907,6 +961,10 @@ interface ExtractOpts {
   waitForSelector?: string;
   softWaitForSelector?: string;
   deduplication?: string;
+  proxyTier?: string[];
+  proxyTiers?: string;
+  sessionPoolName?: string;
+  maxSessionRotations?: number;
 }
 
 interface ListOpts {
