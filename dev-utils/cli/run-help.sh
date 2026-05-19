@@ -9,3 +9,4 @@ pnpm --dir "$REPO_ROOT" --filter @contextractor/standalone build
 echo ""
 echo "==> Running: contextractor --help"
 node "$REPO_ROOT/apps/standalone/dist/cli.js" --help
+node "$REPO_ROOT/apps/standalone/dist/cli.js" extract --help
