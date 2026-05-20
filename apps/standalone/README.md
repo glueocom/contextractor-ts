@@ -18,7 +18,7 @@ contextractor extract [URLS...]
 
 ```bash
 contextractor extract https://example.com
-contextractor extract https://example.com --mode precision --save json -o ./results
+contextractor extract https://example.com --mode precision --save json
 contextractor extract https://example.com --save-destination dataset
 contextractor extract --config config.json --max-pages 10
 ```
@@ -273,5 +273,5 @@ Unknown keys are stripped by `ContextractorInput.parse()`.
 ```bash
 pnpm install
 pnpm --filter @contextractor/standalone build
-node apps/standalone/dist/cli.js extract https://example.com -o /tmp/contextractor
+node apps/standalone/dist/cli.js extract https://example.com
 ```

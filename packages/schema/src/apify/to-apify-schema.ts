@@ -81,8 +81,9 @@ export function toApifyInputSchema(
     }
   }
 
-  const sourceProperties = (generated as { properties?: Record<string, unknown> }).properties ?? {};
-  const sourceRequired = ((generated as { required?: unknown }).required ?? []) as string[];
+  const gen = generated as { properties?: Record<string, unknown>; required?: string[] };
+  const sourceProperties = gen.properties ?? {};
+  const sourceRequired = gen.required ?? [];
 
   const properties: Record<string, Record<string, unknown>> = {};
   for (const [name, raw] of Object.entries(sourceProperties)) {

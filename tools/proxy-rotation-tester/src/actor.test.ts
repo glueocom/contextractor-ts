@@ -109,7 +109,7 @@ describe('Proxy Rotation - Apify Actor', () => {
     const files = readdirSync(datasetPath).sort();
     expect(files.length).toBeGreaterThan(0);
 
-    const datasetFile = JSON.parse(readFileSync(join(datasetPath, files[0]!), 'utf-8'));
+    const datasetFile = JSON.parse(readFileSync(join(datasetPath, files[0] as string), 'utf-8'));
     const content =
       typeof datasetFile.txt === 'string' ? datasetFile.txt : JSON.stringify(datasetFile);
     const containsProxyPort = sim.ports.some((port) => content.includes(port.toString()));
@@ -158,7 +158,7 @@ describe('Proxy Rotation - Apify Actor', () => {
       const files = readdirSync(datasetPath).sort();
       expect(files.length).toBeGreaterThan(0);
       const datasetFile = JSON.parse(
-        readFileSync(join(datasetPath, files[files.length - 1]!), 'utf-8'),
+        readFileSync(join(datasetPath, files[files.length - 1] as string), 'utf-8'),
       );
       const content =
         typeof datasetFile.txt === 'string' ? datasetFile.txt : JSON.stringify(datasetFile);

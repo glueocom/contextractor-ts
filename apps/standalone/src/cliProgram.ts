@@ -389,7 +389,7 @@ function resolveCliOnly(
     .map((u) => u.url)
     .filter((u): u is string => typeof u === 'string' && u.length > 0);
 
-  let save = input.save as SaveFormat[];
+  let save: SaveFormat[] = input.save;
   if (isCliOverride(command, 'save')) {
     save = validateSaveFormats(getExplicitRepeatedValues(command, '--save'));
   }
@@ -500,7 +500,7 @@ async function runExtractAction(
 
   let proxyConfiguration: ProxyConfiguration | undefined;
   if (parsed.data.tieredProxyUrls) {
-    const tiers = parsed.data.tieredProxyUrls as (string | null)[][];
+    const tiers = parsed.data.tieredProxyUrls;
     for (const tier of tiers) {
       for (const url of tier) {
         if (url === null) continue;

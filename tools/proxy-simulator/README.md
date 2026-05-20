@@ -2,6 +2,10 @@
 
 Mock HTTP proxy server for testing proxy rotation in Contextractor.
 
+Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
+(extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
+Playwright).
+
 ## Overview
 
 This tool simulates multiple HTTP proxy servers listening on consecutive ports. Each proxy intercepts requests and returns a simple HTML response containing the port number, allowing tests to verify which proxy was used.

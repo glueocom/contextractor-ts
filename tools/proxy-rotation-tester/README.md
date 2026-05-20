@@ -2,6 +2,10 @@
 
 Comprehensive test suite for proxy rotation behavior across all three Contextractor entry points: Apify Actor, CLI, and npm library.
 
+Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
+(extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
+Playwright).
+
 ## Overview
 
 This test suite verifies that:

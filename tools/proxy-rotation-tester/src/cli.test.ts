@@ -122,7 +122,7 @@ describe('Proxy Rotation - CLI (Tiered Proxies)', () => {
     const storageDir = join(tempDir, 'crawlee-tier-config');
     const cliBin = join(REPO_ROOT, 'apps/standalone/dist/cli.js');
     const configPath = join(tempDir, 'proxy-config.json');
-    const tieredProxyUrls = [[sim.proxies[0]!], [sim.proxies[1]!]];
+    const tieredProxyUrls = [[sim.proxies[0] as string], [sim.proxies[1] as string]];
     writeFileSync(configPath, JSON.stringify({ tieredProxyUrls }));
 
     const result = await new Promise<{ stdout: string; stderr: string; exitCode: number }>(

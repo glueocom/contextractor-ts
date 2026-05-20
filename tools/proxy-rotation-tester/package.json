@@ -9,9 +9,6 @@
   },
   "dependencies": {
     "@contextractor/crawler": "workspace:*",
-    "@contextractor/extraction": "workspace:*",
-    "@contextractor/schema": "workspace:*",
-    "proxy-chain": "^3.0.0",
     "proxy-simulator": "workspace:*"
   },
   "devDependencies": {

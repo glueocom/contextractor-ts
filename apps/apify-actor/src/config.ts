@@ -21,7 +21,7 @@ export function buildCrawlerOpts(
   requestQueue?: RequestProvider,
   proxyRotation?: ContextractorInputType['proxyRotation'],
 ): ContextractorCrawlerOptions {
-  const formats: OutputFormat[] = input.save.filter((f) => f !== 'original') as OutputFormat[];
+  const formats = input.save.filter((f): f is OutputFormat => f !== 'original');
   if (formats.length === 0) formats.push('markdown');
 
   return {

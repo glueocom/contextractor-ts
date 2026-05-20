@@ -92,8 +92,8 @@ describe('Proxy Rotation - Library (Tiered Proxies)', () => {
       crawlerType: 'cheerio',
       proxyConfiguration: new ProxyConfiguration({
         tieredProxyUrls: [
-          [sim.proxies[0]!, sim.proxies[1]!],
-          [sim.proxies[2]!, sim.proxies[3]!],
+          [sim.proxies[0] as string, sim.proxies[1] as string],
+          [sim.proxies[2] as string, sim.proxies[3] as string],
         ],
       }),
       formats: ['txt'],

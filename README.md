@@ -125,9 +125,11 @@ packages/
 tools/
 ├── platform-test-runner/       # TypeScript test orchestrator
 ├── gen-input-schema/           # Generates .actor/input_schema.json from Zod schema
-└── gen-md-regions/             # Rewrites @generated markdown regions in READMEs
+├── gen-md-regions/             # Rewrites @generated markdown regions in READMEs
+├── proxy-simulator/            # Mock HTTP proxy server for proxy rotation testing
+└── proxy-rotation-tester/      # Proxy rotation test suite for all entry points
 ```
 
 ## Docs version
 
-2026-05-12T17:30:34Z
+2026-05-19T23:46:06Z
