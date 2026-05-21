@@ -34,6 +34,12 @@ declare module '@duckduckgo/autoconsent' {
 }
 ```
 
+Add this comment at the top of `autoconsent.d.ts`:
+
+```typescript
+// TODO: remove when @duckduckgo/autoconsent ships official TypeScript declarations
+```
+
 Then in `cookies.ts`:
 - Remove the local `AutoconsentCtor` type alias (lines 40–51) — it moves into the declaration file
 - Replace line 59 with: `const AutoConsent = mod.default;`
@@ -119,7 +125,8 @@ if (isCliOverride(command, 'deduplication') && opts.deduplication !== undefined)
 if (isCliOverride(command, 'mode')) out.mode = opts.mode;  // no cast
 if (isCliOverride(command, 'saveDestination')) {
   out.saveDestination = getExplicitRepeatedValues(command, '--save-destination')
-    as ContextractorInputType['saveDestination'];  // single cast remains: string[] → typed array
+    // TODO: remove cast when getExplicitRepeatedValues is refactored to return typed values
+    as ContextractorInputType['saveDestination'];
 }
 ```
 
