@@ -42,7 +42,12 @@
     "overview": {
       "title": "Overview",
       "transformation": {
-        "fields": ["loadedUrl", "httpStatus", "metadata.title", "metadata.lang"]
+        "fields": [
+          "loadedUrl",
+          "httpStatus",
+          "metadata.title",
+          "metadata.lang"
+        ]
       },
       "display": {
         "component": "table",

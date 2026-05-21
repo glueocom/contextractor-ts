@@ -37,26 +37,13 @@ interface AutoconsentResult {
   success: boolean;
 }
 
-type AutoconsentCtor = new (
-  sendMessage: (message: unknown) => void,
-  options: {
-    enabled: boolean;
-    autoAction: 'optOut';
-    enableCosmeticRules: boolean;
-    detectRetries: number;
-  },
-  rules: unknown,
-) => {
-  receiveMessageCallback(message: unknown): void;
-};
-
 export async function rejectViaAutoconsent(page: Page): Promise<AutoconsentResult> {
   const mod = await import('@duckduckgo/autoconsent');
   const rulesModule = (await import('@duckduckgo/autoconsent/rules/rules.json', {
     with: { type: 'json' },
   })) as { default?: unknown };
 
-  const AutoConsent = (mod.default ?? mod) as unknown as AutoconsentCtor;
+  const AutoConsent = mod.default;
   const rules = rulesModule.default ?? rulesModule;
 
   const scriptContent = `(function(AutoConsentClass, rulesJson) {

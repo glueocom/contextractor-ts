@@ -81,6 +81,35 @@ function parseProxyRotation(value: string): ContextractorInputType['proxyRotatio
   }
 }
 
+function parseDeduplication(value: string): ContextractorInputType['deduplication'] {
+  const result = ContextractorInput.shape.deduplication.safeParse(value);
+  if (!result.success) {
+    throw new Error(`Invalid --deduplication value: '${value}'. Use minimal, basic, or full.`);
+  }
+  return result.data;
+}
+
+function parseMode(value: string): ContextractorInputType['mode'] {
+  const result = ContextractorInput.shape.mode.safeParse(value);
+  if (!result.success) {
+    throw new Error(`Invalid --mode value: '${value}'. Use precision, balanced, or recall.`);
+  }
+  return result.data;
+}
+
+function parseSaveDestination(
+  value: string,
+  previous: ContextractorInputType['saveDestination'],
+): ContextractorInputType['saveDestination'] {
+  const result = ContextractorInput.shape.saveDestination.unwrap().element.safeParse(value);
+  if (!result.success) {
+    throw new Error(
+      `Invalid --save-destination value: '${value}'. Use key-value-store or dataset.`,
+    );
+  }
+  return [...(previous ?? []), result.data];
+}
+
 function parseJsonArray(raw: string, flagName: string): unknown[] {
   const parsed: unknown = JSON.parse(raw);
   if (!Array.isArray(parsed)) throw new Error(`${flagName} must be a JSON array`);
@@ -223,6 +252,7 @@ function addExtractionOptions(cmd: Command): Command {
         'Extraction mode: precision (less noise), balanced (default), or recall (more content)',
       )
         .choices(['precision', 'balanced', 'recall'])
+        .argParser(parseMode)
         .default('balanced'),
     )
     .option('--no-links', 'Exclude links from output')
@@ -235,7 +265,7 @@ function addExtractionOptions(cmd: Command): Command {
     .option(
       '--save-destination <dest>',
       'Where to save: key-value-store|dataset (repeatable)',
-      collectValues,
+      parseSaveDestination,
       s.saveDestination._def.defaultValue,
     )
     .option('--storage-dir <path>', 'Override Crawlee storage directory')
@@ -257,7 +287,9 @@ function addExtractionOptions(cmd: Command): Command {
       new Option(
         '--deduplication <level>',
         'Deduplication level: minimal, basic (default), or full',
-      ).choices(['minimal', 'basic', 'full']),
+      )
+        .choices(['minimal', 'basic', 'full'])
+        .argParser(parseDeduplication),
     );
 }
 
@@ -353,16 +385,17 @@ function buildSchemaOverrides(
     out.softWaitForSelector = opts.softWaitForSelector;
   }
   if (isCliOverride(command, 'deduplication') && opts.deduplication !== undefined) {
-    out.deduplication = opts.deduplication as ContextractorInputType['deduplication'];
+    out.deduplication = opts.deduplication;
   }
 
-  if (isCliOverride(command, 'mode')) out.mode = opts.mode as ContextractorInputType['mode'];
+  if (isCliOverride(command, 'mode')) out.mode = opts.mode;
   if (isCliOverride(command, 'tables')) out.includeTables = opts.tables;
   if (isCliOverride(command, 'images')) out.includeImages = opts.images;
   if (isCliOverride(command, 'links')) out.includeLinks = opts.links;
   if (isCliOverride(command, 'comments')) out.includeComments = opts.comments;
   if (isCliOverride(command, 'targetLanguage')) out.targetLanguage = opts.targetLanguage;
   if (isCliOverride(command, 'saveDestination')) {
+    // TODO: remove cast when getExplicitRepeatedValues is refactored to return typed values
     out.saveDestination = getExplicitRepeatedValues(
       command,
       '--save-destination',
@@ -944,20 +977,20 @@ interface ExtractOpts {
   maxRetries?: number;
   maxResults?: number;
   save?: string[];
-  mode?: string;
+  mode?: ContextractorInputType['mode'];
   links?: boolean;
   comments?: boolean;
   tables?: boolean;
   images?: boolean;
   targetLanguage?: string;
   verbose?: boolean;
-  saveDestination?: string[];
+  saveDestination?: ContextractorInputType['saveDestination'];
   storageDir?: string;
   storeSkippedUrls?: boolean;
   dynamicContentWait?: number;
   waitForSelector?: string;
   softWaitForSelector?: string;
-  deduplication?: string;
+  deduplication?: ContextractorInputType['deduplication'];
   sessionPoolName?: string;
   maxSessionRotations?: number;
 }

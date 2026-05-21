@@ -47,15 +47,6 @@ const PROPERTY_KEY_ORDER: readonly string[] = [
   'required',
 ];
 
-const ENVELOPE_KEY_ORDER: readonly (keyof ApifyInputSchemaJSON)[] = [
-  'title',
-  'description',
-  'type',
-  'schemaVersion',
-  'properties',
-  'required',
-];
-
 const TYPES_WITH_TOP_LEVEL_ITEMS_STRIPPED = new Set(['array']);
 
 export function toApifyInputSchema(
@@ -213,13 +204,16 @@ function orderProperty(prop: Record<string, unknown>): Record<string, unknown> {
   return out;
 }
 
-function orderEnvelope(envelope: ApifyInputSchemaJSON): ApifyInputSchemaJSON {
-  const out: Record<string, unknown> = {};
-  const view = envelope as unknown as Record<string, unknown>;
-  for (const key of ENVELOPE_KEY_ORDER) {
-    if (key in view) {
-      out[key] = view[key];
-    }
+function orderEnvelope({
+  title,
+  description,
+  type,
+  schemaVersion,
+  properties,
+  required,
+}: ApifyInputSchemaJSON): ApifyInputSchemaJSON {
+  if (description !== undefined) {
+    return { title, description, type, schemaVersion, properties, required };
   }
-  return out as unknown as ApifyInputSchemaJSON;
+  return { title, type, schemaVersion, properties, required };
 }

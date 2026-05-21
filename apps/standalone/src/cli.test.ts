@@ -116,6 +116,54 @@ describe('buildProgram — --deduplication flag', () => {
   });
 });
 
+describe('buildProgram — argParser wiring', () => {
+  function getParseArg(
+    program: ReturnType<typeof buildProgram>,
+    flag: string,
+  ): ((value: string, prev?: unknown) => unknown) | undefined {
+    const extract = program.commands.find((c) => c.name() === 'extract');
+    const opt = extract?.options.find((o) => o.long === flag);
+    return (opt as { parseArg?: (v: string, prev?: unknown) => unknown } | undefined)?.parseArg;
+  }
+
+  it('parseDeduplication accepts valid values', () => {
+    const parse = getParseArg(buildProgram(), '--deduplication')!;
+    expect(parse('minimal')).toBe('minimal');
+    expect(parse('basic')).toBe('basic');
+    expect(parse('full')).toBe('full');
+  });
+
+  it('parseDeduplication rejects invalid values', () => {
+    const parse = getParseArg(buildProgram(), '--deduplication')!;
+    expect(() => parse('invalid')).toThrow(/Invalid --deduplication/);
+  });
+
+  it('parseMode accepts valid values', () => {
+    const parse = getParseArg(buildProgram(), '--mode')!;
+    expect(parse('precision')).toBe('precision');
+    expect(parse('balanced')).toBe('balanced');
+    expect(parse('recall')).toBe('recall');
+  });
+
+  it('parseMode rejects invalid values', () => {
+    const parse = getParseArg(buildProgram(), '--mode')!;
+    expect(() => parse('invalid')).toThrow(/Invalid --mode/);
+  });
+
+  it('parseSaveDestination accumulates typed values', () => {
+    const parse = getParseArg(buildProgram(), '--save-destination')!;
+    const first = parse('dataset', []) as string[];
+    expect(first).toEqual(['dataset']);
+    const second = parse('key-value-store', first) as string[];
+    expect(second).toEqual(['dataset', 'key-value-store']);
+  });
+
+  it('parseSaveDestination rejects invalid values', () => {
+    const parse = getParseArg(buildProgram(), '--save-destination')!;
+    expect(() => parse('invalid', [])).toThrow(/Invalid --save-destination/);
+  });
+});
+
 describe('buildProgram — removed stale flags', () => {
   it('does not expose --no-metadata on the extract subcommand', () => {
     const program = buildProgram();
