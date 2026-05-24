@@ -64,6 +64,7 @@ mcpc @apify tools-call <tool> arg:=value
 ## Rules
 
 - [No confirmation prompts](.claude/rules/no-confirmation-prompts.md)
+- [Task completion](.claude/rules/task-completion.md) — always finish all pending tasks; never stop between steps or after context compression
 - [Apify production protection](.claude/rules/apify-production.md) — never push to prod unless explicitly asked
 - [Security](.claude/rules/security.md)
 - [Testing](.claude/rules/testing.md)
