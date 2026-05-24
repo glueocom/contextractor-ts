@@ -14,6 +14,7 @@ Always complete every pending task without stopping. Never pause between tasks o
 - Complete a subset of tasks and say "let me know when to continue"
 - Finish a phase and ask "shall I proceed with the remaining tasks?"
 - Treat a session resumption as a blank slate — check for pending tasks and continue them
+- Declare the work "complete" or "done" while the task list still has open or in-progress items — always verify task list state before issuing any final summary
 
 ## Always Do This
 
