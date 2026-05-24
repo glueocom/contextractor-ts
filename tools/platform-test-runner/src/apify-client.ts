@@ -1,5 +1,6 @@
 import { ApifyClient } from 'apify-client';
-import type { ActorSettings, DatasetItem } from './types.js';
+import type { ActorSettings } from './actor-settings.js';
+import type { DatasetItem } from './dataset-item.js';
 
 const ACTOR_ID = 'nXCKPalCKnRAQSG5S'; // contextractor actor
 

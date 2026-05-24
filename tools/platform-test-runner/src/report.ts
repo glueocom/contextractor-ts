@@ -1,7 +1,8 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import type { ReportEntry } from './report-entry.js';
 import { OUTPUT_DIR } from './runner.js';
-import type { ReportEntry, SuiteRunResult } from './types.js';
+import type { SuiteRunResult } from './suite-run-result.js';
 
 /**
  * Collect all report entries from suite results

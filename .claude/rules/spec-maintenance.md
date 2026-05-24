@@ -25,3 +25,5 @@ Update the affected `SPEC.md` when:
 ## How to update
 
 Read the changed source files, compare against the current spec, and update only the affected sections. Use the Edit tool for surgical changes. Do not rewrite unchanged sections.
+
+SPEC.md is the only colocated documentation format — do not create prd.md or separate requirements files.

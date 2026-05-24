@@ -1,7 +1,8 @@
 import { parseArgs } from 'node:util';
+import type { CLIOptions } from './cli-options.js';
 import { generateReport } from './report.js';
 import { listTestSuites, loadTestSuite, runAllSuites, runSingleSuite } from './runner.js';
-import type { CLIOptions, SuiteRunResult } from './types.js';
+import type { SuiteRunResult } from './suite-run-result.js';
 
 function printUsage(): void {
   console.log(`

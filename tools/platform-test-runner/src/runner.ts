@@ -1,15 +1,12 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import type { ActorSettings } from './actor-settings.js';
 import { fetchDatasetItems, runActor } from './apify-client.js';
-import type {
-  ActorSettings,
-  DatasetItem,
-  SuiteRunResult,
-  TestCase,
-  TestCaseInput,
-  TestResult,
-  TestSuite,
-} from './types.js';
+import type { DatasetItem } from './dataset-item.js';
+import type { SuiteRunResult } from './suite-run-result.js';
+import type { TestCaseInput } from './test-case-input.js';
+import type { TestResult } from './test-result.js';
+import type { TestCase, TestSuite } from './test-suite.js';
 
 const TEST_SUITES_DIR = path.join(import.meta.dirname, '..', 'test-suites');
 export const OUTPUT_DIR = path.join(import.meta.dirname, '..', 'test-suites-output');

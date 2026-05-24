@@ -13,11 +13,21 @@ if echo "$input" | jq -e '.stop_hook_active == true' > /dev/null 2>&1; then
 fi
 
 # Extract file paths from all Write and Edit calls made this turn.
-edited=$(echo "$input" | jq -r '
-  .tool_results[]? |
-  select(.tool_name == "Write" or .tool_name == "Edit") |
-  .tool_input.file_path // empty
-' 2>/dev/null || true)
+transcript_path=$(echo "$input" | jq -r '.transcript_path // empty')
+edited=""
+if [[ -n "$transcript_path" && -f "$transcript_path" ]]; then
+  last_user_line=$(jq -r 'if .role == "user" then input_line_number else empty end' \
+    "$transcript_path" 2>/dev/null | tail -1 || true)
+  if [[ -n "$last_user_line" ]]; then
+    edited=$(awk "NR > ${last_user_line}" "$transcript_path" | jq -r '
+      select(.role == "assistant") |
+      .content[]? |
+      select(.type == "tool_use") |
+      select(.name == "Write" or .name == "Edit") |
+      .input.file_path // empty
+    ' 2>/dev/null || true)
+  fi
+fi
 
 # TypeScript source files in packages/ or apps/ src directories (not test files, not declaration files).
 ts_source=$(printf '%s\n' "$edited" | \

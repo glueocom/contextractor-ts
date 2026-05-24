@@ -119,12 +119,7 @@
     "vdrmota",
     "Technica"
   ],
-  "flagWords": [
-    "hte",
-    "teh",
-    "recieve",
-    "seperate"
-  ],
+  "flagWords": ["hte", "teh", "recieve", "seperate"],
   "ignorePaths": [
     "node_modules/**",
     "target/**",
