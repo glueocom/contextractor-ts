@@ -75,6 +75,7 @@ mcpc @apify tools-call <tool> arg:=value
 - [Test maintenance](.claude/rules/test-maintenance.md) — keep tests in sync with code
 - [Native addon boundary](.claude/rules/native-addon-boundary.md) — wrapper follows upstream naming; translate at the TypeScript boundary
 - [Preserve TODOs](.claude/rules/preserve-todos.md) — never delete a TODO unless the fix directly resolves it
+- [Rule coverage](.claude/rules/rule-coverage.md) — every rule must be referenced in CLAUDE.md, an agent, or a command
 
 ## Agents
 

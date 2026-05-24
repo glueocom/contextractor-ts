@@ -86,6 +86,14 @@ diff <(grep -oE '"[a-z]+":' .mcp.json | tr -d '":' | sort) \
 diff <(grep -oE '\*\*[A-Za-z]+\*\*' CLAUDE.md | tr -d '*' | tr '[:upper:]' '[:lower:]' | sort) \
      <(grep -oE '"[a-z]+":' .mcp.json | tr -d '":' | sort)
 
+# Rule coverage: every .claude/rules/*.md must be referenced in CLAUDE.md, an agent, or a command
+for rule in .claude/rules/*.md; do
+  name=$(basename "$rule")
+  if ! grep -qr "$name" CLAUDE.md .claude/agents/ .claude/commands/ 2>/dev/null; then
+    echo "MISSING REFERENCE: $rule is not referenced anywhere"
+  fi
+done
+
 # No stale SDK methods in skills
 grep -rn 'chargeableWithinLimit\|eventChargeLimitReached(' .claude/skills/ && echo "WARN: stale SDK methods found"
 
