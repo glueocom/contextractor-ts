@@ -67,3 +67,10 @@ How it works: `input_line_number` in jq returns the current JSONL line number. `
 - Verify `spec-gate.sh` returns exit 0 when the transcript has no Write/Edit calls (no source files changed)
 - Verify `test-gate.sh` exits 0 when `stop_hook_active` is true
 - Test the `last_user_line` jq expression manually: `echo -e '{"role":"user"}\n{"role":"assistant"}' | jq -r 'if .role == "user" then input_line_number else empty end'` should output `1`
+
+### Step SINGLE-CONCEPT: Confirm SPEC.md is the only colocated doc format
+
+- Read `.claude/rules/spec-maintenance.md`
+- Verify it explicitly states that SPEC.md is the single documentation format — no separate PRD.md or requirements documents
+- SPEC.md should merge both the "why" (requirements context) and the "how" (technical decisions) in a single file per component, following Anthropic's guidance for AI-assisted development
+- If this is not stated clearly, add a one-line clarification: "SPEC.md is the only colocated documentation format. Do not create prd.md or separate requirements files."
