@@ -61,6 +61,16 @@ mcpc @apify tools-list
 mcpc @apify tools-call <tool> arg:=value
 ```
 
+## TypeScript LSP
+
+The `typescript-lsp@claude-plugins-official` plugin wires `typescript-language-server` into the built-in `LSP` tool, providing go-to-definition, find-all-references, hover type info, and real-time diagnostics across `.ts`, `.tsx`, `.js`, `.jsx` files.
+
+- Use `Grep`/`Glob` for **discovery** (finding files, searching patterns)
+- Use `LSP` for **understanding** (definitions, references, type errors) — prefer it over reading whole files
+- The `LSP` tool requires no `permissions.allow` entry — it auto-approves
+- `ENABLE_LSP_TOOL=1` is set in `.claude/settings.json`; `typescript-language-server` must be installed globally (`npm install -g typescript-language-server typescript`)
+- For Rust: `rust-analyzer-lsp@claude-plugins-official` is enabled in user settings (`~/.claude/settings.json`)
+
 ## Rules
 
 - [No confirmation prompts](.claude/rules/no-confirmation-prompts.md)
