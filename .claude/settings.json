@@ -136,5 +136,7 @@
   "enabledMcpjsonServers": [
     "apify"
   ],
-  "enabledPlugins": {}
+  "enabledPlugins": {
+    "typescript-lsp@claude-plugins-official": true
+  }
 }
