@@ -108,3 +108,4 @@ See `.claude/rules/security.md` for the full security checklist.
 - [crawlee.dev/llms.txt](https://crawlee.dev/llms.txt) — Crawlee quick ref
 - [rs-trafilatura](https://github.com/Murrough-Foley/rs-trafilatura) — extraction engine
 - [trafilatura.readthedocs.io](https://trafilatura.readthedocs.io/) — algorithm reference
+- `docs/` — local notes, troubleshooting guides, and unit test case documentation

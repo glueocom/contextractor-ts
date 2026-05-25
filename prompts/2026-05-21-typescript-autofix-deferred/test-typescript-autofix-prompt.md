@@ -1,5 +1,7 @@
 # TypeScript Autofix — Deferred Issues Prompt
 
+> **Status: DONE** — resolved in commit `2fc5a5d` (`fix: resolve deferred TypeScript type-safety issues`).
+
 These issues were identified during the 2026-05-20 run but deferred because they require either public API changes or cannot be resolved without adding runtime validation that changes behavior.
 
 ## Issue 1: Double-cast on `@duckduckgo/autoconsent` dynamic import

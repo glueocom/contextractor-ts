@@ -1,5 +1,7 @@
 # TypeScript Type File Audit
 
+> **Status: DONE** — resolved in commit `b835977` (`fix(hooks): read transcript for edited files; split platform-test-runner types`).
+
 Split grouped type files into one-type-per-file where types are conceptually independent. Tightly coupled pairs (one type directly contains the other) stay co-located.
 
 ## Rule

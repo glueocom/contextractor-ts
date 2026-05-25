@@ -1,5 +1,7 @@
 # Fix Stop Hook Input Parsing
 
+> **Status: DONE** — resolved in commit `b835977` (`fix(hooks): read transcript for edited files; split platform-test-runner types`).
+
 ## Problem
 
 Both `spec-gate.sh` and `test-gate.sh` extract edited file paths by querying `.tool_results[]?` from their stdin JSON. Stop hooks receive only `{session_id, transcript_path, stop_hook_active}` — `tool_results` is not part of the stop hook input format. The jq query fails silently (due to `2>/dev/null || true`), leaving `edited` always empty. Both hooks never block.

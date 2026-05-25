@@ -1,5 +1,7 @@
 # Spelling Autofix — Fix Plan
 
+> **Status: DONE** — resolved in commit `0656375` (`feat: add cspell config and fix spelling-autofix command`).
+
 > Full analysis and rationale: [`context/research.md`](context/research.md)
 
 All 205 cspell flags from the 2026-05-20 run are false positives — no genuine typos were found. Root cause: `cspell.json` does not exist at the repo root, so cspell uses only the default English dictionary and flags every Rust crate name, domain term, and proper noun in the codebase.

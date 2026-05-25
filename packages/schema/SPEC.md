@@ -26,3 +26,28 @@ Fields grouped by logical section:
 ## Schema generation pipeline
 
 `@contextractor/gen-input-schema` reads this package at build time and writes `apps/apify-actor/.actor/input_schema.json`. `@contextractor/gen-md-regions` reads the generated JSON to rebuild the input table in `apps/apify-actor/README.md`. Both run via `pnpm docs:update`.
+
+## Output schema
+
+`ContextractorOutput` is the Zod schema for each item written to the Apify dataset. Exported as `ContextractorOutput` (Zod schema) and `ContextractorOutputType` (inferred TypeScript type).
+
+`ContentRef` — object identifying content stored in the key-value store:
+- `hash` — MD5 hex digest of the content
+- `length` — byte length
+- `key` — KVS key (optional; present when saved to KVS)
+- `url` — public URL to the KVS item (optional; present when KVS public URL is configured)
+
+`ContentField` — union of `ContentRef | string`. A `ContentRef` when `saveDestination` includes `"key-value-store"`, an inline string when `"dataset"` only.
+
+`ContextractorOutput` fields:
+- `loadedUrl` — string; the URL that was loaded (post-redirect)
+- `httpStatus` — integer; HTTP response status code
+- `loadedAt` — string; ISO 8601 timestamp of when the page was loaded
+- `metadata` — object; all fields are nullable strings: `title`, `author`, `publishedAt` (ISO 8601), `description`, `siteName`, `lang`
+- `original` — `ContentField`, optional; raw page HTML before extraction; present when `"original"` is in `save`
+- `txt` — `ContentField`, optional; extracted plain text; present when `"txt"` is in `save`
+- `markdown` — `ContentField`, optional; extracted Markdown; present when `"markdown"` is in `save`
+- `json` — `ContentField`, optional; extracted structured JSON; present when `"json"` is in `save`
+- `html` — `ContentField`, optional; cleaned extracted HTML; present when `"html"` is in `save`
+
+> **Note:** `createApifySink` writes additional envelope fields not declared in this schema: `url` (original request URL), `status: 'success'`, `originalHash` (MD5 hex of raw HTML), `crawl: { depth, referrerUrl }`, and per-format hash fields (`txtHash`, `markdownHash`, etc.) when `saveDestination` includes `"dataset"`. These are documented in `apps/apify-actor/SPEC.md` and root `SPEC.md`.
