@@ -28,7 +28,7 @@ For each of the six SPEC.md files, read the spec and its corresponding source en
 - `packages/*/src/index.ts` — TypeScript public exports
 - `packages/extraction/native/src/lib.rs` — Rust napi-rs binding surface
 - `apps/apify-actor/src/run.ts` — Actor entry point
-- `apps/standalone/src/program.ts` — CLI entry point
+- `apps/standalone/src/cliProgram.ts` — CLI entry point (note: file is `cliProgram.ts`, not `program.ts`)
 
 Read every relevant file. Do not skip a package because its source did not appear in the recent diff — drift can accumulate silently.
 
@@ -70,6 +70,18 @@ Each question must:
   - "Skip for now"
 
 Apply the user's chosen fix immediately after each answer before asking the next question.
+
+## Step README-CHECK: Verify @generated regions
+
+After applying spec edits, run:
+
+```bash
+pnpm docs:update
+```
+
+If the output diff changes any README, it means the `@generated` regions were stale. Commit those changes alongside the SPEC.md edits — they are part of the same sync.
+
+> **Context**: `pnpm docs:update` rewrites `@generated` markdown regions in READMEs from source. SPEC.md and README `@generated` blocks are both derived from the same source truth. The `spec-gate.sh` Stop hook enforces SPEC.md updates during development; this command handles catch-up syncs when drift has accumulated.
 
 ## Step COMMIT: Commit and push
 
