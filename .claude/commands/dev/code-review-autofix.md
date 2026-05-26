@@ -203,6 +203,11 @@ Project conventions accumulated from past reviews. Apply in Step ANALYZE alongsi
 - `import type` for every import that carries no runtime value
 - Re-export files (`index.ts`) are a common source of missing `import type` — check them specifically
 
+### Apify input schema sections
+- `sectionCaption` must appear on ONLY the first field in each logical section group in `packages/schema/src/source-of-truth/input.ts`
+- Every subsequent field in the same section must have NO `sectionCaption` — each occurrence triggers a new collapsible group in Apify Console UI
+- After regenerating `input_schema.json`, verify: `python3 -c "import json,collections; s=json.load(open('apps/apify-actor/.actor/input_schema.json')); c=collections.Counter(v.get('sectionCaption') for v in s['properties'].values() if v.get('sectionCaption')); print([k for k,n in c.items() if n>1] or 'OK')"`
+
 ### Deploy safety
 - No `apify push` command anywhere in scripts, tooling, or documentation — always `git push origin HEAD:dev` for test, `HEAD:main` for production
 - `apps/apify-actor/.actor/actor.json` `name` must be `contextractor-test` for test deploys (never `contextractor`)

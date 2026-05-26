@@ -244,6 +244,22 @@ for (const [k, v] of Object.entries(j.properties)) {
 # 8. Crawler library waitUntil type includes 'commit'.
 grep -n "waitUntil.*commit" packages/crawler/src/createCrawler.ts
 # Expected: one match showing 'commit' in the type union.
+
+# 9. No duplicate sectionCaption values in the generated input schema.
+# Each section header must appear EXACTLY ONCE — each occurrence triggers a new
+# collapsible group in Apify Console, so duplicates cause repeated headers.
+python3 -c "
+import json
+from collections import Counter
+schema = json.load(open('apps/apify-actor/.actor/input_schema.json'))
+captions = [v.get('sectionCaption') for v in schema.get('properties', {}).values() if v.get('sectionCaption')]
+dups = {c: n for c, n in Counter(captions).items() if n > 1}
+if dups:
+    print('FAIL — duplicate sectionCaption:', dups)
+else:
+    print('PASS — each sectionCaption is unique')
+"
+# Expected: PASS — each sectionCaption is unique
 ```
 
 ---
