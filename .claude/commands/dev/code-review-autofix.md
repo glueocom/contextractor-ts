@@ -139,6 +139,20 @@ Always run:
 - Run ALL collected commands in order, including `cargo test --workspace` if present
 - For any failure: apply fix, re-run until it passes
 
+## Step PLATFORM
+
+Run when any file in `apps/apify-actor/` or `packages/` was part of the change set (these feed into the Actor build).
+
+Invoke the `platform:deploy-and-test` skill. It will:
+- Validate locally (build, lint, test, cargo checks)
+- Push to `dev` to trigger a Git-connected build on `glueo/contextractor-test`
+- Wait for the build, fetch the log on failure, and fix errors
+- Run a test crawl and verify the dataset contains at least one extracted item
+
+If the platform build or crawl fails, apply the fix, then re-run the skill until both succeed before continuing.
+
+Skip this step when the change set contains only `tools/`, `prompts/`, `.claude/`, or documentation files that do not affect the Actor bundle.
+
 ## Step LEARN
 
 Always run last.
