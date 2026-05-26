@@ -1,6 +1,6 @@
 ---
 description: Archive prompt text or file to prompts/ — words verbatim, clutter trimmed
-allowed-tools: Read, Write, Bash, Glob, Grep, AskUserQuestion
+allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 model: haiku
 argument-hint: <prompt text or file path>
 ---
@@ -55,6 +55,23 @@ mkdir -p prompts/YYYY-MM-DD-<topic>
 - Move the file to the new location using `mv`
 - Apply the same clutter-trimming rules before saving
 - Words stay **exactly verbatim**
+
+## Step IMAGES: Copy Pasted Images
+
+Check if any images were pasted alongside the prompt. Images appear as `[Image #N]` references in the user message, with source paths at `/Users/miroslavsekera/.claude/image-cache/<session-id>/<N>.png`.
+
+- If no images were pasted, skip this step silently
+- For each image found:
+  - Derive a descriptive filename from the image content or context (e.g. `apify-console-proxy-section.png`)
+  - If the filename cannot be inferred, use `image-1.png`, `image-2.png`, etc.
+  - Copy the image into the prompt directory:
+    ```bash
+    cp <source-path> prompts/YYYY-MM-DD-<topic>/<descriptive-name>.png
+    ```
+  - Append a markdown image reference to the end of `prompt.md` using the Edit tool:
+    ```
+    ![<alt text>](<descriptive-name>.png)
+    ```
 
 ## Step CONFIRM: Report Result
 
