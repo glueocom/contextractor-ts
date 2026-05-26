@@ -90,7 +90,34 @@ waitUntil: z.enum(['load', 'domcontentloaded', 'networkidle', 'commit']).default
 Do NOT touch `proxyConfiguration` (built-in `editor: "proxy"`) or any `resourcePermissions` field. Those keep `RESIDENTIAL`/`GOOGLE_SERP`/`READ`/`WRITE` verbatim.
 
 ### B.2 — Update internal switches / equality checks
-Anywhere the code branches on an old literal (`'PER_REQUEST'`, `'NETWORKIDLE'`, etc.) in `apps/apify-actor/src/config.ts`, `apps/standalone/src/cliProgram.ts`, `packages/crawler/src/createCrawler.ts`, update to the new literal. TypeScript will flag stale comparisons after the enum narrows.
+Anywhere the code branches on an old literal (`'PER_REQUEST'`, `'NETWORKIDLE'`, etc.) in `apps/apify-actor/src/config.ts`, `apps/standalone/src/cliProgram.ts`, `packages/crawler/src/createCrawler.ts`, update to the new literal. TypeScript will flag stale switch/comparison literals after the enum narrows — but the `SESSION_MAX_USAGE_COUNTS` object-index lookup and the `ContextractorCrawlerOptions` type declaration require manual updates (see step B.2.5).
+
+### B.2.5 — Exact crawler library changes for proxyRotation
+In `packages/crawler/src/createCrawler.ts`, four specific locations must change:
+
+- **`ContextractorCrawlerOptions.proxyRotation` type** — change the union from SCREAMING to kebab:
+  ```ts
+  proxyRotation?: 'recommended' | 'per-request' | 'until-failure';
+  ```
+
+- **`SESSION_MAX_USAGE_COUNTS` keys** — rename to match the new schema values (TypeScript will NOT flag this automatically since it is an object literal, not a switch):
+  ```ts
+  const SESSION_MAX_USAGE_COUNTS = Object.freeze({
+    'recommended':   undefined,
+    'per-request':   1,
+    'until-failure': 1000,
+  } as const);
+  ```
+
+- **Default fallback** — update the `?? 'RECOMMENDED'` default:
+  ```ts
+  const rotation = opts.proxyRotation ?? 'recommended';
+  ```
+
+- **Equality check** — update the `'UNTIL_FAILURE'` comparison:
+  ```ts
+  ...(rotation === 'until-failure' ? { maxPoolSize: 1 } : {}),
+  ```
 
 ### B.3 — Map proxyRotation into Crawlee (not a passthrough)
 In the proxy wiring (`packages/crawler/src/createCrawler.ts` or `apps/apify-actor/src/config.ts`), translate the kebab `proxyRotation` value into Crawlee `ProxyConfiguration` behavior. Crawlee has no rotation enum — `per-request` means "do not pass a `sessionId`"; session-sticky means "pass a `sessionId`"; tiered/recommended maps to your default behavior. Implement as a small internal switch, NOT a string map exposed in the schema:
@@ -105,6 +132,29 @@ function applyRotation(rotation: ProxyRotation, opts: ProxyConfigurationOptions)
 }
 ```
 
+### B.3.5 — Simplify CLI parse functions to pass-through validators
+After step B.1, the Zod schema values are identical to the tokens the CLI accepts — no SCREAMING translation is needed. In `apps/standalone/src/cliProgram.ts`, simplify `parseWaitUntil` and `parseProxyRotation` to the same `safeParse` pattern that `parseDeduplication` and `parseMode` already use:
+
+```ts
+function parseWaitUntil(value: string): ContextractorInputType['waitUntil'] {
+  const result = ContextractorInput.shape.waitUntil.safeParse(value.trim().toLowerCase());
+  if (!result.success) throw new Error(
+    `Invalid --wait-until value: '${value}'. Use load, domcontentloaded, networkidle, or commit.`
+  );
+  return result.data;
+}
+
+function parseProxyRotation(value: string): ContextractorInputType['proxyRotation'] {
+  const result = ContextractorInput.shape.proxyRotation.safeParse(value.trim().toLowerCase());
+  if (!result.success) throw new Error(
+    `Invalid --proxy-rotation value: '${value}'. Use recommended, per-request, or until-failure.`
+  );
+  return result.data;
+}
+```
+
+Remove the `replace(/-/g, '_')` normalization from the old `parseProxyRotation` — it is no longer needed because the schema value is `'per-request'` with a hyphen, which `.toLowerCase()` preserves verbatim.
+
 ### B.4 — waitUntil passes through to Playwright verbatim (NO shim)
 Because `waitUntil` is already the exact flat lowercase token Playwright accepts, forward it directly — there is nothing to translate:
 
@@ -112,7 +162,19 @@ Because `waitUntil` is already the exact flat lowercase token Playwright accepts
 await page.goto(url, { waitUntil: input.waitUntil }); // 'load' | 'domcontentloaded' | 'networkidle' | 'commit'
 ```
 
-If you find any pre-existing `WAIT_UNTIL_MAP` or case-transform on this field, DELETE it. Variant B explicitly forbids dashing `waitUntil`, so no dash-strip shim is needed or permitted.
+In `apps/apify-actor/src/config.ts`, delete the `WAIT_UNTIL_MAP` constant entirely and update the one line that uses it:
+
+```ts
+// BEFORE — SCREAMING schema value needed a map to produce the Playwright token
+const WAIT_UNTIL_MAP = { LOAD: 'load', DOMCONTENTLOADED: 'domcontentloaded', NETWORKIDLE: 'networkidle' } as const;
+// ...in buildCrawlerOpts:
+waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
+
+// AFTER — schema value IS the Playwright token; direct pass-through
+waitUntil: input.waitUntil,
+```
+
+The crawler library's `waitUntil` type (`packages/crawler/src/createCrawler.ts`) is already lowercase (`'load' | 'domcontentloaded' | 'networkidle'`) — just add `'commit'` (see step B.4.5). Variant B explicitly forbids dashing `waitUntil`, so no dash-strip shim is needed or permitted.
 
 ### B.4.5 — Crawler library: add `'commit'` to the public `waitUntil` type
 In `packages/crawler/src/createCrawler.ts`, update `ContextractorCrawlerOptions.waitUntil`:
