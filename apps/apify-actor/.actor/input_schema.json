@@ -176,7 +176,6 @@
       "enumTitles": ["Precision (less noise)", "Balanced (default)", "Recall (more content)"]
     },
     "includeComments": {
-      "sectionCaption": "Content extraction",
       "title": "Include comments",
       "type": "boolean",
       "description": "Include HTML comments in the extracted text.",
@@ -278,7 +277,6 @@
       "enumTitles": ["Recommended", "Rotate per request", "Use until failure"]
     },
     "tieredProxyUrls": {
-      "sectionCaption": "Proxy",
       "title": "Tiered proxy URLs",
       "type": "array",
       "description": "Tiered proxy URLs for automatic escalation. An array of tiers; each tier is a list of proxy URLs (or null for \"no proxy\"). Crawling starts on tier 0; Crawlee escalates a domain to a higher tier on block detection and probes lower tiers periodically to downshift. Takes precedence over a flat custom proxy list. Not combinable with useApifyProxy: true in proxyConfiguration.",
@@ -288,7 +286,6 @@
       "minItems": 1
     },
     "tieredProxyConfig": {
-      "sectionCaption": "Proxy",
       "title": "Tiered Apify proxy config",
       "type": "array",
       "description": "Tiered Apify proxy configurations for automatic escalation. An array of Apify proxy configuration objects; Crawlee starts on tier 0 and escalates per domain on block detection. Each element accepts the same fields as proxyConfiguration (groups, countryCode, password, etc.) but not proxyUrls or tieredProxyUrls. Example: [{\"groups\":[\"RESIDENTIAL\"]},{\"groups\":[\"DATACENTER\"]}]. Takes precedence over tieredProxyUrls if both are set. Requires Apify Proxy access.",
@@ -298,7 +295,6 @@
       "minItems": 1
     },
     "sessionPoolName": {
-      "sectionCaption": "Proxy",
       "title": "Session pool name",
       "type": "string",
       "description": "Name for a persistent, shared session pool. Sessions (IP + cookies) are saved under this key and reused across Actor runs. Useful when proxies are frequently blocked — previously working sessions are preferred over random ones.",
@@ -308,7 +304,6 @@
       "pattern": "^[0-9A-Za-z_-]+$"
     },
     "maxSessionRotations": {
-      "sectionCaption": "Proxy",
       "title": "Max session rotations",
       "type": "integer",
       "description": "Maximum number of session (IP + browser fingerprint) rotations per request on block detection. Independent of maxRequestRetries. Set to 0 to disable session rotation.",
@@ -360,7 +355,6 @@
       "unit": "seconds"
     },
     "waitUntil": {
-      "sectionCaption": "Performance and limits",
       "title": "Navigation wait until",
       "type": "string",
       "description": "When to consider navigation finished. networkidle waits for 500ms of network silence (best for JS-heavy SPAs, slower); load waits for the load event (default, good for most articles); domcontentloaded is fastest but may fire before client-side rendering completes; commit fires when network response is received and the document has started loading.",

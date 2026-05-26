@@ -233,7 +233,7 @@ export const ContextractorInput = z.object({
     .boolean()
     .default(true)
     .describe('Include HTML comments in the extracted text.')
-    .meta({ title: 'Include comments', ...apifyMeta({ sectionCaption: 'Content extraction' }) }),
+    .meta({ title: 'Include comments' }),
 
   includeTables: z
     .boolean()
@@ -365,7 +365,7 @@ export const ContextractorInput = z.object({
     )
     .meta({
       title: 'Tiered proxy URLs',
-      ...apifyMeta({ editor: 'json', sectionCaption: 'Proxy', isSecret: true, prefill: [] }),
+      ...apifyMeta({ editor: 'json', isSecret: true, prefill: [] }),
     }),
 
   tieredProxyConfig: z
@@ -382,7 +382,7 @@ export const ContextractorInput = z.object({
     )
     .meta({
       title: 'Tiered Apify proxy config',
-      ...apifyMeta({ editor: 'json', sectionCaption: 'Proxy', isSecret: true, prefill: [] }),
+      ...apifyMeta({ editor: 'json', isSecret: true, prefill: [] }),
     }),
 
   sessionPoolName: z
@@ -398,7 +398,7 @@ export const ContextractorInput = z.object({
     )
     .meta({
       title: 'Session pool name',
-      ...apifyMeta({ editor: 'textfield', sectionCaption: 'Proxy' }),
+      ...apifyMeta({ editor: 'textfield' }),
     }),
 
   maxSessionRotations: z
@@ -412,7 +412,6 @@ export const ContextractorInput = z.object({
     )
     .meta({
       title: 'Max session rotations',
-      ...apifyMeta({ sectionCaption: 'Proxy' }),
     }),
 
   pageLoadTimeoutSecs: z
@@ -469,7 +468,6 @@ export const ContextractorInput = z.object({
       ...apifyMeta({
         editor: 'select',
         enumTitles: ['Load event', 'DOM content loaded', 'Network idle', 'Commit'],
-        sectionCaption: 'Performance and limits',
       }),
     }),
 
