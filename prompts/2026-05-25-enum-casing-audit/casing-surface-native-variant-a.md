@@ -33,7 +33,7 @@ Because the actor canonical value for `proxyRotation` is SCREAMING but the CLI v
 - **Playwright (contextractor's engine)** — `page.goto({ waitUntil })` accepts exactly `'load' | 'domcontentloaded' | 'networkidle' | 'commit'`.
 - **Precedent — `apify/playwright-scraper`** input schema enum is exactly `["networkidle", "load", "domcontentloaded"]` (flat lowercase, no separators).
 - **Precedent — `apify/puppeteer-scraper` / `apify/web-scraper`** use the Puppeteer-flavored flat tokens `["domcontentloaded", "load", "networkidle2", "networkidle0"]`.
-- **Crawlee** defines no `waitUntil` enum; it forwards the value straight to `page.goto({ waitUntil })`, so its notation is the browser library's flat lowercase tokens.
+- **Crawlee** narrows `waitUntil` to `'domcontentloaded' | 'load' | 'networkidle'` in `DirectNavigationOptions` (omitting `'commit'`). Its `preNavigationHooks` `gotoOptions` uses `PlaywrightGotoOptions` which accepts all four Playwright tokens — but the crawler library's own public type must also include `'commit'` (see Step A.3.5).
 
 `domcontentloaded` and `networkidle` are single opaque upstream tokens (mirroring DOM lifecycle event names), not compound words contextractor assembled. Keeping them flat means the value passes through to `page.goto()` verbatim with zero shim and matches the entire ecosystem. Therefore on every surface: **`waitUntil` MUST be `'load' | 'domcontentloaded' | 'networkidle' | 'commit'` — never `network-idle`/`dom-content-loaded`, never `NETWORKIDLE`.** The CLI flag value is the same flat token (`--wait-until networkidle`), so unlike `proxyRotation` there is NO CLI↔canonical translation for `waitUntil`.
 
@@ -131,6 +131,15 @@ await page.goto(url, { waitUntil: input.waitUntil }); // 'load' | 'domcontentloa
 
 If any pre-existing `WAIT_UNTIL_MAP` or case-transform exists on `waitUntil`, DELETE it.
 
+### A.3.5 — Crawler library: add `'commit'` to the public `waitUntil` type
+In `packages/crawler/src/createCrawler.ts`, update `ContextractorCrawlerOptions.waitUntil`:
+
+```ts
+waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
+```
+
+Crawlee's `DirectNavigationOptions` omits `'commit'`, but `preNavigationHooks` `gotoOptions` is typed as `PlaywrightGotoOptions` and accepts all four Playwright tokens. Without this library type update, TypeScript would reject `'commit'` at the call site.
+
 ### A.4 — Foreign constants verbatim (actor only)
 `proxyConfiguration` uses built-in `editor: "proxy"`; `apifyProxyGroups` (`RESIDENTIAL`, …) pass into `Actor.createProxyConfiguration()` unchanged. `resourcePermissions` (`READ`/`WRITE`) stay verbatim. None of these exist in the standalone.
 
@@ -186,6 +195,10 @@ for (const [k, v] of Object.entries(j.properties)) {
   if (v.items && v.items.enum) console.log(k + '[items]', JSON.stringify(v.items.enum));
 }
 "
+
+# 9. Crawler library waitUntil type includes 'commit'.
+grep -n "waitUntil.*commit" packages/crawler/src/createCrawler.ts
+# Expected: one match showing 'commit' in the type union.
 ```
 
 ---

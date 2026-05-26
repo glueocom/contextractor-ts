@@ -31,7 +31,7 @@ The distinguishing test: *if I rename this value, does an Apify backend reject i
 - **Playwright (contextractor's engine)** — `page.goto({ waitUntil })` accepts exactly `'load' | 'domcontentloaded' | 'networkidle' | 'commit'`. These are the values to use.
 - **Precedent — `apify/playwright-scraper`** input schema enum is exactly `["networkidle", "load", "domcontentloaded"]` (flat lowercase, no separators).
 - **Precedent — `apify/puppeteer-scraper` / `apify/web-scraper`** use the Puppeteer-flavored flat tokens `["domcontentloaded", "load", "networkidle2", "networkidle0"]`.
-- **Crawlee** does not define its own `waitUntil` enum; it forwards the value straight to `page.goto({ waitUntil })`, so its "notation" is the browser library's flat lowercase tokens.
+- **Crawlee** narrows `waitUntil` to `'domcontentloaded' | 'load' | 'networkidle'` in `DirectNavigationOptions` (omitting `'commit'`). Its `preNavigationHooks` `gotoOptions` uses `PlaywrightGotoOptions` which accepts all four Playwright tokens — but the crawler library's own public type must also include `'commit'` (see Step B.4.5).
 
 Rationale: `domcontentloaded` and `networkidle` are single opaque upstream tokens (mirroring DOM lifecycle event names), not compound words contextractor assembled. Splitting them into `dom-content-loaded` / `network-idle` would invent word boundaries the source vocabulary does not have AND force a `.replace(/-/g,'')` shim at every `page.goto()` call. Flat lowercase passes through verbatim with zero shim and is itself kebab-compatible (single lowercase tokens). Therefore: **`waitUntil` MUST be `'load' | 'domcontentloaded' | 'networkidle' | 'commit'` — never dashed.** This is the one field where "unify on kebab" yields to "preserve the upstream token," and the two rules do not actually conflict because single lowercase tokens are already in the kebab-compatible form.
 
@@ -114,6 +114,15 @@ await page.goto(url, { waitUntil: input.waitUntil }); // 'load' | 'domcontentloa
 
 If you find any pre-existing `WAIT_UNTIL_MAP` or case-transform on this field, DELETE it. Variant B explicitly forbids dashing `waitUntil`, so no dash-strip shim is needed or permitted.
 
+### B.4.5 — Crawler library: add `'commit'` to the public `waitUntil` type
+In `packages/crawler/src/createCrawler.ts`, update `ContextractorCrawlerOptions.waitUntil`:
+
+```ts
+waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
+```
+
+Crawlee's `DirectNavigationOptions` omits `'commit'`, but `preNavigationHooks` `gotoOptions` is typed as `PlaywrightGotoOptions` and accepts all four Playwright tokens. Without this library type update, TypeScript would reject `'commit'` at the call site.
+
 ### B.5 — saveDestination → Apify SDK opener
 `key-value-store` / `dataset` are owned (kebab) but map to SDK methods. One switch:
 
@@ -169,6 +178,10 @@ for (const [k, v] of Object.entries(j.properties)) {
   if (v.items && v.items.enum) console.log(k + '[items]', JSON.stringify(v.items.enum));
 }
 "
+
+# 8. Crawler library waitUntil type includes 'commit'.
+grep -n "waitUntil.*commit" packages/crawler/src/createCrawler.ts
+# Expected: one match showing 'commit' in the type union.
 ```
 
 ---
