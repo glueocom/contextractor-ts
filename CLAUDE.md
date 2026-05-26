@@ -87,6 +87,7 @@ The `typescript-lsp@claude-plugins-official` plugin wires `typescript-language-s
 - [Native addon boundary](.claude/rules/native-addon-boundary.md) — wrapper follows upstream naming; translate at the TypeScript boundary
 - [Preserve TODOs](.claude/rules/preserve-todos.md) — never delete a TODO unless the fix directly resolves it
 - [Rule coverage](.claude/rules/rule-coverage.md) — every rule must be referenced in CLAUDE.md, an agent, or a command
+- [User-facing docs](.claude/rules/user-facing-docs.md) — deploy and maintenance info must not appear in the public Actor README
 
 ## Agents
 

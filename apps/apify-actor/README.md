@@ -105,16 +105,3 @@ format appears as a `ContentInfo` object (`hash`, `length`, `key`, `url`);
 raw HTML is stored under `{hash}-original.html` when `save` includes
 `"original"`.
 
-## Deploy
-
-Production deploys are a **Git-connected build** in the Apify Console (not
-`apify push`) so `dockerContextDir: "../../.."` in `.actor/actor.json`
-resolves to the repo root and the Dockerfile sees
-`packages/extraction/`, `packages/crawler/`, and `packages/schema/`.
-
-After the app rename, update the Apify Console git-connected source path to
-`apps/apify-actor` if it still points at the pre-rename app directory.
-
-For test-only deploys to `glueo/contextractor-test`, see
-`.claude/commands/platform/deploy-and-test.md`. Production
-(`glueo/contextractor`) requires the explicit `--production` flag.
