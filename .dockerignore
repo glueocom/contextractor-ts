@@ -14,6 +14,7 @@
 **/dist
 **/target
 **/storage
+!apps/standalone/src/storage
 **/test-suites-output
 **/*.tsbuildinfo
 
