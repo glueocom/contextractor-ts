@@ -477,13 +477,6 @@ async function runExtractAction(
   }
 
   const cliOnly = resolveCliOnly(opts, parsed.data, command);
-  if (cliOnly.proxyUrls.length > 0 && parsed.data.tieredProxyUrls) {
-    console.error(
-      'Error: --proxy and tieredProxyUrls in --config are mutually exclusive. ' +
-        'Use one or the other, not both.',
-    );
-    process.exit(1);
-  }
   const cfg = buildCrawlConfig(parsed.data, cliOnly);
 
   const destinations = parsed.data.saveDestination;
@@ -520,26 +513,7 @@ async function runExtractAction(
   });
 
   let proxyConfiguration: ProxyConfiguration | undefined;
-  if (parsed.data.tieredProxyUrls) {
-    const tiers = parsed.data.tieredProxyUrls;
-    for (const tier of tiers) {
-      for (const url of tier) {
-        if (url === null) continue;
-        let parsedUrl: URL;
-        try {
-          parsedUrl = new URL(url);
-        } catch {
-          console.error(`tieredProxyUrls: malformed URL "${url}".`);
-          process.exit(1);
-        }
-        if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(parsedUrl.protocol)) {
-          console.error(`tieredProxyUrls: unsupported scheme "${parsedUrl.protocol}" in "${url}".`);
-          process.exit(1);
-        }
-      }
-    }
-    proxyConfiguration = new ProxyConfiguration({ tieredProxyUrls: tiers });
-  } else if (cliOnly.proxyUrls.length > 0) {
+  if (cliOnly.proxyUrls.length > 0) {
     for (const raw of cliOnly.proxyUrls) {
       let parsedUrl: URL;
       try {

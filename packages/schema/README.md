@@ -72,8 +72,6 @@ interface ContextractorInputType {
   storeSkippedUrls: boolean;
   proxyConfiguration?: Record<string, unknown>;
   proxyRotation: 'recommended' | 'per-request' | 'until-failure';
-  tieredProxyUrls?: Array<Array<unknown>>;
-  tieredProxyConfig?: Array<Record<string, unknown>>;
   sessionPoolName?: string;
   maxSessionRotations: number;
   pageLoadTimeoutSecs: number;

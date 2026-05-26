@@ -55,7 +55,7 @@ type Sink<T> = (result: T) => Promise<void>;
 
 ## Proxy Configuration
 
-Pass proxy URLs via `proxyConfiguration: new ProxyConfiguration({ proxyUrls: [...] })`. For tiered escalation, use `proxyConfiguration: new ProxyConfiguration({ tieredProxyUrls: [[tier0url, ...], [tier1url, ...]] })`. Crawlee starts on tier 0 and escalates per domain when block patterns are detected.
+Pass proxy URLs via `proxyConfiguration: new ProxyConfiguration({ proxyUrls: [...] })`.
 
 Rotation mode is controlled by `proxyRotation`:
 

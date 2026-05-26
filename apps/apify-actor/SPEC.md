@@ -37,15 +37,9 @@ Every record has a `status` field. Three record shapes are possible:
 
 `buildCrawlerOpts(input, sink, proxyConfig, requestQueue, proxyRotation?)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`. Passes `mode`, `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `crawlerType`, `renderingTypeDetectionPercentage`, `blockMedia`, `initialConcurrency`, `dynamicContentWaitSecs`, `waitForSelector`, `softWaitForSelector`, `deduplication`, `sessionPoolName`, and `maxSessionRotations` directly from input.
 
-## Proxy precedence
+## Proxy
 
-`run.ts` builds the proxy configuration before calling `buildCrawlerOpts`. Precedence (first match wins):
-
-1. **`tieredProxyUrls`** — `Actor.createProxyConfiguration({ tieredProxyUrls })`. Mutually exclusive with `tieredProxyConfig`. Also mutually exclusive with `proxyConfiguration.useApifyProxy: true` (mixing custom tiered URLs with Apify managed proxy is unsupported).
-2. **`tieredProxyConfig`** — `Actor.createProxyConfiguration({ tieredProxyConfig })`. Apify SDK converts to tiered URLs internally.
-3. **`proxyConfiguration`** — flat proxy config (standard `proxyUrls`, `useApifyProxy`, etc.)
-
-Any mutual exclusivity violation exits with code 1 and an error log before starting the crawl.
+`run.ts` builds the proxy configuration before calling `buildCrawlerOpts`. If `input.proxyConfiguration` is set, calls `Actor.createProxyConfiguration(input.proxyConfiguration)`; otherwise `proxyConfig` is `undefined`.
 
 ## Entry point
 

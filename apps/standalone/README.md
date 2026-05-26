@@ -189,10 +189,6 @@ flags (`--proxy`, `--clean`) are CLI-only and must be set on the command
 line. Shared schema fields like `save`, `saveDestination`, `datasetName`,
 `keyValueStoreName`, and `requestQueueName` are accepted in the JSON config.
 
-**Tiered proxies:** Pass `tieredProxyUrls` in the config file to use Crawlee's
-automatic tier escalation. `--proxy` (flat list) and `tieredProxyUrls` in
-config are mutually exclusive — the CLI validates this at startup.
-
 **Breaking change.** The legacy snake_case shape and the nested `proxy: {
 urls, rotation }` block from the Python release are no longer accepted by the
 shared CLI input schema. Convert to the Apify-input camelCase shape below.

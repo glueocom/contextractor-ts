@@ -70,8 +70,6 @@ the table below is auto-rebuilt from that schema by
 | `storeSkippedUrls` | boolean | `false` | If enabled, pushes a dataset record for each URL skipped during crawling (excluded by globs, robots.txt, depth limit, or concurrency cap). Can produce high record volume — enable for auditing only. |
 | `proxyConfiguration` | object | _optional_ | Enables loading websites from IP addresses in specific geographies and to circumvent blocking. |
 | `proxyRotation` | enum (`recommended` \| `per-request` \| `until-failure`) | `"recommended"` | Proxy rotation strategy. recommended automatically picks the best proxies. per-request uses a new proxy for each request. until-failure uses one proxy until it fails. |
-| `tieredProxyUrls` | array | _optional_ | Tiered proxy URLs for automatic escalation. An array of tiers; each tier is a list of proxy URLs (or null for "no proxy"). Crawling starts on tier 0; Crawlee escalates a domain to a higher tier on bl… |
-| `tieredProxyConfig` | array | _optional_ | Tiered Apify proxy configurations for automatic escalation. An array of Apify proxy configuration objects; Crawlee starts on tier 0 and escalates per domain on block detection. Each element accepts t… |
 | `sessionPoolName` | string | _optional_ | Name for a persistent, shared session pool. Sessions (IP + cookies) are saved under this key and reused across Actor runs. Useful when proxies are frequently blocked — previously working sessions are… |
 | `maxSessionRotations` | integer | `10` | Maximum number of session (IP + browser fingerprint) rotations per request on block detection. Independent of maxRequestRetries. Set to 0 to disable session rotation. |
 | `pageLoadTimeoutSecs` | integer | `60` | Maximum time to wait for page load in seconds |

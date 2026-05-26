@@ -276,24 +276,6 @@
       "enum": ["recommended", "per-request", "until-failure"],
       "enumTitles": ["Recommended", "Rotate per request", "Use until failure"]
     },
-    "tieredProxyUrls": {
-      "title": "Tiered proxy URLs",
-      "type": "array",
-      "description": "Tiered proxy URLs for automatic escalation. An array of tiers; each tier is a list of proxy URLs (or null for \"no proxy\"). Crawling starts on tier 0; Crawlee escalates a domain to a higher tier on block detection and probes lower tiers periodically to downshift. Takes precedence over a flat custom proxy list. Not combinable with useApifyProxy: true in proxyConfiguration.",
-      "editor": "json",
-      "prefill": [],
-      "isSecret": true,
-      "minItems": 1
-    },
-    "tieredProxyConfig": {
-      "title": "Tiered Apify proxy config",
-      "type": "array",
-      "description": "Tiered Apify proxy configurations for automatic escalation. An array of Apify proxy configuration objects; Crawlee starts on tier 0 and escalates per domain on block detection. Each element accepts the same fields as proxyConfiguration (groups, countryCode, password, etc.) but not proxyUrls or tieredProxyUrls. Example: [{\"groups\":[\"RESIDENTIAL\"]},{\"groups\":[\"DATACENTER\"]}]. Takes precedence over tieredProxyUrls if both are set. Requires Apify Proxy access.",
-      "editor": "json",
-      "prefill": [],
-      "isSecret": true,
-      "minItems": 1
-    },
     "sessionPoolName": {
       "title": "Session pool name",
       "type": "string",
