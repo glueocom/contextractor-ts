@@ -5,8 +5,7 @@
 > **Note:** This is a greenfield project — no backward compatibility requirements.
 
 Companion research:
-- `prompts/2026-05-19-cli-proxy-config-consolidation/context/enum-casing-research-2026-05.md`
-- `prompts/2026-05-19-cli-proxy-config-consolidation/context/enum-casing-unified-research-2026-05.md`
+- `prompts/2026-05-25-enum-casing-audit/context/enum-casing-unified-research-2026-05.md`
 
 ## Skills and Agents
 
