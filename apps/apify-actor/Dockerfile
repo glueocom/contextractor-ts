@@ -21,7 +21,6 @@ COPY apps/standalone/package.json apps/standalone/
 COPY apps/apify-actor/package.json apps/apify-actor/
 COPY tools/gen-input-schema/package.json tools/gen-input-schema/
 COPY tools/gen-md-regions/package.json tools/gen-md-regions/
-COPY tools/opencode-sync/package.json tools/opencode-sync/
 COPY tools/platform-test-runner/package.json tools/platform-test-runner/
 
 RUN corepack enable && pnpm install
