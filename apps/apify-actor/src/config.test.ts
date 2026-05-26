@@ -15,10 +15,10 @@ const BASE_INPUT: ContextractorInputType = {
   maxConcurrency: 50,
   maxRequestRetries: 3,
   headless: true,
-  crawlerType: 'playwright:adaptive',
+  crawlerType: 'playwright-adaptive',
   renderingTypeDetectionPercentage: 10,
-  waitUntil: 'LOAD',
-  proxyRotation: 'RECOMMENDED',
+  waitUntil: 'load',
+  proxyRotation: 'recommended',
   maxSessionRotations: 10,
   pageLoadTimeoutSecs: 60,
   ignoreCorsAndCsp: false,
@@ -32,7 +32,7 @@ const BASE_INPUT: ContextractorInputType = {
   dynamicContentWaitSecs: 0,
   useSitemaps: false,
   initialConcurrency: 0,
-  deduplication: 'basic',
+  deduplication: 'url',
   storeSkippedUrls: false,
   mode: 'balanced',
   includeComments: true,
@@ -60,7 +60,7 @@ describe('buildCrawlerOpts blockMedia pass-through', () => {
 });
 
 describe('buildCrawlerOpts deduplication pass-through', () => {
-  it.each(['minimal', 'basic', 'full'] as const)('passes deduplication: "%s"', (level) => {
+  it.each(['none', 'url', 'content-hash'] as const)('passes deduplication: "%s"', (level) => {
     const input: ContextractorInputType = { ...BASE_INPUT, deduplication: level };
     const opts = buildCrawlerOpts(input, FAKE_SINK);
     expect(opts.deduplication).toBe(level);

@@ -26,7 +26,7 @@ describe('Proxy Rotation - Library (Direct API)', () => {
       startUrls,
       crawlerType: 'cheerio',
       proxyConfiguration: new ProxyConfiguration({ proxyUrls: sim.proxies }),
-      proxyRotation: 'RECOMMENDED',
+      proxyRotation: 'recommended',
       formats: ['txt'],
       sink,
     });
@@ -43,14 +43,14 @@ describe('Proxy Rotation - Library (Direct API)', () => {
     ).toBe(true);
   });
 
-  it('should route each request through a different proxy with PER_REQUEST mode', async () => {
+  it('should route each request through a different proxy with per-request mode', async () => {
     const sink = memorySink();
     const startUrls = ['http://example.com/page1', 'http://example.com/page2'];
     const crawler = createContextractorCrawler({
       startUrls,
       crawlerType: 'cheerio',
       proxyConfiguration: new ProxyConfiguration({ proxyUrls: sim.proxies }),
-      proxyRotation: 'PER_REQUEST',
+      proxyRotation: 'per-request',
       formats: ['txt'],
       sink,
     });

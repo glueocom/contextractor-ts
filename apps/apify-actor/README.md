@@ -39,14 +39,14 @@ the table below is auto-rebuilt from that schema by
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `startUrls` | array | _required_ | URLs to extract content from |
-| `crawlerType` | enum (`playwright:adaptive` \| `playwright:firefox` \| `playwright:chromium` \| `cheerio`) | `"playwright:adaptive"` | Browser engine or HTTP client for crawling. playwright:adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS). |
+| `crawlerType` | enum (`playwright-adaptive` \| `playwright-firefox` \| `playwright-chromium` \| `cheerio`) | `"playwright-adaptive"` | Browser engine or HTTP client for crawling. playwright-adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS). |
 | `renderingTypeDetectionPercentage` | integer | `10` | (Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower. |
 | `globs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
 | `excludes` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
 | `linkSelector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
 | `keepUrlFragments` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
 | `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
-| `deduplication` | enum (`minimal` \| `basic` \| `full`) | `"basic"` | Deduplication level applied on top of Crawlee's built-in URL deduplication. basic (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. full: also skip p… |
+| `deduplication` | enum (`none` \| `url` \| `content-hash`) | `"url"` | Deduplication level applied on top of Crawlee's built-in URL deduplication. url (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. content-hash: also… |
 | `respectRobotsTxtFile` | boolean | `false` | If enabled, the crawler will consult the robots.txt file for each domain before crawling pages. |
 | `initialCookies` | array | _optional_ | Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For e… |
 | `customHttpHeaders` | object | _optional_ | HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to… |
@@ -69,7 +69,7 @@ the table below is auto-rebuilt from that schema by
 | `requestQueueName` | string | _optional_ | Name of the request queue for pending URLs. Leave empty to use the default queue. |
 | `storeSkippedUrls` | boolean | `false` | If enabled, pushes a dataset record for each URL skipped during crawling (excluded by globs, robots.txt, depth limit, or concurrency cap). Can produce high record volume — enable for auditing only. |
 | `proxyConfiguration` | object | _optional_ | Enables loading websites from IP addresses in specific geographies and to circumvent blocking. |
-| `proxyRotation` | enum (`RECOMMENDED` \| `PER_REQUEST` \| `UNTIL_FAILURE`) | `"RECOMMENDED"` | Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails. |
+| `proxyRotation` | enum (`recommended` \| `per-request` \| `until-failure`) | `"recommended"` | Proxy rotation strategy. recommended automatically picks the best proxies. per-request uses a new proxy for each request. until-failure uses one proxy until it fails. |
 | `tieredProxyUrls` | array | _optional_ | Tiered proxy URLs for automatic escalation. An array of tiers; each tier is a list of proxy URLs (or null for "no proxy"). Crawling starts on tier 0; Crawlee escalates a domain to a higher tier on bl… |
 | `tieredProxyConfig` | array | _optional_ | Tiered Apify proxy configurations for automatic escalation. An array of Apify proxy configuration objects; Crawlee starts on tier 0 and escalates per domain on block detection. Each element accepts t… |
 | `sessionPoolName` | string | _optional_ | Name for a persistent, shared session pool. Sessions (IP + cookies) are saved under this key and reused across Actor runs. Useful when proxies are frequently blocked — previously working sessions are… |
@@ -79,7 +79,7 @@ the table below is auto-rebuilt from that schema by
 | `waitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. The request fails and is retried if the selector does not appear within the timeout. Leave empty to disable. |
 | `softWaitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. Unlike waitForSelector, the request continues even if the selector does not appear within the timeout. Leave empty to disable. |
 | `dynamicContentWaitSecs` | integer | `0` | Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also… |
-| `waitUntil` | enum (`NETWORKIDLE` \| `LOAD` \| `DOMCONTENTLOADED`) | `"LOAD"` | When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADE… |
+| `waitUntil` | enum (`load` \| `domcontentloaded` \| `networkidle` \| `commit`) | `"load"` | When to consider navigation finished. networkidle waits for 500ms of network silence (best for JS-heavy SPAs, slower); load waits for the load event (default, good for most articles); domcontentloade… |
 | `headless` | boolean | `true` | Run browser in headless mode |
 | `ignoreCorsAndCsp` | boolean | `false` | Ignore Content Security Policy and Cross-Origin Resource Sharing restrictions. Enables free XHR/Fetch requests from pages. |
 | `closeCookieModals` | boolean | `true` | Automatically dismiss cookie consent modals with Ghostery-based blocking. |

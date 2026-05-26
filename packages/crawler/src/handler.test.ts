@@ -30,14 +30,14 @@ try {
   nativeAvailable = false;
 }
 
-describe("deduplication: 'basic' — canonical dedup across handler calls", () => {
+describe("deduplication: 'url' — canonical dedup across handler calls", () => {
   it('skips second page with same canonical, different URL', async () => {
     const seenCanonicals = new Set<string>();
     const sink = memorySink<ExtractionResult>();
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'basic',
+      deduplication: 'url',
       seenCanonicals,
       seenContentHashes: new Set(),
     });
@@ -58,7 +58,7 @@ describe("deduplication: 'basic' — canonical dedup across handler calls", () =
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'basic',
+      deduplication: 'url',
       seenCanonicals,
       seenContentHashes: new Set(),
     });
@@ -72,14 +72,14 @@ describe("deduplication: 'basic' — canonical dedup across handler calls", () =
   });
 });
 
-describe("deduplication: 'minimal' — canonical dedup disabled", () => {
+describe("deduplication: 'none' — canonical dedup disabled", () => {
   it('extracts both pages even when they share a canonical', async () => {
     const seenCanonicals = new Set<string>();
     const sink = memorySink<ExtractionResult>();
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'minimal',
+      deduplication: 'none',
       seenCanonicals,
       seenContentHashes: new Set(),
     });
@@ -94,14 +94,14 @@ describe("deduplication: 'minimal' — canonical dedup disabled", () => {
   });
 });
 
-describe("deduplication: 'basic' — no canonical tag → content hash inactive", () => {
+describe("deduplication: 'url' — no canonical tag → content hash inactive", () => {
   it('extracts both pages with identical content when no canonical is present', async () => {
     const seenCanonicals = new Set<string>();
     const sink = memorySink<ExtractionResult>();
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'basic',
+      deduplication: 'url',
       seenCanonicals,
       seenContentHashes: new Set(),
     });
@@ -113,7 +113,7 @@ describe("deduplication: 'basic' — no canonical tag → content hash inactive"
   });
 });
 
-describe("deduplication: 'full' — content hash dedup", () => {
+describe("deduplication: 'content-hash' — content hash dedup", () => {
   it.skipIf(!nativeAvailable)(
     // The native .node binary is required for extraction — skip when not available.
     'skips second page with identical extracted text',
@@ -123,7 +123,7 @@ describe("deduplication: 'full' — content hash dedup", () => {
       const handler = createCheerioHandler({
         formats: ['txt'],
         sink,
-        deduplication: 'full',
+        deduplication: 'content-hash',
         seenCanonicals: new Set(),
         seenContentHashes,
       });
@@ -145,7 +145,7 @@ describe('loadedUrl — final URL after redirects', () => {
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'minimal',
+      deduplication: 'none',
       seenCanonicals,
       seenContentHashes: new Set(),
     });
@@ -164,7 +164,7 @@ describe('loadedUrl — final URL after redirects', () => {
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'minimal',
+      deduplication: 'none',
       seenCanonicals,
       seenContentHashes: new Set(),
     });
@@ -184,7 +184,7 @@ describe('shared seenCanonicals — state accumulates across calls', () => {
     const handler = createCheerioHandler({
       formats: [],
       sink,
-      deduplication: 'basic',
+      deduplication: 'url',
       seenCanonicals,
       seenContentHashes: new Set(),
     });

@@ -19,10 +19,10 @@
       "sectionCaption": "Crawler settings",
       "title": "Crawler type",
       "type": "string",
-      "description": "Browser engine or HTTP client for crawling. playwright:adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS).",
+      "description": "Browser engine or HTTP client for crawling. playwright-adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS).",
       "editor": "select",
-      "default": "playwright:adaptive",
-      "enum": ["playwright:adaptive", "playwright:firefox", "playwright:chromium", "cheerio"],
+      "default": "playwright-adaptive",
+      "enum": ["playwright-adaptive", "playwright-firefox", "playwright-chromium", "cheerio"],
       "enumTitles": [
         "Adaptive switching (Recommended)",
         "Headless browser (Firefox+Playwright)",
@@ -78,14 +78,14 @@
     "deduplication": {
       "title": "Deduplication",
       "type": "string",
-      "description": "Deduplication level applied on top of Crawlee's built-in URL deduplication. basic (default): skip pages whose <link rel=\"canonical\"> was already extracted, across all handler types. full: also skip pages whose extracted text content matches a previously extracted page. minimal: disable additional deduplication — only Crawlee's URL dedup remains active.",
+      "description": "Deduplication level applied on top of Crawlee's built-in URL deduplication. url (default): skip pages whose <link rel=\"canonical\"> was already extracted, across all handler types. content-hash: also skip pages whose extracted text content matches a previously extracted page. none: disable additional deduplication — only Crawlee's URL dedup remains active.",
       "editor": "select",
-      "default": "basic",
-      "enum": ["minimal", "basic", "full"],
+      "default": "url",
+      "enum": ["none", "url", "content-hash"],
       "enumTitles": [
-        "Minimal — URL only",
-        "Basic — canonical URL (default)",
-        "Full — canonical URL + content hash"
+        "None — URL only",
+        "URL — canonical URL (default)",
+        "Content hash — canonical URL + content hash"
       ]
     },
     "respectRobotsTxtFile": {
@@ -271,10 +271,10 @@
     "proxyRotation": {
       "title": "Proxy rotation",
       "type": "string",
-      "description": "Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails.",
+      "description": "Proxy rotation strategy. recommended automatically picks the best proxies. per-request uses a new proxy for each request. until-failure uses one proxy until it fails.",
       "editor": "select",
-      "default": "RECOMMENDED",
-      "enum": ["RECOMMENDED", "PER_REQUEST", "UNTIL_FAILURE"],
+      "default": "recommended",
+      "enum": ["recommended", "per-request", "until-failure"],
       "enumTitles": ["Recommended", "Rotate per request", "Use until failure"]
     },
     "tieredProxyUrls": {
@@ -363,11 +363,11 @@
       "sectionCaption": "Performance and limits",
       "title": "Navigation wait until",
       "type": "string",
-      "description": "When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADED is fastest but may fire before client-side rendering completes.",
+      "description": "When to consider navigation finished. networkidle waits for 500ms of network silence (best for JS-heavy SPAs, slower); load waits for the load event (default, good for most articles); domcontentloaded is fastest but may fire before client-side rendering completes; commit fires when network response is received and the document has started loading.",
       "editor": "select",
-      "default": "LOAD",
-      "enum": ["NETWORKIDLE", "LOAD", "DOMCONTENTLOADED"],
-      "enumTitles": ["Network idle", "Load event", "DOM content loaded"]
+      "default": "load",
+      "enum": ["load", "domcontentloaded", "networkidle", "commit"],
+      "enumTitles": ["Load event", "DOM content loaded", "Network idle", "Commit"]
     },
     "headless": {
       "title": "Headless mode",

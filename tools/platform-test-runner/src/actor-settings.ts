@@ -1,7 +1,7 @@
 /** Actor input settings from settings.json (Contextractor schema) */
 export interface ActorSettings {
   // Crawl settings
-  waitUntil?: 'NETWORKIDLE' | 'LOAD' | 'DOMCONTENTLOADED';
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   maxRequestRetries?: number;
   pageLoadTimeoutSecs?: number;
   maxConcurrency?: number;

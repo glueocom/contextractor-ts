@@ -48,9 +48,9 @@ export interface ContextractorCrawlerOptions {
    * Forwarded to Crawlee via `preNavigationHooks` → `gotoOptions.waitUntil`.
    * If undefined, Playwright's default of `'load'` applies.
    */
-  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle';
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   headless?: boolean;
-  crawlerType?: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
+  crawlerType?: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   renderingTypeDetectionPercentage?: number;
   ignoreSslErrors?: boolean;
   bypassCSP?: boolean;
@@ -66,13 +66,12 @@ export interface ContextractorCrawlerOptions {
   proxyConfiguration?: ProxyConfiguration;
   /**
    * Proxy rotation strategy. Maps to Crawlee `sessionPoolOptions`.
-   * Mirrors Apify scraper-tools semantics: RECOMMENDED uses the default
-   * session reuse count; PER_REQUEST retires the session after one request
-   * (new browser context per request); UNTIL_FAILURE forces a single-session
-   * pool that stays on one proxy URL until the session retires from errors.
-   * Has no effect when `proxyConfiguration` is undefined.
+   * recommended uses the default session reuse count; per-request retires the
+   * session after one request (new browser context per request); until-failure
+   * forces a single-session pool that stays on one proxy URL until the session
+   * retires from errors. Has no effect when `proxyConfiguration` is undefined.
    */
-  proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
+  proxyRotation?: 'recommended' | 'per-request' | 'until-failure';
   sessionPoolName?: string;
   maxSessionRotations?: number;
   requestQueue?: RequestProvider;
@@ -89,7 +88,7 @@ export interface ContextractorCrawlerOptions {
     retryCount: number;
   }) => Promise<void>;
   onSkippedUrl?: (url: string, reason: string) => void;
-  deduplication?: 'minimal' | 'basic' | 'full';
+  deduplication?: 'none' | 'url' | 'content-hash';
 }
 
 function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConfig {
@@ -116,29 +115,29 @@ function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConf
 
 // From @apify/scraper-tools SESSION_MAX_USAGE_COUNTS (apify/actor-scraper).
 const SESSION_MAX_USAGE_COUNTS = Object.freeze({
-  RECOMMENDED: undefined,
-  PER_REQUEST: 1,
-  UNTIL_FAILURE: 1000,
+  recommended: undefined,
+  'per-request': 1,
+  'until-failure': 1000,
 } as const);
 
 export function createContextractorCrawler(
   opts: ContextractorCrawlerOptions,
 ): CheerioCrawler | AdaptivePlaywrightCrawler | PlaywrightCrawler {
-  const crawlerType = opts.crawlerType ?? 'playwright:adaptive';
+  const crawlerType = opts.crawlerType ?? 'playwright-adaptive';
 
   if (
     opts.blockMedia &&
-    crawlerType !== 'playwright:chromium' &&
-    crawlerType !== 'playwright:adaptive'
+    crawlerType !== 'playwright-chromium' &&
+    crawlerType !== 'playwright-adaptive'
   ) {
     log.warning(
-      `blockMedia has no effect with crawlerType: ${crawlerType}. It only works with playwright:chromium and playwright:adaptive.`,
+      `blockMedia has no effect with crawlerType: ${crawlerType}. It only works with playwright-chromium and playwright-adaptive.`,
     );
   }
 
   const cookieStrategy = opts.cookieStrategy ?? 'ghostery';
   const formats = opts.formats ?? ['markdown'];
-  const deduplication: 'minimal' | 'basic' | 'full' = opts.deduplication ?? 'basic';
+  const deduplication: 'none' | 'url' | 'content-hash' = opts.deduplication ?? 'url';
   const seenCanonicals = new Set<string>();
   const seenContentHashes = new Set<string>();
 
@@ -200,7 +199,7 @@ export function createContextractorCrawler(
     return crawler;
   }
 
-  const launcher = crawlerType === 'playwright:firefox' ? 'firefox' : 'chromium';
+  const launcher = crawlerType === 'playwright-firefox' ? 'firefox' : 'chromium';
 
   const launchOptions = buildBrowserLaunchOptions({
     launcher,
@@ -211,14 +210,14 @@ export function createContextractorCrawler(
   const userSessionPoolOptions =
     typeof opts.sessionPool === 'object' ? opts.sessionPool : undefined;
 
-  const rotation = opts.proxyRotation ?? 'RECOMMENDED';
+  const rotation = opts.proxyRotation ?? 'recommended';
   const maxUsageCount = SESSION_MAX_USAGE_COUNTS[rotation];
   const rotationSessionPoolOptions = {
     sessionOptions: {
       ...(userSessionPoolOptions?.sessionOptions ?? {}),
       ...(maxUsageCount !== undefined ? { maxUsageCount } : {}),
     },
-    ...(rotation === 'UNTIL_FAILURE' ? { maxPoolSize: 1 } : {}),
+    ...(rotation === 'until-failure' ? { maxPoolSize: 1 } : {}),
   };
 
   const sessionPoolOptions = {
@@ -268,7 +267,7 @@ export function createContextractorCrawler(
     ...(opts.requestList !== undefined ? { requestList: opts.requestList } : {}),
   };
 
-  if (crawlerType === 'playwright:adaptive') {
+  if (crawlerType === 'playwright-adaptive') {
     const adaptivePreHooks: AdaptivePlaywrightCrawlerOptions['preNavigationHooks'] = [];
     const waitUntil = opts.waitUntil;
     if (waitUntil !== undefined) {

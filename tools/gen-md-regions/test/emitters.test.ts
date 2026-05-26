@@ -30,7 +30,7 @@ describe('emitters', () => {
     const out = emitters['enum-values']?.();
     expect(out).toBeDefined();
     expect(out).toContain('### `crawlerType`');
-    expect(out).toContain('| `playwright:adaptive` | Adaptive switching (Recommended) |');
+    expect(out).toContain('| `playwright-adaptive` | Adaptive switching (Recommended) |');
     expect(out).toContain('### `waitUntil`');
     expect(out).toContain('### `proxyRotation`');
   });

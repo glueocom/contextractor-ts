@@ -17,7 +17,7 @@ describe('config helpers', () => {
     expect(cfg.initialConcurrency).toBe(0);
     expect(cfg.maxConcurrency).toBe(50);
     expect(cfg.headless).toBe(true);
-    expect(cfg.crawlerType).toBe('playwright:adaptive');
+    expect(cfg.crawlerType).toBe('playwright-adaptive');
     expect(cfg.renderingTypeDetectionPercentage).toBe(10);
     expect(cfg.waitUntil).toBe('load');
     expect(cfg.maxPages).toBe(0);
@@ -108,7 +108,7 @@ describe('buildProgram — --deduplication flag', () => {
     const program = buildProgram();
     expect(getExtractOptions(program)).toContain('--deduplication');
   });
-  it.each(['minimal', 'basic', 'full'])('accepts "%s" as a valid choice', (level) => {
+  it.each(['none', 'url', 'content-hash'])('accepts "%s" as a valid choice', (level) => {
     const program = buildProgram();
     const extract = program.commands.find((c) => c.name() === 'extract');
     const opt = extract?.options.find((o) => o.long === '--deduplication');
@@ -128,9 +128,9 @@ describe('buildProgram — argParser wiring', () => {
 
   it('parseDeduplication accepts valid values', () => {
     const parse = getParseArg(buildProgram(), '--deduplication')!;
-    expect(parse('minimal')).toBe('minimal');
-    expect(parse('basic')).toBe('basic');
-    expect(parse('full')).toBe('full');
+    expect(parse('none')).toBe('none');
+    expect(parse('url')).toBe('url');
+    expect(parse('content-hash')).toBe('content-hash');
   });
 
   it('parseDeduplication rejects invalid values', () => {

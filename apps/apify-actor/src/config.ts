@@ -8,12 +8,6 @@ import type {
 import type { OutputFormat } from '@contextractor/extraction';
 import type { ContextractorInputType } from '@contextractor/schema';
 
-const WAIT_UNTIL_MAP = {
-  LOAD: 'load',
-  DOMCONTENTLOADED: 'domcontentloaded',
-  NETWORKIDLE: 'networkidle',
-} as const;
-
 export function buildCrawlerOpts(
   input: ContextractorInputType,
   sink: Sink<ExtractionResult>,
@@ -52,7 +46,7 @@ export function buildCrawlerOpts(
     initialConcurrency: input.initialConcurrency,
     maxConcurrency: input.maxConcurrency,
     pageLoadTimeoutSecs: input.pageLoadTimeoutSecs,
-    waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
+    waitUntil: input.waitUntil,
     maxResults: input.maxResultsPerCrawl > 0 ? input.maxResultsPerCrawl : undefined,
     linkSelector: input.linkSelector,
     maxCrawlingDepth: input.maxCrawlingDepth,

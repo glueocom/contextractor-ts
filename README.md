@@ -36,14 +36,14 @@ is generated from the schema at build time by
 ```ts
 interface ContextractorInputType {
   startUrls: Array<{ url: string }>;
-  crawlerType: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
+  crawlerType: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   renderingTypeDetectionPercentage: number;
   globs: Array<{ glob: string }>;
   excludes: Array<{ glob: string }>;
   linkSelector: string;
   keepUrlFragments: boolean;
   useSitemaps: boolean;
-  deduplication: 'minimal' | 'basic' | 'full';
+  deduplication: 'none' | 'url' | 'content-hash';
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
@@ -66,7 +66,7 @@ interface ContextractorInputType {
   requestQueueName?: string;
   storeSkippedUrls: boolean;
   proxyConfiguration?: Record<string, unknown>;
-  proxyRotation: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
+  proxyRotation: 'recommended' | 'per-request' | 'until-failure';
   tieredProxyUrls?: Array<Array<unknown>>;
   tieredProxyConfig?: Array<Record<string, unknown>>;
   sessionPoolName?: string;
@@ -76,7 +76,7 @@ interface ContextractorInputType {
   waitForSelector: string;
   softWaitForSelector: string;
   dynamicContentWaitSecs: number;
-  waitUntil: 'NETWORKIDLE' | 'LOAD' | 'DOMCONTENTLOADED';
+  waitUntil: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   headless: boolean;
   ignoreCorsAndCsp: boolean;
   closeCookieModals: boolean;

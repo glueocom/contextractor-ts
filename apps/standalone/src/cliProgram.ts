@@ -37,11 +37,11 @@ function collectValues(value: string, previous: string[]): string[] {
 function parseCrawlerType(value: string): ContextractorInputType['crawlerType'] {
   switch (value.trim().toLowerCase()) {
     case 'adaptive':
-      return 'playwright:adaptive';
+      return 'playwright-adaptive';
     case 'firefox':
-      return 'playwright:firefox';
+      return 'playwright-firefox';
     case 'chromium':
-      return 'playwright:chromium';
+      return 'playwright-chromium';
     case 'cheerio':
       return 'cheerio';
     default:
@@ -52,39 +52,27 @@ function parseCrawlerType(value: string): ContextractorInputType['crawlerType'] 
 }
 
 function parseWaitUntil(value: string): ContextractorInputType['waitUntil'] {
-  switch (value.trim().toLowerCase()) {
-    case 'networkidle':
-      return 'NETWORKIDLE';
-    case 'load':
-      return 'LOAD';
-    case 'domcontentloaded':
-      return 'DOMCONTENTLOADED';
-    default:
-      throw new Error(
-        `Unsupported --wait-until value: '${value}'. Use networkidle, load, or domcontentloaded.`,
-      );
-  }
+  const result = ContextractorInput.shape.waitUntil.safeParse(value.trim().toLowerCase());
+  if (!result.success)
+    throw new Error(
+      `Invalid --wait-until value: '${value}'. Use load, domcontentloaded, networkidle, or commit.`,
+    );
+  return result.data;
 }
 
 function parseProxyRotation(value: string): ContextractorInputType['proxyRotation'] {
-  switch (value.trim().toLowerCase().replace(/-/g, '_')) {
-    case 'recommended':
-      return 'RECOMMENDED';
-    case 'per_request':
-      return 'PER_REQUEST';
-    case 'until_failure':
-      return 'UNTIL_FAILURE';
-    default:
-      throw new Error(
-        `Unsupported --proxy-rotation value: '${value}'. Use recommended, per_request, or until_failure.`,
-      );
-  }
+  const result = ContextractorInput.shape.proxyRotation.safeParse(value.trim().toLowerCase());
+  if (!result.success)
+    throw new Error(
+      `Invalid --proxy-rotation value: '${value}'. Use recommended, per-request, or until-failure.`,
+    );
+  return result.data;
 }
 
 function parseDeduplication(value: string): ContextractorInputType['deduplication'] {
   const result = ContextractorInput.shape.deduplication.safeParse(value);
   if (!result.success) {
-    throw new Error(`Invalid --deduplication value: '${value}'. Use minimal, basic, or full.`);
+    throw new Error(`Invalid --deduplication value: '${value}'. Use none, url, or content-hash.`);
   }
   return result.data;
 }
@@ -169,7 +157,7 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--proxy <url>', 'Proxy URL (repeatable)', collectValues, [] as string[])
     .option(
       '--proxy-rotation <strategy>',
-      'Proxy rotation: recommended, per_request, until_failure',
+      'Proxy rotation: recommended, per-request, until-failure',
     )
     .option('--session-pool-name <name>', 'Named session pool for cross-run session sharing')
     .addOption(
@@ -186,7 +174,7 @@ function addExtractionOptions(cmd: Command): Command {
       'Rendering type detection percentage (adaptive only)',
       toInt,
     )
-    .option('--wait-until <event>', 'Page load event: networkidle, load, domcontentloaded')
+    .option('--wait-until <event>', 'Page load event: load, domcontentloaded, networkidle, commit')
     .addOption(
       new Option('--page-load-timeout <secs>', 'Page load timeout in seconds')
         .argParser(toInt)
@@ -286,9 +274,9 @@ function addExtractionOptions(cmd: Command): Command {
     .addOption(
       new Option(
         '--deduplication <level>',
-        'Deduplication level: minimal, basic (default), or full',
+        'Deduplication level: none, url (default), or content-hash',
       )
-        .choices(['minimal', 'basic', 'full'])
+        .choices(['none', 'url', 'content-hash'])
         .argParser(parseDeduplication),
     );
 }
@@ -573,7 +561,7 @@ async function runExtractAction(
       }
     }
     proxyConfiguration = new ProxyConfiguration({ proxyUrls: cliOnly.proxyUrls });
-  } else if (cliOnly.proxyRotation && cliOnly.proxyRotation !== 'RECOMMENDED') {
+  } else if (cliOnly.proxyRotation && cliOnly.proxyRotation !== 'recommended') {
     console.warn(
       `Warning: --proxy-rotation=${cliOnly.proxyRotation} has no effect ` +
         `without --proxy; running without proxy.`,

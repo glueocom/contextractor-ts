@@ -30,14 +30,14 @@ describe('blockMedia warning', () => {
     warnSpy.mockRestore();
   });
 
-  it('emits log.warning for playwright:firefox when blockMedia is true', () => {
+  it('emits log.warning for playwright-firefox when blockMedia is true', () => {
     const warnSpy = vi.spyOn(log, 'warning').mockImplementation(() => undefined);
 
     try {
       createContextractorCrawler({
         startUrls: ['https://example.com'],
         sink: async () => {},
-        crawlerType: 'playwright:firefox',
+        crawlerType: 'playwright-firefox',
         blockMedia: true,
       });
     } catch {
@@ -45,19 +45,19 @@ describe('blockMedia warning', () => {
     }
 
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('blockMedia has no effect with crawlerType: playwright:firefox'),
+      expect.stringContaining('blockMedia has no effect with crawlerType: playwright-firefox'),
     );
     warnSpy.mockRestore();
   });
 
-  it('does not emit log.warning for playwright:chromium when blockMedia is true', () => {
+  it('does not emit log.warning for playwright-chromium when blockMedia is true', () => {
     const warnSpy = vi.spyOn(log, 'warning').mockImplementation(() => undefined);
 
     try {
       createContextractorCrawler({
         startUrls: ['https://example.com'],
         sink: async () => {},
-        crawlerType: 'playwright:chromium',
+        crawlerType: 'playwright-chromium',
         blockMedia: true,
       });
     } catch {
@@ -68,14 +68,14 @@ describe('blockMedia warning', () => {
     warnSpy.mockRestore();
   });
 
-  it('does not emit log.warning for playwright:adaptive when blockMedia is true', () => {
+  it('does not emit log.warning for playwright-adaptive when blockMedia is true', () => {
     const warnSpy = vi.spyOn(log, 'warning').mockImplementation(() => undefined);
 
     try {
       createContextractorCrawler({
         startUrls: ['https://example.com'],
         sink: async () => {},
-        crawlerType: 'playwright:adaptive',
+        crawlerType: 'playwright-adaptive',
         blockMedia: true,
       });
     } catch {

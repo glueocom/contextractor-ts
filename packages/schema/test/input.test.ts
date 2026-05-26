@@ -8,10 +8,10 @@ describe('ContextractorInput', () => {
     });
     expect(parsed.startUrls).toEqual([{ url: 'https://example.com' }]);
     expect(parsed.headless).toBe(true);
-    expect(parsed.crawlerType).toBe('playwright:adaptive');
+    expect(parsed.crawlerType).toBe('playwright-adaptive');
     expect(parsed.renderingTypeDetectionPercentage).toBe(10);
-    expect(parsed.waitUntil).toBe('LOAD');
-    expect(parsed.proxyRotation).toBe('RECOMMENDED');
+    expect(parsed.waitUntil).toBe('load');
+    expect(parsed.proxyRotation).toBe('recommended');
     expect(parsed.maxConcurrency).toBe(50);
     expect(parsed.maxRequestRetries).toBe(3);
     expect(parsed.pageLoadTimeoutSecs).toBe(60);
@@ -49,10 +49,10 @@ describe('ContextractorInput', () => {
       maxPagesPerCrawl: 5,
       maxCrawlingDepth: 2,
       headless: false,
-      crawlerType: 'playwright:firefox' as const,
+      crawlerType: 'playwright-firefox' as const,
       renderingTypeDetectionPercentage: 20,
-      waitUntil: 'NETWORKIDLE' as const,
-      proxyRotation: 'PER_REQUEST' as const,
+      waitUntil: 'networkidle' as const,
+      proxyRotation: 'per-request' as const,
       maxScrollHeightPixels: 0,
       save: ['txt', 'original'] as const,
       saveDestination: ['dataset'] as const,
@@ -62,10 +62,10 @@ describe('ContextractorInput', () => {
     expect(parsed.maxPagesPerCrawl).toBe(5);
     expect(parsed.maxCrawlingDepth).toBe(2);
     expect(parsed.headless).toBe(false);
-    expect(parsed.crawlerType).toBe('playwright:firefox');
+    expect(parsed.crawlerType).toBe('playwright-firefox');
     expect(parsed.renderingTypeDetectionPercentage).toBe(20);
-    expect(parsed.waitUntil).toBe('NETWORKIDLE');
-    expect(parsed.proxyRotation).toBe('PER_REQUEST');
+    expect(parsed.waitUntil).toBe('networkidle');
+    expect(parsed.proxyRotation).toBe('per-request');
     expect(parsed.maxScrollHeightPixels).toBe(0);
     expect(parsed.save).toEqual(['txt', 'original']);
     expect(parsed.saveDestination).toEqual(['dataset']);

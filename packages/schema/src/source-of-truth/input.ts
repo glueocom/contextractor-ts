@@ -34,10 +34,10 @@ export const ContextractorInput = z.object({
     }),
 
   crawlerType: z
-    .enum(['playwright:adaptive', 'playwright:firefox', 'playwright:chromium', 'cheerio'])
-    .default('playwright:adaptive')
+    .enum(['playwright-adaptive', 'playwright-firefox', 'playwright-chromium', 'cheerio'])
+    .default('playwright-adaptive')
     .describe(
-      'Browser engine or HTTP client for crawling. playwright:adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS).',
+      'Browser engine or HTTP client for crawling. playwright-adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS).',
     )
     .meta({
       title: 'Crawler type',
@@ -111,22 +111,22 @@ export const ContextractorInput = z.object({
     .meta({ title: 'Use sitemaps' }),
 
   deduplication: z
-    .enum(['minimal', 'basic', 'full'])
-    .default('basic')
+    .enum(['none', 'url', 'content-hash'])
+    .default('url')
     .describe(
       "Deduplication level applied on top of Crawlee's built-in URL deduplication. " +
-        'basic (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
-        'full: also skip pages whose extracted text content matches a previously extracted page. ' +
-        "minimal: disable additional deduplication — only Crawlee's URL dedup remains active.",
+        'url (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
+        'content-hash: also skip pages whose extracted text content matches a previously extracted page. ' +
+        "none: disable additional deduplication — only Crawlee's URL dedup remains active.",
     )
     .meta({
       title: 'Deduplication',
       ...apifyMeta({
         editor: 'select',
         enumTitles: [
-          'Minimal — URL only',
-          'Basic — canonical URL (default)',
-          'Full — canonical URL + content hash',
+          'None — URL only',
+          'URL — canonical URL (default)',
+          'Content hash — canonical URL + content hash',
         ],
       }),
     }),
@@ -339,10 +339,10 @@ export const ContextractorInput = z.object({
     }),
 
   proxyRotation: z
-    .enum(['RECOMMENDED', 'PER_REQUEST', 'UNTIL_FAILURE'])
-    .default('RECOMMENDED')
+    .enum(['recommended', 'per-request', 'until-failure'])
+    .default('recommended')
     .describe(
-      'Proxy rotation strategy. RECOMMENDED automatically picks the best proxies. PER_REQUEST uses a new proxy for each request. UNTIL_FAILURE uses one proxy until it fails.',
+      'Proxy rotation strategy. recommended automatically picks the best proxies. per-request uses a new proxy for each request. until-failure uses one proxy until it fails.',
     )
     .meta({
       title: 'Proxy rotation',
@@ -459,16 +459,16 @@ export const ContextractorInput = z.object({
     .meta({ title: 'Dynamic content wait', ...apifyMeta({ unit: 'seconds' }) }),
 
   waitUntil: z
-    .enum(['NETWORKIDLE', 'LOAD', 'DOMCONTENTLOADED'])
-    .default('LOAD')
+    .enum(['load', 'domcontentloaded', 'networkidle', 'commit'])
+    .default('load')
     .describe(
-      'When to consider navigation finished. NETWORKIDLE waits for 500ms of network silence (best for JS-heavy SPAs, slower); LOAD waits for the load event (default, good for most articles); DOMCONTENTLOADED is fastest but may fire before client-side rendering completes.',
+      'When to consider navigation finished. networkidle waits for 500ms of network silence (best for JS-heavy SPAs, slower); load waits for the load event (default, good for most articles); domcontentloaded is fastest but may fire before client-side rendering completes; commit fires when network response is received and the document has started loading.',
     )
     .meta({
       title: 'Navigation wait until',
       ...apifyMeta({
         editor: 'select',
-        enumTitles: ['Network idle', 'Load event', 'DOM content loaded'],
+        enumTitles: ['Load event', 'DOM content loaded', 'Network idle', 'Commit'],
         sectionCaption: 'Performance and limits',
       }),
     }),

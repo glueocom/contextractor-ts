@@ -96,7 +96,7 @@ describe('Proxy Rotation - Apify Actor', () => {
       proxyConfiguration: {
         proxyUrls: sim.ports.map((port) => `http://127.0.0.1:${port}`),
       },
-      proxyRotation: 'RECOMMENDED',
+      proxyRotation: 'recommended',
     });
 
     expect(
@@ -119,7 +119,7 @@ describe('Proxy Rotation - Apify Actor', () => {
     ).toBe(true);
   });
 
-  it('should rotate proxies with PER_REQUEST mode', async () => {
+  it('should rotate proxies with per-request mode', async () => {
     const result = await runActor(storageDir, {
       startUrls: [{ url: 'http://example.com/1' }, { url: 'http://example.com/2' }],
       maxRequestsPerCrawl: 2,
@@ -128,7 +128,7 @@ describe('Proxy Rotation - Apify Actor', () => {
       proxyConfiguration: {
         proxyUrls: sim.ports.map((port) => `http://127.0.0.1:${port}`),
       },
-      proxyRotation: 'PER_REQUEST',
+      proxyRotation: 'per-request',
     });
 
     expect(

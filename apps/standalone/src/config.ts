@@ -6,12 +6,6 @@ export type SaveFormat = 'markdown' | 'html' | 'txt' | 'json' | 'original';
 
 const SORTED_SAVE_FORMATS = ['html', 'json', 'markdown', 'original', 'txt'] as const;
 
-const WAIT_UNTIL_MAP = {
-  NETWORKIDLE: 'networkidle',
-  LOAD: 'load',
-  DOMCONTENTLOADED: 'domcontentloaded',
-} as const;
-
 function isSaveFormat(value: string): value is SaveFormat {
   switch (value) {
     case 'markdown':
@@ -55,9 +49,9 @@ interface CrawlConfig {
   targetLanguage: string;
 
   // Browser.
-  crawlerType: 'playwright:adaptive' | 'playwright:firefox' | 'playwright:chromium' | 'cheerio';
+  crawlerType: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   renderingTypeDetectionPercentage: number;
-  waitUntil: 'networkidle' | 'load' | 'domcontentloaded';
+  waitUntil: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   pageLoadTimeout: number;
   ignoreCors: boolean;
   closeCookieModals: boolean;
@@ -89,7 +83,7 @@ interface CrawlConfig {
   softWaitForSelector: string;
 
   // Deduplication.
-  deduplication: 'minimal' | 'basic' | 'full';
+  deduplication: 'none' | 'url' | 'content-hash';
 
   // Output formats.
   save: SaveFormat[];
@@ -103,7 +97,7 @@ export interface CliOnlyOverrides {
   urls: string[];
   save: SaveFormat[];
   proxyUrls: string[];
-  proxyRotation?: 'RECOMMENDED' | 'PER_REQUEST' | 'UNTIL_FAILURE';
+  proxyRotation?: 'recommended' | 'per-request' | 'until-failure';
 }
 
 // TODO(phase-2): hoist this projection into `@contextractor/schema` so the
@@ -121,7 +115,7 @@ export function buildCrawlConfig(
     crawlDepth: input.maxCrawlingDepth,
     crawlerType: input.crawlerType,
     renderingTypeDetectionPercentage: input.renderingTypeDetectionPercentage,
-    waitUntil: WAIT_UNTIL_MAP[input.waitUntil],
+    waitUntil: input.waitUntil,
     pageLoadTimeout: input.pageLoadTimeoutSecs,
     ignoreCors: input.ignoreCorsAndCsp,
     closeCookieModals: input.closeCookieModals,
