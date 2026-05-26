@@ -1,159 +1,148 @@
-# Enum Value Casing — Audit and Auto-Fix
+# Enum Casing — Variant B: Unify on kebab-case everywhere
 
-> **TLDR**: Audits every enum value in the Zod source-of-truth and generated `input_schema.json` against the Apify casing convention (SCREAMING_SNAKE_CASE for runtime/operational modes; lowercase / kebab-case / colon-namespaced for content selection, format identifiers, engine identifiers, and Apify resource identifiers). Auto-fixes any violation found — updates the Zod enum, regenerates the JSON schema, and updates every downstream reference (CLI parser, config translation, tests, READMEs). Trafilatura's API casing is explicitly NOT a consideration — see the note below.
+> **TLDR**: Make every enum value that `contextractor` itself defines kebab-case, identically across the Apify actor input schema, the npm library types, and the standalone CLI. The only values that stay SCREAMING_SNAKE_CASE are the genuinely-foreign Apify platform constants (proxy group names like `RESIDENTIAL`/`GOOGLE_SERP`/`DATACENTER`, and `resourcePermissions` `READ`/`WRITE`) — and those are NOT contextractor enums; they're handled by the built-in `editor: "proxy"` and passed through verbatim. This is the "one vocabulary across all three surfaces" variant. `proxyRotation` becomes kebab (`recommended | per-request | until-failure`) because contextractor owns it — the Apify platform never reads it; it is mapped to Crawlee's `ProxyConfiguration` internally.
 
 > **Note:** This is a greenfield project — no backward compatibility requirements.
 
-Companion research:
-- `prompts/2026-05-19-cli-proxy-config-consolidation/context/enum-casing-research-2026-05.md` — primary report, dual-convention rule derivation
-- `prompts/2026-05-19-cli-proxy-config-consolidation/context/enum-casing-unified-research-2026-05.md` — full-unification alternative (rejected)
+Companion research (read for the full rationale and the foreign-constant boundary rule):
+- `prompts/2026-05-19-cli-proxy-config-consolidation/context/enum-casing-research-2026-05.md`
+- `prompts/2026-05-19-cli-proxy-config-consolidation/context/enum-casing-unified-research-2026-05.md`
 
 ## Skills and Agents
 
 - `apify-schemas` skill — schema field inspection and gen-input-schema
-- `ts-pro` — TypeScript edits to Zod source, CLI parser, config translation, and tests
+- `ts-pro` — TypeScript edits to Zod source, CLI parser, config translation, tests
 
 ---
 
-## The Apify casing convention
+## The rule for Variant B
 
-Apify's first-party actors follow a consistent dual pattern. This is not formally documented in any spec, but it is observable across every first-party actor and is the convention `contextractor` targets.
+There are exactly two categories of enum value. Classify every value into one, then apply the casing:
 
-**SCREAMING_SNAKE_CASE** — actor-internal operational / runtime mode. Examples from `apify/playwright-scraper`, `apify/web-scraper`, `apify/cheerio-scraper`, `apify/puppeteer-scraper`:
+1. **Owned by contextractor → kebab-case.** Any value that contextractor defines, reads, validates, and maps internally. The Apify platform never matches it verbatim. These are unified to kebab-case across ALL surfaces (actor schema, library, CLI). Includes: `engine`/`crawlerType`, `mode`, `save`, `deduplication`, `saveDestination`, `waitUntil`, and **`proxyRotation`**.
 
-- `proxyRotation`: `RECOMMENDED | PER_REQUEST | UNTIL_FAILURE`
-- `runMode`: `PRODUCTION | DEVELOPMENT`
-- `breakpointLocation`: `NONE | BEFORE_GOTO | BEFORE_PAGE_FUNCTION | AFTER_PAGE_FUNCTION`
+2. **Foreign platform constant → preserved verbatim (SCREAMING_SNAKE).** Any value that the Apify platform itself matches byte-for-byte: proxy group identifiers (`RESIDENTIAL`, `GOOGLE_SERP`, `DATACENTER`, `SHADER`, `BUYPROXIES94952`) and `resourcePermissions` (`READ`, `WRITE`). These are NOT contextractor enums — they are emitted by the built-in `editor: "proxy"` / resource editors and forwarded to `Actor.createProxyConfiguration()` unchanged. Do NOT kebab them, do NOT declare them as your own `enum`, do NOT add a translation map.
 
-**lowercase / kebab-case / colon-namespaced** — content selection, format identifiers, engine identifiers, Apify resource identifiers. Examples:
-
-- `apify/website-content-crawler.crawlerType`: `playwright:adaptive | playwright:firefox | playwright:chrome | cheerio | jsdom`
-- `apify/website-content-crawler.htmlTransformer`: `readableText | readableTextIfPossible | extractus | defuddle | none`
-- `apify/playwright-scraper.waitUntil`: `load | domcontentloaded | networkidle`
-- `apify/playwright-scraper.launcher`: `chromium | firefox`
-- `apify/rag-web-browser.outputFormats`: `markdown | text | html`
-- `apify/rag-web-browser.scrapingTool`: `raw-http | browser-playwright`
-- `apify/instagram-scraper.resultsType`: `posts | comments | details | mentions | reels | stories`
-
-The distinguishing factor: runtime/operational *control* → SCREAMING; content/format/engine/resource *selection* → lowercase.
+The distinguishing test: *if I rename this value, does an Apify backend reject it?* If yes → foreign constant, leave it. If no → owned, kebab it.
 
 ---
 
-## Note on Trafilatura-originated fields
+## Step ANALYZE: Read every file that defines or consumes an enum
 
-The fields `mode` (corresponds to Trafilatura's `Extractor.focus`) and `save` (corresponds to Trafilatura's `--format` output) have analogs in the Trafilatura Python library. **Their casing in this schema is decided by the Apify convention and by project-internal consistency with the schema's other content-selection fields — not by Trafilatura's API casing.**
+Read all of these before editing:
 
-If the Apify pattern or project consistency ever required a casing that differed from Trafilatura's lowercase values, the project's casing would win, and a small translation map at the Python sidecar boundary would be acceptable. As it happens, both `mode` and `save` resolve to lowercase under Apify rules, which incidentally coincides with Trafilatura's lowercase — but the coincidence is not the reason for the choice. Do not cite "matches Trafilatura" as a justification anywhere in this prompt's output; cite the Apify precedent and the project's lowercase majority instead.
-
----
-
-## Step ANALYZE: Read every file that touches an enum
-
-Read all of these before making any edits:
-
-- `packages/schema/src/source-of-truth/input.ts` — Zod source of truth
+- `packages/schema/src/source-of-truth/input.ts` — Zod source of truth (actor + library)
 - `apps/apify-actor/.actor/input_schema.json` — generated Actor schema
-- `apps/apify-actor/src/config.ts` — schema → crawler translation; any remaining `*_MAP` constants
+- `apps/apify-actor/src/config.ts` — schema → crawler translation; any `*_MAP` constants
 - `apps/apify-actor/src/config.test.ts` — config translation tests
 - `apps/standalone/src/cliProgram.ts` — full file; `parse*` helpers; CLI flag definitions
-- `apps/standalone/README.md` — user-facing flag docs
-- `apps/standalone/SPEC.md` — flag spec
-- `packages/crawler/src/createCrawler.ts` — programmatic types
+- `apps/standalone/README.md` and `apps/standalone/SPEC.md` — flag docs
+- `packages/crawler/src/createCrawler.ts` — programmatic types and the proxy/rotation mapping into Crawlee `ProxyConfiguration`
 
-Confirm the Zod source and generated JSON agree on enum values for every field. If they diverge, regenerate the JSON before continuing (`pnpm --filter @contextractor/gen-input-schema start`).
-
----
-
-## Step AUDIT: Per-field compliance check
-
-For each enum field below, record the current casing in the Zod source and the verdict against the Apify convention. The project's lowercase majority (`crawlerType`, `deduplication`, `mode`, `save`, `saveDestination`, `waitUntil`) is the project-internal reference; `proxyRotation` is the documented SCREAMING exception.
-
-| Field | Apify pattern | Expected casing | Apify precedent | Project-internal alignment |
-|---|---|---|---|---|
-| `crawlerType` | engine identifier | lowercase + colon | `apify/website-content-crawler.crawlerType` | matches lowercase majority |
-| `deduplication` | content-selection mode | lowercase | `apify/instagram-scraper.resultsType` style | matches lowercase majority |
-| `mode` | content-quality selection | lowercase | `apify/website-content-crawler.htmlTransformer` style | matches lowercase majority |
-| `save` | file-format identifiers | lowercase | `apify/rag-web-browser.outputFormats` | matches lowercase majority |
-| `saveDestination` | Apify resource-type identifier | lowercase kebab | Apify REST paths `/v2/key-value-stores/...`, `/v2/datasets/...` | matches lowercase majority |
-| `proxyRotation` | runtime/operational mode | SCREAMING_SNAKE | `apify/playwright-scraper.proxyRotation` | documented SCREAMING exception |
-| `waitUntil` | engine setting | lowercase | `apify/playwright-scraper.waitUntil` | matches lowercase majority |
-
-For each row, mark ✅ if the current casing matches the expected pattern, ❌ if it does not.
-
-If any *new* enum field exists in the schema but is not listed in the table above, classify it using the convention's distinguishing factor (runtime/operational → SCREAMING; content/format/engine/resource → lowercase) and add it to the audit. Do not consider any upstream library's preferred casing when classifying a new field; classify it purely against the Apify pattern and project-internal lowercase majority.
+Confirm the Zod source and generated JSON agree on enum values for every field.
 
 ---
 
-## Step FIX: Auto-apply corrections
+## Step AUDIT: Classify and set target casing
 
-For each ❌ violation from the audit, apply the fix using the procedure that matches the field type. Do all edits with the `str_replace` / Edit tool — never use Write on an existing file. Use the `minimal-diff` rule: change only what is needed to flip the casing, leave surrounding code, formatting, and unrelated lines untouched.
-
-### Procedure A — field whose value is consumed only inside this repo
-
-Use this procedure for `proxyRotation`, `deduplication`, `mode`, `save`, `saveDestination`, `crawlerType`. These values flow from CLI / JSON input → Zod parse → internal switch / object construction; they are not forwarded as raw strings to a third-party API.
-
-1. **Update the Zod enum** in `packages/schema/src/source-of-truth/input.ts`. Change values and the `.default(...)` literal.
-2. **Update any internal `switch` / equality check** in `apps/apify-actor/src/config.ts`, `apps/standalone/src/cliProgram.ts`, and `packages/crawler/src/createCrawler.ts` that branches on the old literal. The Zod type now narrows to the new literal; TypeScript will error on the stale comparison.
-3. **Update tests** in `apps/apify-actor/src/config.test.ts` and any package-level tests that reference the old literal.
-4. **Update READMEs and SPEC.md** in `apps/standalone/` and `apps/apify-actor/` where the old literal appears.
-5. **Regenerate the JSON schema**: `pnpm --filter @contextractor/gen-input-schema start`. Confirm `apps/apify-actor/.actor/input_schema.json` reflects the new enum values.
-
-### Procedure B — field whose value is forwarded verbatim to a third-party library
-
-Use this procedure for `waitUntil` (forwarded to Playwright `page.goto({waitUntil})`).
-
-1. **Update the Zod enum** in `packages/schema/src/source-of-truth/input.ts`. New values and new `.default(...)` must match the upstream library's accepted strings exactly.
-2. **Remove any translation map** (e.g. `WAIT_UNTIL_MAP`) in `apps/apify-actor/src/config.ts`. The schema value now passes through verbatim: `waitUntil: input.waitUntil`.
-3. **Simplify any CLI parser** in `apps/standalone/src/cliProgram.ts` (e.g. `parseWaitUntil`) — it no longer needs to transform case, only validate.
-4. **Update tests** in `apps/apify-actor/src/config.test.ts`.
-5. **Update READMEs and SPEC.md** in `apps/standalone/` and `apps/apify-actor/` where the old literal appears.
-6. **Repo-wide grep** for stale literals:
-
-   ```bash
-   grep -rnE "NETWORKIDLE|DOMCONTENTLOADED|WAIT_UNTIL_MAP" --include="*.ts" --include="*.md" .
-   ```
-
-   Replace every match with the new lowercase literal or remove the reference if obsolete.
-7. **Regenerate the JSON schema**: `pnpm --filter @contextractor/gen-input-schema start`.
-
-### Procedure C — field whose value is forwarded to the Trafilatura Python sidecar
-
-Use this procedure for `mode` and `save` *if* they ever require a casing that differs from Trafilatura's lowercase values. Today they do not (both resolve to lowercase under Apify rules, which coincides with Trafilatura), so Procedure A applies. Procedure C is documented here only for future fields where the project's casing wins over Trafilatura's.
-
-1. Follow Procedure A.
-2. Add a small translation map at the Python sidecar boundary (e.g. inside `packages/extractor-python-sidecar/` or wherever the subprocess invocation lives) that maps the project's enum value to Trafilatura's expected string. Keep the map next to the subprocess call, not in the schema layer.
-3. Cover the map with a unit test in the sidecar package.
-
-### Step coverage of any current ❌
-
-Based on the audit table, the only field expected to be ❌ at the time this prompt runs is `waitUntil` — and only if SCHEMA-REVIEW (`global-schema-cli-review.md`) has not yet executed. If SCHEMA-REVIEW has already run, every field should be ✅ and Step FIX is a no-op. If SCHEMA-REVIEW has not run, apply Procedure B for `waitUntil` here; in that case do not also run SCHEMA-REVIEW's `waitUntil` change (the fix has already happened).
+| Field | Category | Target casing (all surfaces) | Notes |
+|---|---|---|---|
+| `crawlerType` | owned | kebab + colon-namespace allowed | `playwright-firefox` or keep `playwright:firefox` colon namespace (each segment lowercase). Prefer flattening colon → dash for strict unification: `playwright-firefox`, `playwright-adaptive`, `cheerio`. |
+| `deduplication` | owned | kebab | e.g. `none`, `url`, `content-hash` |
+| `mode` | owned | kebab | `precision`, `balanced`, `recall` |
+| `save` | owned | kebab | `txt`, `markdown`, `json`, `html`, `original` |
+| `saveDestination` | owned | kebab | `dataset`, `key-value-store` |
+| `proxyRotation` | **owned** | **kebab** | `recommended`, `per-request`, `until-failure`. Mapped to Crawlee `ProxyConfiguration` internally — Apify platform never reads this string. |
+| `waitUntil` | owned | kebab/lowercase | `load`, `dom-content-loaded`, `network-idle`, `commit`. Forwarded to Playwright with a dash-strip shim (see Step FIX). |
+| `apifyProxyGroups` (inside `proxyConfiguration`) | **foreign** | **leave SCREAMING_SNAKE** | `RESIDENTIAL`, `GOOGLE_SERP`, etc. Not a contextractor enum. Use built-in `editor: "proxy"`. |
+| `resourcePermissions` | **foreign** | **leave SCREAMING_SNAKE** | `READ`, `WRITE`. Platform-validated metadata. |
 
 ---
 
-## Step VERIFY: Mechanical checks
+## Step FIX: Apply Variant B
 
-Run these greps after Step FIX. Every check must pass.
+Use `str_replace` / Edit on existing files (never Write). Follow the `minimal-diff` rule.
+
+### B.1 — Update the Zod source of truth
+In `packages/schema/src/source-of-truth/input.ts`, set every OWNED enum and its `.default(...)` to kebab-case:
+
+```ts
+crawlerType: z.enum(['playwright-firefox', 'playwright-adaptive', 'cheerio']).default('playwright-firefox'),
+deduplication: z.enum(['none', 'url', 'content-hash']).default('url'),
+mode: z.enum(['precision', 'balanced', 'recall']).default('balanced'),
+save: z.enum(['txt', 'markdown', 'json', 'html', 'original']).default('markdown'),
+saveDestination: z.enum(['dataset', 'key-value-store']).default('dataset'),
+proxyRotation: z.enum(['recommended', 'per-request', 'until-failure']).default('recommended'),
+waitUntil: z.enum(['load', 'dom-content-loaded', 'network-idle', 'commit']).default('load'),
+```
+
+Do NOT touch `proxyConfiguration` (built-in `editor: "proxy"`) or any `resourcePermissions` field. Those keep `RESIDENTIAL`/`GOOGLE_SERP`/`READ`/`WRITE` verbatim.
+
+### B.2 — Update internal switches / equality checks
+Anywhere the code branches on an old literal (`'PER_REQUEST'`, `'NETWORKIDLE'`, etc.) in `apps/apify-actor/src/config.ts`, `apps/standalone/src/cliProgram.ts`, `packages/crawler/src/createCrawler.ts`, update to the new kebab literal. TypeScript will flag stale comparisons after the enum narrows.
+
+### B.3 — Map proxyRotation into Crawlee (not a passthrough)
+In the proxy wiring (`packages/crawler/src/createCrawler.ts` or `apps/apify-actor/src/config.ts`), translate the kebab `proxyRotation` value into Crawlee `ProxyConfiguration` behavior. Crawlee has no rotation enum — `per-request` means "do not pass a `sessionId`"; session-sticky means "pass a `sessionId`"; tiered/recommended maps to your default behavior. Implement as a small internal switch, NOT a string map exposed in the schema:
+
+```ts
+function applyRotation(rotation: ProxyRotation, opts: ProxyConfigurationOptions) {
+  switch (rotation) {
+    case 'per-request':   /* omit sessionId on newUrl */ break;
+    case 'until-failure': /* reuse sessionId until block */ break;
+    case 'recommended':   /* default Crawlee behavior */ break;
+  }
+}
+```
+
+### B.4 — waitUntil → Playwright shim
+Playwright's `page.goto({ waitUntil })` accepts `'load' | 'domcontentloaded' | 'networkidle' | 'commit'` (no dashes). Add ONE boundary shim at the Playwright call site — not in the schema layer:
+
+```ts
+const toPlaywrightWaitUntil = (v: WaitUntil) => v.replace(/-/g, '') as
+  'load' | 'domcontentloaded' | 'networkidle' | 'commit';
+```
+
+If you would rather avoid even this shim, keep `waitUntil` values dash-free (`domcontentloaded`, `networkidle`) — that is still kebab-compatible (single lowercase tokens) and matches Playwright verbatim. Pick one approach and apply it consistently across actor + standalone. **Document the choice in the prompt output.**
+
+### B.5 — saveDestination → Apify SDK opener
+`key-value-store` / `dataset` are owned (kebab) but map to SDK methods. One switch:
+
+```ts
+const openStore = (d: SaveDestination) =>
+  d === 'key-value-store' ? Actor.openKeyValueStore() : Actor.openDataset();
+```
+
+### B.6 — Leave foreign constants alone
+Confirm `proxyConfiguration` uses `editor: "proxy"` and that `apifyProxyGroups` values are passed straight into `Actor.createProxyConfiguration(input.proxyConfiguration)` without transformation. If contextractor exposes any proxy-group selector of its own, mirror Apify's SCREAMING spelling exactly — do not kebab it.
+
+### B.7 — Regenerate + propagate
+```bash
+pnpm --filter @contextractor/gen-input-schema start
+```
+Update `apps/standalone/README.md`, `apps/standalone/SPEC.md`, `apps/apify-actor/README.md`, and `config.test.ts` so every documented/expected literal is the new kebab form. CLI flags read identically: `--proxy-rotation per-request`, `--wait-until network-idle`, `--save-destination key-value-store`.
+
+---
+
+## Step VERIFY
 
 ```bash
-# 1. SCREAMING enum values in the Zod source — only proxyRotation should match.
+# 1. No SCREAMING enum values remain in the Zod source (proxy groups are NOT enums here).
 grep -nE "z\.enum\(\[\s*'[A-Z_]+'" packages/schema/src/source-of-truth/input.ts
-# Expected: exactly one match, on the proxyRotation line.
+# Expected: no matches. proxyRotation is now kebab.
 
-# 2. Confirm waitUntil is lowercase in the generated schema.
-grep -A6 '"waitUntil"' apps/apify-actor/.actor/input_schema.json | grep -i '"enum"'
-# Expected: ["load", "domcontentloaded", "networkidle"] (order may vary)
-
-# 3. Confirm proxyRotation remains SCREAMING in the generated schema.
+# 2. proxyRotation is kebab in the generated schema.
 grep -A6 '"proxyRotation"' apps/apify-actor/.actor/input_schema.json | grep -i '"enum"'
-# Expected: ["RECOMMENDED", "PER_REQUEST", "UNTIL_FAILURE"]
+# Expected: ["recommended", "per-request", "until-failure"]
 
-# 4. Confirm WAIT_UNTIL_MAP is gone from the schema-translation layer. A
-#    small translation map at the Python sidecar boundary for Trafilatura is
-#    acceptable and not checked here.
-grep -rnE "WAIT_UNTIL_MAP" apps/apify-actor/src/ packages/schema/
-# Expected: no matches.
+# 3. Foreign constants are still verbatim where used (proxyConfiguration is built-in editor; groups pass through).
+grep -rnE "RESIDENTIAL|GOOGLE_SERP|DATACENTER" apps/apify-actor/src/ packages/crawler/src/
+# Expected: only appears (if at all) as pass-through to createProxyConfiguration, never inside a z.enum.
 
-# 5. Confirm Zod source and generated JSON agree on enum values per field.
+# 4. No schema-layer translation maps for owned values.
+grep -rnE "WAIT_UNTIL_MAP|PROXY_ROTATION_MAP|MODE_MAP" apps/ packages/
+# Expected: no matches. (Internal switches and the Playwright dash-strip shim are allowed; named *_MAP schema tables are not.)
+
+# 5. Zod ↔ generated JSON agree.
 node -e "
 const j = require('./apps/apify-actor/.actor/input_schema.json');
 for (const [k, v] of Object.entries(j.properties)) {
@@ -161,58 +150,35 @@ for (const [k, v] of Object.entries(j.properties)) {
   if (v.items && v.items.enum) console.log(k + '[items]', JSON.stringify(v.items.enum));
 }
 "
-# Expected: prints each enum field; values must match the audit table above.
 ```
-
-If any check fails, return to Step FIX and apply the missing edit. Do not exit Step VERIFY with any ❌.
 
 ---
 
-## Step TEST-LOCAL: Build and test
+## Step TEST-LOCAL
 
 ```bash
-pnpm build
-pnpm fix
-pnpm lint
-pnpm test
+pnpm build && pnpm fix && pnpm lint && pnpm test
 ```
-
-Fix any TypeScript errors (most likely: stale enum literals in tests or in switch statements that the compiler now flags). Re-run until clean.
-
-After build, spot-check the CLI:
+Fix TypeScript errors from stale literals until clean. Then spot-check both surfaces:
 
 ```bash
 CLI="apps/standalone/dist/cli.js"
-node "$CLI" extract --wait-until networkidle --help            # confirm accepted
-node "$CLI" extract --wait-until NETWORKIDLE https://example.com  # confirm clear error
-node "$CLI" extract --proxy-rotation RECOMMENDED --help           # confirm accepted (SCREAMING preserved)
+node "$CLI" extract --proxy-rotation per-request --wait-until network-idle --help   # accepted
+node "$CLI" extract --proxy-rotation PER_REQUEST https://example.com                # clear error
 ```
 
 ---
 
-## Step REPORT: Print the final state
-
-Print one of the following:
-
-**On full compliance (initial audit was ✅ for all fields, or Step FIX brought everything to ✅):**
+## Step REPORT
 
 ```
-✅ PASS — all enum fields match the Apify casing convention.
+✅ Variant B applied — kebab-case unified across actor schema, library, and CLI.
 
-Fields audited: crawlerType, deduplication, mode, save, saveDestination, proxyRotation, waitUntil
-Fixes applied: <list, or "none" if initial audit was already PASS>
+Owned enums migrated to kebab: <list>
+proxyRotation: now kebab (recommended | per-request | until-failure), mapped to Crawlee internally.
+waitUntil approach: <"dash-strip shim" | "dash-free values">
+Foreign constants left verbatim (NOT contextractor enums): RESIDENTIAL/GOOGLE_SERP/DATACENTER (proxy groups), READ/WRITE (resourcePermissions)
+Translation maps removed: <list, e.g. WAIT_UNTIL_MAP>
 ```
 
-**On failure (Step FIX could not bring every field to ✅, e.g. due to test failures or build errors):**
-
-```
-❌ FAIL — auto-fix incomplete.
-
-Remaining violations:
-  - <field>: current=<current values>, expected=<expected casing>, blocker=<reason>
-  - ...
-```
-
-In a FAIL state, leave the working tree in whatever partial state the fix reached so the user can inspect.
-
-Leave any commit / branch operations to the caller — this prompt does not commit.
+This prompt does not commit. Leave branch/commit operations to the caller.
