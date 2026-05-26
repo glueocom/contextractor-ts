@@ -264,6 +264,42 @@ node "$CLI" extract --wait-until network-idle https://example.com               
 
 ---
 
+## Step PLATFORM-TEST
+
+Run `/platform:deploy-and-test` to push to `glueo/contextractor-test`, wait for the build, auto-fix any build errors, and run a test crawl. The command is fully automated — no confirmation required at any step.
+
+```bash
+# Invoked as a slash command in Claude Code:
+/platform:deploy-and-test
+```
+
+The command handles: local validation (`pnpm build && pnpm lint && pnpm test && cargo build && cargo clippy`), `git push origin HEAD:dev`, waiting for the Apify build, fetching and fixing build errors, retrying until the build is `SUCCEEDED`, then running a test crawl.
+
+### Enum-specific test crawl input
+
+After the build succeeds, the automated test crawl will fire. To specifically validate the kebab migration, override the default test input to use the new enum values explicitly:
+
+```json
+{
+  "startUrls": [{ "url": "https://en.wikipedia.org/wiki/Web_scraping" }],
+  "maxPagesPerCrawl": 1,
+  "waitUntil": "load",
+  "proxyRotation": "recommended",
+  "save": ["markdown"]
+}
+```
+
+The platform must accept `"proxyRotation": "recommended"` (kebab) and `"waitUntil": "load"` (flat lowercase) without validation errors. If the Apify Console input form rejects either value, the `input_schema.json` regeneration in step B.7 was incomplete — re-run `pnpm --filter @contextractor/gen-input-schema start` and push again.
+
+### Autofix loop
+
+If the build fails, diagnose using `apify builds log <BUILD_ID>` and apply fixes from the error reference table in `.claude/commands/platform/deploy-and-test.md`, then repeat from local validation. Common causes after an enum migration:
+
+- **`Invalid input schema`** — a stale SCREAMING literal in `apps/apify-actor/.actor/input_schema.json`; re-run gen-input-schema
+- **TypeScript compile error** — a missed SCREAMING literal in a switch/comparison (run `pnpm build` to surface it)
+
+---
+
 ## Step REPORT
 
 ```
