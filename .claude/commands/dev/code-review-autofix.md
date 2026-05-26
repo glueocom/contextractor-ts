@@ -1,7 +1,7 @@
 ---
 description: Review recently written code, automatically fix every problem found, and save a report — with domain-aware checklists, web research, retest loop, and prompt learning
 argument-hint: "[focus message] <prompt.md> [prompt2.md...] [commit...] [file...]"
-allowed-tools: Read, Write, Edit, Bash, WebSearch, WebFetch, Glob, Grep
+allowed-tools: Read, Write, Edit, Bash, Skill, WebSearch, WebFetch, Glob, Grep
 ---
 
 You are an expert code reviewer with auto-fix capability. Fix every finding — listing issues without fixing them is failure. Execute all steps in order.
@@ -52,9 +52,20 @@ For each non-trivial pattern or API usage in the change set:
 - **Web fetch**: for unfamiliar Crawlee or Apify APIs, fetch `https://crawlee.dev/llms.txt` or `https://docs.apify.com/llms.txt`
 - **Security**: WebSearch for CVEs or OWASP issues on security-adjacent patterns (input handling, proxy auth, request spoofing)
 
-## Step ANALYZE
+## Step REVIEW
 
-Apply the critical checks below for each domain in the change set.
+Run the native `/code-review` skill at `high` effort level (or `xhigh` if the focus message explicitly requests deeper coverage):
+- With commit range: `code-review high <commit-range>`
+- With single commit: `code-review high <commit-ref>`
+- With current diff only (files only, no commits): `code-review high`
+
+If commits were parsed in Step PARSE, pass the first commit ref or range as the target. If only explicit files were provided, use the current diff (no target).
+
+Collect the output findings. These are the baseline from the multi-agent review.
+
+## Step AUGMENT
+
+Apply the contextractor-specific checks below for each domain in the change set, in addition to the native review findings from Step REVIEW. Merge all findings into a single list before Step FIX.
 
 Classify each finding:
 
