@@ -34,11 +34,11 @@ describe('ContextractorInput', () => {
     ).toThrow();
   });
 
-  it('rejects negative maxPagesPerCrawl', () => {
+  it('rejects negative maxCrawlPages', () => {
     expect(() =>
       ContextractorInput.parse({
         startUrls: [{ url: 'https://example.com' }],
-        maxPagesPerCrawl: -1,
+        maxCrawlPages: -1,
       }),
     ).toThrow();
   });
@@ -46,8 +46,8 @@ describe('ContextractorInput', () => {
   it('round-trips a representative Apify run payload', () => {
     const payload = {
       startUrls: [{ url: 'https://example.com' }],
-      maxPagesPerCrawl: 5,
-      maxCrawlingDepth: 2,
+      maxCrawlPages: 5,
+      maxCrawlDepth: 2,
       headless: false,
       crawlerType: 'playwright-firefox' as const,
       renderingTypeDetectionPercentage: 20,
@@ -59,8 +59,8 @@ describe('ContextractorInput', () => {
     };
     const parsed = ContextractorInput.parse(payload);
     expect(parsed.startUrls).toEqual(payload.startUrls);
-    expect(parsed.maxPagesPerCrawl).toBe(5);
-    expect(parsed.maxCrawlingDepth).toBe(2);
+    expect(parsed.maxCrawlPages).toBe(5);
+    expect(parsed.maxCrawlDepth).toBe(2);
     expect(parsed.headless).toBe(false);
     expect(parsed.crawlerType).toBe('playwright-firefox');
     expect(parsed.renderingTypeDetectionPercentage).toBe(20);

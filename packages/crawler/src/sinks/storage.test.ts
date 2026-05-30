@@ -3,7 +3,7 @@ import {
   buildFailedRecord,
   buildSkippedRecord,
   buildSuccessRecord,
-  type ContentRef,
+  type ContentNode,
   kvsKey,
 } from './storage.js';
 import type { ExtractionResult } from './types.js';
@@ -59,7 +59,7 @@ describe('kvsKey', () => {
 });
 
 describe('buildSuccessRecord — key-value-store only', () => {
-  it('writes blobs and references them as ContentRefs', async () => {
+  it('writes blobs and references them as ContentNodes ({hash, bytes, key})', async () => {
     const kvs = localKvs();
     const rec = await buildSuccessRecord(RESULT, {
       kvs,
@@ -74,16 +74,18 @@ describe('buildSuccessRecord — key-value-store only', () => {
     expect(rec.metadata).toEqual(RESULT.metadata);
     expect(rec.crawl).toEqual({ depth: 1, referrerUrl: 'https://example.com/' });
 
-    const txt = rec.txt as ContentRef;
+    const txt = rec.txt as ContentNode;
     expect(txt.key).toMatch(/^txt-[0-9a-f]{32}\.txt$/);
     expect(typeof txt.hash).toBe('string');
+    expect(typeof txt.bytes).toBe('number');
+    expect(txt.content).toBeUndefined(); // referenced, not inlined
     expect(txt.url).toBeUndefined();
-    expect(rec.txtHash).toBeUndefined();
+    expect(rec.txtHash).toBeUndefined(); // no top-level *Hash any more
 
-    const original = rec.original as ContentRef;
+    const original = rec.original as ContentNode;
     expect(original.key).toMatch(/^original-[0-9a-f]{32}\.html$/);
     expect(original.hash).toBe('rawhash');
-    expect(original.length).toBe(16);
+    expect(original.bytes).toBe(16);
     expect(rec.originalHash).toBeUndefined();
 
     const keys = kvs.calls.map((c) => c.key);
@@ -94,7 +96,7 @@ describe('buildSuccessRecord — key-value-store only', () => {
 });
 
 describe('buildSuccessRecord — dataset only', () => {
-  it('inlines content with per-format hashes and writes nothing to the KVS', async () => {
+  it('inlines content as {hash, bytes, content} and writes nothing to the KVS', async () => {
     const kvs = localKvs();
     const rec = await buildSuccessRecord(RESULT, {
       kvs,
@@ -104,17 +106,23 @@ describe('buildSuccessRecord — dataset only', () => {
     });
 
     expect(kvs.calls).toHaveLength(0);
-    expect(rec.txt).toBe('plain');
-    expect(rec.txtHash as string).toHaveLength(32);
-    expect(rec.markdown).toBe('# md');
-    // original is never inlined — always a {hash, length} reference (no key/url with no KVS)
-    expect(rec.original).toEqual({ hash: 'rawhash', length: 16 });
+
+    const txt = rec.txt as ContentNode;
+    expect(txt.content).toBe('plain');
+    expect(typeof txt.hash).toBe('string');
+    expect(typeof txt.bytes).toBe('number');
+    expect(txt.key).toBeUndefined();
+    expect(rec.txtHash).toBeUndefined();
+
+    expect((rec.markdown as ContentNode).content).toBe('# md');
+    // original is inlined too (its raw HTML goes into `content`)
+    expect(rec.original).toEqual({ hash: 'rawhash', bytes: 16, content: '<html>raw</html>' });
     expect(rec.originalHash).toBeUndefined();
   });
 });
 
 describe('buildSuccessRecord — original always present', () => {
-  it('emits original as {hash, length} even when "original" is not in save', async () => {
+  it('emits original as {hash, bytes} even when "original" is not in save', async () => {
     const kvs = localKvs();
     const rec = await buildSuccessRecord(RESULT, {
       kvs,
@@ -124,13 +132,13 @@ describe('buildSuccessRecord — original always present', () => {
     });
 
     expect(rec.originalHash).toBeUndefined();
-    expect(rec.original).toEqual({ hash: 'rawhash', length: 16 });
+    expect(rec.original).toEqual({ hash: 'rawhash', bytes: 16 });
     expect(kvs.calls.some((c) => c.key.startsWith('original-'))).toBe(false);
   });
 });
 
 describe('buildSuccessRecord — both destinations', () => {
-  it('inlines formats (dataset precedence) but routes original to the KVS', async () => {
+  it('inlines all content (dataset precedence), writing nothing to the KVS', async () => {
     const kvs = localKvs();
     const rec = await buildSuccessRecord(RESULT, {
       kvs,
@@ -139,15 +147,15 @@ describe('buildSuccessRecord — both destinations', () => {
       saveOriginal: true,
     });
 
-    expect(rec.txt).toBe('plain'); // inline (dataset wins)
-    expect((rec.original as ContentRef).key).toMatch(/^original-[0-9a-f]{32}\.html$/);
-    const keys = kvs.calls.map((c) => c.key);
-    expect(keys.every((k) => k.startsWith('original-'))).toBe(true);
+    expect(kvs.calls).toHaveLength(0);
+    expect((rec.txt as ContentNode).content).toBe('plain');
+    expect((rec.original as ContentNode).content).toBe('<html>raw</html>');
+    expect((rec.original as ContentNode).key).toBeUndefined();
   });
 });
 
 describe('buildSuccessRecord — public URL', () => {
-  it('sets ContentRef.url only when the store exposes a public URL', async () => {
+  it('sets ContentNode.url only when the store exposes a public URL', async () => {
     const platform = await buildSuccessRecord(RESULT, {
       kvs: platformKvs(),
       toKvs: true,
@@ -161,11 +169,11 @@ describe('buildSuccessRecord — public URL', () => {
       saveOriginal: false,
     });
 
-    expect((platform.txt as ContentRef).url).toMatch(/^https:\/\//);
-    expect((local.txt as ContentRef).url).toBeUndefined();
+    expect((platform.txt as ContentNode).url).toMatch(/^https:\/\//);
+    expect((local.txt as ContentNode).url).toBeUndefined();
     // Same key and hash regardless of surface — only the url differs.
-    expect((platform.txt as ContentRef).key).toBe((local.txt as ContentRef).key);
-    expect((platform.txt as ContentRef).hash).toBe((local.txt as ContentRef).hash);
+    expect((platform.txt as ContentNode).key).toBe((local.txt as ContentNode).key);
+    expect((platform.txt as ContentNode).hash).toBe((local.txt as ContentNode).hash);
   });
 });
 

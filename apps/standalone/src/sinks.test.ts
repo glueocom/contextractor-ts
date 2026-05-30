@@ -1,4 +1,4 @@
-import type { ExtractionResult } from '@contextractor/crawler';
+import type { ContentNode, ExtractionResult } from '@contextractor/crawler';
 import { describe, expect, it, vi } from 'vitest';
 import { createCrawleeStorageSink } from './sinks.js';
 
@@ -42,7 +42,7 @@ function makeDataset() {
 }
 
 describe('createCrawleeStorageSink — KVS destination', () => {
-  it('writes content to KVS under {fmt}-{md5}.{ext} keys and pushes a record of ContentRefs', async () => {
+  it('writes content to KVS under {fmt}-{md5}.{ext} keys and pushes a record of content nodes', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -58,16 +58,17 @@ describe('createCrawleeStorageSink — KVS destination', () => {
     expect(keys.some((k) => /^txt-[0-9a-f]{32}\.txt$/.test(k))).toBe(true);
     expect(keys.some((k) => /^markdown-[0-9a-f]{32}\.md$/.test(k))).toBe(true);
 
-    // KVS-only still pushes a dataset record, with content as ContentRef objects.
+    // KVS-only still pushes a dataset record, with content as ContentNode objects.
     expect(dataset.items).toHaveLength(1);
     const item = dataset.items[0] as Record<string, unknown>;
-    const txt = item.txt as Record<string, unknown>;
+    const txt = item.txt as ContentNode;
     expect(typeof txt).toBe('object');
     expect(txt.key).toMatch(/^txt-[0-9a-f]{32}\.txt$/);
     expect(typeof txt.hash).toBe('string');
-    expect(typeof txt.length).toBe('number');
+    expect(typeof txt.bytes).toBe('number');
+    expect(txt.content).toBeUndefined(); // referenced, not inlined
     expect(txt.url).toBeUndefined(); // no public URL for local Crawlee storage
-    expect(item.txtHash).toBeUndefined(); // no inline hash in KVS mode
+    expect(item.txtHash).toBeUndefined(); // no top-level *Hash
   });
 
   it('writes original HTML to KVS under an original-{md5}.html key', async () => {
@@ -107,7 +108,7 @@ describe('createCrawleeStorageSink — KVS destination', () => {
 });
 
 describe('createCrawleeStorageSink — dataset destination', () => {
-  it('pushes a record with envelope, nested metadata, inline content and hashes', async () => {
+  it('pushes a record with envelope, nested metadata and inline content nodes', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -127,21 +128,21 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(item.status).toBe('success');
     expect(item.loadedAt).toMatch(/Z$/);
     expect(item.httpStatus).toBe(200);
-    // original is always a {hash, length} reference (raw HTML not stored in dataset-only mode).
+    // original (not in save here) is a {hash, bytes} reference — no content/key.
     expect(item.originalHash).toBeUndefined();
     expect(item.original).toEqual({
       hash: BASE_RESULT.rawHtmlHash,
-      length: BASE_RESULT.rawHtmlLength,
+      bytes: BASE_RESULT.rawHtmlLength,
     });
     expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
     // Metadata is nested, not spread at the top level.
     expect((item.metadata as Record<string, unknown>).title).toBe('Test');
     expect(item.title).toBeUndefined();
-    // Inline content + per-format hash.
-    expect(item.txt).toBe('Hello world');
-    expect(item.txtHash as string).toHaveLength(32);
-    expect(item.jsonHash).toBeUndefined();
-    expect(item.htmlHash).toBeUndefined();
+    // Inline content node: { hash, bytes, content }.
+    const txt = item.txt as ContentNode;
+    expect(txt.content).toBe('Hello world');
+    expect(typeof txt.bytes).toBe('number');
+    expect(item.txtHash).toBeUndefined();
   });
 
   it('url and loadedUrl are distinct when redirected', async () => {
@@ -183,10 +184,10 @@ describe('createCrawleeStorageSink — both destinations', () => {
     expect(kvs.calls).toHaveLength(0);
     expect(dataset.items).toHaveLength(1);
     const item = dataset.items[0] as Record<string, unknown>;
-    expect(item.txt).toBe('Hello world');
+    expect((item.txt as ContentNode).content).toBe('Hello world');
   });
 
-  it('still routes original to the KVS while inlining formats', async () => {
+  it('inlines original too (dataset precedence), skipping KVS', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -198,10 +199,11 @@ describe('createCrawleeStorageSink — both destinations', () => {
 
     await sink(BASE_RESULT);
 
-    expect(kvs.calls.some((c) => /^original-[0-9a-f]{32}\.html$/.test(c.key))).toBe(true);
+    expect(kvs.calls).toHaveLength(0);
     const item = dataset.items[0] as Record<string, unknown>;
-    expect(item.txt).toBe('Hello world'); // inline
-    expect((item.original as Record<string, unknown>).key).toMatch(/^original-[0-9a-f]{32}\.html$/);
+    expect((item.txt as ContentNode).content).toBe('Hello world');
+    expect((item.original as ContentNode).content).toBe('<html>raw</html>');
+    expect((item.original as ContentNode).key).toBeUndefined();
   });
 });
 

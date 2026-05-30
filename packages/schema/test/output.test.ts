@@ -11,7 +11,7 @@ const META = {
 };
 
 describe('ContextractorOutput discriminated union', () => {
-  it('parses a success record with KVS-style ContentRef content', () => {
+  it('parses a success record with key-value-store content nodes', () => {
     const record = {
       url: 'https://example.com/page',
       loadedUrl: 'https://example.com/page',
@@ -22,16 +22,16 @@ describe('ContextractorOutput discriminated union', () => {
       crawl: { depth: 0, referrerUrl: null },
       original: {
         hash: 'a'.repeat(32),
-        length: 89898,
+        bytes: 89898,
         key: 'original-x.html',
         url: 'https://api/o',
       },
-      markdown: { hash: 'b'.repeat(32), length: 123, key: 'markdown-x.md', url: 'https://api/x' },
+      markdown: { hash: 'b'.repeat(32), bytes: 123, key: 'markdown-x.md', url: 'https://api/x' },
     };
     expect(ContextractorOutput.parse(record)).toMatchObject({ status: 'success' });
   });
 
-  it('parses a success record with inline-string content and per-format hashes', () => {
+  it('parses a success record with inline content nodes', () => {
     const record = {
       url: 'https://example.com/page',
       loadedUrl: 'https://example.com/page',
@@ -40,11 +40,9 @@ describe('ContextractorOutput discriminated union', () => {
       metadata: { ...META, title: null },
       httpStatus: 200,
       crawl: { depth: 2, referrerUrl: 'https://example.com/' },
-      original: { hash: 'a'.repeat(32), length: 89898 },
-      markdown: '# Inline',
-      markdownHash: 'c'.repeat(32),
-      txt: 'Inline',
-      txtHash: 'd'.repeat(32),
+      original: { hash: 'a'.repeat(32), bytes: 89898, content: '<html>raw</html>' },
+      markdown: { hash: 'c'.repeat(32), bytes: 8, content: '# Inline' },
+      txt: { hash: 'd'.repeat(32), bytes: 6, content: 'Inline' },
     };
     expect(() => ContextractorOutput.parse(record)).not.toThrow();
   });

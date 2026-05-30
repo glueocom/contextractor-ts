@@ -35,20 +35,19 @@ describe('toDatasetSchema', () => {
     expect(ds.fields.crawl.properties.referrerUrl.type).toBe('string');
   });
 
-  it('represents the content union as the richer ContentRef object', () => {
+  it('represents each content field as a ContentNode object (no top-level *Hash)', () => {
     const ds = onDisk('dataset_schema.json');
-    expect(ds.fields.txt.properties.hash.type).toBe('string');
-    expect(ds.fields.txt.properties.key.type).toBe('string');
-    expect(ds.fields.txt.properties.url.type).toBe('string');
-  });
-
-  it('exposes original as a ContentRef object (no top-level originalHash)', () => {
-    const ds = onDisk('dataset_schema.json');
-    expect('originalHash' in ds.fields).toBe(false);
-    expect(ds.fields.original.type).toBe('object');
-    expect(ds.fields.original.properties.hash.type).toBe('string');
-    expect(ds.fields.original.properties.length.type).toBe('integer');
-    expect(ds.fields.original.properties.key.type).toBe('string');
+    for (const f of ['txt', 'markdown', 'json', 'html', 'original']) {
+      expect(ds.fields[f].type).toBe('object');
+      expect(ds.fields[f].properties.hash.type).toBe('string');
+      expect(ds.fields[f].properties.bytes.type).toBe('integer');
+      expect(ds.fields[f].properties.content.type).toBe('string');
+      expect(ds.fields[f].properties.key.type).toBe('string');
+      expect(ds.fields[f].properties.url.type).toBe('string');
+    }
+    for (const h of ['txtHash', 'markdownHash', 'jsonHash', 'htmlHash', 'originalHash']) {
+      expect(h in ds.fields).toBe(false);
+    }
   });
 
   it('enumerates failed and skipped fields', () => {

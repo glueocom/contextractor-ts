@@ -13,7 +13,7 @@ It owns the browser-facing pieces of the re-architecture:
 - Built-in scrolling via Crawlee `infiniteScroll()`
 - Shared sink core: `memorySink()`, `Sink<T>`, and the storage helpers
   (`kvsKey`, `buildSuccessRecord` / `buildFailedRecord` / `buildSkippedRecord`,
-  `ContentRef` / `KvsLike`) that assemble dataset records and derive KVS keys
+  `ContentNode` / `KvsLike`) that assemble dataset records and derive KVS keys
 
 Both the Apify Actor and the standalone CLI/lib are thin wrappers over the
 shared storage core, so their dataset and key-value-store output is identical:

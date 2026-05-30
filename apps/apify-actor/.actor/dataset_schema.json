@@ -73,20 +73,24 @@
           "type": "string",
           "description": "MD5 hex digest of the content"
         },
-        "length": {
+        "bytes": {
           "type": "integer",
-          "description": "Byte length of the content"
+          "description": "UTF-8 byte length of the content"
+        },
+        "content": {
+          "type": "string",
+          "description": "Inline content string. Present when saveDestination includes \"dataset\"."
         },
         "key": {
           "type": "string",
-          "description": "Key-value store key"
+          "description": "Key-value store key. Present when the content is stored in the key-value store."
         },
         "url": {
           "type": "string",
-          "description": "Public URL to the key-value store item"
+          "description": "Public URL to the key-value store item. Present when stored to a public store."
         }
       },
-      "description": "Reference to the raw page HTML. \"hash\" and \"length\" are always present; \"key\" and \"url\" are added when \"original\" is in save and the raw HTML is stored in the key-value store."
+      "description": "The raw page HTML. \"hash\" and \"bytes\" are always present. When \"original\" is in save, the raw HTML is included as \"content\" (saving to the dataset) or referenced by \"key\"/\"url\" (stored in the key-value store)."
     },
     "txt": {
       "type": "object",
@@ -95,17 +99,21 @@
           "type": "string",
           "description": "MD5 hex digest of the content"
         },
-        "length": {
+        "bytes": {
           "type": "integer",
-          "description": "Byte length of the content"
+          "description": "UTF-8 byte length of the content"
+        },
+        "content": {
+          "type": "string",
+          "description": "Inline content string. Present when saveDestination includes \"dataset\"."
         },
         "key": {
           "type": "string",
-          "description": "Key-value store key"
+          "description": "Key-value store key. Present when the content is stored in the key-value store."
         },
         "url": {
           "type": "string",
-          "description": "Public URL to the key-value store item"
+          "description": "Public URL to the key-value store item. Present when stored to a public store."
         }
       },
       "description": "Extracted plain text. Present when \"txt\" is in save."
@@ -117,17 +125,21 @@
           "type": "string",
           "description": "MD5 hex digest of the content"
         },
-        "length": {
+        "bytes": {
           "type": "integer",
-          "description": "Byte length of the content"
+          "description": "UTF-8 byte length of the content"
+        },
+        "content": {
+          "type": "string",
+          "description": "Inline content string. Present when saveDestination includes \"dataset\"."
         },
         "key": {
           "type": "string",
-          "description": "Key-value store key"
+          "description": "Key-value store key. Present when the content is stored in the key-value store."
         },
         "url": {
           "type": "string",
-          "description": "Public URL to the key-value store item"
+          "description": "Public URL to the key-value store item. Present when stored to a public store."
         }
       },
       "description": "Extracted Markdown. Present when \"markdown\" is in save."
@@ -139,17 +151,21 @@
           "type": "string",
           "description": "MD5 hex digest of the content"
         },
-        "length": {
+        "bytes": {
           "type": "integer",
-          "description": "Byte length of the content"
+          "description": "UTF-8 byte length of the content"
+        },
+        "content": {
+          "type": "string",
+          "description": "Inline content string. Present when saveDestination includes \"dataset\"."
         },
         "key": {
           "type": "string",
-          "description": "Key-value store key"
+          "description": "Key-value store key. Present when the content is stored in the key-value store."
         },
         "url": {
           "type": "string",
-          "description": "Public URL to the key-value store item"
+          "description": "Public URL to the key-value store item. Present when stored to a public store."
         }
       },
       "description": "Extracted structured JSON. Present when \"json\" is in save."
@@ -161,36 +177,24 @@
           "type": "string",
           "description": "MD5 hex digest of the content"
         },
-        "length": {
+        "bytes": {
           "type": "integer",
-          "description": "Byte length of the content"
+          "description": "UTF-8 byte length of the content"
+        },
+        "content": {
+          "type": "string",
+          "description": "Inline content string. Present when saveDestination includes \"dataset\"."
         },
         "key": {
           "type": "string",
-          "description": "Key-value store key"
+          "description": "Key-value store key. Present when the content is stored in the key-value store."
         },
         "url": {
           "type": "string",
-          "description": "Public URL to the key-value store item"
+          "description": "Public URL to the key-value store item. Present when stored to a public store."
         }
       },
       "description": "Cleaned extracted HTML. Present when \"html\" is in save."
-    },
-    "txtHash": {
-      "type": "string",
-      "description": "MD5 hex of inline txt. Present when saveDestination includes \"dataset\"."
-    },
-    "markdownHash": {
-      "type": "string",
-      "description": "MD5 hex of inline markdown. Present when saveDestination includes \"dataset\"."
-    },
-    "jsonHash": {
-      "type": "string",
-      "description": "MD5 hex of inline json. Present when saveDestination includes \"dataset\"."
-    },
-    "htmlHash": {
-      "type": "string",
-      "description": "MD5 hex of inline html. Present when saveDestination includes \"dataset\"."
     },
     "errorMessages": {
       "type": "array",

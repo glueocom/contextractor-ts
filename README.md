@@ -38,8 +38,8 @@ interface ContextractorInputType {
   startUrls: Array<{ url: string }>;
   crawlerType: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   renderingTypeDetectionPercentage: number;
-  globs: Array<{ glob: string }>;
-  excludes: Array<{ glob: string }>;
+  includeUrlGlobs: Array<{ glob: string }>;
+  excludeUrlGlobs: Array<{ glob: string }>;
   linkSelector: string;
   keepUrlFragments: boolean;
   useSitemaps: boolean;
@@ -47,9 +47,9 @@ interface ContextractorInputType {
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
-  maxPagesPerCrawl: number;
+  maxCrawlPages: number;
   maxResultsPerCrawl: number;
-  maxCrawlingDepth: number;
+  maxCrawlDepth: number;
   initialConcurrency: number;
   maxConcurrency: number;
   maxRequestRetries: number;

@@ -26,10 +26,16 @@ const KVS_SPECS: Record<ContentKind, KvsSpec> = {
 /** Output formats written from `result.formats` (everything except the raw original HTML). */
 const CONTENT_FORMATS: readonly OutputFormat[] = ['txt', 'markdown', 'json', 'html'];
 
-/** A reference to a content blob stored in the key-value store. */
-export interface ContentRef {
+/**
+ * A piece of content (an extracted format or the raw original HTML). `hash` +
+ * `bytes` are always present; `content` carries the inline string (dataset
+ * destination), while `key` + `url` reference the stored blob (key-value-store
+ * destination).
+ */
+export interface ContentNode {
   hash: string;
-  length: number;
+  bytes: number;
+  content?: string;
   key?: string;
   url?: string;
 }
@@ -48,26 +54,33 @@ export function kvsKey(kind: ContentKind, url: string): string {
 }
 
 /**
- * Write a content blob to the key-value store and return a `ContentRef`. `url`
- * is set only when the store exposes a public URL (the Apify platform); local
- * Crawlee storage has none, so `url` is omitted there.
+ * Build a `ContentNode` for one piece of content. The dataset destination wins
+ * when both are selected: `content` is inlined. Otherwise the blob is written to
+ * the key-value store and referenced by `key` (+ `url` when the store exposes a
+ * public URL — the Apify platform; local Crawlee storage has none).
  */
-async function putBlob(
+async function buildContentNode(
   kvs: KvsLike,
   kind: ContentKind,
   url: string,
   content: string,
-  info: { hash: string; length: number },
-): Promise<ContentRef> {
-  const spec = KVS_SPECS[kind];
-  const key = kvsKey(kind, url);
-  await kvs.setValue(key, content, { contentType: spec.contentType });
-  const ref: ContentRef = { hash: info.hash, length: info.length, key };
-  if (kvs.getPublicUrl) {
-    const publicUrl = await kvs.getPublicUrl(key);
-    if (publicUrl) ref.url = publicUrl;
+  info: { hash: string; bytes: number },
+  toKvs: boolean,
+  toDataset: boolean,
+): Promise<ContentNode> {
+  const node: ContentNode = { hash: info.hash, bytes: info.bytes };
+  if (toDataset) {
+    node.content = content;
+  } else if (toKvs) {
+    const key = kvsKey(kind, url);
+    await kvs.setValue(key, content, { contentType: KVS_SPECS[kind].contentType });
+    node.key = key;
+    if (kvs.getPublicUrl) {
+      const publicUrl = await kvs.getPublicUrl(key);
+      if (publicUrl) node.url = publicUrl;
+    }
   }
-  return ref;
+  return node;
 }
 
 export interface BuildSuccessRecordOpts {
@@ -78,17 +91,13 @@ export interface BuildSuccessRecordOpts {
 }
 
 /**
- * Assemble the `status: 'success'` dataset record for one extracted page,
- * shared by the Apify Actor and the standalone CLI/lib so their records are
- * identical. When an extracted format goes to the dataset it is inlined as a
- * string plus a `{fmt}Hash`; when it goes only to the key-value store it is a
- * `ContentRef`. The extracted formats prefer the dataset (inline) when both
- * destinations are selected.
- *
- * `original` is always a `ContentRef`: the raw HTML's `hash` and `length` are
- * always known, so they are always present. When `original` is in save and a
- * key-value store is a destination, the raw HTML blob is stored and `key` + `url`
- * are added. The raw HTML is never inlined into the dataset record.
+ * Assemble the `status: 'success'` dataset record for one extracted page, shared
+ * by the Apify Actor and the standalone CLI/lib so their records are identical.
+ * Every content field (`txt`/`markdown`/`json`/`html` and `original`) is a
+ * `ContentNode`: inlined as `content` for the dataset, or referenced by
+ * `key`/`url` for the key-value store (dataset wins when both are selected).
+ * `original` is always present (at least `{ hash, bytes }`); its raw HTML is
+ * included only when `original` is in save.
  */
 export async function buildSuccessRecord(
   result: ExtractionResult,
@@ -106,22 +115,32 @@ export async function buildSuccessRecord(
     crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
   };
 
-  const originalInfo = { hash: result.rawHtmlHash, length: result.rawHtmlLength };
-  data.original =
-    saveOriginal && toKvs
-      ? await putBlob(kvs, 'original', result.url, result.html, originalInfo)
-      : { ...originalInfo };
+  const originalInfo = { hash: result.rawHtmlHash, bytes: result.rawHtmlLength };
+  data.original = saveOriginal
+    ? await buildContentNode(
+        kvs,
+        'original',
+        result.url,
+        result.html,
+        originalInfo,
+        toKvs,
+        toDataset,
+      )
+    : { ...originalInfo };
 
   for (const fmt of CONTENT_FORMATS) {
     const content = result.formats[fmt];
     if (content === undefined) continue;
-
-    if (toDataset) {
-      data[fmt] = content;
-      data[`${fmt}Hash`] = computeContentInfo(content).hash;
-    } else if (toKvs) {
-      data[fmt] = await putBlob(kvs, fmt, result.url, content, computeContentInfo(content));
-    }
+    const info = computeContentInfo(content);
+    data[fmt] = await buildContentNode(
+      kvs,
+      fmt,
+      result.url,
+      content,
+      { hash: info.hash, bytes: info.length },
+      toKvs,
+      toDataset,
+    );
   }
 
   return data;

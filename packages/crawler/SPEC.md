@@ -28,12 +28,12 @@ type Sink<T> = (result: T) => Promise<void>;
 
 ### Shared storage sink core (`sinks/storage.ts`)
 
-Record assembly and key-value-store key derivation shared by the Apify Actor and the standalone CLI/lib, so their dataset records and KVS output are identical (the only difference is `ContentRef.url`, present only where a public KVS URL exists). Exports:
+Record assembly and key-value-store key derivation shared by the Apify Actor and the standalone CLI/lib, so their dataset records and KVS output are identical (the only difference is `ContentNode.url`, present only where a public KVS URL exists). Exports:
 
 - `kvsKey(kind, url)` — deterministic KVS key `{format}-{md5(url)}.{ext}` for `txt | markdown | json | html | original`
-- `buildSuccessRecord(result, { kvs, toKvs, toDataset, saveOriginal })` — assembles the `status: 'success'` record: extracted formats are an inline string + `{fmt}Hash` for the dataset, or a `ContentRef` for the key-value store (dataset wins when both are selected). `original` is always a `ContentRef` (`hash` + `length`), gaining `key` + `url` when `saveOriginal` and a KVS is a destination — the raw HTML is never inlined
+- `buildSuccessRecord(result, { kvs, toKvs, toDataset, saveOriginal })` — assembles the `status: 'success'` record. Every content field (`txt`/`markdown`/`json`/`html` and `original`) is a `ContentNode` (`hash` + `bytes` always present): inline `content` for the dataset, or `key` + `url` for the key-value store (dataset wins when both are selected). `original` is always present (at least `{ hash, bytes }`); its raw HTML is included only when `saveOriginal`
 - `buildFailedRecord(info)` / `buildSkippedRecord(url, reason)` — the `failed` / `skipped` records
-- types `ContentRef`, `KvsLike`, `ContentKind`
+- types `ContentNode`, `KvsLike`, `ContentKind`
 
 ### `ExtractionResult` (sink input)
 

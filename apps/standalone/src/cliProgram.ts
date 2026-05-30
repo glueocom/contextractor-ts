@@ -147,12 +147,12 @@ function addExtractionOptions(cmd: Command): Command {
     .addOption(
       new Option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)')
         .argParser(toInt)
-        .default(s.maxPagesPerCrawl._def.defaultValue, 'unlimited'),
+        .default(s.maxCrawlPages._def.defaultValue, 'unlimited'),
     )
     .addOption(
       new Option('--crawl-depth <n>', 'Max link depth from start URLs (0 = start only)')
         .argParser(toInt)
-        .default(s.maxCrawlingDepth._def.defaultValue, 'unlimited'),
+        .default(s.maxCrawlDepth._def.defaultValue, 'unlimited'),
     )
     .option('--headless', 'Run browser in headless mode', s.headless._def.defaultValue)
     .option('--no-headless', 'Run browser with UI')
@@ -320,8 +320,8 @@ function buildSchemaOverrides(
 ): Partial<ContextractorInputType> {
   const out: Partial<ContextractorInputType> = {};
 
-  if (isCliOverride(command, 'maxPages')) out.maxPagesPerCrawl = opts.maxPages;
-  if (isCliOverride(command, 'crawlDepth')) out.maxCrawlingDepth = opts.crawlDepth;
+  if (isCliOverride(command, 'maxPages')) out.maxCrawlPages = opts.maxPages;
+  if (isCliOverride(command, 'crawlDepth')) out.maxCrawlDepth = opts.crawlDepth;
   if (isCliOverride(command, 'headless')) out.headless = opts.headless;
   if (isCliOverride(command, 'crawlerType') && opts.crawlerType) {
     out.crawlerType = parseCrawlerType(opts.crawlerType);
@@ -345,10 +345,10 @@ function buildSchemaOverrides(
   if (isCliOverride(command, 'ignoreSslErrors')) out.ignoreSslErrors = opts.ignoreSslErrors;
   if (isCliOverride(command, 'userAgent')) out.userAgent = opts.userAgent;
   if (isCliOverride(command, 'glob') && opts.glob?.length) {
-    out.globs = opts.glob.map((s) => ({ glob: s }));
+    out.includeUrlGlobs = opts.glob.map((s) => ({ glob: s }));
   }
   if (isCliOverride(command, 'exclude') && opts.exclude?.length) {
-    out.excludes = opts.exclude.map((s) => ({ glob: s }));
+    out.excludeUrlGlobs = opts.exclude.map((s) => ({ glob: s }));
   }
   if (isCliOverride(command, 'linkSelector')) out.linkSelector = opts.linkSelector;
   if (isCliOverride(command, 'keepUrlFragments')) out.keepUrlFragments = opts.keepUrlFragments;

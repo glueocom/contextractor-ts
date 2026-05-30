@@ -1,6 +1,6 @@
 # Generate all `.actor/*.json` schemas from Zod, and unify dataset/KVS output across Actor + CLI + lib
 
-> **TLDR**: Make `packages/schema` the single source of truth for **every** generated Apify schema file. Model the dataset's three record shapes (`success` / `failed` / `skipped`) as a Zod **discriminated union**, move Apify presentation concerns (views, display formats, output links, KVS collections) into typed **`.ts` config**, and rewrite the generator as **transformers** that emit `input_schema.json`, `dataset_schema.json` (nested members + union members, no longer collapsed), `output_schema.json`, **and** `key_value_store_schema.json`. Then extract a **shared sink core** into `@contextractor/crawler` so the **Apify Actor, the NPM CLI, and the NPM lib produce byte-identical dataset records and KVS output** (the only allowed difference is `ContentRef.url`, present only on the Apify platform). Unify the KVS key scheme to **`{format}-{md5(url)}.{ext}`**. Test locally (lib + CLI + Actor) and on the Apify platform.
+> **TLDR**: Make `packages/schema` the single source of truth for **every** generated Apify schema file. Model the dataset's three record shapes (`success` / `failed` / `skipped`) as a Zod **discriminated union**, move Apify presentation concerns (views, display formats, output links, KVS collections) into typed **`.ts` config**, and rewrite the generator as **transformers** that emit `input_schema.json`, `dataset_schema.json` (nested members + union members, no longer collapsed), `output_schema.json`, **and** `key_value_store_schema.json`. Then extract a **shared sink core** into `@contextractor/crawler` so the **Apify Actor, the NPM CLI, and the NPM lib produce byte-identical dataset records and KVS output** (the only allowed difference is `ContentNode.url`, present only on the Apify platform). Unify the KVS key scheme to **`{format}-{md5(url)}.{ext}`**. Test locally (lib + CLI + Actor) and on the Apify platform.
 
 > This prompt has been executed once and corrected against reality. The code blocks below are the **final, verified** versions — re-running this reproduces the implemented design. Read the "Verified facts" section before coding; it contains corrections to the original draft (nullable `loadedUrl`, the 3-branch enum merge, `enum` preservation, the no-auto-build deploy path).
 
@@ -8,7 +8,7 @@
 
 `tools/gen-input-schema/src/main.ts` originally generated two of the four `.actor` files from Zod:
 
-- `input_schema.json` ← `ContextractorInput` via `writeApifyInputSchema` (good — **leave the input path untouched**).
+- `input_schema.json` ← `ContextractorInput` via `writeApifyInputSchema`. The input transformer is untouched, but four input **fields** are renamed to `apify/website-content-crawler` conventions — see "Input field renames" below.
 - `dataset_schema.json` ← `ContextractorOutput` via a local `writeDatasetSchema` that **collapses all nested structure** to bare `type:"object"` and is **incomplete**.
 - `output_schema.json` — **hand-written**.
 - `key_value_store_schema.json` — **did not exist**.
@@ -16,11 +16,11 @@
 
 Three problems are fixed together:
 
-1. **The generator throws away structure.** `z.toJSONSchema(ContextractorOutput)` already contains `properties` for `metadata`/`crawl`, `anyOf` for the content unions, and (after the union change) `oneOf` for the record shapes. The old `writeDatasetSchema` discarded all of it, so the Apify Console Output tab could not show the members of `metadata`, the `ContentRef` fields, or `crawl`.
+1. **The generator throws away structure.** `z.toJSONSchema(ContextractorOutput)` already contains `properties` for `metadata`/`crawl`, `anyOf` for the content unions, and (after the union change) `oneOf` for the record shapes. The old `writeDatasetSchema` discarded all of it, so the Apify Console Output tab could not show the members of `metadata`, the `ContentNode` fields, or `crawl`.
 
 2. **The source of truth drifted from reality.** `ContextractorOutput` modeled a partial *success* record only. The dataset actually carries **three shapes** (`apps/apify-actor/SPEC.md`): `success`, `failed`, `skipped`. The fix is **expand the schema to match the code** — do not trim runtime fields.
 
-3. **The CLI/lib and Actor output had diverged.** The standalone sink spread `metadata` at the top level, always inlined content (never wrote `ContentRef`s), pushed **no** dataset record in KVS-only mode, and keyed the KVS by URL slug; the Actor nested `metadata`, wrote `ContentRef`s, and keyed by `md5(url)[:16]`. **Requirement: the dataset records and KVS output must be identical across the Apify Actor, the NPM CLI, and the NPM lib** (greenfield — no backward compatibility). Only the *input* schema may legitimately differ per surface.
+3. **The CLI/lib and Actor output had diverged.** The standalone sink spread `metadata` at the top level, always inlined content (never wrote `ContentNode`s), pushed **no** dataset record in KVS-only mode, and keyed the KVS by URL slug; the Actor nested `metadata`, wrote `ContentNode`s, and keyed by `md5(url)[:16]`. **Requirement: the dataset records and KVS output must be identical across the Apify Actor, the NPM CLI, and the NPM lib** (greenfield — no backward compatibility). Only the *input* schema may legitimately differ per surface.
 
 ## The architecture: where each kind of variation lives
 
@@ -31,8 +31,8 @@ Three distinct concerns, three homes.
 Everything about *what fields exist and their types*:
 
 - `success` / `failed` / `skipped` → `z.discriminatedUnion('status', [Success, Failed, Skipped])`.
-- KVS-reference vs inline-string content → `ContentField = z.union([ContentRef, z.string()])`.
-- Conditional fields (per-format hashes; optional `txt`/`markdown`/`json`/`html` content) → `.optional()`. `original` is a **required** `ContentRef` — the raw HTML's `hash`/`length` are always known.
+- Every content field (extracted formats + `original`) → a single `ContentNode` object `{ hash, bytes, content?, key?, url? }` — no union, no top-level `*Hash`. `content` holds the inline string (dataset); `key`/`url` reference the stored blob (key-value-store).
+- Optional content fields `txt`/`markdown`/`json`/`html` → `.optional()` `ContentNode`s (present when extracted). `original` is a **required** `ContentNode` — the raw HTML's `hash`/`bytes` are always known.
 - Nullable metadata/crawl fields, and `failed.loadedUrl` → `.nullable()`.
 
 ### Presentation / storage config → typed `.ts` (`apify/output-views.ts`)
@@ -57,7 +57,7 @@ In:
 - Export the new functions + config from `packages/schema/src/index.ts`.
 - Slim `tools/gen-input-schema/src/main.ts` to orchestration: call the input, dataset, output, **and KVS** writers.
 - Regenerate `apps/apify-actor/.actor/dataset_schema.json`, `output_schema.json`, and new `key_value_store_schema.json`; wire `storages.keyValueStore` into `actor.json`.
-- **Shared sink core** `packages/crawler/src/sinks/storage.ts` (`kvsKey`, `writeBlob`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentRef`/`KvsLike`/`ContentKind`); export from the crawler index.
+- **Shared sink core** `packages/crawler/src/sinks/storage.ts` (`kvsKey`, `writeBlob`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentNode`/`KvsLike`/`ContentKind`); export from the crawler index.
 - Rewrite both app sinks as thin wrappers over the shared core: `apps/apify-actor/src/sinks.ts` + `run.ts` (delete `apps/apify-actor/src/extraction.ts`, moved into the core); `apps/standalone/src/sinks.ts` + `cliProgram.ts` (remove `urlToFilename` + `KVS_FORMAT_INFO`).
 - **Unify the KVS key scheme** to `{format}-{md5(url)}.{ext}` on both surfaces (changes the Actor's keys too).
 - Tests (lib + crawler + CLI + Actor) and doc/SPEC sync.
@@ -88,7 +88,7 @@ Verified emit shapes the transformer must handle:
 - **Top level**: `{ "$schema": …, "oneOf": [ {type:'object', properties, required, additionalProperties:false}, … ] }` (no top-level `type`).
 - **Discriminator**: each branch's `status` is `{type:'string', const:'success'|'failed'|'skipped', description}`.
 - **Nullable** (e.g. `metadata.title`, `failed.loadedUrl`): `{ description, anyOf:[{type:'string'},{type:'null'}] }` — **not** `type:['string','null']`. The `anyOf` handler picks the first non-null branch.
-- **Content union**: `{ description, anyOf:[{type:'object', properties:{hash,length,key,url}, required:[hash,length]}, {type:'string'}] }` — pick the object branch (`ContentRef`).
+- **Content fields**: each is a single object `{type:'object', properties:{hash,bytes,content,key,url}, required:[hash,bytes]}` — no `anyOf` (the old `ContentField` union is gone), so the transformer recurses straight into its `properties`.
 
 Three corrections to the original draft code (all applied below):
 
@@ -96,11 +96,26 @@ Three corrections to the original draft code (all applied below):
 - **`mergeNode` must accumulate enum values across *all* branches.** The naive pairwise-collapse drops the third `status` (`skipped`): after `success`+`failed` the node has no `.const`, so the guard fails. Accumulate instead (see code).
 - **`toDatasetField` must copy `enum`.** Otherwise the merged `status` enum is dropped. Apify's dataset `fields` is a JSON-Schema-style descriptor map that **does** accept `enum` and nested `properties` on a field (verified against the docs and a green platform build).
 
-`buildSuccessRecord` content rules (identical on both surfaces): when both destinations are selected, extracted formats prefer the **dataset** (inline + `{fmt}Hash`). `original` is **always** a `ContentRef` — `hash` + `length` are always present (the raw HTML is always known); `key` + `url` are added only when `saveOriginal` and a key-value store is a destination. The raw HTML is never inlined into the dataset record (it would bloat every record).
+`buildSuccessRecord` content rules (identical on both surfaces): every content field — `txt`/`markdown`/`json`/`html` and `original` — is a `ContentNode` (`hash` + `bytes` always present). The **dataset** destination wins when both are selected: the content is inlined under `content`; otherwise the blob goes to the **key-value store** and is referenced by `key` + `url`. `original` is **always** present (at least `{ hash, bytes }`); its raw HTML is included (as `content`, or `key`/`url`) only when `"original"` is in `save`.
 
 ### KVS key scheme — research decision
 
-Researched per Apify conventions (May 2026): Apify's own `apify/screenshot-url` keys per-URL blobs by **URL + MD5** (not content-hash, not slug). Content-hash keying is wrong here (breaks overwrite-on-recrawl, orphans blobs; the records already carry the raw HTML hash as `original.hash` and per-format `{fmt}Hash`). KVS keys must match `^[a-zA-Z0-9!\-_.'()]{1,256}$` (no `/`, `:`, `?`, `#`) — slugs can violate this and exceed the length limit. **Decision: `{format}-{md5(url)}.{ext}`** (full 32-hex MD5 of `result.url`), identical on both surfaces. The **format prefix** lets `key_value_store_schema.json` group cleanly by `keyPrefix` (one collection per format).
+Researched per Apify conventions (May 2026): Apify's own `apify/screenshot-url` keys per-URL blobs by **URL + MD5** (not content-hash, not slug). Content-hash keying is wrong here (breaks overwrite-on-recrawl, orphans blobs; the records already carry the raw HTML hash as `original.hash` and each content node's `hash`). KVS keys must match `^[a-zA-Z0-9!\-_.'()]{1,256}$` (no `/`, `:`, `?`, `#`) — slugs can violate this and exceed the length limit. **Decision: `{format}-{md5(url)}.{ext}`** (full 32-hex MD5 of `result.url`), identical on both surfaces. The **format prefix** lets `key_value_store_schema.json` group cleanly by `keyPrefix` (one collection per format).
+
+### Content-node field naming — research decision
+
+Researched (May 2026): the industry norm for a content object is a **single UTF-8 byte size** field, not a separate char count — JS `String.length` is UTF-16 code units (not chars or bytes), a char count is ambiguous and consumer-derivable, and S3/GitHub/HTTP expose bytes only. Field names: `hash` (MD5 hex), **`bytes`** (UTF-8 byte length), `content` (inline string, per the GitHub Contents API), `key` + `url` (KVS reference). So `ContentNode = { hash, bytes, content?, key?, url? }` — replacing the old `ContentRef` + `ContentField` union + the per-format `*Hash` top-level fields.
+
+### Input field renames (verified against `apify/website-content-crawler`)
+
+Rename four input fields to the WCC convention (greenfield, no backward-compat). `customHttpHeaders` and `respectRobotsTxtFile` **already match WCC — leave them** (Crawlee's own option is `respectRobotsTxtFile`). Internal crawler/CrawlConfig option names (`globs`, `excludes`, `maxCrawlingDepth`, `maxPages`, `crawlDepth`) and CLI flags (`--glob`, `--exclude`, `--max-pages`, `--crawl-depth`) stay; only the input-schema field names + their read sites change.
+
+- `maxPagesPerCrawl` → `maxCrawlPages`
+- `maxCrawlingDepth` → `maxCrawlDepth`
+- `globs` → `includeUrlGlobs` (keep the `{glob}` array shape + `globs` editor)
+- `excludes` → `excludeUrlGlobs` (same)
+
+Read sites: `apps/apify-actor/src/config.ts` (`buildCrawlerOpts`), `apps/apify-actor/src/run.ts` (the sitemap block reads `input.includeUrlGlobs`/`input.excludeUrlGlobs` — **easy to miss**), `apps/standalone/src/config.ts` (`buildCrawlConfig`), `apps/standalone/src/cliProgram.ts` (the `s.maxCrawlPages._def` / `s.maxCrawlDepth._def` default reads + the `buildSchemaOverrides` output keys). Update `packages/schema/test/input.test.ts` + `apps/apify-actor/src/config.test.ts` mocks; regenerate `input_schema.json` + the `@generated` README input table via `pnpm docs:update`. `status` is kept (its values disambiguate it from `httpStatus`).
 
 ## File-by-file changes
 
@@ -121,17 +136,23 @@ import { z } from 'zod';
  * upstream Python trafilatura metadata fields.
  */
 
-const ContentRef = z.object({
+// One piece of content (an extracted format or the raw original HTML). hash +
+// bytes are always present; `content` is the inline string (dataset) and
+// `key`/`url` reference the stored blob (key-value-store). No more ContentField
+// union and no top-level `*Hash` fields.
+const ContentNode = z.object({
   hash: z.string().describe('MD5 hex digest of the content'),
-  length: z.number().int().describe('Byte length of the content'),
-  key: z.string().optional().describe('Key-value store key'),
-  url: z.string().optional().describe('Public URL to the key-value store item'),
+  bytes: z.number().int().describe('UTF-8 byte length of the content'),
+  content: z
+    .string()
+    .optional()
+    .describe('Inline content string. Present when saveDestination includes "dataset".'),
+  key: z
+    .string()
+    .optional()
+    .describe('Key-value store key. Present when stored in the key-value store.'),
+  url: z.string().optional().describe('Public URL to the key-value store item.'),
 });
-
-const ContentField = z.union([
-  ContentRef,
-  z.string().describe('Inline string content when saveDestination includes "dataset"'),
-]);
 
 const Metadata = z
   .object({
@@ -159,18 +180,14 @@ const SuccessRecord = z.object({
   metadata: Metadata,
   httpStatus: z.number().int().describe('HTTP response status code (currently always 200; see SPEC)'),
   crawl: Crawl,
-  // `original` is a required ContentRef: hash+length always present; key+url when stored.
-  original: ContentRef.describe(
-    'Reference to the raw page HTML. "hash" and "length" are always present; "key" and "url" are added when "original" is in save and the raw HTML is stored in the key-value store.',
+  // `original` is a required ContentNode: hash+bytes always present; content/key/url when in save.
+  original: ContentNode.describe(
+    'The raw page HTML. "hash" and "bytes" are always present. When "original" is in save, the raw HTML is included as "content" (dataset) or "key"/"url" (key-value store).',
   ),
-  txt: ContentField.optional().describe('Extracted plain text. Present when "txt" is in save.'),
-  markdown: ContentField.optional().describe('Extracted Markdown. Present when "markdown" is in save.'),
-  json: ContentField.optional().describe('Extracted structured JSON. Present when "json" is in save.'),
-  html: ContentField.optional().describe('Cleaned extracted HTML. Present when "html" is in save.'),
-  txtHash: z.string().optional().describe('MD5 hex of inline txt. Present when saveDestination includes "dataset".'),
-  markdownHash: z.string().optional().describe('MD5 hex of inline markdown. Present when saveDestination includes "dataset".'),
-  jsonHash: z.string().optional().describe('MD5 hex of inline json. Present when saveDestination includes "dataset".'),
-  htmlHash: z.string().optional().describe('MD5 hex of inline html. Present when saveDestination includes "dataset".'),
+  txt: ContentNode.optional().describe('Extracted plain text. Present when "txt" is in save.'),
+  markdown: ContentNode.optional().describe('Extracted Markdown. Present when "markdown" is in save.'),
+  json: ContentNode.optional().describe('Extracted structured JSON. Present when "json" is in save.'),
+  html: ContentNode.optional().describe('Cleaned extracted HTML. Present when "html" is in save.'),
 });
 
 const FailedRecord = z.object({
@@ -248,7 +265,7 @@ export const KvsCollections = {
 
 ### `packages/schema/src/apify/to-dataset-schema.ts` (new) — the transformer
 
-Merge the `oneOf` branches into one flat `fields` map; recurse nested `properties`; collapse nullable `anyOf` to its non-null branch; pick the `ContentRef` object for the content union; **accumulate the `status` consts into an `enum`** and **preserve `enum` on leaf fields**.
+Merge the `oneOf` branches into one flat `fields` map; recurse nested `properties`; collapse nullable `anyOf` to its non-null branch; pick the `ContentNode` object for the content union; **accumulate the `status` consts into an `enum`** and **preserve `enum` on leaf fields**.
 
 ```ts
 import { writeFileSync } from 'node:fs';
@@ -311,9 +328,8 @@ function mergeNode(a: JsonNode, b: JsonNode): JsonNode {
 
 /**
  * Convert one JSON-Schema node into an Apify dataset field descriptor. Recurses
- * into object `properties`, collapses nullable `anyOf:[X,null]` to X, represents
- * the ContentField union (`anyOf:[ContentRef, string]`) as the ContentRef object,
- * and preserves `enum`.
+ * into object `properties` (e.g. `metadata`, `crawl`, and the `ContentNode`
+ * content fields), collapses nullable `anyOf:[X,null]` to X, and preserves `enum`.
  */
 function toDatasetField(raw: unknown): Field | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -442,7 +458,7 @@ const KVS_SPECS: Record<ContentKind, KvsSpec> = {
 
 const CONTENT_FORMATS: readonly OutputFormat[] = ['txt', 'markdown', 'json', 'html'];
 
-export interface ContentRef { hash: string; length: number; key?: string; url?: string; }
+export interface ContentNode { hash: string; bytes: number; content?: string; key?: string; url?: string; }
 
 export interface KvsLike {
   setValue(key: string, value: string, options?: { contentType?: string }): Promise<void>;
@@ -455,27 +471,32 @@ export function kvsKey(kind: ContentKind, url: string): string {
   return `${spec.keyPrefix}${createHash('md5').update(url).digest('hex')}.${spec.ext}`;
 }
 
-async function putBlob(kvs: KvsLike, kind: ContentKind, url: string, content: string, info: { hash: string; length: number }): Promise<ContentRef> {
-  const spec = KVS_SPECS[kind];
-  const key = kvsKey(kind, url);
-  await kvs.setValue(key, content, { contentType: spec.contentType });
-  const ref: ContentRef = { hash: info.hash, length: info.length, key };
-  if (kvs.getPublicUrl) {
-    const publicUrl = await kvs.getPublicUrl(key);
-    if (publicUrl) ref.url = publicUrl;
+// Build a ContentNode: dataset wins → inline `content`; else write the blob to
+// the KVS and reference it by `key` (+ `url` when the store has a public URL).
+async function buildContentNode(kvs: KvsLike, kind: ContentKind, url: string, content: string, info: { hash: string; bytes: number }, toKvs: boolean, toDataset: boolean): Promise<ContentNode> {
+  const node: ContentNode = { hash: info.hash, bytes: info.bytes };
+  if (toDataset) {
+    node.content = content;
+  } else if (toKvs) {
+    const key = kvsKey(kind, url);
+    await kvs.setValue(key, content, { contentType: KVS_SPECS[kind].contentType });
+    node.key = key;
+    if (kvs.getPublicUrl) {
+      const publicUrl = await kvs.getPublicUrl(key);
+      if (publicUrl) node.url = publicUrl;
+    }
   }
-  return ref;
+  return node;
 }
 
 export interface BuildSuccessRecordOpts { kvs: KvsLike; toKvs: boolean; toDataset: boolean; saveOriginal: boolean; }
 
 /**
  * Assemble the `status: 'success'` record, shared by the Actor and CLI/lib so
- * their records are identical. Extracted formats are an inline string + `{fmt}Hash`
- * for the dataset, or a `ContentRef` for the KVS (dataset wins when both selected).
- * `original` is ALWAYS a `ContentRef`: its `hash` + `length` are always known, and
- * `key` + `url` are added when `saveOriginal` and a KVS is a destination. The raw
- * HTML is never inlined into the dataset record.
+ * their records are identical. Every content field (`txt`/`markdown`/`json`/
+ * `html` and `original`) is a `ContentNode`: inline `content` for the dataset, or
+ * `key`/`url` for the KVS (dataset wins when both selected). `original` is always
+ * present (at least `{ hash, bytes }`); its raw HTML is included only when in save.
  */
 export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSuccessRecordOpts): Promise<Record<string, unknown>> {
   const { kvs, toKvs, toDataset, saveOriginal } = opts;
@@ -489,23 +510,17 @@ export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSu
     crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
   };
 
-  // `original` is always present; the raw HTML blob is stored (key + url added)
-  // only when `saveOriginal` and a key-value store is a destination.
-  const originalInfo = { hash: result.rawHtmlHash, length: result.rawHtmlLength };
-  data.original =
-    saveOriginal && toKvs
-      ? await putBlob(kvs, 'original', result.url, result.html, originalInfo)
-      : { ...originalInfo };
+  // `original` always present; raw HTML included (content/key/url) only when in save.
+  const originalInfo = { hash: result.rawHtmlHash, bytes: result.rawHtmlLength };
+  data.original = saveOriginal
+    ? await buildContentNode(kvs, 'original', result.url, result.html, originalInfo, toKvs, toDataset)
+    : { ...originalInfo };
 
   for (const fmt of CONTENT_FORMATS) {
     const content = result.formats[fmt];
     if (content === undefined) continue;
-    if (toDataset) {
-      data[fmt] = content;
-      data[`${fmt}Hash`] = computeContentInfo(content).hash;
-    } else if (toKvs) {
-      data[fmt] = await putBlob(kvs, fmt, result.url, content, computeContentInfo(content));
-    }
+    const info = computeContentInfo(content); // { hash, length }
+    data[fmt] = await buildContentNode(kvs, fmt, result.url, content, { hash: info.hash, bytes: info.length }, toKvs, toDataset);
   }
   return data;
 }
@@ -525,7 +540,7 @@ export function buildSkippedRecord(url: string, skipReason: string): Record<stri
 }
 ```
 
-Export from `packages/crawler/src/index.ts`: `kvsKey`, `buildSuccessRecord`, `buildFailedRecord`, `buildSkippedRecord`, and the types `ContentKind`, `ContentRef`, `KvsLike`, `FailedRequestInfo`, `BuildSuccessRecordOpts`.
+Export from `packages/crawler/src/index.ts`: `kvsKey`, `buildSuccessRecord`, `buildFailedRecord`, `buildSkippedRecord`, and the types `ContentKind`, `ContentNode`, `KvsLike`, `FailedRequestInfo`, `BuildSuccessRecordOpts`.
 
 ### `apps/apify-actor/src/` — wrap the shared core; delete `extraction.ts`
 
@@ -542,7 +557,7 @@ return async (result) => {
 
 ### `apps/standalone/src/` — full parity via the shared core
 
-`sinks.ts`: rewrite `createCrawleeStorageSink` to call `buildSuccessRecord`. **Keep the `formats` opt** (derive `saveOriginal = formats.includes('original')` internally) so the `cliProgram.ts` call site and `exitCode.test.ts` call-arg assertions are unchanged. Wrap the build + `pushData` in a try/catch (warn to stderr + continue — the CLI's existing resilience contract). Pass a `kvsLike` that **omits `getPublicUrl`** so local `ContentRef`s have no (misleading) `url`:
+`sinks.ts`: rewrite `createCrawleeStorageSink` to call `buildSuccessRecord`. **Keep the `formats` opt** (derive `saveOriginal = formats.includes('original')` internally) so the `cliProgram.ts` call site and `exitCode.test.ts` call-arg assertions are unchanged. Wrap the build + `pushData` in a try/catch (warn to stderr + continue — the CLI's existing resilience contract). Pass a `kvsLike` that **omits `getPublicUrl`** so local `ContentNode`s have no (misleading) `url`:
 
 ```ts
 const kvsLike: KvsLike = { setValue: (key, value, options) => kvs.setValue(key, value, options) };
@@ -562,11 +577,11 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 
 ## Tests (same response as source — `.claude/rules/test-maintenance.md`)
 
-- **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS `ContentRef`s; success w/ inline strings + `*Hash`; mixed-null `metadata` + `crawl{depth:0, referrerUrl:null}`; `failed` (incl. `loadedUrl: null`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.
+- **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS content nodes (`{hash,bytes,key,url}`); success w/ inline content nodes (`{hash,bytes,content}`); mixed-null `metadata` + `crawl{depth:0, referrerUrl:null}`; `failed` (incl. `loadedUrl: null`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.
 - **`packages/schema/test/to-dataset-schema.test.ts`** — deep-equal vs on-disk `dataset_schema.json` (read it with `JSON.parse(readFileSync(...))` — `any` from JSON.parse avoids explicit-`any` lint); invariants on the on-disk JSON: `fields.status.enum` is `['success','failed','skipped']`, `fields.metadata.properties.title.type==='string'`, `fields.crawl.properties.depth.type==='integer'`, `fields.txt.properties.hash.type==='string'`, `fields.skipReason.type==='string'`, `fields.errorMessages.type==='array'`, `views.overview.transformation.fields` unchanged; `toOutputSchema()`/`toKeyValueStoreSchema()` deep-equal their files; determinism + single trailing newline.
-- **`packages/crawler/src/sinks/storage.test.ts`** — `kvsKey` matches `/^{prefix}[0-9a-f]{32}\.{ext}$/` per kind; `buildSuccessRecord` for KVS-only (ContentRefs, no `*Hash`), dataset-only (inline + `*Hash`; `original` is a `{hash, length}` reference, never inlined), both (inline formats + `original` ContentRef), and `original` always present (a `{hash, length}` reference even when `original` is not in `save`; no top-level `originalHash`); a public-URL test (platform `KvsLike` with `getPublicUrl` sets `ContentRef.url`, local omits it, same key+hash); `buildFailedRecord`/`buildSkippedRecord` shapes.
+- **`packages/crawler/src/sinks/storage.test.ts`** — `kvsKey` matches `/^{prefix}[0-9a-f]{32}\.{ext}$/` per kind; `buildSuccessRecord` for KVS-only (`{hash,bytes,key}`, no `content`/`*Hash`), dataset-only (`{hash,bytes,content}`; `original` inlined too), both (dataset wins → all inline, KVS not written), and `original` always present (`{hash, bytes}` even when not in `save`; no top-level `originalHash`); a public-URL test (platform `KvsLike` with `getPublicUrl` sets `ContentNode.url`, local omits it, same key+hash); `buildFailedRecord`/`buildSkippedRecord` shapes.
 - **`apps/apify-actor/src/storage-keys.test.ts`** — coupling: `kvsKey(kind, url)` starts with `KvsCollections.collections[kind].keyPrefix` (imports `kvsKey` from crawler + `KvsCollections` from schema — apify-actor depends on both).
-- **Update** `apps/standalone/src/sinks.test.ts` for the new behavior (KVS-only now pushes a record of `ContentRef`s; `item.metadata.title`; `item.loadedAt` matches `/Z$/`; `item.httpStatus===200`; `both` mode: dataset wins so KVS not written for formats; error isolation: a KVS failure aborts the record → 0 items) and `apps/apify-actor/src/sinks.test.ts` (new key prefixes). Keep `cli.test.ts`/`exitCode.test.ts` green.
+- **Update** `apps/standalone/src/sinks.test.ts` for the new behavior (KVS-only now pushes a record of `ContentNode`s; `item.metadata.title`; `item.loadedAt` matches `/Z$/`; `item.httpStatus===200`; `both` mode: dataset wins so KVS not written for formats; error isolation: a KVS failure aborts the record → 0 items) and `apps/apify-actor/src/sinks.test.ts` (new key prefixes). Keep `cli.test.ts`/`exitCode.test.ts` green.
 
 ## Verification — run from repo root, in order
 
@@ -574,8 +589,8 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 - `pnpm -F @contextractor/schema build && pnpm -F @contextractor/gen-input-schema start` → regenerates all four `.actor` JSON files; `git diff apps/apify-actor/.actor/` is the intentional new baseline (`input_schema.json` and `output_schema.json` should be byte-unchanged).
 - `pnpm build` · `pnpm lint` · `pnpm test` — all green. `npx knip --reporter compact` shows no dead **code** (two unused-**dependency** findings — `@contextractor/extraction` in standalone, `zod` in gen-input-schema — are transitive-type **false positives**; removing them needs a `pnpm install` and risks breaking type resolution, so leave them).
 - `cargo build --workspace` · `cargo clippy --workspace --all-targets -- -D warnings` — green (unchanged).
-- **CLI e2e**: `pnpm -F @contextractor/standalone build` then `CRAWLEE_STORAGE_DIR=/tmp/ctx-smoke node apps/standalone/dist/cli.js extract https://example.com --max-pages 1 --save markdown --save-destination key-value-store` → the dataset record has nested `metadata`, `loadedAt`, `httpStatus:200`, and `markdown` as a `ContentRef` `{hash,length,key:"markdown-{md5}.md"}` with **no `url`** (local); the KVS holds `markdown-{md5}.md`. (Note: the CLI uses `extract` subcommand + `--save`/`--max-pages`.)
-- **Platform** (`/platform:deploy-and-test`, test actor only — `.claude/rules/apify-production.md`): see deploy notes below. Build must be `SUCCEEDED` with no `Invalid dataset/output/key-value-store schema`. A test run's dataset item must carry the full success shape with `markdown` as a `ContentRef` that **does** have a public `url` (platform) — the documented parity-modulo-`url` difference, with the identical `{format}-{md5}.{ext}` key on both surfaces. Report build + run URLs.
+- **CLI e2e**: `pnpm -F @contextractor/standalone build` then `CRAWLEE_STORAGE_DIR=/tmp/ctx-smoke node apps/standalone/dist/cli.js extract https://example.com --max-pages 1 --save markdown --save-destination key-value-store` → the dataset record has nested `metadata`, `loadedAt`, `httpStatus:200`, and `markdown` as a `ContentNode` `{hash,bytes,key:"markdown-{md5}.md"}` with **no `content`/`url`** (local); the KVS holds `markdown-{md5}.md`. (Note: the CLI uses `extract` subcommand + `--save`/`--max-pages`.)
+- **Platform** (`/platform:deploy-and-test`, test actor only — `.claude/rules/apify-production.md`): see deploy notes below. Build must be `SUCCEEDED` with no `Invalid dataset/output/key-value-store schema`. A test run's dataset item must carry the full success shape with `markdown` as a `ContentNode` that **does** have a public `url` (platform) — the documented parity-modulo-`url` difference, with the identical `{format}-{md5}.{ext}` key on both surfaces. Report build + run URLs.
 - Run `code-reviewer` over the diff before finishing.
 
 ### Platform deploy — operational notes (learned the hard way)
@@ -595,9 +610,9 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 ## Acceptance criteria
 
 - `packages/schema` is the **only** place output fields/record shapes are declared; **all four** `.actor` schema JSON files are generated (input, dataset, output, key-value-store), none hand-edited except `actor.json`.
-- `dataset_schema.json` exposes nested `properties` for `metadata`/`crawl`/`ContentRef`s, a `status` enum of all three values, and every field across success/failed/skipped. The `views.overview` block is preserved.
+- `dataset_schema.json` exposes nested `properties` for `metadata`/`crawl`/`ContentNode`s, a `status` enum of all three values, and every field across success/failed/skipped. The `views.overview` block is preserved.
 - `output_schema.json` and `key_value_store_schema.json` are generated from `OutputViews` / `KvsCollections`; `actor.json` references the KVS schema.
-- **Dataset records and KVS output are identical across the Apify Actor, the NPM CLI, and the NPM lib** (one shared sink core), the only difference being `ContentRef.url` (platform-only); the unified KVS key scheme is `{format}-{md5(url)}.{ext}`.
+- **Dataset records and KVS output are identical across the Apify Actor, the NPM CLI, and the NPM lib** (one shared sink core), the only difference being `ContentNode.url` (platform-only); the unified KVS key scheme is `{format}-{md5(url)}.{ext}`.
 - All local tests/lints/builds pass; the platform build on `glueo/contextractor-test` is `SUCCEEDED` and a test run's dataset item validates against the new schema.
 - `httpStatus`-real-status remains explicitly flagged as out of scope.
 
@@ -612,9 +627,9 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 ## Docs to sync
 
 - `packages/schema/SPEC.md` + `README.md` — discriminated union, three shapes, four-writer generator, new exports; remove the "additional envelope fields not declared in this schema" note (now declared).
-- `packages/crawler/SPEC.md` + `README.md` — the new shared sink core (`kvsKey`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentRef`/`KvsLike`); both apps are thin wrappers.
-- `apps/apify-actor/SPEC.md` + `README.md` — schemas generated; `ContentRef` (not `ContentInfo`); `{format}-{md5}.{ext}` KVS keys.
-- `apps/standalone/SPEC.md` + `README.md` — nested `metadata` + `loadedAt` + `httpStatus`; a dataset record is always pushed (ContentRef for KVS, inline for dataset); new KVS keys; parity note.
+- `packages/crawler/SPEC.md` + `README.md` — the new shared sink core (`kvsKey`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentNode`/`KvsLike`); both apps are thin wrappers.
+- `apps/apify-actor/SPEC.md` + `README.md` — schemas generated; `ContentNode` (not `ContentInfo`); `{format}-{md5}.{ext}` KVS keys.
+- `apps/standalone/SPEC.md` + `README.md` — nested `metadata` + `loadedAt` + `httpStatus`; a dataset record is always pushed (ContentNode for KVS, inline for dataset); new KVS keys; parity note.
 - Root `SPEC.md` + `README.md` + `CLAUDE.md` — generated output schemas, unified KVS keys, the standalone record change, "all four `.actor` schemas" / "input + output" structure comments.
 - `tools/gen-input-schema/README.md` — now emits all four `.actor` schema files.
 

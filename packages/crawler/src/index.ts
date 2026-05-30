@@ -12,7 +12,7 @@ export {
   buildSkippedRecord,
   buildSuccessRecord,
   type ContentKind,
-  type ContentRef,
+  type ContentNode,
   type FailedRequestInfo,
   type KvsLike,
   kvsKey,

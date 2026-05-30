@@ -25,9 +25,9 @@ export function createCrawleeStorageSink(opts: {
   const saveOriginal = formats.includes('original');
 
   // Local Crawlee storage has no meaningful public URL, so expose only
-  // `setValue` to the shared builder; ContentRefs then carry {hash, length,
+  // `setValue` to the shared builder; KVS content nodes then carry {hash, bytes,
   // key} without a misleading url. The Apify Actor passes its KVS with
-  // `getPublicUrl`, so its ContentRefs additionally carry a public url.
+  // `getPublicUrl`, so its content nodes additionally carry a public url.
   const kvsLike: KvsLike = {
     setValue: (key, value, options) => kvs.setValue(key, value, options),
   };

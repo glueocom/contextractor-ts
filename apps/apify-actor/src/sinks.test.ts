@@ -1,4 +1,4 @@
-import type { ExtractionResult, KvsLike } from '@contextractor/crawler';
+import type { ContentNode, ExtractionResult, KvsLike } from '@contextractor/crawler';
 import { describe, expect, it, vi } from 'vitest';
 import { createApifySink } from './sinks.js';
 
@@ -62,10 +62,11 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     expect(kvs.calls.length).toBeGreaterThan(0);
 
     const item = dataset.items[0] as Record<string, unknown>;
-    // The data key for markdown should be a ContentRef object (has `hash`), not a raw string
+    // markdown is a ContentNode object referencing the blob (has `key`, no `content`)
     expect(typeof item.markdown).toBe('object');
-    expect(item.markdown).not.toBe('# Test Page');
-    expect((item.original as { hash: string }).hash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect((item.markdown as ContentNode).key).toMatch(/^markdown-[0-9a-f]{32}\.md$/);
+    expect((item.markdown as ContentNode).content).toBeUndefined();
+    expect((item.original as ContentNode).hash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.markdownHash).toBeUndefined();
     expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
@@ -97,7 +98,7 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
 });
 
 describe('createApifySink — saveDestination: ["dataset"]', () => {
-  it('content appears as inline strings on the dataset item; KVS setValue not called for content', async () => {
+  it('content appears as inline content nodes on the dataset item; KVS setValue not called', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
 
@@ -116,13 +117,12 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe(FAKE_RESULT.url);
     expect(item.loadedUrl).toBe(FAKE_RESULT.loadedUrl);
-    expect(item.markdown).toBe('# Test Page');
-    expect(item.txt).toBe('Test Page');
-    expect((item.original as { hash: string }).hash).toBe(FAKE_RESULT.rawHtmlHash);
-    expect(typeof item.markdownHash).toBe('string');
-    expect(item.markdownHash as string).toHaveLength(32);
-    expect(typeof item.txtHash).toBe('string');
-    expect(item.txtHash as string).toHaveLength(32);
+    expect((item.markdown as ContentNode).content).toBe('# Test Page');
+    expect((item.txt as ContentNode).content).toBe('Test Page');
+    expect(typeof (item.markdown as ContentNode).bytes).toBe('number');
+    expect((item.original as ContentNode).hash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect(item.markdownHash).toBeUndefined();
+    expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
     expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
   });

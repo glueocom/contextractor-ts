@@ -8,9 +8,9 @@ type Field = Record<string, unknown>;
 /**
  * Transform the `ContextractorOutput` Zod discriminated union into an Apify
  * dataset schema. Merges the `oneOf` branches into one flat `fields` map,
- * recurses into nested object `properties`, collapses nullable `anyOf:[X,null]`
- * to X, and represents the `ContentField` union as the richer `ContentRef`
- * object. Mirrors the `to-apify-schema.ts` boundary used for the input schema.
+ * recurses into nested object `properties` (`metadata`, `crawl`, and the
+ * `ContentNode` content fields), and collapses nullable `anyOf:[X,null]` to X.
+ * Mirrors the `to-apify-schema.ts` boundary used for the input schema.
  */
 export function toDatasetSchema(schema: z.ZodType, views = OutputViews) {
   const jsonSchema = z.toJSONSchema(schema, {
@@ -77,10 +77,9 @@ function mergeNode(a: JsonNode, b: JsonNode): JsonNode {
 
 /**
  * Convert one JSON-Schema node into an Apify dataset field descriptor.
- * Recurses into object `properties`, collapses nullable `anyOf:[X,null]` to X,
- * and represents the ContentField union (`anyOf:[ContentRef, string]`) as the
- * richer ContentRef object. Leaf types: string, integer, number, boolean,
- * array, object, null.
+ * Recurses into object `properties` (e.g. `metadata`, `crawl`, and the
+ * `ContentNode` content fields) and collapses nullable `anyOf:[X,null]` to X.
+ * Leaf types: string, integer, number, boolean, array, object, null.
  */
 function toDatasetField(raw: unknown): Field | null {
   if (typeof raw !== 'object' || raw === null) return null;

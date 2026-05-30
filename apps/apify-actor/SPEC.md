@@ -19,9 +19,9 @@ When `useSitemaps` is `true`, `SitemapRequestList.open()` is called before the c
 
 `createApifySink({ kvs, dataset, saveOriginal, saveDestination })` delegates record assembly and KVS key derivation to the shared `@contextractor/crawler` sink core (`buildSuccessRecord`, `kvsKey`), so the Actor and the standalone CLI/lib produce identical output. It saves:
 
-- Raw HTML to KVS as `original-{md5}.html` when `saveOriginal` is true and destination includes `key-value-store`; the `original` reference itself is always on the dataset item (the raw HTML is never inlined)
-- Extracted `txt`, `json`, `markdown`, `html` routed per `saveDestination`: `ContentRef` references when `key-value-store`; inline strings plus a `{format}Hash` field (e.g. `markdownHash`) when `dataset` (dataset takes precedence when both destinations are selected)
-- One dataset item per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, `metadata`, `httpStatus`, `crawl`, `original` (a `ContentRef`; `hash` + `length` always present, `key` + `url` when stored), and per-format content; when destination is `dataset`, each format field is accompanied by a `{format}Hash` field (e.g. `markdownHash`)
+- Every content field (`txt`, `json`, `markdown`, `html`, and `original`) as a `ContentNode` object — `hash` (MD5) + `bytes` (UTF-8 byte length) always present; inline `content` when `saveDestination` is `dataset`, or `key` + `url` referencing the stored blob when `key-value-store` (dataset takes precedence when both destinations are selected)
+- `original` is always present (at least `{ hash, bytes }`); its raw HTML is included only when `"original"` is in `save`
+- One dataset item per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, `metadata`, `httpStatus`, `crawl`, `original`, and per-format content (each a `ContentNode`)
 
 KVS keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32-char MD5 hex of the request URL, and the format's extension (`txt-…txt`, `markdown-…md`, `json-…json`, `html-…html`, `original-…html`).
 
@@ -29,7 +29,7 @@ KVS keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32-cha
 
 Every record has a `status` field. Three record shapes are possible:
 
-- **success** — `{ url, loadedUrl, status: 'success', loadedAt, metadata, httpStatus, crawl: { depth, referrerUrl }, original, ...formats }`; produced by `createApifySink` for each successfully extracted page; `original` is always a `ContentRef` (`hash` + `length`, plus `key` + `url` when the raw HTML is stored); `url` is the original request URL, `loadedUrl` is the final URL after redirects; `depth` is the link distance from a start URL (0 for start URLs), `referrerUrl` is the linking page URL or `null` for start URLs
+- **success** — `{ url, loadedUrl, status: 'success', loadedAt, metadata, httpStatus, crawl: { depth, referrerUrl }, original, ...formats }`; produced by `createApifySink` for each successfully extracted page; every content field (incl. `original`) is a `ContentNode` (`hash` + `bytes` always present, plus inline `content` or `key`/`url` when stored); `url` is the original request URL, `loadedUrl` is the final URL after redirects; `depth` is the link distance from a start URL (0 for start URLs), `referrerUrl` is the linking page URL or `null` for start URLs
 - **failed** — `{ url, loadedUrl, status: 'failed', errorMessages, retryCount, crawledAt }`; pushed via `onFailedRequest` after all retries are exhausted
 - **skipped** — `{ url, status: 'skipped', skipReason }`; pushed via `onSkippedUrl` when `storeSkippedUrls: true`; reason values: `'robotsTxt'`, `'limit'`, `'enqueueLimit'`, `'filters'`, `'redirect'`, `'depth'`
 

@@ -116,12 +116,12 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
   "httpStatus": 200,
   "original": {
     "hash": "d41d8cd98f00b204e9800998ecf8427e",
-    "length": 89898,
+    "bytes": 89898,
     "key": "original-abc123.html",
     "url": "https://api.apify.com/v2/key-value-stores/{id}/records/original-abc123.html"
   },
-  "markdown": { "key": "markdown-abc123.md", "url": "...", "hash": "...", "length": 6887 },
-  "txt": { "key": "txt-abc123.txt", "url": "...", "hash": "...", "length": 5200 }
+  "markdown": { "hash": "...", "bytes": 6887, "key": "markdown-abc123.md", "url": "..." },
+  "txt": { "hash": "...", "bytes": 5200, "key": "txt-abc123.txt", "url": "..." }
 }
 ```
 
@@ -134,17 +134,16 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
   "loadedAt": "2026-04-27T18:58:36Z",
   "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "lang": "en" },
   "httpStatus": 200,
-  "original": { "hash": "d41d8cd98f00b204e9800998ecf8427e", "length": 89898 },
-  "markdown": "# Page Title\n\nContent...",
-  "markdownHash": "5d41402abc4b2a76b9719d911017c592",
-  "txt": "Page Title\n\nContent...",
-  "txtHash": "7215ee9c7d9dc229d2921a40e899ec5f"
+  "original": { "hash": "d41d8cd98f00b204e9800998ecf8427e", "bytes": 89898 },
+  "markdown": { "hash": "5d41402abc4b2a76b9719d911017c592", "bytes": 6887, "content": "# Page Title\n\nContent..." },
+  "txt": { "hash": "7215ee9c7d9dc229d2921a40e899ec5f", "bytes": 5200, "content": "Page Title\n\nContent..." }
 }
 ```
 
 Rules:
-- `original`: always present; a `ContentRef` with the raw HTML's `hash` + `length`, plus `key` + `url` when `"original"` is in `save` and the raw HTML is stored in the key-value store (the raw HTML is never inlined into the dataset record)
-- `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentRef` objects when `saveDestination` is `key-value-store`; inline content strings when `dataset`, each accompanied by a `{format}Hash` field (e.g. `markdownHash`, `txtHash`) containing the 32-char MD5 hex of that content
+- every content field is a `ContentNode` object: `hash` (32-char MD5) and `bytes` (UTF-8 byte length) are always present; the inline content is under `content` when `saveDestination` is `dataset`, while `key` + `url` reference the stored blob when `key-value-store`
+- `original`: always present (at least `{ hash, bytes }`); its raw HTML is included (as `content`, or `key`/`url`) only when `"original"` is in `save`
+- `markdown`, `txt`, `json`, `html`: present per format when extracted
 - `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
 
 ### Apify Actor — Key-Value Store
@@ -159,7 +158,7 @@ Storage keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32
 
 ### Standalone CLI — output
 
-Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `crawl`, `original` (a `ContentRef`), and per-format content (a `ContentRef` for `key-value-store`, or an inline string + `{format}Hash` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentRef.url` is absent (it is present on the Apify platform).
+Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `crawl`, `original`, and per-format content — each content field a `ContentNode` (`hash` + `bytes` always present; `key`/`url` for `key-value-store`, inline `content` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentNode.url` is absent (it is present on the Apify platform).
 
 `--clean` purges the default Dataset, Key-Value Store, and Request Queue before extraction begins.
 
