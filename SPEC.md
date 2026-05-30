@@ -118,11 +118,11 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
   "original": {
     "hash": "d41d8cd98f00b204e9800998ecf8427e",
     "length": 89898,
-    "key": "abc123-original.html",
-    "url": "https://api.apify.com/v2/key-value-stores/{id}/records/abc123-original.html"
+    "key": "original-abc123.html",
+    "url": "https://api.apify.com/v2/key-value-stores/{id}/records/original-abc123.html"
   },
-  "markdown": { "key": "abc123.md", "url": "...", "hash": "...", "length": 6887 },
-  "txt": { "key": "abc123.txt", "url": "...", "hash": "...", "length": 5200 }
+  "markdown": { "key": "markdown-abc123.md", "url": "...", "hash": "...", "length": 6887 },
+  "txt": { "key": "txt-abc123.txt", "url": "...", "hash": "...", "length": 5200 }
 }
 ```
 
@@ -145,24 +145,23 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
 
 Rules:
 - `originalHash`: always present; 32-char MD5 hex of the raw HTML
-- `original`: present when `saveOriginal` is true; a `ContentInfo` object (`hash`, `length`, `key`, `url`) when saved to KVS, or the raw HTML string when `saveDestination` is `dataset` only
-- `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentInfo` objects when `saveDestination` is `key-value-store`; inline content strings when `dataset`, each accompanied by a `{format}Hash` field (e.g. `markdownHash`, `txtHash`) containing the 32-char MD5 hex of that content
+- `original`: present when `saveOriginal` is true; a `ContentRef` object (`hash`, `length`, `key`, `url`) when saved to KVS, or the raw HTML string when `saveDestination` is `dataset` only
+- `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentRef` objects when `saveDestination` is `key-value-store`; inline content strings when `dataset`, each accompanied by a `{format}Hash` field (e.g. `markdownHash`, `txtHash`) containing the 32-char MD5 hex of that content
 - `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
 
 ### Apify Actor — Key-Value Store
 
-Storage keys use the first 16 hex characters of an MD5 over the URL:
-`createHash('md5').update(url).digest('hex').slice(0, 16)`
+Storage keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32-char MD5 hex of the request URL, and the format's extension. The same scheme is used by the standalone CLI/lib (shared `@contextractor/crawler` sink core) and groups into the `key_value_store_schema.json` collections by format prefix:
 
-- `{hash}-original.html` — raw HTML (when `saveOriginal` is true)
-- `{hash}.txt` — plain text
-- `{hash}.json` — JSON
-- `{hash}.md` — Markdown
-- `{hash}.html` — extracted HTML
+- `original-{md5}.html` — raw HTML (when `saveOriginal` is true)
+- `txt-{md5}.txt` — plain text
+- `json-{md5}.json` — JSON
+- `markdown-{md5}.md` — Markdown
+- `html-{md5}.html` — extracted HTML
 
 ### Standalone CLI — output
 
-Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS keys use a URL slug (`${slug}.${ext}` or `${slug}-original.html`); Dataset records carry `url`, `loadedUrl`, `status: 'success'` with metadata, `originalHash`, inline content, and `{format}Hash` fields; `status: 'failed'` for exhausted retries; and optional `status: 'skipped'` records when `--store-skipped-urls` is set.
+Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `originalHash`, `crawl`, and per-format content (a `ContentRef` for `key-value-store`, or an inline string + `{format}Hash` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentRef.url` is absent (it is present on the Apify platform).
 
 `--clean` purges the default Dataset, Key-Value Store, and Request Queue before extraction begins.
 

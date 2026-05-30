@@ -29,7 +29,7 @@ Fields grouped by logical section:
 
 ## Output schema
 
-`ContextractorOutput` is the Zod schema for each item written to the Apify dataset. Exported as `ContextractorOutput` (Zod schema) and `ContextractorOutputType` (inferred TypeScript type).
+`ContextractorOutput` is a Zod `discriminatedUnion('status', …)` over the three dataset record shapes — `success`, `failed`, `skipped`. Exported as `ContextractorOutput` (Zod schema) and `ContextractorOutputType` (the inferred 3-member union type). The dataset/output/key-value-store schema generators (`apify/to-dataset-schema.ts`, `apify/to-output-schema.ts`, `apify/to-kvs-schema.ts`) consume it alongside the `OutputViews` / `KvsCollections` presentation config (`apify/output-views.ts`) to emit all of `apps/apify-actor/.actor/dataset_schema.json`, `output_schema.json`, and `key_value_store_schema.json` via `@contextractor/gen-input-schema`.
 
 `ContentRef` — object identifying content stored in the key-value store:
 - `hash` — MD5 hex digest of the content
@@ -39,15 +39,8 @@ Fields grouped by logical section:
 
 `ContentField` — union of `ContentRef | string`. A `ContentRef` when `saveDestination` includes `"key-value-store"`, an inline string when `"dataset"` only.
 
-`ContextractorOutput` fields:
-- `loadedUrl` — string; the URL that was loaded (post-redirect)
-- `httpStatus` — integer; HTTP response status code
-- `loadedAt` — string; ISO 8601 timestamp of when the page was loaded
-- `metadata` — object; all fields are nullable strings: `title`, `author`, `publishedAt` (ISO 8601), `description`, `siteName`, `lang`
-- `original` — `ContentField`, optional; raw page HTML before extraction; present when `"original"` is in `save`
-- `txt` — `ContentField`, optional; extracted plain text; present when `"txt"` is in `save`
-- `markdown` — `ContentField`, optional; extracted Markdown; present when `"markdown"` is in `save`
-- `json` — `ContentField`, optional; extracted structured JSON; present when `"json"` is in `save`
-- `html` — `ContentField`, optional; cleaned extracted HTML; present when `"html"` is in `save`
+Record shapes:
 
-> **Note:** `createApifySink` writes additional envelope fields not declared in this schema: `url` (original request URL), `status: 'success'`, `originalHash` (MD5 hex of raw HTML), `crawl: { depth, referrerUrl }`, and per-format hash fields (`txtHash`, `markdownHash`, etc.) when `saveDestination` includes `"dataset"`. These are documented in `apps/apify-actor/SPEC.md` and root `SPEC.md`.
+- **`success`** — `url`, `loadedUrl`, `status: 'success'`, `loadedAt` (ISO 8601), `metadata` (object of nullable strings: `title`, `author`, `publishedAt`, `description`, `siteName`, `lang`), `httpStatus` (integer; currently always 200), `originalHash` (MD5 hex of raw HTML), `crawl: { depth, referrerUrl }`, the optional content fields `original` / `txt` / `markdown` / `json` / `html` (each a `ContentField`), and the optional per-format `txtHash` / `markdownHash` / `jsonHash` / `htmlHash` (present when `saveDestination` includes `"dataset"`).
+- **`failed`** — `url`, `loadedUrl` (nullable), `status: 'failed'`, `errorMessages` (string array), `retryCount` (integer), `crawledAt` (ISO 8601).
+- **`skipped`** — `url`, `status: 'skipped'`, `skipReason` (`'robotsTxt' | 'limit' | 'enqueueLimit' | 'filters' | 'redirect' | 'depth'`).

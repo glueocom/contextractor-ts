@@ -1,13 +1,18 @@
 {
   "actorSpecification": 1,
   "fields": {
+    "url": {
+      "type": "string",
+      "description": "The original request URL"
+    },
     "loadedUrl": {
       "type": "string",
-      "description": "The URL that was loaded"
+      "description": "The URL that was loaded (post-redirect)"
     },
-    "httpStatus": {
-      "type": "integer",
-      "description": "HTTP response status code"
+    "status": {
+      "type": "string",
+      "enum": ["success", "failed", "skipped"],
+      "description": "Record outcome discriminator"
     },
     "loadedAt": {
       "type": "string",
@@ -15,27 +20,198 @@
     },
     "metadata": {
       "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Page title"
+        },
+        "author": {
+          "type": "string",
+          "description": "Content author"
+        },
+        "publishedAt": {
+          "type": "string",
+          "description": "ISO 8601 publication date"
+        },
+        "description": {
+          "type": "string",
+          "description": "Page description or summary"
+        },
+        "siteName": {
+          "type": "string",
+          "description": "Site name (sitename in trafilatura)"
+        },
+        "lang": {
+          "type": "string",
+          "description": "Detected content language code"
+        }
+      },
       "description": "Extracted page metadata"
+    },
+    "httpStatus": {
+      "type": "integer",
+      "description": "HTTP response status code (currently always 200; see SPEC)"
+    },
+    "originalHash": {
+      "type": "string",
+      "description": "MD5 hex digest of the raw page HTML"
+    },
+    "crawl": {
+      "type": "object",
+      "properties": {
+        "depth": {
+          "type": "integer",
+          "description": "Link distance from a start URL (0 for start URLs)"
+        },
+        "referrerUrl": {
+          "type": "string",
+          "description": "The linking page URL, or null for start URLs"
+        }
+      },
+      "description": "Crawl provenance for this page"
     },
     "original": {
       "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "MD5 hex digest of the content"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Byte length of the content"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key-value store key"
+        },
+        "url": {
+          "type": "string",
+          "description": "Public URL to the key-value store item"
+        }
+      },
       "description": "Raw page HTML captured before extraction. Present when \"original\" is in save."
     },
     "txt": {
       "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "MD5 hex digest of the content"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Byte length of the content"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key-value store key"
+        },
+        "url": {
+          "type": "string",
+          "description": "Public URL to the key-value store item"
+        }
+      },
       "description": "Extracted plain text. Present when \"txt\" is in save."
     },
     "markdown": {
       "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "MD5 hex digest of the content"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Byte length of the content"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key-value store key"
+        },
+        "url": {
+          "type": "string",
+          "description": "Public URL to the key-value store item"
+        }
+      },
       "description": "Extracted Markdown. Present when \"markdown\" is in save."
     },
     "json": {
       "type": "object",
-      "description": "Extracted structured JSON with metadata. Present when \"json\" is in save."
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "MD5 hex digest of the content"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Byte length of the content"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key-value store key"
+        },
+        "url": {
+          "type": "string",
+          "description": "Public URL to the key-value store item"
+        }
+      },
+      "description": "Extracted structured JSON. Present when \"json\" is in save."
     },
     "html": {
       "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "description": "MD5 hex digest of the content"
+        },
+        "length": {
+          "type": "integer",
+          "description": "Byte length of the content"
+        },
+        "key": {
+          "type": "string",
+          "description": "Key-value store key"
+        },
+        "url": {
+          "type": "string",
+          "description": "Public URL to the key-value store item"
+        }
+      },
       "description": "Cleaned extracted HTML. Present when \"html\" is in save."
+    },
+    "txtHash": {
+      "type": "string",
+      "description": "MD5 hex of inline txt. Present when saveDestination includes \"dataset\"."
+    },
+    "markdownHash": {
+      "type": "string",
+      "description": "MD5 hex of inline markdown. Present when saveDestination includes \"dataset\"."
+    },
+    "jsonHash": {
+      "type": "string",
+      "description": "MD5 hex of inline json. Present when saveDestination includes \"dataset\"."
+    },
+    "htmlHash": {
+      "type": "string",
+      "description": "MD5 hex of inline html. Present when saveDestination includes \"dataset\"."
+    },
+    "errorMessages": {
+      "type": "array",
+      "description": "Error messages from the final attempt"
+    },
+    "retryCount": {
+      "type": "integer",
+      "description": "Number of retries before the request was abandoned"
+    },
+    "crawledAt": {
+      "type": "string",
+      "description": "ISO 8601 timestamp when the failed request was abandoned"
+    },
+    "skipReason": {
+      "type": "string",
+      "enum": ["robotsTxt", "limit", "enqueueLimit", "filters", "redirect", "depth"],
+      "description": "Why the URL was skipped"
     }
   },
   "views": {

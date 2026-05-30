@@ -1,5 +1,7 @@
 import {
+  buildFailedRecord,
   buildRequests,
+  buildSkippedRecord,
   createContextractorCrawler,
   SitemapRequestList,
 } from '@contextractor/crawler';
@@ -65,19 +67,12 @@ export async function runActor(): Promise<void> {
     ...buildCrawlerOpts(input, sink, proxyConfig, requestQueue, input.proxyRotation),
     ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
     onFailedRequest: async (info) => {
-      await dataset.pushData({
-        url: info.url,
-        loadedUrl: info.loadedUrl,
-        status: 'failed',
-        errorMessages: info.errorMessages,
-        retryCount: info.retryCount,
-        crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-      });
+      await dataset.pushData(buildFailedRecord(info));
     },
     ...(input.storeSkippedUrls
       ? {
           onSkippedUrl: (url, reason) => {
-            void dataset.pushData({ url, status: 'skipped', skipReason: reason });
+            void dataset.pushData(buildSkippedRecord(url, reason));
           },
         }
       : {}),

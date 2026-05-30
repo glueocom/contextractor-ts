@@ -66,11 +66,12 @@ Config file: optional JSON file with the same camelCase shape as the Apify input
 
 ## Output
 
-Controlled by `saveDestination` / `--save-destination` (default `key-value-store`):
+Controlled by `saveDestination` / `--save-destination` (default `key-value-store`). The output shape is identical to the Apify Actor's — record assembly and KVS key derivation come from the shared `@contextractor/crawler` sink core (`buildSuccessRecord`, `kvsKey`):
 
-- **`key-value-store`** — KVS key `${slug}.${ext}` (or `${slug}-original.html` for `original` format)
-- **`dataset`** — All three crawl outcomes land in the default (or named) dataset and are queryable via `contextractor list`:
-  - `status: 'success'` — extracted record with `url`, metadata fields, `originalHash`, `crawl: { depth, referrerUrl }`, content per format, and `{format}Hash` fields
+- **`key-value-store`** — content blobs are written under `{format}-{md5(url)}.{ext}` keys (e.g. `txt-…txt`, `original-…html`), and the dataset record references each as a `ContentRef` (`{ hash, length, key }`; local storage has no public `url`)
+- **`dataset`** — content is inlined on the dataset record as strings, each with a `{format}Hash` field (dataset takes precedence when both destinations are selected)
+- A dataset record is pushed for every page regardless of destination; all three crawl outcomes are queryable via `contextractor list`:
+  - `status: 'success'` — `url`, `loadedUrl`, `loadedAt`, nested `metadata`, `httpStatus`, `originalHash`, `crawl: { depth, referrerUrl }`, and per-format content (a `ContentRef` or an inline string + `{format}Hash`)
   - `status: 'failed'` — always pushed; record has `url`, `loadedUrl`, `errorMessages`, `retryCount`, `crawledAt` (ISO 8601)
   - `status: 'skipped'` — pushed only when `--store-skipped-urls` is set; record has `url` and `skipReason`
 

@@ -1,6 +1,6 @@
 import type { ExtractionResult } from '@contextractor/crawler';
 import { describe, expect, it, vi } from 'vitest';
-import { createCrawleeStorageSink, urlToFilename } from './sinks.js';
+import { createCrawleeStorageSink } from './sinks.js';
 
 const BASE_RESULT: ExtractionResult = {
   url: 'https://example.com/page',
@@ -20,30 +20,6 @@ const BASE_RESULT: ExtractionResult = {
   crawlDepth: 0,
   referrerUrl: null,
 };
-
-// --- urlToFilename ---
-
-describe('urlToFilename', () => {
-  it('strips protocol and replaces non-alphanumeric chars', () => {
-    expect(urlToFilename('https://example.com/a/b')).toBe('example-com-a-b');
-  });
-
-  it('strips trailing separators', () => {
-    expect(urlToFilename('https://example.com/')).toBe('example-com');
-  });
-
-  it('lowercases the slug', () => {
-    expect(urlToFilename('https://Example.COM/Page')).toBe('example-com-page');
-  });
-
-  it('truncates slugs over 100 chars and appends md5 hash', () => {
-    const slug = urlToFilename(`https://example.com/${'x'.repeat(120)}`);
-    expect(slug.length).toBeLessThanOrEqual(110);
-    expect(slug).toMatch(/-[0-9a-f]{8}$/);
-  });
-});
-
-// --- createCrawleeStorageSink ---
 
 function makeKvs() {
   const calls: Array<{ key: string; value: unknown; contentType?: string }> = [];
@@ -66,7 +42,7 @@ function makeDataset() {
 }
 
 describe('createCrawleeStorageSink — KVS destination', () => {
-  it('writes txt and markdown to KVS with correct keys', async () => {
+  it('writes content to KVS under {fmt}-{md5}.{ext} keys and pushes a record of ContentRefs', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -79,27 +55,38 @@ describe('createCrawleeStorageSink — KVS destination', () => {
     await sink(BASE_RESULT);
 
     const keys = kvs.calls.map((c) => c.key);
-    expect(keys).toContain('example-com-page.txt');
-    expect(keys).toContain('example-com-page.md');
-    expect(dataset.pushData).not.toHaveBeenCalled();
+    expect(keys.some((k) => /^txt-[0-9a-f]{32}\.txt$/.test(k))).toBe(true);
+    expect(keys.some((k) => /^markdown-[0-9a-f]{32}\.md$/.test(k))).toBe(true);
+
+    // KVS-only still pushes a dataset record, with content as ContentRef objects.
+    expect(dataset.items).toHaveLength(1);
+    const item = dataset.items[0] as Record<string, unknown>;
+    const txt = item.txt as Record<string, unknown>;
+    expect(typeof txt).toBe('object');
+    expect(txt.key).toMatch(/^txt-[0-9a-f]{32}\.txt$/);
+    expect(typeof txt.hash).toBe('string');
+    expect(typeof txt.length).toBe('number');
+    expect(txt.url).toBeUndefined(); // no public URL for local Crawlee storage
+    expect(item.txtHash).toBeUndefined(); // no inline hash in KVS mode
   });
 
-  it('writes original HTML to KVS with -original.html key', async () => {
+  it('writes original HTML to KVS under an original-{md5}.html key', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
-    const resultWithOriginal: ExtractionResult = { ...BASE_RESULT };
     const sink = createCrawleeStorageSink({
       destinations: ['key-value-store'],
       kvs: kvs as never,
       dataset: dataset as never,
-      formats: ['original'],
+      formats: ['txt', 'original'],
     });
 
-    await sink(resultWithOriginal);
+    await sink(BASE_RESULT);
 
-    const keys = kvs.calls.map((c) => c.key);
-    expect(keys).toContain('example-com-page-original.html');
-    expect(kvs.calls[0]?.value).toBe('<html>raw</html>');
+    const originalCall = kvs.calls.find((c) => /^original-[0-9a-f]{32}\.html$/.test(c.key));
+    expect(originalCall).toBeDefined();
+    expect(originalCall?.value).toBe('<html>raw</html>');
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect((item.original as Record<string, unknown>).key).toMatch(/^original-[0-9a-f]{32}\.html$/);
   });
 
   it('sets correct content-type for txt', async () => {
@@ -120,7 +107,7 @@ describe('createCrawleeStorageSink — KVS destination', () => {
 });
 
 describe('createCrawleeStorageSink — dataset destination', () => {
-  it('pushes a record with url, loadedUrl, and format content', async () => {
+  it('pushes a record with envelope, nested metadata, inline content and hashes', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -132,16 +119,24 @@ describe('createCrawleeStorageSink — dataset destination', () => {
 
     await sink(BASE_RESULT);
 
+    expect(kvs.setValue).not.toHaveBeenCalled();
     expect(dataset.items).toHaveLength(1);
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe(BASE_RESULT.url);
     expect(item.loadedUrl).toBe(BASE_RESULT.loadedUrl);
-    expect(item.txt).toBe('Hello world');
-    expect(kvs.setValue).not.toHaveBeenCalled();
+    expect(item.status).toBe('success');
+    expect(item.loadedAt).toMatch(/Z$/);
+    expect(item.httpStatus).toBe(200);
     expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
-    expect(typeof item.txtHash).toBe('string');
-    expect(item.txtHash as string).toHaveLength(32);
     expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
+    // Metadata is nested, not spread at the top level.
+    expect((item.metadata as Record<string, unknown>).title).toBe('Test');
+    expect(item.title).toBeUndefined();
+    // Inline content + per-format hash.
+    expect(item.txt).toBe('Hello world');
+    expect(item.txtHash as string).toHaveLength(32);
+    expect(item.jsonHash).toBeUndefined();
+    expect(item.htmlHash).toBeUndefined();
   });
 
   it('url and loadedUrl are distinct when redirected', async () => {
@@ -165,64 +160,10 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(item.url).toBe('https://example.com/old');
     expect(item.loadedUrl).toBe('https://example.com/new');
   });
-
-  it('sets status success on dataset record', async () => {
-    const kvs = makeKvs();
-    const dataset = makeDataset();
-    const sink = createCrawleeStorageSink({
-      destinations: ['dataset'],
-      kvs: kvs as never,
-      dataset: dataset as never,
-      formats: ['txt'],
-    });
-
-    await sink(BASE_RESULT);
-
-    const item = dataset.items[0] as Record<string, unknown>;
-    expect(item.status).toBe('success');
-  });
-
-  it('includes metadata fields in dataset record', async () => {
-    const kvs = makeKvs();
-    const dataset = makeDataset();
-    const sink = createCrawleeStorageSink({
-      destinations: ['dataset'],
-      kvs: kvs as never,
-      dataset: dataset as never,
-      formats: ['txt'],
-    });
-
-    await sink(BASE_RESULT);
-
-    const item = dataset.items[0] as Record<string, unknown>;
-    expect(item.title).toBe('Test');
-    expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
-  });
-
-  it('saves per-format hashes alongside content, no hash for absent formats', async () => {
-    const kvs = makeKvs();
-    const dataset = makeDataset();
-    const sink = createCrawleeStorageSink({
-      destinations: ['dataset'],
-      kvs: kvs as never,
-      dataset: dataset as never,
-      formats: ['txt', 'markdown'],
-    });
-
-    await sink(BASE_RESULT);
-
-    const item = dataset.items[0] as Record<string, unknown>;
-    expect(typeof item.txtHash).toBe('string');
-    expect(item.txtHash as string).toHaveLength(32);
-    expect(typeof item.markdownHash).toBe('string');
-    expect(item.markdownHash as string).toHaveLength(32);
-    expect(item.jsonHash).toBeUndefined();
-    expect(item.htmlHash).toBeUndefined();
-  });
 });
 
 describe('createCrawleeStorageSink — both destinations', () => {
-  it('writes to both KVS and dataset', async () => {
+  it('inlines extracted formats into the dataset (dataset precedence), skipping KVS', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
     const sink = createCrawleeStorageSink({
@@ -234,13 +175,33 @@ describe('createCrawleeStorageSink — both destinations', () => {
 
     await sink(BASE_RESULT);
 
-    expect(kvs.calls.length).toBeGreaterThan(0);
-    expect(dataset.items.length).toBeGreaterThan(0);
+    expect(kvs.calls).toHaveLength(0);
+    expect(dataset.items).toHaveLength(1);
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect(item.txt).toBe('Hello world');
+  });
+
+  it('still routes original to the KVS while inlining formats', async () => {
+    const kvs = makeKvs();
+    const dataset = makeDataset();
+    const sink = createCrawleeStorageSink({
+      destinations: ['key-value-store', 'dataset'],
+      kvs: kvs as never,
+      dataset: dataset as never,
+      formats: ['txt', 'original'],
+    });
+
+    await sink(BASE_RESULT);
+
+    expect(kvs.calls.some((c) => /^original-[0-9a-f]{32}\.html$/.test(c.key))).toBe(true);
+    const item = dataset.items[0] as Record<string, unknown>;
+    expect(item.txt).toBe('Hello world'); // inline
+    expect((item.original as Record<string, unknown>).key).toMatch(/^original-[0-9a-f]{32}\.html$/);
   });
 });
 
 describe('createCrawleeStorageSink — error isolation', () => {
-  it('logs stderr and continues when KVS write fails', async () => {
+  it('logs stderr and resolves when a KVS write fails', async () => {
     const kvs = {
       setValue: vi.fn().mockRejectedValue(new Error('disk full')),
     };
@@ -248,7 +209,7 @@ describe('createCrawleeStorageSink — error isolation', () => {
     const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
 
     const sink = createCrawleeStorageSink({
-      destinations: ['key-value-store', 'dataset'],
+      destinations: ['key-value-store'],
       kvs: kvs as never,
       dataset: dataset as never,
       formats: ['txt'],
@@ -256,7 +217,8 @@ describe('createCrawleeStorageSink — error isolation', () => {
 
     await expect(sink(BASE_RESULT)).resolves.toBeUndefined();
     expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('disk full'));
-    expect(dataset.items).toHaveLength(1);
+    // The KVS write failed mid-build, so no record is pushed for this page.
+    expect(dataset.items).toHaveLength(0);
 
     stderrSpy.mockRestore();
   });

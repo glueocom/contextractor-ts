@@ -1,6 +1,5 @@
-import type { ExtractionResult } from '@contextractor/crawler';
+import type { ExtractionResult, KvsLike } from '@contextractor/crawler';
 import { describe, expect, it, vi } from 'vitest';
-import type { KvsLike } from './extraction.js';
 import { createApifySink } from './sinks.js';
 
 const FAKE_RESULT: ExtractionResult = {
@@ -63,7 +62,7 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     expect(kvs.calls.length).toBeGreaterThan(0);
 
     const item = dataset.items[0] as Record<string, unknown>;
-    // The data key for markdown should be a ContentInfo object (has `hash`), not a raw string
+    // The data key for markdown should be a ContentRef object (has `hash`), not a raw string
     expect(typeof item.markdown).toBe('object');
     expect(item.markdown).not.toBe('# Test Page');
     expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
@@ -130,7 +129,7 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
 });
 
 describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-store"]', () => {
-  it(`KVS key for raw HTML is \${keyBase}-original.html`, async () => {
+  it('KVS key for raw HTML is original-{md5}.html', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
 
@@ -143,12 +142,9 @@ describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-s
 
     await sink(FAKE_RESULT);
 
-    const originalCall = kvs.calls.find((c) => c.key.endsWith('-original.html'));
+    const originalCall = kvs.calls.find((c) => c.key.startsWith('original-'));
     expect(originalCall).toBeDefined();
-    expect(originalCall?.key).toMatch(/-original\.html$/);
-    // Confirm the old key pattern is not used
-    const oldKeyCall = kvs.calls.find((c) => c.key.endsWith('-raw.html'));
-    expect(oldKeyCall).toBeUndefined();
+    expect(originalCall?.key).toMatch(/^original-[0-9a-f]{32}\.html$/);
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.status).toBe('success');

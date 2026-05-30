@@ -2,7 +2,6 @@ import { ContextractorInput } from '@contextractor/schema';
 import { describe, expect, it } from 'vitest';
 import { buildProgram } from './cliProgram.js';
 import { buildCrawlConfig, validateSaveFormats } from './config.js';
-import { urlToFilename } from './sinks.js';
 
 describe('config helpers', () => {
   it('buildCrawlConfig produces balanced defaults from a minimal startUrls payload', () => {
@@ -168,18 +167,5 @@ describe('buildProgram — removed stale flags', () => {
   it('does not expose --no-metadata on the extract subcommand', () => {
     const program = buildProgram();
     expect(getExtractOptions(program)).not.toContain('--no-metadata');
-  });
-});
-
-describe('urlToFilename', () => {
-  it('strips protocol and replaces non-alphanumeric chars', () => {
-    expect(urlToFilename('https://example.com/path/to/page')).toBe('example-com-path-to-page');
-  });
-
-  it('truncates long URLs and adds a hash', () => {
-    const long = `https://example.com/${'a'.repeat(120)}`;
-    const result = urlToFilename(long);
-    expect(result.length).toBeLessThanOrEqual(120);
-    expect(result).toMatch(/-[0-9a-f]{8}$/);
   });
 });

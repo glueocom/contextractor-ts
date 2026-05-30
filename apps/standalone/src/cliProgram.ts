@@ -3,7 +3,9 @@ import { readFile, rm } from 'node:fs/promises';
 import path, { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  buildFailedRecord,
   buildRequests,
+  buildSkippedRecord,
   createContextractorCrawler,
   ProxyConfiguration,
 } from '@contextractor/crawler';
@@ -614,19 +616,12 @@ async function runExtractAction(
         errorMessages: info.errorMessages,
         retryCount: info.retryCount,
       });
-      await ds.pushData({
-        url: info.url,
-        loadedUrl: info.loadedUrl,
-        status: 'failed',
-        errorMessages: info.errorMessages,
-        retryCount: info.retryCount,
-        crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-      });
+      await ds.pushData(buildFailedRecord(info));
     },
     ...(parsed.data.storeSkippedUrls
       ? {
           onSkippedUrl: (url, reason) => {
-            void ds.pushData({ url, status: 'skipped', skipReason: reason });
+            void ds.pushData(buildSkippedRecord(url, reason));
           },
         }
       : {}),
