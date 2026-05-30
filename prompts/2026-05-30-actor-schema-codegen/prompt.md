@@ -600,6 +600,16 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 - **`onSkippedUrl` is synchronous** (`(url, reason) => void`), so `void dataset.pushData(buildSkippedRecord(...))` is a floating promise on both surfaces — pre-existing, identical, not in scope.
 - **`tools/platform-test-runner/` is pre-existing-stale — leave it.** `src/dataset-item.ts` validates against removed output fields (`extractedText`, `extractedXmlTei`, `rawHtml`) and `test-suites/*/settings.json` use the OLD input names (`maxPagesPerCrawl`, `maxCrawlingDepth`) plus long-removed fields (`trafilaturaConfig`, `saveRawHtmlToKeyValueStore`). The input renames make its page/depth-limit suites silently no-op (the input schema ignores unknown keys). It still builds (its `ContentRef`/`DatasetItem` are local types) and is not in the `pnpm test` assertion path, so it does not block this change — but flag that the platform-test-runner needs its own cleanup pass before it is usable again.
 
+## Post-merge review (2026-05-31, `/dev:code-review-autofix`)
+
+PR #3 reviewed after merge (multi-agent `code-review high` + domain checks). The commit was clean; three follow-up fixes applied, all four local gates + the platform build/run re-verified green (build `0.3.420` SUCCEEDED, test crawl returned the full success shape with the platform-only `ContentNode.url`):
+
+- **`saveDestination` accepted `[]`** (no `.min(1)`) → the new sink emits content-less `{hash,bytes}` nodes silently. Added `.min(1)` at the Zod boundary; regenerated `input_schema.json` (`minItems: 1`, mirroring `startUrls`). Added an `input.test.ts` rejection case.
+- **Duplicated ISO-timestamp idiom** (`new Date().toISOString().replace(/\.\d+Z$/, 'Z')`) at `crawl.loadedTime` + `crawledTime` → extracted an `isoSecond()` helper in the shared sink core.
+- **Dead `failedRecords` array** in `cliProgram.ts` carried stale pre-unification field names (`errorMessages`, top-level `loadedUrl`) but was read only as `.length` → replaced with a counter.
+
+Recorded as **intentional, NOT changed**: the two sinks' error handling **diverges on purpose** — the Actor sink lets write errors propagate (Crawlee retries → `failed` record) while the standalone sink catches-and-continues (best-effort; no retry infra). Do not "unify" this away; if per-format write isolation is ever wanted, add an `onWriteError` hook to the shared core rather than changing either wrapper.
+
 ## Tests (same response as source — `.claude/rules/test-maintenance.md`)
 
 - **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS content nodes (`{hash,bytes,key,url}`); success w/ inline content nodes (`{hash,bytes,content}`); mixed-null `metadata` + nested `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode`/`depth`/`referrerUrl`); `failed` (incl. `crawl.loadedUrl: null`, `errors`, `crawledTime`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.

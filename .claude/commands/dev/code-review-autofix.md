@@ -198,6 +198,7 @@ Project conventions accumulated from past reviews. Apply in Step ANALYZE alongsi
 ### Zod validation
 - All external input enters through `safeParse` — the `.data` path is taken only after checking `.success`
 - Actor input uses the schema from `packages/schema/` — do not inline validation in `apps/`
+- Selection arrays that drive a sink/format choice (e.g. `saveDestination`, `save`) must carry `.min(1)` — an empty array silently produces content-less records downstream. `.min(1)` renders as `minItems` in the generated schema (mirrors `startUrls`); add a rejection test in `packages/schema/test/input.test.ts`
 
 ### Import hygiene
 - `import type` for every import that carries no runtime value
@@ -207,6 +208,10 @@ Project conventions accumulated from past reviews. Apply in Step ANALYZE alongsi
 - `sectionCaption` must appear on ONLY the first field in each logical section group in `packages/schema/src/source-of-truth/input.ts`
 - Every subsequent field in the same section must have NO `sectionCaption` — each occurrence triggers a new collapsible group in Apify Console UI
 - After regenerating `input_schema.json`, verify: `python3 -c "import json,collections; s=json.load(open('apps/apify-actor/.actor/input_schema.json')); c=collections.Counter(v.get('sectionCaption') for v in s['properties'].values() if v.get('sectionCaption')); print([k for k,n in c.items() if n>1] or 'OK')"`
+
+### Sink error-handling divergence (intentional — do NOT "unify")
+- The Apify Actor sink (`apps/apify-actor/src/sinks.ts`) lets write errors PROPAGATE so Crawlee retries and ultimately emits a `failed` record; the standalone sink (`apps/standalone/src/sinks.ts`) CATCHES-and-continues (best-effort; no retry infra). This divergence is deliberate despite both producing the same happy-path record shape — do not make them identical
+- If per-format write isolation is ever wanted, add an `onWriteError` hook to the shared `@contextractor/crawler` sink core rather than changing either wrapper
 
 ### Deploy safety
 - No `apify push` command anywhere in scripts, tooling, or documentation — always `git push origin HEAD:dev` for test, `HEAD:main` for production
