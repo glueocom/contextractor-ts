@@ -19,8 +19,13 @@ describe('ContextractorOutput discriminated union', () => {
       loadedAt: '2026-05-30T12:00:00Z',
       metadata: META,
       httpStatus: 200,
-      originalHash: 'a'.repeat(32),
       crawl: { depth: 0, referrerUrl: null },
+      original: {
+        hash: 'a'.repeat(32),
+        length: 89898,
+        key: 'original-x.html',
+        url: 'https://api/o',
+      },
       markdown: { hash: 'b'.repeat(32), length: 123, key: 'markdown-x.md', url: 'https://api/x' },
     };
     expect(ContextractorOutput.parse(record)).toMatchObject({ status: 'success' });
@@ -34,8 +39,8 @@ describe('ContextractorOutput discriminated union', () => {
       loadedAt: '2026-05-30T12:00:00Z',
       metadata: { ...META, title: null },
       httpStatus: 200,
-      originalHash: 'a'.repeat(32),
       crawl: { depth: 2, referrerUrl: 'https://example.com/' },
+      original: { hash: 'a'.repeat(32), length: 89898 },
       markdown: '# Inline',
       markdownHash: 'c'.repeat(32),
       txt: 'Inline',

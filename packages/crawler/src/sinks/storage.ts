@@ -80,13 +80,15 @@ export interface BuildSuccessRecordOpts {
 /**
  * Assemble the `status: 'success'` dataset record for one extracted page,
  * shared by the Apify Actor and the standalone CLI/lib so their records are
- * identical. When a format goes to the dataset it is inlined as a string plus a
- * `{fmt}Hash`; when it goes only to the key-value store it is a `ContentRef`.
+ * identical. When an extracted format goes to the dataset it is inlined as a
+ * string plus a `{fmt}Hash`; when it goes only to the key-value store it is a
+ * `ContentRef`. The extracted formats prefer the dataset (inline) when both
+ * destinations are selected.
  *
- * Precedence when both destinations are selected is intentionally asymmetric:
- * the extracted formats prefer the dataset (inline), while `original` prefers
- * the key-value store (a reference) to avoid inlining large raw HTML into every
- * dataset record.
+ * `original` is always a `ContentRef`: the raw HTML's `hash` and `length` are
+ * always known, so they are always present. When `original` is in save and a
+ * key-value store is a destination, the raw HTML blob is stored and `key` + `url`
+ * are added. The raw HTML is never inlined into the dataset record.
  */
 export async function buildSuccessRecord(
   result: ExtractionResult,
@@ -101,20 +103,14 @@ export async function buildSuccessRecord(
     loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
     metadata: result.metadata,
     httpStatus: 200,
-    originalHash: result.rawHtmlHash,
     crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
   };
 
-  if (saveOriginal) {
-    if (toKvs) {
-      data.original = await putBlob(kvs, 'original', result.url, result.html, {
-        hash: result.rawHtmlHash,
-        length: result.rawHtmlLength,
-      });
-    } else if (toDataset) {
-      data.original = result.html;
-    }
-  }
+  const originalInfo = { hash: result.rawHtmlHash, length: result.rawHtmlLength };
+  data.original =
+    saveOriginal && toKvs
+      ? await putBlob(kvs, 'original', result.url, result.html, originalInfo)
+      : { ...originalInfo };
 
   for (const fmt of CONTENT_FORMATS) {
     const content = result.formats[fmt];

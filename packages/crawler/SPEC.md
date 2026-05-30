@@ -31,7 +31,7 @@ type Sink<T> = (result: T) => Promise<void>;
 Record assembly and key-value-store key derivation shared by the Apify Actor and the standalone CLI/lib, so their dataset records and KVS output are identical (the only difference is `ContentRef.url`, present only where a public KVS URL exists). Exports:
 
 - `kvsKey(kind, url)` — deterministic KVS key `{format}-{md5(url)}.{ext}` for `txt | markdown | json | html | original`
-- `buildSuccessRecord(result, { kvs, toKvs, toDataset, saveOriginal })` — assembles the `status: 'success'` record: an inline string + `{fmt}Hash` for the dataset, a `ContentRef` for the key-value store (dataset wins when both are selected; `original` prefers the KVS to avoid inlining large raw HTML)
+- `buildSuccessRecord(result, { kvs, toKvs, toDataset, saveOriginal })` — assembles the `status: 'success'` record: extracted formats are an inline string + `{fmt}Hash` for the dataset, or a `ContentRef` for the key-value store (dataset wins when both are selected). `original` is always a `ContentRef` (`hash` + `length`), gaining `key` + `url` when `saveOriginal` and a KVS is a destination — the raw HTML is never inlined
 - `buildFailedRecord(info)` / `buildSkippedRecord(url, reason)` — the `failed` / `skipped` records
 - types `ContentRef`, `KvsLike`, `ContentKind`
 

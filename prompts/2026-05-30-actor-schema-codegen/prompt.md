@@ -32,7 +32,7 @@ Everything about *what fields exist and their types*:
 
 - `success` / `failed` / `skipped` → `z.discriminatedUnion('status', [Success, Failed, Skipped])`.
 - KVS-reference vs inline-string content → `ContentField = z.union([ContentRef, z.string()])`.
-- Conditional fields (per-format hashes, optional content/`original`) → `.optional()`.
+- Conditional fields (per-format hashes; optional `txt`/`markdown`/`json`/`html` content) → `.optional()`. `original` is a **required** `ContentRef` — the raw HTML's `hash`/`length` are always known.
 - Nullable metadata/crawl fields, and `failed.loadedUrl` → `.nullable()`.
 
 ### Presentation / storage config → typed `.ts` (`apify/output-views.ts`)
@@ -96,11 +96,11 @@ Three corrections to the original draft code (all applied below):
 - **`mergeNode` must accumulate enum values across *all* branches.** The naive pairwise-collapse drops the third `status` (`skipped`): after `success`+`failed` the node has no `.const`, so the guard fails. Accumulate instead (see code).
 - **`toDatasetField` must copy `enum`.** Otherwise the merged `status` enum is dropped. Apify's dataset `fields` is a JSON-Schema-style descriptor map that **does** accept `enum` and nested `properties` on a field (verified against the docs and a green platform build).
 
-The Actor's `buildSuccessRecord` content precedence is intentionally **asymmetric** and must be preserved on both surfaces: when both destinations are selected, extracted formats prefer the **dataset** (inline + `{fmt}Hash`), while `original` prefers the **key-value store** (a `ContentRef`) to avoid inlining large raw HTML into every record.
+`buildSuccessRecord` content rules (identical on both surfaces): when both destinations are selected, extracted formats prefer the **dataset** (inline + `{fmt}Hash`). `original` is **always** a `ContentRef` — `hash` + `length` are always present (the raw HTML is always known); `key` + `url` are added only when `saveOriginal` and a key-value store is a destination. The raw HTML is never inlined into the dataset record (it would bloat every record).
 
 ### KVS key scheme — research decision
 
-Researched per Apify conventions (May 2026): Apify's own `apify/screenshot-url` keys per-URL blobs by **URL + MD5** (not content-hash, not slug). Content-hash keying is wrong here (breaks overwrite-on-recrawl, orphans blobs; the records already carry `originalHash`/`{fmt}Hash`). KVS keys must match `^[a-zA-Z0-9!\-_.'()]{1,256}$` (no `/`, `:`, `?`, `#`) — slugs can violate this and exceed the length limit. **Decision: `{format}-{md5(url)}.{ext}`** (full 32-hex MD5 of `result.url`), identical on both surfaces. The **format prefix** lets `key_value_store_schema.json` group cleanly by `keyPrefix` (one collection per format).
+Researched per Apify conventions (May 2026): Apify's own `apify/screenshot-url` keys per-URL blobs by **URL + MD5** (not content-hash, not slug). Content-hash keying is wrong here (breaks overwrite-on-recrawl, orphans blobs; the records already carry the raw HTML hash as `original.hash` and per-format `{fmt}Hash`). KVS keys must match `^[a-zA-Z0-9!\-_.'()]{1,256}$` (no `/`, `:`, `?`, `#`) — slugs can violate this and exceed the length limit. **Decision: `{format}-{md5(url)}.{ext}`** (full 32-hex MD5 of `result.url`), identical on both surfaces. The **format prefix** lets `key_value_store_schema.json` group cleanly by `keyPrefix` (one collection per format).
 
 ## File-by-file changes
 
@@ -158,10 +158,10 @@ const SuccessRecord = z.object({
   loadedAt: z.string().describe('ISO 8601 timestamp when the page was loaded'),
   metadata: Metadata,
   httpStatus: z.number().int().describe('HTTP response status code (currently always 200; see SPEC)'),
-  originalHash: z.string().describe('MD5 hex digest of the raw page HTML'),
   crawl: Crawl,
-  original: ContentField.optional().describe(
-    'Raw page HTML captured before extraction. Present when "original" is in save.',
+  // `original` is a required ContentRef: hash+length always present; key+url when stored.
+  original: ContentRef.describe(
+    'Reference to the raw page HTML. "hash" and "length" are always present; "key" and "url" are added when "original" is in save and the raw HTML is stored in the key-value store.',
   ),
   txt: ContentField.optional().describe('Extracted plain text. Present when "txt" is in save.'),
   markdown: ContentField.optional().describe('Extracted Markdown. Present when "markdown" is in save.'),
@@ -471,10 +471,11 @@ export interface BuildSuccessRecordOpts { kvs: KvsLike; toKvs: boolean; toDatase
 
 /**
  * Assemble the `status: 'success'` record, shared by the Actor and CLI/lib so
- * their records are identical. Inline string + `{fmt}Hash` for the dataset; a
- * `ContentRef` for the KVS. Precedence when both destinations are selected is
- * asymmetric: extracted formats prefer the dataset; `original` prefers the KVS
- * (avoids inlining large raw HTML).
+ * their records are identical. Extracted formats are an inline string + `{fmt}Hash`
+ * for the dataset, or a `ContentRef` for the KVS (dataset wins when both selected).
+ * `original` is ALWAYS a `ContentRef`: its `hash` + `length` are always known, and
+ * `key` + `url` are added when `saveOriginal` and a KVS is a destination. The raw
+ * HTML is never inlined into the dataset record.
  */
 export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSuccessRecordOpts): Promise<Record<string, unknown>> {
   const { kvs, toKvs, toDataset, saveOriginal } = opts;
@@ -485,17 +486,16 @@ export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSu
     loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
     metadata: result.metadata,
     httpStatus: 200,
-    originalHash: result.rawHtmlHash,
     crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
   };
 
-  if (saveOriginal) {
-    if (toKvs) {
-      data.original = await putBlob(kvs, 'original', result.url, result.html, { hash: result.rawHtmlHash, length: result.rawHtmlLength });
-    } else if (toDataset) {
-      data.original = result.html;
-    }
-  }
+  // `original` is always present; the raw HTML blob is stored (key + url added)
+  // only when `saveOriginal` and a key-value store is a destination.
+  const originalInfo = { hash: result.rawHtmlHash, length: result.rawHtmlLength };
+  data.original =
+    saveOriginal && toKvs
+      ? await putBlob(kvs, 'original', result.url, result.html, originalInfo)
+      : { ...originalInfo };
 
   for (const fmt of CONTENT_FORMATS) {
     const content = result.formats[fmt];
@@ -564,7 +564,7 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 
 - **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS `ContentRef`s; success w/ inline strings + `*Hash`; mixed-null `metadata` + `crawl{depth:0, referrerUrl:null}`; `failed` (incl. `loadedUrl: null`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.
 - **`packages/schema/test/to-dataset-schema.test.ts`** — deep-equal vs on-disk `dataset_schema.json` (read it with `JSON.parse(readFileSync(...))` — `any` from JSON.parse avoids explicit-`any` lint); invariants on the on-disk JSON: `fields.status.enum` is `['success','failed','skipped']`, `fields.metadata.properties.title.type==='string'`, `fields.crawl.properties.depth.type==='integer'`, `fields.txt.properties.hash.type==='string'`, `fields.skipReason.type==='string'`, `fields.errorMessages.type==='array'`, `views.overview.transformation.fields` unchanged; `toOutputSchema()`/`toKeyValueStoreSchema()` deep-equal their files; determinism + single trailing newline.
-- **`packages/crawler/src/sinks/storage.test.ts`** — `kvsKey` matches `/^{prefix}[0-9a-f]{32}\.{ext}$/` per kind; `buildSuccessRecord` for KVS-only (ContentRefs, no `*Hash`), dataset-only (inline + `*Hash`), both (inline formats + `original` ContentRef); a public-URL test (platform `KvsLike` with `getPublicUrl` sets `ContentRef.url`, local omits it, same key+hash); `buildFailedRecord`/`buildSkippedRecord` shapes.
+- **`packages/crawler/src/sinks/storage.test.ts`** — `kvsKey` matches `/^{prefix}[0-9a-f]{32}\.{ext}$/` per kind; `buildSuccessRecord` for KVS-only (ContentRefs, no `*Hash`), dataset-only (inline + `*Hash`; `original` is a `{hash, length}` reference, never inlined), both (inline formats + `original` ContentRef), and `original` always present (a `{hash, length}` reference even when `original` is not in `save`; no top-level `originalHash`); a public-URL test (platform `KvsLike` with `getPublicUrl` sets `ContentRef.url`, local omits it, same key+hash); `buildFailedRecord`/`buildSkippedRecord` shapes.
 - **`apps/apify-actor/src/storage-keys.test.ts`** — coupling: `kvsKey(kind, url)` starts with `KvsCollections.collections[kind].keyPrefix` (imports `kvsKey` from crawler + `KvsCollections` from schema — apify-actor depends on both).
 - **Update** `apps/standalone/src/sinks.test.ts` for the new behavior (KVS-only now pushes a record of `ContentRef`s; `item.metadata.title`; `item.loadedAt` matches `/Z$/`; `item.httpStatus===200`; `both` mode: dataset wins so KVS not written for formats; error isolation: a KVS failure aborts the record → 0 items) and `apps/apify-actor/src/sinks.test.ts` (new key prefixes). Keep `cli.test.ts`/`exitCode.test.ts` green.
 

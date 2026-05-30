@@ -42,6 +42,15 @@ describe('toDatasetSchema', () => {
     expect(ds.fields.txt.properties.url.type).toBe('string');
   });
 
+  it('exposes original as a ContentRef object (no top-level originalHash)', () => {
+    const ds = onDisk('dataset_schema.json');
+    expect('originalHash' in ds.fields).toBe(false);
+    expect(ds.fields.original.type).toBe('object');
+    expect(ds.fields.original.properties.hash.type).toBe('string');
+    expect(ds.fields.original.properties.length.type).toBe('integer');
+    expect(ds.fields.original.properties.key.type).toBe('string');
+  });
+
   it('enumerates failed and skipped fields', () => {
     const ds = onDisk('dataset_schema.json');
     expect(ds.fields.errorMessages.type).toBe('array');

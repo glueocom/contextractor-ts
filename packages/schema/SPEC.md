@@ -41,6 +41,6 @@ Fields grouped by logical section:
 
 Record shapes:
 
-- **`success`** — `url`, `loadedUrl`, `status: 'success'`, `loadedAt` (ISO 8601), `metadata` (object of nullable strings: `title`, `author`, `publishedAt`, `description`, `siteName`, `lang`), `httpStatus` (integer; currently always 200), `originalHash` (MD5 hex of raw HTML), `crawl: { depth, referrerUrl }`, the optional content fields `original` / `txt` / `markdown` / `json` / `html` (each a `ContentField`), and the optional per-format `txtHash` / `markdownHash` / `jsonHash` / `htmlHash` (present when `saveDestination` includes `"dataset"`).
+- **`success`** — `url`, `loadedUrl`, `status: 'success'`, `loadedAt` (ISO 8601), `metadata` (object of nullable strings: `title`, `author`, `publishedAt`, `description`, `siteName`, `lang`), `httpStatus` (integer; currently always 200), `crawl: { depth, referrerUrl }`, `original` (a `ContentRef`, always present: the raw HTML's `hash` + `length`, plus `key` + `url` when stored to the key-value store), the optional content fields `txt` / `markdown` / `json` / `html` (each a `ContentField`), and the optional per-format `txtHash` / `markdownHash` / `jsonHash` / `htmlHash` (present when `saveDestination` includes `"dataset"`).
 - **`failed`** — `url`, `loadedUrl` (nullable), `status: 'failed'`, `errorMessages` (string array), `retryCount` (integer), `crawledAt` (ISO 8601).
 - **`skipped`** — `url`, `status: 'skipped'`, `skipReason` (`'robotsTxt' | 'limit' | 'enqueueLimit' | 'filters' | 'redirect' | 'depth'`).

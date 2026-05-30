@@ -65,7 +65,7 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     // The data key for markdown should be a ContentRef object (has `hash`), not a raw string
     expect(typeof item.markdown).toBe('object');
     expect(item.markdown).not.toBe('# Test Page');
-    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect((item.original as { hash: string }).hash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.markdownHash).toBeUndefined();
     expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
@@ -118,7 +118,7 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
     expect(item.loadedUrl).toBe(FAKE_RESULT.loadedUrl);
     expect(item.markdown).toBe('# Test Page');
     expect(item.txt).toBe('Test Page');
-    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect((item.original as { hash: string }).hash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(typeof item.markdownHash).toBe('string');
     expect(item.markdownHash as string).toHaveLength(32);
     expect(typeof item.txtHash).toBe('string');
@@ -146,7 +146,7 @@ describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-s
     expect(originalCall).toBeDefined();
     expect(originalCall?.key).toMatch(/^original-[0-9a-f]{32}\.html$/);
     const item = dataset.items[0] as Record<string, unknown>;
-    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect((item.original as { hash: string }).hash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.status).toBe('success');
   });
 });

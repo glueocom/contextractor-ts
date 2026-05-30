@@ -84,6 +84,7 @@ describe('buildSuccessRecord — key-value-store only', () => {
     expect(original.key).toMatch(/^original-[0-9a-f]{32}\.html$/);
     expect(original.hash).toBe('rawhash');
     expect(original.length).toBe(16);
+    expect(rec.originalHash).toBeUndefined();
 
     const keys = kvs.calls.map((c) => c.key);
     expect(keys.some((k) => k.startsWith('txt-'))).toBe(true);
@@ -106,7 +107,25 @@ describe('buildSuccessRecord — dataset only', () => {
     expect(rec.txt).toBe('plain');
     expect(rec.txtHash as string).toHaveLength(32);
     expect(rec.markdown).toBe('# md');
-    expect(rec.original).toBe('<html>raw</html>');
+    // original is never inlined — always a {hash, length} reference (no key/url with no KVS)
+    expect(rec.original).toEqual({ hash: 'rawhash', length: 16 });
+    expect(rec.originalHash).toBeUndefined();
+  });
+});
+
+describe('buildSuccessRecord — original always present', () => {
+  it('emits original as {hash, length} even when "original" is not in save', async () => {
+    const kvs = localKvs();
+    const rec = await buildSuccessRecord(RESULT, {
+      kvs,
+      toKvs: true,
+      toDataset: false,
+      saveOriginal: false,
+    });
+
+    expect(rec.originalHash).toBeUndefined();
+    expect(rec.original).toEqual({ hash: 'rawhash', length: 16 });
+    expect(kvs.calls.some((c) => c.key.startsWith('original-'))).toBe(false);
   });
 });
 

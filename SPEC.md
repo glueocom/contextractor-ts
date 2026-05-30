@@ -114,7 +114,6 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
     "lang": "en"
   },
   "httpStatus": 200,
-  "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
   "original": {
     "hash": "d41d8cd98f00b204e9800998ecf8427e",
     "length": 89898,
@@ -135,7 +134,7 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
   "loadedAt": "2026-04-27T18:58:36Z",
   "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "lang": "en" },
   "httpStatus": 200,
-  "originalHash": "d41d8cd98f00b204e9800998ecf8427e",
+  "original": { "hash": "d41d8cd98f00b204e9800998ecf8427e", "length": 89898 },
   "markdown": "# Page Title\n\nContent...",
   "markdownHash": "5d41402abc4b2a76b9719d911017c592",
   "txt": "Page Title\n\nContent...",
@@ -144,8 +143,7 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
 ```
 
 Rules:
-- `originalHash`: always present; 32-char MD5 hex of the raw HTML
-- `original`: present when `saveOriginal` is true; a `ContentRef` object (`hash`, `length`, `key`, `url`) when saved to KVS, or the raw HTML string when `saveDestination` is `dataset` only
+- `original`: always present; a `ContentRef` with the raw HTML's `hash` + `length`, plus `key` + `url` when `"original"` is in `save` and the raw HTML is stored in the key-value store (the raw HTML is never inlined into the dataset record)
 - `markdown`, `txt`, `json`, `html`: present per format when extracted; `ContentRef` objects when `saveDestination` is `key-value-store`; inline content strings when `dataset`, each accompanied by a `{format}Hash` field (e.g. `markdownHash`, `txtHash`) containing the 32-char MD5 hex of that content
 - `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
 
@@ -161,7 +159,7 @@ Storage keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32
 
 ### Standalone CLI — output
 
-Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `originalHash`, `crawl`, and per-format content (a `ContentRef` for `key-value-store`, or an inline string + `{format}Hash` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentRef.url` is absent (it is present on the Apify platform).
+Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `crawl`, `original` (a `ContentRef`), and per-format content (a `ContentRef` for `key-value-store`, or an inline string + `{format}Hash` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentRef.url` is absent (it is present on the Apify platform).
 
 `--clean` purges the default Dataset, Key-Value Store, and Request Queue before extraction begins.
 

@@ -50,10 +50,9 @@ const SuccessRecord = z.object({
     .number()
     .int()
     .describe('HTTP response status code (currently always 200; see SPEC)'),
-  originalHash: z.string().describe('MD5 hex digest of the raw page HTML'),
   crawl: Crawl,
-  original: ContentField.optional().describe(
-    'Raw page HTML captured before extraction. Present when "original" is in save.',
+  original: ContentRef.describe(
+    'Reference to the raw page HTML. "hash" and "length" are always present; "key" and "url" are added when "original" is in save and the raw HTML is stored in the key-value store.',
   ),
   txt: ContentField.optional().describe('Extracted plain text. Present when "txt" is in save.'),
   markdown: ContentField.optional().describe(

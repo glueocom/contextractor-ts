@@ -127,7 +127,12 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(item.status).toBe('success');
     expect(item.loadedAt).toMatch(/Z$/);
     expect(item.httpStatus).toBe(200);
-    expect(item.originalHash).toBe(BASE_RESULT.rawHtmlHash);
+    // original is always a {hash, length} reference (raw HTML not stored in dataset-only mode).
+    expect(item.originalHash).toBeUndefined();
+    expect(item.original).toEqual({
+      hash: BASE_RESULT.rawHtmlHash,
+      length: BASE_RESULT.rawHtmlLength,
+    });
     expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
     // Metadata is nested, not spread at the top level.
     expect((item.metadata as Record<string, unknown>).title).toBe('Test');

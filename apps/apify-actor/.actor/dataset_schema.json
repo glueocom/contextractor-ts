@@ -52,10 +52,6 @@
       "type": "integer",
       "description": "HTTP response status code (currently always 200; see SPEC)"
     },
-    "originalHash": {
-      "type": "string",
-      "description": "MD5 hex digest of the raw page HTML"
-    },
     "crawl": {
       "type": "object",
       "properties": {
@@ -90,7 +86,7 @@
           "description": "Public URL to the key-value store item"
         }
       },
-      "description": "Raw page HTML captured before extraction. Present when \"original\" is in save."
+      "description": "Reference to the raw page HTML. \"hash\" and \"length\" are always present; \"key\" and \"url\" are added when \"original\" is in save and the raw HTML is stored in the key-value store."
     },
     "txt": {
       "type": "object",

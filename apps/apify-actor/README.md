@@ -91,8 +91,9 @@ the table below is auto-rebuilt from that schema by
 
 Successful dataset entries include `status: 'success'` together with
 `loadedUrl`, `loadedAt`, `httpStatus`, `metadata` (title, author,
-publishedAt, description, siteName, lang), and `originalHash` (32-char MD5
-hex of the raw HTML, always present). Failed requests are stored as
+publishedAt, description, siteName, lang), and `original` — a reference to
+the raw HTML whose `hash` and `length` are always present (`key` and `url`
+are added when the raw HTML is stored). Failed requests are stored as
 `status: 'failed'` records after retries are exhausted, and skipped URLs can
 be recorded as `status: 'skipped'` when `storeSkippedUrls` is enabled.
 
