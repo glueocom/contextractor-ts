@@ -136,5 +136,4 @@ describe('Proxy Rotation - Apify Actor', () => {
       `Actor did not complete. stdout: ${result.stdout.slice(-500)}`,
     ).toBe(true);
   });
-
 }, 120_000);
