@@ -19,29 +19,32 @@ interface ContentNode {
 export interface DatasetItem {
   url: string;
   status: 'success' | 'failed' | 'skipped';
-  // success / failed
-  loadedUrl?: string | null;
-  // success
-  loadedAt?: string;
-  httpStatus?: number;
   metadata?: {
     title: string | null;
     author: string | null;
     publishedAt: string | null;
     description: string | null;
     siteName: string | null;
-    lang: string | null;
+    languageCode: string | null;
   };
-  crawl?: { depth: number; referrerUrl: string | null };
+  // Crawl provenance is nested. Success carries the full set; failed carries
+  // only `loadedUrl`.
+  crawl?: {
+    loadedUrl?: string | null;
+    loadedTime?: string;
+    httpStatusCode?: number;
+    depth?: number;
+    referrerUrl?: string | null;
+  };
   original?: ContentNode;
   txt?: ContentNode;
   markdown?: ContentNode;
   json?: ContentNode;
   html?: ContentNode;
   // failed
-  errorMessages?: string[];
+  errors?: string[];
   retryCount?: number;
-  crawledAt?: string;
+  crawledTime?: string;
   // skipped
   skipReason?: 'robotsTxt' | 'limit' | 'enqueueLimit' | 'filters' | 'redirect' | 'depth';
 }

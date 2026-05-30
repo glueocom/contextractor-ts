@@ -7,19 +7,22 @@ const META = {
   publishedAt: null,
   description: null,
   siteName: null,
-  lang: 'en',
+  languageCode: 'en',
 };
 
 describe('ContextractorOutput discriminated union', () => {
   it('parses a success record with key-value-store content nodes', () => {
     const record = {
       url: 'https://example.com/page',
-      loadedUrl: 'https://example.com/page',
       status: 'success',
-      loadedAt: '2026-05-30T12:00:00Z',
       metadata: META,
-      httpStatus: 200,
-      crawl: { depth: 0, referrerUrl: null },
+      crawl: {
+        loadedUrl: 'https://example.com/page',
+        loadedTime: '2026-05-30T12:00:00Z',
+        httpStatusCode: 200,
+        depth: 0,
+        referrerUrl: null,
+      },
       original: {
         hash: 'a'.repeat(32),
         bytes: 89898,
@@ -34,12 +37,15 @@ describe('ContextractorOutput discriminated union', () => {
   it('parses a success record with inline content nodes', () => {
     const record = {
       url: 'https://example.com/page',
-      loadedUrl: 'https://example.com/page',
       status: 'success',
-      loadedAt: '2026-05-30T12:00:00Z',
       metadata: { ...META, title: null },
-      httpStatus: 200,
-      crawl: { depth: 2, referrerUrl: 'https://example.com/' },
+      crawl: {
+        loadedUrl: 'https://example.com/page',
+        loadedTime: '2026-05-30T12:00:00Z',
+        httpStatusCode: 200,
+        depth: 2,
+        referrerUrl: 'https://example.com/',
+      },
       original: { hash: 'a'.repeat(32), bytes: 89898, content: '<html>raw</html>' },
       markdown: { hash: 'c'.repeat(32), bytes: 8, content: '# Inline' },
       txt: { hash: 'd'.repeat(32), bytes: 6, content: 'Inline' },
@@ -50,11 +56,11 @@ describe('ContextractorOutput discriminated union', () => {
   it('parses a failed record whose loadedUrl is null', () => {
     const record = {
       url: 'https://example.com/x',
-      loadedUrl: null,
       status: 'failed',
-      errorMessages: ['boom'],
+      crawl: { loadedUrl: null },
+      errors: ['boom'],
       retryCount: 3,
-      crawledAt: '2026-05-30T12:00:00Z',
+      crawledTime: '2026-05-30T12:00:00Z',
     };
     expect(() => ContextractorOutput.parse(record)).not.toThrow();
   });

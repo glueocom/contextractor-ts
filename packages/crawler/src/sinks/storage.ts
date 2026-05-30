@@ -107,12 +107,15 @@ export async function buildSuccessRecord(
 
   const data: Record<string, unknown> = {
     url: result.url,
-    loadedUrl: result.loadedUrl,
     status: 'success',
-    loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
     metadata: result.metadata,
-    httpStatus: 200,
-    crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
+    crawl: {
+      loadedUrl: result.loadedUrl,
+      loadedTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      httpStatusCode: 200,
+      depth: result.crawlDepth,
+      referrerUrl: result.referrerUrl,
+    },
   };
 
   const originalInfo = { hash: result.rawHtmlHash, bytes: result.rawHtmlLength };
@@ -157,11 +160,11 @@ export interface FailedRequestInfo {
 export function buildFailedRecord(info: FailedRequestInfo): Record<string, unknown> {
   return {
     url: info.url,
-    loadedUrl: info.loadedUrl,
     status: 'failed',
-    errorMessages: info.errorMessages,
+    crawl: { loadedUrl: info.loadedUrl },
+    errors: info.errorMessages,
     retryCount: info.retryCount,
-    crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+    crawledTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
   };
 }
 

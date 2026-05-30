@@ -14,7 +14,7 @@ const BASE_RESULT: ExtractionResult = {
     publishedAt: null,
     description: null,
     siteName: null,
-    lang: null,
+    languageCode: null,
   },
   formats: { txt: 'Hello world', markdown: '# Hello world' },
   crawlDepth: 0,
@@ -124,17 +124,22 @@ describe('createCrawleeStorageSink — dataset destination', () => {
     expect(dataset.items).toHaveLength(1);
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe(BASE_RESULT.url);
-    expect(item.loadedUrl).toBe(BASE_RESULT.loadedUrl);
     expect(item.status).toBe('success');
-    expect(item.loadedAt).toMatch(/Z$/);
-    expect(item.httpStatus).toBe(200);
+    // crawl provenance is nested under `crawl`.
+    const crawl = item.crawl as Record<string, unknown>;
+    expect(crawl.loadedUrl).toBe(BASE_RESULT.loadedUrl);
+    expect(crawl.loadedTime).toMatch(/Z$/);
+    expect(crawl.httpStatusCode).toBe(200);
+    expect(crawl.depth).toBe(0);
+    expect(crawl.referrerUrl).toBeNull();
+    expect(item.loadedUrl).toBeUndefined();
+    expect(item.httpStatus).toBeUndefined();
     // original (not in save here) is a {hash, bytes} reference — no content/key.
     expect(item.originalHash).toBeUndefined();
     expect(item.original).toEqual({
       hash: BASE_RESULT.rawHtmlHash,
       bytes: BASE_RESULT.rawHtmlLength,
     });
-    expect(item.crawl).toEqual({ depth: 0, referrerUrl: null });
     // Metadata is nested, not spread at the top level.
     expect((item.metadata as Record<string, unknown>).title).toBe('Test');
     expect(item.title).toBeUndefined();
@@ -164,7 +169,7 @@ describe('createCrawleeStorageSink — dataset destination', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe('https://example.com/old');
-    expect(item.loadedUrl).toBe('https://example.com/new');
+    expect((item.crawl as Record<string, unknown>).loadedUrl).toBe('https://example.com/new');
   });
 });
 

@@ -6,7 +6,7 @@ export interface DatasetMetadata {
   publishedAt: string | null;
   description: string | null;
   siteName: string | null;
-  lang: string | null;
+  languageCode: string | null;
 }
 
 export function projectMetadata(meta: Metadata): DatasetMetadata {
@@ -16,6 +16,6 @@ export function projectMetadata(meta: Metadata): DatasetMetadata {
     publishedAt: meta.date,
     description: meta.description,
     siteName: meta.sitename,
-    lang: meta.language ?? null,
+    languageCode: meta.language ?? null,
   };
 }

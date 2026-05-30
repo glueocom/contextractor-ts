@@ -103,17 +103,22 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
 ```json
 {
   "url": "https://example.com/page",
-  "loadedUrl": "https://example.com/page",
-  "loadedAt": "2026-04-27T18:58:36Z",
+  "status": "success",
   "metadata": {
     "title": "Page Title",
     "author": null,
     "publishedAt": "2024-01-15",
     "description": "Meta description",
     "siteName": "Example Site",
-    "lang": "en"
+    "languageCode": "en"
   },
-  "httpStatus": 200,
+  "crawl": {
+    "loadedUrl": "https://example.com/page",
+    "loadedTime": "2026-04-27T18:58:36Z",
+    "httpStatusCode": 200,
+    "depth": 0,
+    "referrerUrl": null
+  },
   "original": {
     "hash": "d41d8cd98f00b204e9800998ecf8427e",
     "bytes": 89898,
@@ -130,10 +135,9 @@ Config merge order: `schema defaults → config file → explicit CLI args`.
 ```json
 {
   "url": "https://example.com/page",
-  "loadedUrl": "https://example.com/page",
-  "loadedAt": "2026-04-27T18:58:36Z",
-  "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "lang": "en" },
-  "httpStatus": 200,
+  "status": "success",
+  "metadata": { "title": "Page Title", "author": null, "publishedAt": "2024-01-15", "description": "Meta description", "siteName": "Example Site", "languageCode": "en" },
+  "crawl": { "loadedUrl": "https://example.com/page", "loadedTime": "2026-04-27T18:58:36Z", "httpStatusCode": 200, "depth": 0, "referrerUrl": null },
   "original": { "hash": "d41d8cd98f00b204e9800998ecf8427e", "bytes": 89898 },
   "markdown": { "hash": "5d41402abc4b2a76b9719d911017c592", "bytes": 6887, "content": "# Page Title\n\nContent..." },
   "txt": { "hash": "7215ee9c7d9dc229d2921a40e899ec5f", "bytes": 5200, "content": "Page Title\n\nContent..." }
@@ -144,7 +148,8 @@ Rules:
 - every content field is a `ContentNode` object: `hash` (32-char MD5) and `bytes` (UTF-8 byte length) are always present; the inline content is under `content` when `saveDestination` is `dataset`, while `key` + `url` reference the stored blob when `key-value-store`
 - `original`: always present (at least `{ hash, bytes }`); its raw HTML is included (as `content`, or `key`/`url`) only when `"original"` is in `save`
 - `markdown`, `txt`, `json`, `html`: present per format when extracted
-- `metadata`: extracted via the napi-rs binding from `rs-trafilatura`
+- crawl provenance is nested under `crawl`: `loadedUrl`, `loadedTime`, `httpStatusCode`, `depth`, `referrerUrl` (the `failed` record's `crawl` holds only `loadedUrl`). Crawl-EVENT timestamps use `*Time` (`crawl.loadedTime`, failed `crawledTime`); content-metadata dates use `*At` (`metadata.publishedAt`)
+- `metadata`: extracted via the napi-rs binding from `rs-trafilatura`; `languageCode` is the detected ISO 639 code
 
 ### Apify Actor — Key-Value Store
 
@@ -158,7 +163,7 @@ Storage keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32
 
 ### Standalone CLI — output
 
-Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `crawl`, `original`, and per-format content — each content field a `ContentNode` (`hash` + `bytes` always present; `key`/`url` for `key-value-store`, inline `content` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentNode.url` is absent (it is present on the Apify platform).
+Output is identical in shape to the Apify Actor (shared sink core). Controlled by `saveDestination` / `--save-destination` (default `key-value-store`): KVS blobs use the same `{format}-{md5(url)}.{ext}` keys; a dataset record is pushed per page with `url`, `status: 'success'`, nested `metadata`, `crawl` (`loadedUrl`, `loadedTime`, `httpStatusCode`, `depth`, `referrerUrl`), `original`, and per-format content — each content field a `ContentNode` (`hash` + `bytes` always present; `key`/`url` for `key-value-store`, inline `content` for `dataset`). `status: 'failed'` records are pushed for exhausted retries, and optional `status: 'skipped'` records when `--store-skipped-urls` is set. The local key-value store has no public URL, so `ContentNode.url` is absent (it is present on the Apify platform).
 
 `--clean` purges the default Dataset, Key-Value Store, and Request Queue before extraction begins.
 

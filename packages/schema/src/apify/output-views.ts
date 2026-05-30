@@ -12,15 +12,20 @@ export const OutputViews = {
     overview: {
       title: 'Overview',
       transformation: {
-        fields: ['loadedUrl', 'httpStatus', 'metadata.title', 'metadata.lang'],
+        fields: [
+          'crawl.loadedUrl',
+          'crawl.httpStatusCode',
+          'metadata.title',
+          'metadata.languageCode',
+        ],
       },
       display: {
         component: 'table',
         properties: {
-          loadedUrl: { label: 'URL', format: 'link' },
-          httpStatus: { label: 'Status', format: 'number' },
+          'crawl.loadedUrl': { label: 'URL', format: 'link' },
+          'crawl.httpStatusCode': { label: 'Status', format: 'number' },
           'metadata.title': { label: 'Title', format: 'text' },
-          'metadata.lang': { label: 'Language', format: 'text' },
+          'metadata.languageCode': { label: 'Language', format: 'text' },
         },
       },
     },

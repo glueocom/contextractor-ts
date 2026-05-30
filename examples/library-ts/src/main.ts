@@ -40,7 +40,7 @@ console.log(`Extracted ${page.count} item(s) of ${page.total} total`);
 await ds.forEach((item) => {
   const status = item.status ?? 'success';
   if (status === 'failed') {
-    console.log('url:', item.url, '— failed:', item.errorMessages);
+    console.log('url:', item.url, '— failed:', item.errors);
   } else if (status === 'skipped') {
     console.log('url:', item.url, '— skipped:', item.skipReason);
   } else {

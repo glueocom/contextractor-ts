@@ -33,7 +33,7 @@ Everything about *what fields exist and their types*:
 - `success` / `failed` / `skipped` → `z.discriminatedUnion('status', [Success, Failed, Skipped])`.
 - Every content field (extracted formats + `original`) → a single `ContentNode` object `{ hash, bytes, content?, key?, url? }` — no union, no top-level `*Hash`. `content` holds the inline string (dataset); `key`/`url` reference the stored blob (key-value-store).
 - Optional content fields `txt`/`markdown`/`json`/`html` → `.optional()` `ContentNode`s (present when extracted). `original` is a **required** `ContentNode` — the raw HTML's `hash`/`bytes` are always known.
-- Nullable metadata/crawl fields, and `failed.loadedUrl` → `.nullable()`.
+- Nullable metadata/crawl fields, and `failed.crawl.loadedUrl` → `.nullable()`.
 
 ### Presentation / storage config → typed `.ts` (`apify/output-views.ts`)
 
@@ -65,7 +65,7 @@ In:
 Out:
 
 - `actor.json` stays hand-written (deploy metadata). Do not generate it.
-- Do **not** plumb a real `httpStatus` through the crawler — keep the literal `200` and flag it (separate cross-package change; see Flagged findings).
+- Do **not** plumb a real HTTP status through the crawler — keep `crawl.httpStatusCode` as the literal `200` and flag it (separate cross-package change; see Flagged findings).
 - No Rust / napi-rs crate changes (`.claude/rules/native-addon-boundary.md`); `txt` stays `txt`.
 
 ## Verified facts to bake in (corrections to the original draft)
@@ -77,7 +77,7 @@ cd packages/schema && node --input-type=module -e '
 import { z } from "zod";
 const U = z.discriminatedUnion("status", [
   z.object({ status: z.literal("success"), url: z.string(), metadata: z.object({ title: z.string().nullable() }), txt: z.object({hash:z.string(),bytes:z.number().int(),content:z.string().optional(),key:z.string().optional()}).optional() }),
-  z.object({ status: z.literal("failed"),  url: z.string(), loadedUrl: z.string().nullable(), retryCount: z.number().int() }),
+  z.object({ status: z.literal("failed"),  url: z.string(), crawl: z.object({loadedUrl: z.string().nullable()}), retryCount: z.number().int() }),
 ]);
 console.log(JSON.stringify(z.toJSONSchema(U, { target:"draft-07", unrepresentable:"any", reused:"inline" }), null, 2));
 '
@@ -87,7 +87,7 @@ Verified emit shapes the transformer must handle:
 
 - **Top level**: `{ "$schema": …, "oneOf": [ {type:'object', properties, required, additionalProperties:false}, … ] }` (no top-level `type`).
 - **Discriminator**: each branch's `status` is `{type:'string', const:'success'|'failed'|'skipped', description}`.
-- **Nullable** (e.g. `metadata.title`, `failed.loadedUrl`): `{ description, anyOf:[{type:'string'},{type:'null'}] }` — **not** `type:['string','null']`. The `anyOf` handler picks the first non-null branch.
+- **Nullable** (e.g. `metadata.title`, `failed.crawl.loadedUrl`): `{ description, anyOf:[{type:'string'},{type:'null'}] }` — **not** `type:['string','null']`. The `anyOf` handler picks the first non-null branch.
 - **Content fields**: each is a single object `{type:'object', properties:{hash,bytes,content,key,url}, required:[hash,bytes]}` — no `anyOf` (the old `ContentField` union is gone), so the transformer recurses straight into its `properties`.
 
 Three corrections to the original draft code (all applied below):
@@ -115,7 +115,17 @@ Rename four input fields to the WCC convention (greenfield, no backward-compat).
 - `globs` → `includeUrlGlobs` (keep the `{glob}` array shape + `globs` editor)
 - `excludes` → `excludeUrlGlobs` (same)
 
-Read sites: `apps/apify-actor/src/config.ts` (`buildCrawlerOpts`), `apps/apify-actor/src/run.ts` (the sitemap block reads `input.includeUrlGlobs`/`input.excludeUrlGlobs` — **easy to miss**), `apps/standalone/src/config.ts` (`buildCrawlConfig`), `apps/standalone/src/cliProgram.ts` (the `s.maxCrawlPages._def` / `s.maxCrawlDepth._def` default reads + the `buildSchemaOverrides` output keys). Update `packages/schema/test/input.test.ts` + `apps/apify-actor/src/config.test.ts` mocks; regenerate `input_schema.json` + the `@generated` README input table via `pnpm docs:update`. `status` is kept (its values disambiguate it from `httpStatus`).
+Read sites: `apps/apify-actor/src/config.ts` (`buildCrawlerOpts`), `apps/apify-actor/src/run.ts` (the sitemap block reads `input.includeUrlGlobs`/`input.excludeUrlGlobs` — **easy to miss**), `apps/standalone/src/config.ts` (`buildCrawlConfig`), `apps/standalone/src/cliProgram.ts` (the `s.maxCrawlPages._def` / `s.maxCrawlDepth._def` default reads + the `buildSchemaOverrides` output keys). Update `packages/schema/test/input.test.ts` + `apps/apify-actor/src/config.test.ts` mocks; regenerate `input_schema.json` + the `@generated` README input table via `pnpm docs:update`. `status` is kept (its values disambiguate it from `httpStatusCode`).
+
+### Dataset envelope field naming (research + user decisions, May 2026)
+
+A naming pass on the OUTPUT record (input untouched), aligned with apify/website-content-crawler (WCC) + the explicit-`bytes` philosophy:
+
+- **Nest crawl-provenance under `crawl`** (WCC style). Success `crawl: { loadedUrl, loadedTime, httpStatusCode, depth, referrerUrl }`; `url` + `status` stay top-level. The **failed** record nests only `crawl: { loadedUrl (nullable) }` (a SUBSET of success `Crawl`, so the dataset-schema branch merge keeps the success superset — **no transformer change**); `errors`/`retryCount`/`crawledTime` stay top-level on failed.
+- **Two timestamp conventions** (intentional category split, research-endorsed): crawl-EVENT timestamps use `*Time` (`crawl.loadedTime`, `crawledTime`); content-metadata dates use `*At` (`metadata.publishedAt`).
+- **Renames**: `httpStatus` → `httpStatusCode` (WCC; disambiguates from the `status` discriminator; nested in `crawl`); `metadata.lang` → `languageCode` (WCC + explicit; the rename lives in `packages/extraction/src/metadata.ts` `projectMetadata` + `DatasetMetadata`, which flows to the output); `errorMessages` → `errors`.
+- **No `metadata.modifiedAt`**: the rs-trafilatura napi binding exposes only a single publication `date` (→ `publishedAt`); there is no modified date to source, so it is omitted (don't add a permanently-null field).
+- Keep: `url`, `status`, `metadata.title`/`author`/`description`/`siteName`/`publishedAt`, `crawl.depth`/`referrerUrl`, `retryCount`, `skipReason`. The Console Overview view uses dot-notation paths (`crawl.loadedUrl`, `crawl.httpStatusCode`, `metadata.languageCode`).
 
 ## File-by-file changes
 
@@ -161,12 +171,17 @@ const Metadata = z
     publishedAt: z.string().nullable().describe('ISO 8601 publication date'),
     description: z.string().nullable().describe('Page description or summary'),
     siteName: z.string().nullable().describe('Site name (sitename in trafilatura)'),
-    lang: z.string().nullable().describe('Detected content language code'),
+    languageCode: z.string().nullable().describe('Detected content language code (ISO 639)'),
   })
   .describe('Extracted page metadata');
 
+// Crawl provenance is nested here (apify/website-content-crawler style); crawl-EVENT
+// timestamps use `*Time`. Content-metadata dates use `*At` (Metadata.publishedAt).
 const Crawl = z
   .object({
+    loadedUrl: z.string().describe('The URL that was loaded (post-redirect)'),
+    loadedTime: z.string().describe('ISO 8601 timestamp when the page was loaded'),
+    httpStatusCode: z.number().int().describe('HTTP response status code (currently always 200; see SPEC)'),
     depth: z.number().int().describe('Link distance from a start URL (0 for start URLs)'),
     referrerUrl: z.string().nullable().describe('The linking page URL, or null for start URLs'),
   })
@@ -174,11 +189,8 @@ const Crawl = z
 
 const SuccessRecord = z.object({
   url: z.string().describe('The original request URL'),
-  loadedUrl: z.string().describe('The URL that was loaded (post-redirect)'),
   status: z.literal('success').describe('Record outcome discriminator'),
-  loadedAt: z.string().describe('ISO 8601 timestamp when the page was loaded'),
   metadata: Metadata,
-  httpStatus: z.number().int().describe('HTTP response status code (currently always 200; see SPEC)'),
   crawl: Crawl,
   // `original` is a required ContentNode: hash+bytes always present; content/key/url when in save.
   original: ContentNode.describe(
@@ -192,14 +204,20 @@ const SuccessRecord = z.object({
 
 const FailedRecord = z.object({
   url: z.string().describe('The original request URL'),
-  loadedUrl: z
-    .string()
-    .nullable() // CORRECTION: onFailedRequest types loadedUrl as string | null
-    .describe('The URL that was loaded before failure, or null if navigation never completed'),
   status: z.literal('failed').describe('Record outcome discriminator'),
-  errorMessages: z.array(z.string()).describe('Error messages from the final attempt'),
+  // `failed.crawl` holds only loadedUrl (nullable) — a SUBSET of success Crawl, so the
+  // dataset-schema branch merge keeps success Crawl's superset (no transformer change).
+  crawl: z
+    .object({
+      loadedUrl: z
+        .string()
+        .nullable()
+        .describe('The URL that was loaded before failure, or null if navigation never completed'),
+    })
+    .describe('Crawl provenance for this page'),
+  errors: z.array(z.string()).describe('Error messages from the final attempt'),
   retryCount: z.number().int().describe('Number of retries before the request was abandoned'),
-  crawledAt: z.string().describe('ISO 8601 timestamp when the failed request was abandoned'),
+  crawledTime: z.string().describe('ISO 8601 timestamp when the failed request was abandoned'),
 });
 
 const SkippedRecord = z.object({
@@ -227,14 +245,14 @@ export const OutputViews = {
   views: {
     overview: {
       title: 'Overview',
-      transformation: { fields: ['loadedUrl', 'httpStatus', 'metadata.title', 'metadata.lang'] },
+      transformation: { fields: ['crawl.loadedUrl', 'crawl.httpStatusCode', 'metadata.title', 'metadata.languageCode'] },
       display: {
         component: 'table',
         properties: {
-          loadedUrl: { label: 'URL', format: 'link' },
-          httpStatus: { label: 'Status', format: 'number' },
+          'crawl.loadedUrl': { label: 'URL', format: 'link' },
+          'crawl.httpStatusCode': { label: 'Status', format: 'number' },
           'metadata.title': { label: 'Title', format: 'text' },
-          'metadata.lang': { label: 'Language', format: 'text' },
+          'metadata.languageCode': { label: 'Language', format: 'text' },
         },
       },
     },
@@ -502,12 +520,15 @@ export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSu
   const { kvs, toKvs, toDataset, saveOriginal } = opts;
   const data: Record<string, unknown> = {
     url: result.url,
-    loadedUrl: result.loadedUrl,
     status: 'success',
-    loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-    metadata: result.metadata,
-    httpStatus: 200,
-    crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
+    metadata: result.metadata, // carries `languageCode` (projectMetadata maps language -> languageCode)
+    crawl: {
+      loadedUrl: result.loadedUrl,
+      loadedTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      httpStatusCode: 200,
+      depth: result.crawlDepth,
+      referrerUrl: result.referrerUrl,
+    },
   };
 
   // `original` always present; raw HTML included (content/key/url) only when in save.
@@ -528,10 +549,13 @@ export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSu
 export interface FailedRequestInfo { url: string; loadedUrl: string | null; errorMessages: string[]; retryCount: number; }
 
 export function buildFailedRecord(info: FailedRequestInfo): Record<string, unknown> {
+  // FailedRequestInfo keeps `loadedUrl`/`errorMessages` (the crawler input); the
+  // OUTPUT record nests loadedUrl under `crawl` and renames to `errors`/`crawledTime`.
   return {
-    url: info.url, loadedUrl: info.loadedUrl, status: 'failed',
-    errorMessages: info.errorMessages, retryCount: info.retryCount,
-    crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+    url: info.url, status: 'failed',
+    crawl: { loadedUrl: info.loadedUrl },
+    errors: info.errorMessages, retryCount: info.retryCount,
+    crawledTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
   };
 }
 
@@ -571,18 +595,18 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 
 ## Flagged findings — do NOT fix in this change
 
-- **`httpStatus` hardcoded `200`** in `buildSuccessRecord`. `ExtractionResult` has no status field; a real fix means adding `httpStatus` to `ExtractionResult`, sourcing it per crawler type in `packages/crawler/src/handler.ts`, and updating the sink — a separate cross-package change. Keep `200`, document "currently always 200," note in the PR.
-- **`crawledAt` vs `loadedAt`**: keep distinct (success loaded; failed never loaded).
+- **`crawl.httpStatusCode` hardcoded `200`** in `buildSuccessRecord`. `ExtractionResult` has no status field; a real fix means adding the HTTP status to `ExtractionResult`, sourcing it per crawler type in `packages/crawler/src/handler.ts`, and updating the sink — a separate cross-package change. Keep `200`, document "currently always 200," note in the PR.
+- **`crawledTime` (failed) vs `crawl.loadedTime` (success)**: keep distinct (success loaded; failed never loaded).
 - **`onSkippedUrl` is synchronous** (`(url, reason) => void`), so `void dataset.pushData(buildSkippedRecord(...))` is a floating promise on both surfaces — pre-existing, identical, not in scope.
 - **`tools/platform-test-runner/` is pre-existing-stale — leave it.** `src/dataset-item.ts` validates against removed output fields (`extractedText`, `extractedXmlTei`, `rawHtml`) and `test-suites/*/settings.json` use the OLD input names (`maxPagesPerCrawl`, `maxCrawlingDepth`) plus long-removed fields (`trafilaturaConfig`, `saveRawHtmlToKeyValueStore`). The input renames make its page/depth-limit suites silently no-op (the input schema ignores unknown keys). It still builds (its `ContentRef`/`DatasetItem` are local types) and is not in the `pnpm test` assertion path, so it does not block this change — but flag that the platform-test-runner needs its own cleanup pass before it is usable again.
 
 ## Tests (same response as source — `.claude/rules/test-maintenance.md`)
 
-- **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS content nodes (`{hash,bytes,key,url}`); success w/ inline content nodes (`{hash,bytes,content}`); mixed-null `metadata` + `crawl{depth:0, referrerUrl:null}`; `failed` (incl. `loadedUrl: null`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.
-- **`packages/schema/test/to-dataset-schema.test.ts`** — deep-equal vs on-disk `dataset_schema.json` (read it with `JSON.parse(readFileSync(...))` — `any` from JSON.parse avoids explicit-`any` lint); invariants on the on-disk JSON: `fields.status.enum` is `['success','failed','skipped']`, `fields.metadata.properties.title.type==='string'`, `fields.crawl.properties.depth.type==='integer'`, `fields.txt.properties.hash.type==='string'`, `fields.skipReason.type==='string'`, `fields.errorMessages.type==='array'`, `views.overview.transformation.fields` unchanged; `toOutputSchema()`/`toKeyValueStoreSchema()` deep-equal their files; determinism + single trailing newline.
+- **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS content nodes (`{hash,bytes,key,url}`); success w/ inline content nodes (`{hash,bytes,content}`); mixed-null `metadata` + nested `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode`/`depth`/`referrerUrl`); `failed` (incl. `crawl.loadedUrl: null`, `errors`, `crawledTime`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.
+- **`packages/schema/test/to-dataset-schema.test.ts`** — deep-equal vs on-disk `dataset_schema.json` (read it with `JSON.parse(readFileSync(...))` — `any` from JSON.parse avoids explicit-`any` lint); invariants on the on-disk JSON: `fields.status.enum` is `['success','failed','skipped']`, `fields.metadata.properties.title.type==='string'`, `fields.crawl.properties.{loadedUrl,loadedTime,httpStatusCode,depth,referrerUrl}`, `fields.metadata.properties.languageCode`, `fields.txt.properties.hash.type==='string'`, `fields.skipReason.type==='string'`, `fields.errors.type==='array'`, `fields.crawledTime`, no top-level `loadedUrl`/`loadedAt`/`httpStatus`/`lang`, `views.overview.transformation.fields` = the dot-notation `crawl.*`/`metadata.*` paths; `toOutputSchema()`/`toKeyValueStoreSchema()` deep-equal their files; determinism + single trailing newline.
 - **`packages/crawler/src/sinks/storage.test.ts`** — `kvsKey` matches `/^{prefix}[0-9a-f]{32}\.{ext}$/` per kind; `buildSuccessRecord` for KVS-only (`{hash,bytes,key}`, no `content`/`*Hash`), dataset-only (`{hash,bytes,content}`; `original` inlined too), both (dataset wins → all inline, KVS not written), and `original` always present (`{hash, bytes}` even when not in `save`; no top-level `originalHash`); a public-URL test (platform `KvsLike` with `getPublicUrl` sets `ContentNode.url`, local omits it, same key+hash); `buildFailedRecord`/`buildSkippedRecord` shapes.
 - **`apps/apify-actor/src/storage-keys.test.ts`** — coupling: `kvsKey(kind, url)` starts with `KvsCollections.collections[kind].keyPrefix` (imports `kvsKey` from crawler + `KvsCollections` from schema — apify-actor depends on both).
-- **Update** `apps/standalone/src/sinks.test.ts` for the new behavior (KVS-only still pushes a record of `ContentNode`s; dataset-mode content is `{hash,bytes,content}` not an inline string; `item.metadata.title`; `item.loadedAt` matches `/Z$/`; `item.httpStatus===200`; `both` mode: dataset wins so KVS not written; `original` always `{hash,bytes}`; no `*Hash`) and `apps/apify-actor/src/sinks.test.ts` (content fields are objects; import the `ContentNode` type from `@contextractor/crawler`). Keep `cli.test.ts`/`exitCode.test.ts` green.
+- **Update** `apps/standalone/src/sinks.test.ts` for the new behavior (KVS-only still pushes a record of `ContentNode`s; dataset-mode content is `{hash,bytes,content}` not an inline string; `item.metadata.title`/`languageCode`; nested `crawl` (`item.crawl.loadedUrl`, `item.crawl.loadedTime` matches `/Z$/`, `item.crawl.httpStatusCode===200`); `both` mode: dataset wins so KVS not written; `original` always `{hash,bytes}`; no `*Hash`) and `apps/apify-actor/src/sinks.test.ts` (content fields are objects; import the `ContentNode` type from `@contextractor/crawler`). Keep `cli.test.ts`/`exitCode.test.ts` green.
 - **Easy-to-miss test reader: `tools/proxy-rotation-tester/src/cli.test.ts`** reads the dataset item's `item.txt` **as a string** (`String(item.txt ?? '')`) — in dataset mode `txt` is now a `ContentNode`, so read `(item.txt as { content?: string }).content`. The sibling `lib.test.ts` reads `result.formats?.txt` (the in-memory `ExtractionResult`, **unchanged** — no change needed). After any output-shape change, grep the whole repo (incl. `tools/`) for readers of `item.{txt,markdown,json,html,original}` / `*Hash`.
 
 ## Verification — run from repo root, in order
@@ -591,7 +615,7 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 - **Regenerate via the full `pnpm build`** (not just the schema package): it rebuilds packages in dependency order, runs `gen-input-schema` (the four `.actor` JSON files) **and** `docs:update` (the `@generated` README regions). The intentional new baseline: `dataset_schema.json` gains the content-node members, `input_schema.json` gets the 4 renamed fields, `output_schema.json` is byte-unchanged, and the README input/enum tables update. **Gotcha:** do NOT regenerate by building only `@contextractor/schema` then running `pnpm docs:update` — `gen-md-regions` calls the standalone `buildProgram()`, which reads `ContextractorInput.shape` for CLI-flag defaults (`s.maxCrawlPages._def…`); against a stale `@contextractor/standalone` dist it throws `Cannot read properties of undefined (reading '_def')`. Use the full build (or rebuild `@contextractor/standalone` before `docs:update`).
 - `pnpm build` · `pnpm lint` · `pnpm test` — all green. `npx knip --reporter compact` shows no dead **code** (two unused-**dependency** findings — `@contextractor/extraction` in standalone, `zod` in gen-input-schema — are transitive-type **false positives**; removing them needs a `pnpm install` and risks breaking type resolution, so leave them).
 - `cargo build --workspace` · `cargo clippy --workspace --all-targets -- -D warnings` — green (unchanged).
-- **CLI e2e**: `pnpm -F @contextractor/standalone build` then `CRAWLEE_STORAGE_DIR=/tmp/ctx-smoke node apps/standalone/dist/cli.js extract https://example.com --max-pages 1 --save markdown --save-destination key-value-store` → the dataset record has nested `metadata`, `loadedAt`, `httpStatus:200`, and `markdown` as a `ContentNode` `{hash,bytes,key:"markdown-{md5}.md"}` with **no `content`/`url`** (local); the KVS holds `markdown-{md5}.md`. (Note: the CLI uses `extract` subcommand + `--save`/`--max-pages`.)
+- **CLI e2e**: `pnpm -F @contextractor/standalone build` then `CRAWLEE_STORAGE_DIR=/tmp/ctx-smoke node apps/standalone/dist/cli.js extract https://example.com --max-pages 1 --save markdown --save-destination key-value-store` → the dataset record has nested `metadata` (with `languageCode`), `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode:200`/`depth`/`referrerUrl`), and `markdown` as a `ContentNode` `{hash,bytes,key:"markdown-{md5}.md"}` with **no `content`/`url`** (local); the KVS holds `markdown-{md5}.md`. (Note: the CLI uses `extract` subcommand + `--save`/`--max-pages`.)
 - **Platform** (`/platform:deploy-and-test`, test actor only — `.claude/rules/apify-production.md`): see deploy notes below. Build must be `SUCCEEDED` with no `Invalid dataset/output/key-value-store schema`. A test run's dataset item must carry the full success shape with `markdown` as a `ContentNode` that **does** have a public `url` (platform) — the documented parity-modulo-`url` difference, with the identical `{format}-{md5}.{ext}` key on both surfaces. Report build + run URLs.
 - Run `code-reviewer` over the diff before finishing.
 
@@ -616,7 +640,7 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 - `output_schema.json` and `key_value_store_schema.json` are generated from `OutputViews` / `KvsCollections`; `actor.json` references the KVS schema.
 - **Dataset records and KVS output are identical across the Apify Actor, the NPM CLI, and the NPM lib** (one shared sink core), the only difference being `ContentNode.url` (platform-only); the unified KVS key scheme is `{format}-{md5(url)}.{ext}`.
 - All local tests/lints/builds pass; the platform build on `glueo/contextractor-test` is `SUCCEEDED` and a test run's dataset item validates against the new schema.
-- `httpStatus`-real-status remains explicitly flagged as out of scope.
+- `crawl.httpStatusCode`-real-status remains explicitly flagged as out of scope.
 
 ## Constraints
 
@@ -631,9 +655,10 @@ Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit;
 - `packages/schema/SPEC.md` + `README.md` — discriminated union, three shapes, four-writer generator, new exports; remove the "additional envelope fields not declared in this schema" note (now declared).
 - `packages/crawler/SPEC.md` + `README.md` — the new shared sink core (`kvsKey`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentNode`/`KvsLike`); both apps are thin wrappers.
 - `apps/apify-actor/SPEC.md` + `README.md` — schemas generated; `ContentNode` (not `ContentInfo`); `{format}-{md5}.{ext}` KVS keys.
-- `apps/standalone/SPEC.md` + `README.md` — nested `metadata` + `loadedAt` + `httpStatus`; a dataset record is always pushed (ContentNode for KVS, inline for dataset); new KVS keys; parity note.
-- Root `SPEC.md` + `README.md` + `CLAUDE.md` — generated output schemas, unified KVS keys, the standalone record change, "all four `.actor` schemas" / "input + output" structure comments.
+- `apps/standalone/SPEC.md` + `README.md` — nested `metadata` (`languageCode`) + `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode`/`depth`/`referrerUrl`); a dataset record is always pushed (ContentNode for KVS, inline for dataset); new KVS keys; parity note.
+- Root `SPEC.md` + `README.md` + `CLAUDE.md` — generated output schemas, unified KVS keys, the nested-`crawl` envelope + `*Time`/`*At` convention, "all four `.actor` schemas" / "input + output" structure comments.
 - `tools/gen-input-schema/README.md` — now emits all four `.actor` schema files.
+- `tools/platform-test-runner/src/` — re-align `DatasetItem` + `runner.ts` to the nested `crawl` (`crawl.loadedUrl`, `crawl.httpStatusCode`), `metadata.languageCode`, `errors`, `crawledTime` (it reads these fields).
 
 ## Suggested sequence
 

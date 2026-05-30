@@ -93,8 +93,8 @@ function matchDatasetItemToUrl(items: DatasetItem[], url: string): DatasetItem |
   const norm = (u: string) => u.replace(/\/$/, '');
   return (
     items.find((item) => {
-      // success/failed records carry `loadedUrl`; skipped records only `url`.
-      const candidates = [item.loadedUrl, item.url].filter(
+      // success/failed records carry `crawl.loadedUrl`; skipped records only `url`.
+      const candidates = [item.crawl?.loadedUrl, item.url].filter(
         (v): v is string => typeof v === 'string',
       );
       return candidates.some((c) => c === url || norm(c) === norm(url));
@@ -137,7 +137,7 @@ async function runSuite(suite: TestSuite): Promise<SuiteRunResult> {
     } else if (datasetItem.status !== 'success') {
       const message =
         datasetItem.status === 'failed'
-          ? datasetItem.errorMessages?.join('; ') || 'Request failed'
+          ? datasetItem.errors?.join('; ') || 'Request failed'
           : `Skipped: ${datasetItem.skipReason ?? 'unknown'}`;
       result = {
         url: testCase.url,

@@ -20,7 +20,7 @@ const RESULT: ExtractionResult = {
     publishedAt: null,
     description: null,
     siteName: null,
-    lang: 'en',
+    languageCode: 'en',
   },
   formats: { txt: 'plain', markdown: '# md' },
   crawlDepth: 1,
@@ -69,10 +69,17 @@ describe('buildSuccessRecord — key-value-store only', () => {
     });
 
     expect(rec.status).toBe('success');
-    expect(rec.httpStatus).toBe(200);
-    expect(rec.loadedAt).toMatch(/Z$/);
     expect(rec.metadata).toEqual(RESULT.metadata);
-    expect(rec.crawl).toEqual({ depth: 1, referrerUrl: 'https://example.com/' });
+    const crawl = rec.crawl as Record<string, unknown>;
+    expect(crawl.loadedUrl).toBe('https://example.com/page');
+    expect(crawl.loadedTime).toMatch(/Z$/);
+    expect(crawl.httpStatusCode).toBe(200);
+    expect(crawl.depth).toBe(1);
+    expect(crawl.referrerUrl).toBe('https://example.com/');
+    // crawl provenance is nested — no top-level loadedUrl/loadedAt/httpStatus
+    expect(rec.loadedUrl).toBeUndefined();
+    expect(rec.httpStatus).toBeUndefined();
+    expect(rec.loadedAt).toBeUndefined();
 
     const txt = rec.txt as ContentNode;
     expect(txt.key).toMatch(/^txt-[0-9a-f]{32}\.txt$/);
@@ -187,12 +194,12 @@ describe('buildFailedRecord / buildSkippedRecord', () => {
     });
     expect(rec).toMatchObject({
       url: 'https://example.com/x',
-      loadedUrl: null,
       status: 'failed',
-      errorMessages: ['boom'],
+      crawl: { loadedUrl: null },
+      errors: ['boom'],
       retryCount: 2,
     });
-    expect(rec.crawledAt as string).toMatch(/Z$/);
+    expect(rec.crawledTime as string).toMatch(/Z$/);
   });
 
   it('assembles a skipped record', () => {

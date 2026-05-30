@@ -27,12 +27,19 @@ describe('toDatasetSchema', () => {
     expect(ds.fields.status.enum).toEqual(['success', 'failed', 'skipped']);
   });
 
-  it('collapses nullable metadata/crawl fields and nests their properties', () => {
+  it('nests crawl provenance + metadata; no top-level loadedUrl/loadedAt/httpStatus/lang', () => {
     const ds = onDisk('dataset_schema.json');
     expect(ds.fields.metadata.properties.title.type).toBe('string');
-    expect(ds.fields.metadata.properties.lang.type).toBe('string');
+    expect(ds.fields.metadata.properties.languageCode.type).toBe('string');
+    expect(ds.fields.crawl.properties.loadedUrl.type).toBe('string');
+    expect(ds.fields.crawl.properties.loadedTime.type).toBe('string');
+    expect(ds.fields.crawl.properties.httpStatusCode.type).toBe('integer');
     expect(ds.fields.crawl.properties.depth.type).toBe('integer');
     expect(ds.fields.crawl.properties.referrerUrl.type).toBe('string');
+    for (const f of ['loadedUrl', 'loadedAt', 'httpStatus']) {
+      expect(f in ds.fields).toBe(false);
+    }
+    expect('lang' in ds.fields.metadata.properties).toBe(false);
   });
 
   it('represents each content field as a ContentNode object (no top-level *Hash)', () => {
@@ -52,19 +59,19 @@ describe('toDatasetSchema', () => {
 
   it('enumerates failed and skipped fields', () => {
     const ds = onDisk('dataset_schema.json');
-    expect(ds.fields.errorMessages.type).toBe('array');
+    expect(ds.fields.errors.type).toBe('array');
     expect(ds.fields.retryCount.type).toBe('integer');
-    expect(ds.fields.crawledAt.type).toBe('string');
+    expect(ds.fields.crawledTime.type).toBe('string');
     expect(ds.fields.skipReason.type).toBe('string');
   });
 
-  it('preserves the overview view unchanged', () => {
+  it('preserves the overview view (dot-notation crawl/metadata paths)', () => {
     const ds = onDisk('dataset_schema.json');
     expect(ds.views.overview.transformation.fields).toEqual([
-      'loadedUrl',
-      'httpStatus',
+      'crawl.loadedUrl',
+      'crawl.httpStatusCode',
       'metadata.title',
-      'metadata.lang',
+      'metadata.languageCode',
     ]);
   });
 

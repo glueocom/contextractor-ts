@@ -5,18 +5,10 @@
       "type": "string",
       "description": "The original request URL"
     },
-    "loadedUrl": {
-      "type": "string",
-      "description": "The URL that was loaded (post-redirect)"
-    },
     "status": {
       "type": "string",
       "enum": ["success", "failed", "skipped"],
       "description": "Record outcome discriminator"
-    },
-    "loadedAt": {
-      "type": "string",
-      "description": "ISO 8601 timestamp when the page was loaded"
     },
     "metadata": {
       "type": "object",
@@ -41,20 +33,28 @@
           "type": "string",
           "description": "Site name (sitename in trafilatura)"
         },
-        "lang": {
+        "languageCode": {
           "type": "string",
-          "description": "Detected content language code"
+          "description": "Detected content language code (ISO 639)"
         }
       },
       "description": "Extracted page metadata"
     },
-    "httpStatus": {
-      "type": "integer",
-      "description": "HTTP response status code (currently always 200; see SPEC)"
-    },
     "crawl": {
       "type": "object",
       "properties": {
+        "loadedUrl": {
+          "type": "string",
+          "description": "The URL that was loaded (post-redirect)"
+        },
+        "loadedTime": {
+          "type": "string",
+          "description": "ISO 8601 timestamp when the page was loaded"
+        },
+        "httpStatusCode": {
+          "type": "integer",
+          "description": "HTTP response status code (currently always 200; see SPEC)"
+        },
         "depth": {
           "type": "integer",
           "description": "Link distance from a start URL (0 for start URLs)"
@@ -196,7 +196,7 @@
       },
       "description": "Cleaned extracted HTML. Present when \"html\" is in save."
     },
-    "errorMessages": {
+    "errors": {
       "type": "array",
       "description": "Error messages from the final attempt"
     },
@@ -204,7 +204,7 @@
       "type": "integer",
       "description": "Number of retries before the request was abandoned"
     },
-    "crawledAt": {
+    "crawledTime": {
       "type": "string",
       "description": "ISO 8601 timestamp when the failed request was abandoned"
     },
@@ -218,16 +218,21 @@
     "overview": {
       "title": "Overview",
       "transformation": {
-        "fields": ["loadedUrl", "httpStatus", "metadata.title", "metadata.lang"]
+        "fields": [
+          "crawl.loadedUrl",
+          "crawl.httpStatusCode",
+          "metadata.title",
+          "metadata.languageCode"
+        ]
       },
       "display": {
         "component": "table",
         "properties": {
-          "loadedUrl": {
+          "crawl.loadedUrl": {
             "label": "URL",
             "format": "link"
           },
-          "httpStatus": {
+          "crawl.httpStatusCode": {
             "label": "Status",
             "format": "number"
           },
@@ -235,7 +240,7 @@
             "label": "Title",
             "format": "text"
           },
-          "metadata.lang": {
+          "metadata.languageCode": {
             "label": "Language",
             "format": "text"
           }

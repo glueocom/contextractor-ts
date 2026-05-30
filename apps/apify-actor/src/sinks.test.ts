@@ -14,7 +14,7 @@ const FAKE_RESULT: ExtractionResult = {
     publishedAt: null,
     description: null,
     siteName: null,
-    lang: 'en',
+    languageCode: 'en',
   },
   formats: {
     markdown: '# Test Page',
@@ -70,10 +70,15 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     expect(item.markdownHash).toBeUndefined();
     expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
-    expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
+    const crawl = item.crawl as Record<string, unknown>;
+    expect(crawl.loadedUrl).toBe(FAKE_RESULT.loadedUrl);
+    expect(crawl.httpStatusCode).toBe(200);
+    expect(crawl.depth).toBe(2);
+    expect(crawl.referrerUrl).toBe('https://example.com/');
+    expect(item.loadedUrl).toBeUndefined();
   });
 
-  it('dataset item contains both url and loadedUrl', async () => {
+  it('dataset item carries url top-level and loadedUrl under crawl', async () => {
     const redirectedResult: ExtractionResult = {
       ...FAKE_RESULT,
       url: 'https://example.com/old',
@@ -93,7 +98,7 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe('https://example.com/old');
-    expect(item.loadedUrl).toBe('https://example.com/new');
+    expect((item.crawl as Record<string, unknown>).loadedUrl).toBe('https://example.com/new');
   });
 });
 
@@ -116,7 +121,7 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe(FAKE_RESULT.url);
-    expect(item.loadedUrl).toBe(FAKE_RESULT.loadedUrl);
+    expect((item.crawl as Record<string, unknown>).loadedUrl).toBe(FAKE_RESULT.loadedUrl);
     expect((item.markdown as ContentNode).content).toBe('# Test Page');
     expect((item.txt as ContentNode).content).toBe('Test Page');
     expect(typeof (item.markdown as ContentNode).bytes).toBe('number');
@@ -124,7 +129,7 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
     expect(item.markdownHash).toBeUndefined();
     expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
-    expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
+    expect((item.crawl as Record<string, unknown>).depth).toBe(2);
   });
 });
 

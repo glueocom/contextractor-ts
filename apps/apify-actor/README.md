@@ -89,11 +89,12 @@ the table below is auto-rebuilt from that schema by
 
 ## Output
 
-Successful dataset entries include `status: 'success'` together with
-`loadedUrl`, `loadedAt`, `httpStatus`, `metadata` (title, author,
-publishedAt, description, siteName, lang), and `original` — a `ContentNode`
-whose `hash` and `bytes` are always present (`content`, or `key` and `url`,
-are added when the raw HTML is stored). Failed requests are stored as
+Successful dataset entries include `status: 'success'` together with nested
+`metadata` (title, author, publishedAt, description, siteName, languageCode),
+a `crawl` object (`loadedUrl`, `loadedTime`, `httpStatusCode`, `depth`,
+`referrerUrl`), and `original` — a `ContentNode` whose `hash` and `bytes` are
+always present (`content`, or `key` and `url`, are added when the raw HTML is
+stored). Failed requests are stored as
 `status: 'failed'` records after retries are exhausted, and skipped URLs can
 be recorded as `status: 'skipped'` when `storeSkippedUrls` is enabled.
 

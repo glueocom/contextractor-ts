@@ -6,8 +6,10 @@ import { z } from 'zod';
  * The dataset carries three record shapes discriminated by `status`
  * (see apps/apify-actor/SPEC.md): `success`, `failed`, `skipped`.
  *
- * Field names follow rs-trafilatura output conventions and align with the
- * upstream Python trafilatura metadata fields.
+ * Crawl-provenance fields are nested under `crawl` (apify/website-content-crawler
+ * style). Crawl-EVENT timestamps use `*Time` (`crawl.loadedTime`, `crawledTime`);
+ * content-metadata dates use `*At` (`metadata.publishedAt`). Metadata field names
+ * align with the upstream trafilatura fields.
  */
 
 /**
@@ -40,12 +42,18 @@ const Metadata = z
     publishedAt: z.string().nullable().describe('ISO 8601 publication date'),
     description: z.string().nullable().describe('Page description or summary'),
     siteName: z.string().nullable().describe('Site name (sitename in trafilatura)'),
-    lang: z.string().nullable().describe('Detected content language code'),
+    languageCode: z.string().nullable().describe('Detected content language code (ISO 639)'),
   })
   .describe('Extracted page metadata');
 
 const Crawl = z
   .object({
+    loadedUrl: z.string().describe('The URL that was loaded (post-redirect)'),
+    loadedTime: z.string().describe('ISO 8601 timestamp when the page was loaded'),
+    httpStatusCode: z
+      .number()
+      .int()
+      .describe('HTTP response status code (currently always 200; see SPEC)'),
     depth: z.number().int().describe('Link distance from a start URL (0 for start URLs)'),
     referrerUrl: z.string().nullable().describe('The linking page URL, or null for start URLs'),
   })
@@ -53,14 +61,8 @@ const Crawl = z
 
 const SuccessRecord = z.object({
   url: z.string().describe('The original request URL'),
-  loadedUrl: z.string().describe('The URL that was loaded (post-redirect)'),
   status: z.literal('success').describe('Record outcome discriminator'),
-  loadedAt: z.string().describe('ISO 8601 timestamp when the page was loaded'),
   metadata: Metadata,
-  httpStatus: z
-    .number()
-    .int()
-    .describe('HTTP response status code (currently always 200; see SPEC)'),
   crawl: Crawl,
   original: ContentNode.describe(
     'The raw page HTML. "hash" and "bytes" are always present. When "original" is in save, the raw HTML is included as "content" (saving to the dataset) or referenced by "key"/"url" (stored in the key-value store).',
@@ -77,14 +79,18 @@ const SuccessRecord = z.object({
 
 const FailedRecord = z.object({
   url: z.string().describe('The original request URL'),
-  loadedUrl: z
-    .string()
-    .nullable()
-    .describe('The URL that was loaded before failure, or null if navigation never completed'),
   status: z.literal('failed').describe('Record outcome discriminator'),
-  errorMessages: z.array(z.string()).describe('Error messages from the final attempt'),
+  crawl: z
+    .object({
+      loadedUrl: z
+        .string()
+        .nullable()
+        .describe('The URL that was loaded before failure, or null if navigation never completed'),
+    })
+    .describe('Crawl provenance for this page'),
+  errors: z.array(z.string()).describe('Error messages from the final attempt'),
   retryCount: z.number().int().describe('Number of retries before the request was abandoned'),
-  crawledAt: z.string().describe('ISO 8601 timestamp when the failed request was abandoned'),
+  crawledTime: z.string().describe('ISO 8601 timestamp when the failed request was abandoned'),
 });
 
 const SkippedRecord = z.object({

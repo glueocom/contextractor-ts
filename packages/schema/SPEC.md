@@ -40,6 +40,6 @@ Fields grouped by logical section:
 
 Record shapes:
 
-- **`success`** — `url`, `loadedUrl`, `status: 'success'`, `loadedAt` (ISO 8601), `metadata` (object of nullable strings: `title`, `author`, `publishedAt`, `description`, `siteName`, `lang`), `httpStatus` (integer; currently always 200), `crawl: { depth, referrerUrl }`, `original` (a `ContentNode`, always present — at least `{ hash, bytes }`), and the optional content fields `txt` / `markdown` / `json` / `html` (each a `ContentNode`). Every content field carries the inline `content` when `saveDestination` includes `"dataset"`, or `key` + `url` when `"key-value-store"`.
-- **`failed`** — `url`, `loadedUrl` (nullable), `status: 'failed'`, `errorMessages` (string array), `retryCount` (integer), `crawledAt` (ISO 8601).
+- **`success`** — `url`, `status: 'success'`, `metadata` (object of nullable strings: `title`, `author`, `publishedAt`, `description`, `siteName`, `languageCode`), `crawl: { loadedUrl, loadedTime, httpStatusCode, depth, referrerUrl }`, `original` (a `ContentNode`, always present — at least `{ hash, bytes }`), and the optional content fields `txt` / `markdown` / `json` / `html` (each a `ContentNode`). Every content field carries the inline `content` when `saveDestination` includes `"dataset"`, or `key` + `url` when `"key-value-store"`. Crawl-EVENT timestamps use `*Time` (`crawl.loadedTime`, `crawledTime`); content-metadata dates use `*At` (`metadata.publishedAt`).
+- **`failed`** — `url`, `status: 'failed'`, `crawl: { loadedUrl (nullable) }`, `errors` (string array), `retryCount` (integer), `crawledTime` (ISO 8601).
 - **`skipped`** — `url`, `status: 'skipped'`, `skipReason` (`'robotsTxt' | 'limit' | 'enqueueLimit' | 'filters' | 'redirect' | 'depth'`).
