@@ -18,15 +18,15 @@
     "docs:check": "pnpm docs:update && git diff --exit-code -- '**/*.md'"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.15",
+    "@biomejs/biome": "^2.4.16",
     "@cspell/dict-bash": "^4.2.2",
     "@cspell/dict-en-gb": "^5.0.27",
     "@cspell/dict-git": "^3.1.0",
     "@cspell/dict-rust": "^4.1.2",
-    "@napi-rs/cli": "^3.6.2",
+    "@napi-rs/cli": "^3.7.0",
     "@types/node": "^25.9.1",
-    "cspell": "^8.19.4",
-    "turbo": "^2.9.14",
+    "cspell": "^10.0.0",
+    "turbo": "^2.9.16",
     "typescript": "^6.0.3"
   },
   "pnpm": {

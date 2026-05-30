@@ -126,31 +126,36 @@ describe('buildProgram — argParser wiring', () => {
   }
 
   it('parseDeduplication accepts valid values', () => {
-    const parse = getParseArg(buildProgram(), '--deduplication')!;
+    const parse = getParseArg(buildProgram(), '--deduplication');
+    if (!parse) throw new Error('parseDeduplication not found');
     expect(parse('none')).toBe('none');
     expect(parse('url')).toBe('url');
     expect(parse('content-hash')).toBe('content-hash');
   });
 
   it('parseDeduplication rejects invalid values', () => {
-    const parse = getParseArg(buildProgram(), '--deduplication')!;
+    const parse = getParseArg(buildProgram(), '--deduplication');
+    if (!parse) throw new Error('parseDeduplication not found');
     expect(() => parse('invalid')).toThrow(/Invalid --deduplication/);
   });
 
   it('parseMode accepts valid values', () => {
-    const parse = getParseArg(buildProgram(), '--mode')!;
+    const parse = getParseArg(buildProgram(), '--mode');
+    if (!parse) throw new Error('parseMode not found');
     expect(parse('precision')).toBe('precision');
     expect(parse('balanced')).toBe('balanced');
     expect(parse('recall')).toBe('recall');
   });
 
   it('parseMode rejects invalid values', () => {
-    const parse = getParseArg(buildProgram(), '--mode')!;
+    const parse = getParseArg(buildProgram(), '--mode');
+    if (!parse) throw new Error('parseMode not found');
     expect(() => parse('invalid')).toThrow(/Invalid --mode/);
   });
 
   it('parseSaveDestination accumulates typed values', () => {
-    const parse = getParseArg(buildProgram(), '--save-destination')!;
+    const parse = getParseArg(buildProgram(), '--save-destination');
+    if (!parse) throw new Error('parseSaveDestination not found');
     const first = parse('dataset', []) as string[];
     expect(first).toEqual(['dataset']);
     const second = parse('key-value-store', first) as string[];
@@ -158,7 +163,8 @@ describe('buildProgram — argParser wiring', () => {
   });
 
   it('parseSaveDestination rejects invalid values', () => {
-    const parse = getParseArg(buildProgram(), '--save-destination')!;
+    const parse = getParseArg(buildProgram(), '--save-destination');
+    if (!parse) throw new Error('parseSaveDestination not found');
     expect(() => parse('invalid', [])).toThrow(/Invalid --save-destination/);
   });
 });
