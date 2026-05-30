@@ -41,8 +41,8 @@ the table below is auto-rebuilt from that schema by
 | `startUrls` | array | _required_ | URLs to extract content from |
 | `crawlerType` | enum (`playwright-adaptive` \| `playwright-firefox` \| `playwright-chromium` \| `cheerio`) | `"playwright-adaptive"` | Browser engine or HTTP client for crawling. playwright-adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS). |
 | `renderingTypeDetectionPercentage` | integer | `10` | (Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower. |
-| `globs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
-| `excludes` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
+| `includeUrlGlobs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
+| `excludeUrlGlobs` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
 | `linkSelector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
 | `keepUrlFragments` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
 | `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
@@ -50,9 +50,9 @@ the table below is auto-rebuilt from that schema by
 | `respectRobotsTxtFile` | boolean | `false` | If enabled, the crawler will consult the robots.txt file for each domain before crawling pages. |
 | `initialCookies` | array | _optional_ | Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For e… |
 | `customHttpHeaders` | object | _optional_ | HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to… |
-| `maxPagesPerCrawl` | integer | `0` | Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited. |
+| `maxCrawlPages` | integer | `0` | Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited. |
 | `maxResultsPerCrawl` | integer | `0` | Maximum number of results that will be saved to dataset. The scraper will terminate after reaching this number. 0 means unlimited. |
-| `maxCrawlingDepth` | integer | `0` | Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited. |
+| `maxCrawlDepth` | integer | `0` | Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited. |
 | `initialConcurrency` | integer | `0` | Initial number of browser pages or HTTP clients running in parallel. Crawlee auto-scales up to maxConcurrency. 0 lets Crawlee pick the default. |
 | `maxConcurrency` | integer | `50` | Maximum number of browser pages running in parallel. This setting is useful to avoid overloading target websites and getting blocked. |
 | `maxRequestRetries` | integer | `3` | Maximum number of retries for failed requests on network, proxy, or server errors. |
@@ -89,19 +89,19 @@ the table below is auto-rebuilt from that schema by
 
 ## Output
 
-Successful dataset entries include `status: 'success'` together with
-`loadedUrl`, `loadedAt`, `httpStatus`, `metadata` (title, author,
-publishedAt, description, siteName, lang), and `originalHash` (32-char MD5
-hex of the raw HTML, always present). Failed requests are stored as
+Successful dataset entries include `status: 'success'` together with nested
+`metadata` (title, author, publishedAt, description, siteName, languageCode),
+a `crawl` object (`loadedUrl`, `loadedTime`, `httpStatusCode`, `depth`,
+`referrerUrl`), and `original` — a `ContentNode` whose `hash` and `bytes` are
+always present (`content`, or `key` and `url`, are added when the raw HTML is
+stored). Failed requests are stored as
 `status: 'failed'` records after retries are exhausted, and skipped URLs can
 be recorded as `status: 'skipped'` when `storeSkippedUrls` is enabled.
 
-When `saveDestination` includes `dataset`: each enabled format (`markdown`,
-`txt`, `json`, `html`) appears as an inline string alongside a
-`{format}Hash` field (e.g. `markdownHash`) containing its 32-char MD5 hex.
-
-When `saveDestination` includes `key-value-store` (default): each enabled
-format appears as a `ContentInfo` object (`hash`, `length`, `key`, `url`);
-raw HTML is stored under `{hash}-original.html` when `save` includes
-`"original"`.
+Each content field (`markdown`, `txt`, `json`, `html`, and `original`) is a
+`ContentNode` object: `hash` (MD5) and `bytes` (UTF-8 byte length) are always
+present. When `saveDestination` includes `dataset`, the content is inline under
+`content`; when `key-value-store` (default), the blob is stored and referenced
+by `key` + `url`. Key-value-store keys are `{format}-{md5(url)}.{ext}` (e.g.
+`markdown-…md`, `original-…html`).
 

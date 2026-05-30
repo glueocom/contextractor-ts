@@ -89,7 +89,8 @@ describe('Proxy Rotation - CLI', () => {
     // Verify dataset item exists and contains proxy port content
     const rawItem = readFirstDatasetItem(storageDir);
     const item = JSON.parse(rawItem) as Record<string, unknown>;
-    const content = String(item.txt ?? '');
+    const txt = item.txt as { content?: string } | undefined;
+    const content = String(txt?.content ?? '');
     const containsProxyPort = sim.ports.some((port) => content.includes(port.toString()));
     expect(
       containsProxyPort,

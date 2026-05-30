@@ -29,10 +29,12 @@ contextractor extract --config config.json --max-pages 10
 
 Extract content from one or more URLs and save to storage.
 
-When `saveDestination` includes `dataset`, successful pages are pushed with
-`status: 'success'`, failed requests are always pushed with `status: 'failed'`,
-and skipped URLs can be recorded with `--store-skipped-urls`. The CLI exits
-with code `2` when at least one request fails after retries.
+A dataset record is pushed for every successful page (`status: 'success'`) —
+each content field a `ContentNode` (`hash` + `bytes` always present; inline
+`content` for `dataset`, or `key` + `url` for the key-value store); the record shape is identical to the Apify
+Actor's. Failed requests are always pushed with `status: 'failed'`, and skipped
+URLs can be recorded with `--store-skipped-urls`. The CLI exits with code `2`
+when at least one request fails after retries.
 
 ```bash
 contextractor extract https://example.com
@@ -197,7 +199,7 @@ shared CLI input schema. Convert to the Apify-input camelCase shape below.
 {
   "startUrls": [{ "url": "https://example.com" }],
   "headless": false,
-  "maxPagesPerCrawl": 10,
+  "maxCrawlPages": 10,
   "mode": "recall",
   "includeImages": true,
   "save": ["txt"],

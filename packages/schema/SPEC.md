@@ -16,7 +16,7 @@ Zod 4 single source of truth for all Contextractor input. Both the Apify Actor a
 
 Fields grouped by logical section:
 
-- **Crawler settings** — `crawlerType` (enum: `playwright-adaptive|playwright-firefox|playwright-chromium|cheerio`, default `playwright-adaptive`), `renderingTypeDetectionPercentage` (int 0–100, default 10), `startUrls`, `globs`, `excludes`, `linkSelector`, `keepUrlFragments`, `useSitemaps` (bool, default `false`; fetches sitemap.xml at each start URL domain root and enqueues matching URLs), `deduplication` (enum: `none|url|content-hash`, default `'url'`; `url`: skip pages whose `<link rel="canonical">` was already extracted, across all handler types; `content-hash`: additionally skip pages whose extracted text content hash was already seen; `none`: only Crawlee's built-in URL dedup), `respectRobotsTxtFile`, `maxPagesPerCrawl`, `maxResultsPerCrawl`, `maxCrawlingDepth`, `initialConcurrency` (int ≥ 0, default `0`; maps to Crawlee `minConcurrency`; `0` lets Crawlee pick the default), `maxConcurrency`, `maxRequestRetries`
+- **Crawler settings** — `crawlerType` (enum: `playwright-adaptive|playwright-firefox|playwright-chromium|cheerio`, default `playwright-adaptive`), `renderingTypeDetectionPercentage` (int 0–100, default 10), `startUrls`, `includeUrlGlobs`, `excludeUrlGlobs`, `linkSelector`, `keepUrlFragments`, `useSitemaps` (bool, default `false`; fetches sitemap.xml at each start URL domain root and enqueues matching URLs), `deduplication` (enum: `none|url|content-hash`, default `'url'`; `url`: skip pages whose `<link rel="canonical">` was already extracted, across all handler types; `content-hash`: additionally skip pages whose extracted text content hash was already seen; `none`: only Crawlee's built-in URL dedup), `respectRobotsTxtFile`, `maxCrawlPages`, `maxResultsPerCrawl`, `maxCrawlDepth`, `initialConcurrency` (int ≥ 0, default `0`; maps to Crawlee `minConcurrency`; `0` lets Crawlee pick the default), `maxConcurrency`, `maxRequestRetries`
 - **Auth** — `initialCookies`, `customHttpHeaders`
 - **Content extraction** — `mode` (enum: `precision|balanced|recall`, default `balanced`), `includeComments` (bool, default `true`), `includeTables` (bool, default `true`), `includeImages` (bool, default `false`), `includeLinks` (bool, default `true`), `targetLanguage` (string, default `''`; empty = accept any language)
 - **Output settings** — `save` (formats array: `txt|markdown|json|html|original`), `saveDestination` (sinks array: `key-value-store|dataset`), `datasetName`, `keyValueStoreName`, `requestQueueName`, `storeSkippedUrls` (bool, default `false`; pushes a dataset record for each skipped URL)
@@ -29,25 +29,17 @@ Fields grouped by logical section:
 
 ## Output schema
 
-`ContextractorOutput` is the Zod schema for each item written to the Apify dataset. Exported as `ContextractorOutput` (Zod schema) and `ContextractorOutputType` (inferred TypeScript type).
+`ContextractorOutput` is a Zod `discriminatedUnion('status', …)` over the three dataset record shapes — `success`, `failed`, `skipped`. Exported as `ContextractorOutput` (Zod schema) and `ContextractorOutputType` (the inferred 3-member union type). The dataset/output/key-value-store schema generators (`apify/to-dataset-schema.ts`, `apify/to-output-schema.ts`, `apify/to-kvs-schema.ts`) consume it alongside the `OutputViews` / `KvsCollections` presentation config (`apify/output-views.ts`) to emit all of `apps/apify-actor/.actor/dataset_schema.json`, `output_schema.json`, and `key_value_store_schema.json` via `@contextractor/gen-input-schema`.
 
-`ContentRef` — object identifying content stored in the key-value store:
-- `hash` — MD5 hex digest of the content
-- `length` — byte length
-- `key` — KVS key (optional; present when saved to KVS)
-- `url` — public URL to the KVS item (optional; present when KVS public URL is configured)
+`ContentNode` — object describing one piece of content (an extracted format or the raw original HTML):
+- `hash` — MD5 hex digest of the content (always present)
+- `bytes` — UTF-8 byte length (always present)
+- `content` — inline content string (optional; present when `saveDestination` includes `"dataset"`)
+- `key` — KVS key (optional; present when stored to the key-value store)
+- `url` — public URL to the KVS item (optional; present when a public KVS URL exists)
 
-`ContentField` — union of `ContentRef | string`. A `ContentRef` when `saveDestination` includes `"key-value-store"`, an inline string when `"dataset"` only.
+Record shapes:
 
-`ContextractorOutput` fields:
-- `loadedUrl` — string; the URL that was loaded (post-redirect)
-- `httpStatus` — integer; HTTP response status code
-- `loadedAt` — string; ISO 8601 timestamp of when the page was loaded
-- `metadata` — object; all fields are nullable strings: `title`, `author`, `publishedAt` (ISO 8601), `description`, `siteName`, `lang`
-- `original` — `ContentField`, optional; raw page HTML before extraction; present when `"original"` is in `save`
-- `txt` — `ContentField`, optional; extracted plain text; present when `"txt"` is in `save`
-- `markdown` — `ContentField`, optional; extracted Markdown; present when `"markdown"` is in `save`
-- `json` — `ContentField`, optional; extracted structured JSON; present when `"json"` is in `save`
-- `html` — `ContentField`, optional; cleaned extracted HTML; present when `"html"` is in `save`
-
-> **Note:** `createApifySink` writes additional envelope fields not declared in this schema: `url` (original request URL), `status: 'success'`, `originalHash` (MD5 hex of raw HTML), `crawl: { depth, referrerUrl }`, and per-format hash fields (`txtHash`, `markdownHash`, etc.) when `saveDestination` includes `"dataset"`. These are documented in `apps/apify-actor/SPEC.md` and root `SPEC.md`.
+- **`success`** — `url`, `status: 'success'`, `metadata` (object of nullable strings: `title`, `author`, `publishedAt`, `description`, `siteName`, `languageCode`), `crawl: { loadedUrl, loadedTime, httpStatusCode, depth, referrerUrl }`, `original` (a `ContentNode`, always present — at least `{ hash, bytes }`), and the optional content fields `txt` / `markdown` / `json` / `html` (each a `ContentNode`). Every content field carries the inline `content` when `saveDestination` includes `"dataset"`, or `key` + `url` when `"key-value-store"`. Crawl-EVENT timestamps use `*Time` (`crawl.loadedTime`, `crawledTime`); content-metadata dates use `*At` (`metadata.publishedAt`).
+- **`failed`** — `url`, `status: 'failed'`, `crawl: { loadedUrl (nullable) }`, `errors` (string array), `retryCount` (integer), `crawledTime` (ISO 8601).
+- **`skipped`** — `url`, `status: 'skipped'`, `skipReason` (`'robotsTxt' | 'limit' | 'enqueueLimit' | 'filters' | 'redirect' | 'depth'`).

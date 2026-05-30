@@ -1,17 +1,19 @@
 # `@contextractor/schema`
 
-Single source of truth for Contextractor input. The package exports a Zod 4
-schema (`ContextractorInput`), the inferred TypeScript type
-(`ContextractorInputType`), the typed `apifyMeta` helper for Apify-only UI
-hints, and `writeApifyInputSchema` — the build-time generator that compiles
-the Zod schema to `apps/apify-actor/.actor/input_schema.json`. The
-standalone CLI and the Apify Actor both feed user input through
-`ContextractorInput.parse(...)` to validate and type it.
+Single source of truth for Contextractor input **and** output. The package
+exports Zod 4 schemas (`ContextractorInput`; `ContextractorOutput`, a
+discriminated union over the `success` / `failed` / `skipped` dataset records),
+their inferred TypeScript types, the typed `apifyMeta` helper for Apify-only UI
+hints, and the build-time generators that compile all four
+`apps/apify-actor/.actor/*.json` schema files. The standalone CLI and the Apify
+Actor both feed user input through `ContextractorInput.parse(...)` to validate
+and type it, and both produce dataset/key-value-store output matching
+`ContextractorOutput`.
 
 Contextractor is built on
 [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
 (extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
-Playwright); this package defines the shared input contract for both surfaces.
+Playwright); this package defines the shared input and output contracts for both surfaces.
 
 ## Local prerequisites
 
@@ -28,9 +30,14 @@ pnpm --filter @contextractor/schema build
 
 - `ContextractorInput` — `z.ZodObject` schema describing every input field
 - `ContextractorInputType` — `z.infer<typeof ContextractorInput>`
+- `ContextractorOutput` — `z.discriminatedUnion('status', …)` over the `success` / `failed` / `skipped` dataset records
+- `ContextractorOutputType` — `z.infer<typeof ContextractorOutput>` (3-member union)
 - `apifyMeta(meta)` — type-checked passthrough for the Apify-only `.meta()` keys (`editor`, `prefill`, `enumTitles`, `sectionCaption`, …)
-- `toApifyInputSchema(schema, opts)` — pure converter from `z.ZodObject` to the Apify INPUT_SCHEMA dialect
-- `writeApifyInputSchema(schema, outPath, opts)` — writes the converted schema to disk with a trailing newline
+- `OutputViews` / `KvsCollections` — typed Apify presentation config (Console views, output links, KVS collection key-prefixes)
+- `toApifyInputSchema` / `writeApifyInputSchema` — pure converter + writer for the Apify INPUT_SCHEMA dialect
+- `toDatasetSchema` / `writeDatasetSchema` — `ContextractorOutput` + `OutputViews` → `dataset_schema.json`
+- `toOutputSchema` / `writeOutputSchema` — `OutputViews` → `output_schema.json`
+- `toKeyValueStoreSchema` / `writeKeyValueStoreSchema` — `KvsCollections` → `key_value_store_schema.json`
 
 ## Inferred TypeScript type
 
@@ -43,8 +50,8 @@ interface ContextractorInputType {
   startUrls: Array<{ url: string }>;
   crawlerType: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   renderingTypeDetectionPercentage: number;
-  globs: Array<{ glob: string }>;
-  excludes: Array<{ glob: string }>;
+  includeUrlGlobs: Array<{ glob: string }>;
+  excludeUrlGlobs: Array<{ glob: string }>;
   linkSelector: string;
   keepUrlFragments: boolean;
   useSitemaps: boolean;
@@ -52,9 +59,9 @@ interface ContextractorInputType {
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
-  maxPagesPerCrawl: number;
+  maxCrawlPages: number;
   maxResultsPerCrawl: number;
-  maxCrawlingDepth: number;
+  maxCrawlDepth: number;
   initialConcurrency: number;
   maxConcurrency: number;
   maxRequestRetries: number;

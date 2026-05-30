@@ -1,5 +1,7 @@
 import {
+  buildFailedRecord,
   buildRequests,
+  buildSkippedRecord,
   createContextractorCrawler,
   SitemapRequestList,
 } from '@contextractor/crawler';
@@ -56,8 +58,8 @@ export async function runActor(): Promise<void> {
     const sitemapUrls = [...new Set(startUrls.map((u) => `${new URL(u).origin}/sitemap.xml`))];
     sitemapList = await SitemapRequestList.open({
       sitemapUrls,
-      globs: input.globs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
-      exclude: input.excludes.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+      globs: input.includeUrlGlobs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+      exclude: input.excludeUrlGlobs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
     });
   }
 
@@ -65,19 +67,12 @@ export async function runActor(): Promise<void> {
     ...buildCrawlerOpts(input, sink, proxyConfig, requestQueue, input.proxyRotation),
     ...(sitemapList !== undefined ? { requestList: sitemapList } : {}),
     onFailedRequest: async (info) => {
-      await dataset.pushData({
-        url: info.url,
-        loadedUrl: info.loadedUrl,
-        status: 'failed',
-        errorMessages: info.errorMessages,
-        retryCount: info.retryCount,
-        crawledAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-      });
+      await dataset.pushData(buildFailedRecord(info));
     },
     ...(input.storeSkippedUrls
       ? {
           onSkippedUrl: (url, reason) => {
-            void dataset.pushData({ url, status: 'skipped', skipReason: reason });
+            void dataset.pushData(buildSkippedRecord(url, reason));
           },
         }
       : {}),

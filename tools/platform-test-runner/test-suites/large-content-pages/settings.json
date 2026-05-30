@@ -1,11 +1,15 @@
 {
-    "waitUntil": "DOMCONTENTLOADED",
-    "saveRawHtmlToKeyValueStore": true,
-    "saveExtractedMarkdownToKeyValueStore": true,
-    "saveExtractedTextToKeyValueStore": true,
-    "saveExtractedJsonToKeyValueStore": false,
-    "trafilaturaConfig": {"favorRecall": true},
+    "waitUntil": "domcontentloaded",
+    "mode": "recall",
+    "save": [
+        "txt",
+        "markdown",
+        "original"
+    ],
+    "saveDestination": [
+        "dataset"
+    ],
     "maxRequestRetries": 3,
     "pageLoadTimeoutSecs": 90,
-    "maxPagesPerCrawl": 2
+    "maxCrawlPages": 2
 }

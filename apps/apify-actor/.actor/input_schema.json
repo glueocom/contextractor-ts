@@ -40,14 +40,14 @@
       "maximum": 100,
       "unit": "%"
     },
-    "globs": {
+    "includeUrlGlobs": {
       "title": "Include URLs (globs)",
       "type": "array",
       "description": "Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the crawler access all URLs starting with `https://store.example.com/` or `https://docs.example.com/`.",
       "editor": "globs",
       "default": []
     },
-    "excludes": {
+    "excludeUrlGlobs": {
       "title": "Exclude URLs (globs)",
       "type": "array",
       "description": "Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled.",
@@ -110,7 +110,7 @@
       "editor": "json",
       "prefill": {}
     },
-    "maxPagesPerCrawl": {
+    "maxCrawlPages": {
       "title": "Max pages",
       "type": "integer",
       "description": "Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited.",
@@ -129,7 +129,7 @@
       "maximum": 9007199254740991,
       "unit": "results"
     },
-    "maxCrawlingDepth": {
+    "maxCrawlDepth": {
       "title": "Max crawling depth",
       "type": "integer",
       "description": "Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited.",

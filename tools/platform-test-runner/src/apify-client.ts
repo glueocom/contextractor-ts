@@ -25,8 +25,6 @@ interface ActorRunResult {
 
 interface ActorInput extends ActorSettings {
   startUrls: Array<{ url: string }>;
-  globs?: never[];
-  linkSelector?: string;
 }
 
 /**
@@ -38,8 +36,6 @@ export async function runActor(urls: string[], settings: ActorSettings): Promise
   const input: ActorInput = {
     ...settings,
     startUrls: urls.map((url) => ({ url })),
-    globs: [],
-    linkSelector: '',
   };
 
   console.log(`  Starting actor run with ${urls.length} URL(s)...`);
@@ -78,7 +74,7 @@ export async function fetchDatasetItems(datasetId: string): Promise<DatasetItem[
 }
 
 function isDatasetItem(value: unknown): value is DatasetItem {
-  return isRecord(value) && typeof value.loadedUrl === 'string';
+  return isRecord(value) && typeof value.url === 'string' && typeof value.status === 'string';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

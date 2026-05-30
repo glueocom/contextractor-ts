@@ -17,21 +17,23 @@ When `useSitemaps` is `true`, `SitemapRequestList.open()` is called before the c
 
 ## Sinks
 
-`createApifySink({ kvs, dataset, saveOriginal, saveDestination })` saves:
+`createApifySink({ kvs, dataset, saveOriginal, saveDestination })` delegates record assembly and KVS key derivation to the shared `@contextractor/crawler` sink core (`buildSuccessRecord`, `kvsKey`), so the Actor and the standalone CLI/lib produce identical output. It saves:
 
-- Raw HTML to KVS as `{hash}-original.html` when `saveOriginal` is true and destination includes `key-value-store`; or inline on the dataset item when destination is `dataset` only
-- Extracted `txt`, `json`, `markdown`, `html` routed per `saveDestination`: KVS content-info references when `key-value-store`; inline strings plus a `{format}Hash` field (e.g. `markdownHash`) when `dataset`
-- One dataset item per page with `url`, `loadedUrl`, `status: 'success'`, `loadedAt`, `metadata`, `httpStatus`, `originalHash` (MD5 of raw HTML), and per-format content; when destination is `dataset`, each format field is accompanied by a `{format}Hash` field (e.g. `markdownHash`)
+- Every content field (`txt`, `json`, `markdown`, `html`, and `original`) as a `ContentNode` object — `hash` (MD5) + `bytes` (UTF-8 byte length) always present; inline `content` when `saveDestination` is `dataset`, or `key` + `url` referencing the stored blob when `key-value-store` (dataset takes precedence when both destinations are selected)
+- `original` is always present (at least `{ hash, bytes }`); its raw HTML is included only when `"original"` is in `save`
+- One dataset item per page with `url`, `status: 'success'`, `metadata`, `crawl` (`loadedUrl`, `loadedTime`, `httpStatusCode`, `depth`, `referrerUrl`), `original`, and per-format content (each a `ContentNode`)
 
-Keys use the first 16 hex characters of an MD5 over the URL.
+KVS keys are `{format}-{md5(url)}.{ext}` — the content format, the full 32-char MD5 hex of the request URL, and the format's extension (`txt-…txt`, `markdown-…md`, `json-…json`, `html-…html`, `original-…html`).
 
 ## Dataset record shapes
 
 Every record has a `status` field. Three record shapes are possible:
 
-- **success** — `{ url, loadedUrl, status: 'success', loadedAt, metadata, httpStatus, originalHash, crawl: { depth, referrerUrl }, ...formats }`; produced by `createApifySink` for each successfully extracted page; `url` is the original request URL, `loadedUrl` is the final URL after redirects; `depth` is the link distance from a start URL (0 for start URLs), `referrerUrl` is the linking page URL or `null` for start URLs
-- **failed** — `{ url, loadedUrl, status: 'failed', errorMessages, retryCount, crawledAt }`; pushed via `onFailedRequest` after all retries are exhausted
+- **success** — `{ url, status: 'success', metadata, crawl: { loadedUrl, loadedTime, httpStatusCode, depth, referrerUrl }, original, ...formats }`; produced by `createApifySink` for each successfully extracted page; every content field (incl. `original`) is a `ContentNode` (`hash` + `bytes` always present, plus inline `content` or `key`/`url` when stored); `url` is the original request URL, `crawl.loadedUrl` is the final URL after redirects; `crawl.depth` is the link distance from a start URL (0 for start URLs), `crawl.referrerUrl` is the linking page URL or `null` for start URLs. Crawl-event timestamps use `*Time`; content-metadata dates use `*At`
+- **failed** — `{ url, status: 'failed', crawl: { loadedUrl }, errors, retryCount, crawledTime }`; pushed via `onFailedRequest` after all retries are exhausted
 - **skipped** — `{ url, status: 'skipped', skipReason }`; pushed via `onSkippedUrl` when `storeSkippedUrls: true`; reason values: `'robotsTxt'`, `'limit'`, `'enqueueLimit'`, `'filters'`, `'redirect'`, `'depth'`
+
+`.actor/dataset_schema.json`, `output_schema.json`, and `key_value_store_schema.json` are generated from the `ContextractorOutput` Zod union plus the `OutputViews` / `KvsCollections` presentation config in `@contextractor/schema` (via `@contextractor/gen-input-schema`); they are not hand-edited. `actor.json` stays hand-written.
 
 ## Config
 

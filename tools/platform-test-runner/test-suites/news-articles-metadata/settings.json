@@ -1,11 +1,14 @@
 {
-    "waitUntil": "NETWORKIDLE",
-    "saveRawHtmlToKeyValueStore": true,
-    "saveExtractedMarkdownToKeyValueStore": true,
-    "saveExtractedTextToKeyValueStore": false,
-    "saveExtractedJsonToKeyValueStore": true,
-    "trafilaturaConfig": {},
+    "waitUntil": "networkidle",
+    "save": [
+        "markdown",
+        "json",
+        "original"
+    ],
+    "saveDestination": [
+        "dataset"
+    ],
     "maxRequestRetries": 3,
     "pageLoadTimeoutSecs": 60,
-    "maxPagesPerCrawl": 2
+    "maxCrawlPages": 2
 }

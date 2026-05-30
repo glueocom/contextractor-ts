@@ -1,97 +1,137 @@
-# Generate all `.actor/*.json` schemas from the Zod source of truth, with record-shape variations
+# Generate all `.actor/*.json` schemas from Zod, and unify dataset/KVS output across Actor + CLI + lib
 
-> **TLDR**: Make `packages/schema` the single source of truth for **every** generated Apify schema file. Model the dataset's three record shapes (`success` / `failed` / `skipped`) as a Zod **discriminated union**, move Apify presentation concerns (views, display formats, output links) into a typed **`.ts` config**, and rewrite the generator as a **transformer** that emits `input_schema.json`, `dataset_schema.json` (with nested object members + union members, no longer collapsed), and `output_schema.json`. Reconcile the standalone CLI dataset record with the Actor's. Then test locally (lib + CLI + Actor) and on the Apify platform.
+> **TLDR**: Make `packages/schema` the single source of truth for **every** generated Apify schema file. Model the dataset's three record shapes (`success` / `failed` / `skipped`) as a Zod **discriminated union**, move Apify presentation concerns (views, display formats, output links, KVS collections) into typed **`.ts` config**, and rewrite the generator as **transformers** that emit `input_schema.json`, `dataset_schema.json` (nested members + union members, no longer collapsed), `output_schema.json`, **and** `key_value_store_schema.json`. Then extract a **shared sink core** into `@contextractor/crawler` so the **Apify Actor, the NPM CLI, and the NPM lib produce byte-identical dataset records and KVS output** (the only allowed difference is `ContentNode.url`, present only on the Apify platform). Unify the KVS key scheme to **`{format}-{md5(url)}.{ext}`**. Test locally (lib + CLI + Actor) and on the Apify platform.
+
+> This prompt has been executed once and corrected against reality. The code blocks below are the **final, verified** versions — re-running this reproduces the implemented design. Read the "Verified facts" section before coding; it contains corrections to the original draft (nullable `loadedUrl`, the 3-branch enum merge, `enum` preservation, the no-auto-build deploy path).
 
 ## Context
 
-`tools/gen-input-schema/src/main.ts` currently generates two of the four `.actor` files from Zod:
+`tools/gen-input-schema/src/main.ts` originally generated two of the four `.actor` files from Zod:
 
-- `input_schema.json` ← `ContextractorInput` via `writeApifyInputSchema` (good — leave the input path untouched).
-- `dataset_schema.json` ← `ContextractorOutput` via a local `writeDatasetSchema` that **collapses all nested structure** to bare `type:"object"` (main.ts:59-65) and is **incomplete**.
-- `output_schema.json` — **hand-written** (`.actor/output_schema.json`, 11 lines).
-- `actor.json` — **hand-written** deploy metadata; **stays hand-written** (it is not schema-derived).
+- `input_schema.json` ← `ContextractorInput` via `writeApifyInputSchema`. The input transformer is untouched, but four input **fields** are renamed to `apify/website-content-crawler` conventions — see "Input field renames" below.
+- `dataset_schema.json` ← `ContextractorOutput` via a local `writeDatasetSchema` that **collapses all nested structure** to bare `type:"object"` and is **incomplete**.
+- `output_schema.json` — **hand-written**.
+- `key_value_store_schema.json` — **did not exist**.
+- `actor.json` — **hand-written** deploy metadata; **stays hand-written** (not schema-derived).
 
-Two independent problems must be fixed together:
+Three problems are fixed together:
 
-1. **The generator throws away structure.** `z.toJSONSchema(ContextractorOutput)` already contains `properties` for `metadata`, `anyOf` for the content unions, and (after change #2) `oneOf` for the record shapes. `writeDatasetSchema` discards all of it. The Apify Console Output tab therefore cannot show the members of `metadata`, the `ContentRef` fields (`hash`/`length`/`key`/`url`), or `crawl`.
+1. **The generator throws away structure.** `z.toJSONSchema(ContextractorOutput)` already contains `properties` for `metadata`/`crawl`, `anyOf` for the content unions, and (after the union change) `oneOf` for the record shapes. The old `writeDatasetSchema` discarded all of it, so the Apify Console Output tab could not show the members of `metadata`, the `ContentNode` fields, or `crawl`.
 
-2. **The source of truth has drifted from reality.** `ContextractorOutput` models a partial *success* record only. The dataset actually carries **three shapes**, accurately documented in `apps/apify-actor/SPEC.md:28-34`:
-   - **success** (`apps/apify-actor/src/sinks.ts:52-92`): `{ url, loadedUrl, status:'success', loadedAt, metadata, httpStatus, originalHash, crawl:{depth,referrerUrl}, original?, txt?, markdown?, json?, html?, txtHash?, markdownHash?, jsonHash?, htmlHash? }`. Content fields are a `ContentRef` object when `saveDestination` includes `key-value-store`, an inline string when `dataset`; the `*Hash` fields appear only in the `dataset` branch.
-   - **failed** (`apps/apify-actor/src/run.ts:67-76`): `{ url, loadedUrl, status:'failed', errorMessages, retryCount, crawledAt }`.
-   - **skipped** (`apps/apify-actor/src/run.ts:77-83`): `{ url, status:'skipped', skipReason }`; reasons `'robotsTxt' | 'limit' | 'enqueueLimit' | 'filters' | 'redirect' | 'depth'`.
+2. **The source of truth drifted from reality.** `ContextractorOutput` modeled a partial *success* record only. The dataset actually carries **three shapes** (`apps/apify-actor/SPEC.md`): `success`, `failed`, `skipped`. The fix is **expand the schema to match the code** — do not trim runtime fields.
 
-The fix direction is **expand the schema to match the code** (the code and SPEC are correct; the Zod type drifted). Do **not** trim runtime fields.
+3. **The CLI/lib and Actor output had diverged.** The standalone sink spread `metadata` at the top level, always inlined content (never wrote `ContentNode`s), pushed **no** dataset record in KVS-only mode, and keyed the KVS by URL slug; the Actor nested `metadata`, wrote `ContentNode`s, and keyed by `md5(url)[:16]`. **Requirement: the dataset records and KVS output must be identical across the Apify Actor, the NPM CLI, and the NPM lib** (greenfield — no backward compatibility). Only the *input* schema may legitimately differ per surface.
 
-## The architecture: where each kind of variation is defined
+## The architecture: where each kind of variation lives
 
-There are two distinct kinds of "variation," and they get two distinct homes. This separation is the point of the task.
+Three distinct concerns, three homes.
 
-### Data-shape variations → Zod discriminated union (the data source of truth)
+### Data-shape variations → Zod discriminated union (`output.ts`)
 
-Everything about *what fields exist and their types* lives in Zod:
+Everything about *what fields exist and their types*:
 
 - `success` / `failed` / `skipped` → `z.discriminatedUnion('status', [Success, Failed, Skipped])`.
-- KVS-reference vs inline-string content → the existing `ContentField = z.union([ContentRef, z.string()])`.
-- Conditional fields (per-format hashes, optional content/`original`) → `.optional()`.
-- Nullable metadata/crawl fields → `.nullable()`.
+- Every content field (extracted formats + `original`) → a single `ContentNode` object `{ hash, bytes, content?, key?, url? }` — no union, no top-level `*Hash`. `content` holds the inline string (dataset); `key`/`url` reference the stored blob (key-value-store).
+- Optional content fields `txt`/`markdown`/`json`/`html` → `.optional()` `ContentNode`s (present when extracted). `original` is a **required** `ContentNode` — the raw HTML's `hash`/`bytes` are always known.
+- Nullable metadata/crawl fields, and `failed.crawl.loadedUrl` → `.nullable()`.
 
-Verified zod 4.4.3 emit shapes the transformer must handle:
-- discriminated union → `{ oneOf: [ {type:'object', properties, required}, … ] }`, each branch's `status` as `{type:'string', const:'success'|'failed'|'skipped'}`.
-- nullable → `{ anyOf: [ {type:'string'}, {type:'null'} ] }`.
-- content union → `{ anyOf: [ {type:'object', properties:{hash,length,key,url}}, {type:'string'} ] }`.
+### Presentation / storage config → typed `.ts` (`apify/output-views.ts`)
 
-### Presentation / UX variations → a typed `.ts` config (NOT hardcoded in the generator)
+Apify facts **not derivable from Zod**: which fields appear in the overview table, their labels and display `format`, the `output_schema` link templates, and the KVS **collection key-prefixes**. One typed config object (`OutputViews` + `KvsCollections`).
 
-Apify-specific facts that are **not derivable from Zod** — which fields appear in the overview table, their labels and display `format` (`link`/`number`/`text`/`date`), and the `output_schema` link templates. Today these are **hardcoded inside `writeDatasetSchema`** (main.ts:76-92) — the wrong home. Extract them into one typed config object so the data schema (Zod) and the presentation config (`.ts`) are cleanly separated and independently testable.
+### Output parity → a shared sink core (`packages/crawler/src/sinks/storage.ts`)
 
-### The generator becomes a transformer
+Record assembly and KVS key derivation live **once**, in `@contextractor/crawler` (both apps already depend on it; it already depends on `@contextractor/extraction` — **no new package deps**). Both app sinks become thin wrappers, so output parity is *by construction*, not hand-sync.
 
-`toDatasetSchema(outputZod, viewConfig)` and `toOutputSchema(viewConfig)` are pure functions that consume (Zod data schema) + (presentation config) and emit the JSON. They merge the `oneOf` branches into the single flat Apify `fields` map, recurse into nested object `properties`, collapse nullable `anyOf` to the non-null branch, and represent the `ContentField` union as the richer `ContentRef` object. This mirrors the existing `to-apify-schema.ts` boundary already used for the input schema.
+### The generator becomes transformers
+
+`toDatasetSchema(outputZod, views)`, `toOutputSchema(views)`, `toKeyValueStoreSchema(collections)` are pure functions consuming (Zod data schema) + (presentation config) → JSON. This mirrors the existing `to-apify-schema.ts` boundary used for the input schema.
 
 ## Scope
 
 In:
 
-- Expand `packages/schema/src/source-of-truth/output.ts` to a `z.discriminatedUnion('status', …)` modeling all three record shapes with full envelope fields.
-- New presentation config `packages/schema/src/apify/output-views.ts`.
-- New `packages/schema/src/apify/to-dataset-schema.ts` (move + rewrite the generator logic out of `tools/gen-input-schema`, export `toDatasetSchema`/`writeDatasetSchema`) and `to-output-schema.ts` (`toOutputSchema`/`writeOutputSchema`). Mirrors how `writeApifyInputSchema` already lives in the package.
-- Slim `tools/gen-input-schema/src/main.ts` to orchestration: call the input, dataset, and output writers.
-- Regenerate `apps/apify-actor/.actor/dataset_schema.json` and `output_schema.json`.
-- Reconcile `apps/standalone/src/sinks.ts` dataset record with the Actor's shape (nest `metadata`, add `loadedAt` + `httpStatus`).
-- Tests (lib + CLI + Actor) and doc/SPEC sync.
+- Expand `packages/schema/src/source-of-truth/output.ts` to a `z.discriminatedUnion('status', …)` modeling all three shapes with full envelope fields.
+- New `packages/schema/src/apify/output-views.ts` (`OutputViews` + `KvsCollections`).
+- New `packages/schema/src/apify/to-dataset-schema.ts`, `to-output-schema.ts`, `to-kvs-schema.ts` (move + rewrite the generator logic out of `tools/gen-input-schema`).
+- Export the new functions + config from `packages/schema/src/index.ts`.
+- Slim `tools/gen-input-schema/src/main.ts` to orchestration: call the input, dataset, output, **and KVS** writers.
+- Regenerate `apps/apify-actor/.actor/dataset_schema.json`, `output_schema.json`, and new `key_value_store_schema.json`; wire `storages.keyValueStore` into `actor.json`.
+- **Shared sink core** `packages/crawler/src/sinks/storage.ts` (`kvsKey`, `writeBlob`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentNode`/`KvsLike`/`ContentKind`); export from the crawler index.
+- Rewrite both app sinks as thin wrappers over the shared core: `apps/apify-actor/src/sinks.ts` + `run.ts` (delete `apps/apify-actor/src/extraction.ts`, moved into the core); `apps/standalone/src/sinks.ts` + `cliProgram.ts` (remove `urlToFilename` + `KVS_FORMAT_INFO`).
+- **Unify the KVS key scheme** to `{format}-{md5(url)}.{ext}` on both surfaces (changes the Actor's keys too).
+- Tests (lib + crawler + CLI + Actor) and doc/SPEC sync.
 
 Out:
 
-- `actor.json` stays hand-written (deploy metadata, not schema). Do not generate it.
-- Do **not** plumb a real `httpStatus` through the crawler — keep the literal `200` and flag it (separate change; see Flagged findings).
-- No Rust / napi-rs crate changes (`.claude/rules/native-addon-boundary.md`).
-- `key_value_store_schema.json` generation is an **optional stretch** only (see Optional stretch); KVS keys are hash-prefixed, so `keyPrefix` grouping does not fit cleanly — do not force it.
+- `actor.json` stays hand-written (deploy metadata). Do not generate it.
+- Do **not** plumb a real HTTP status through the crawler — keep `crawl.httpStatusCode` as the literal `200` and flag it (separate cross-package change; see Flagged findings).
+- No Rust / napi-rs crate changes (`.claude/rules/native-addon-boundary.md`); `txt` stays `txt`.
 
-## Prerequisites — read first
+## Verified facts to bake in (corrections to the original draft)
 
-- `/Users/miroslavsekera/r/contextractor-ts/CLAUDE.md` and the rules it links: `minimal-diff`, `native-addon-boundary`, `spec-maintenance`, `test-maintenance`, `user-facing-docs`, `json-config-only`, `no-confirmation-prompts`, `apify-production`.
-- `.claude/skills/apify-schemas/SKILL.md` — the dataset/output/KVS schema shapes and display formats.
-- Source files: `packages/schema/src/source-of-truth/output.ts`, `…/input.ts`, `packages/schema/src/apify/to-apify-schema.ts`, `packages/schema/src/index.ts`, `tools/gen-input-schema/src/main.ts`, `apps/apify-actor/src/sinks.ts`, `apps/apify-actor/src/run.ts`, `apps/standalone/src/sinks.ts`, `packages/extraction/src/metadata.ts`, `packages/crawler/src/sinks/types.ts`, and `packages/crawler/src/createCrawler.ts` (for the exact `onFailedRequest`/`onSkippedUrl` info field types and nullability).
-- The four files in `apps/apify-actor/.actor/`.
-- Apify dataset schema spec: `https://docs.apify.com/platform/actors/development/actor-definition/dataset-schema`. Output schema spec: `https://docs.apify.com/platform/actors/development/actor-definition/output-schema`.
-- Confirm the zod emit shapes before coding:
+Confirm the zod emit shapes before coding (zod **4.4.3**, `target:'draft-07', unrepresentable:'any', reused:'inline'`):
 
-  ```bash
-  cd packages/schema && node --input-type=module -e '
-  import { z } from "zod";
-  const U = z.discriminatedUnion("status", [
-    z.object({ status: z.literal("success"), url: z.string() }),
-    z.object({ status: z.literal("failed"),  url: z.string(), retryCount: z.number().int() }),
-  ]);
-  console.log(JSON.stringify(z.toJSONSchema(U, { target:"draft-07", unrepresentable:"any", reused:"inline" }), null, 2));
-  '
-  ```
+```bash
+cd packages/schema && node --input-type=module -e '
+import { z } from "zod";
+const U = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("success"), url: z.string(), metadata: z.object({ title: z.string().nullable() }), txt: z.object({hash:z.string(),bytes:z.number().int(),content:z.string().optional(),key:z.string().optional()}).optional() }),
+  z.object({ status: z.literal("failed"),  url: z.string(), crawl: z.object({loadedUrl: z.string().nullable()}), retryCount: z.number().int() }),
+]);
+console.log(JSON.stringify(z.toJSONSchema(U, { target:"draft-07", unrepresentable:"any", reused:"inline" }), null, 2));
+'
+```
+
+Verified emit shapes the transformer must handle:
+
+- **Top level**: `{ "$schema": …, "oneOf": [ {type:'object', properties, required, additionalProperties:false}, … ] }` (no top-level `type`).
+- **Discriminator**: each branch's `status` is `{type:'string', const:'success'|'failed'|'skipped', description}`.
+- **Nullable** (e.g. `metadata.title`, `failed.crawl.loadedUrl`): `{ description, anyOf:[{type:'string'},{type:'null'}] }` — **not** `type:['string','null']`. The `anyOf` handler picks the first non-null branch.
+- **Content fields**: each is a single object `{type:'object', properties:{hash,bytes,content,key,url}, required:[hash,bytes]}` — no `anyOf` (the old `ContentField` union is gone), so the transformer recurses straight into its `properties`.
+
+Three corrections to the original draft code (all applied below):
+
+- **`FailedRecord.loadedUrl` must be `.nullable()`.** `createCrawler`'s `onFailedRequest` info types `loadedUrl: string | null`; `run.ts` / `cliProgram.ts` write it verbatim.
+- **`mergeNode` must accumulate enum values across *all* branches.** The naive pairwise-collapse drops the third `status` (`skipped`): after `success`+`failed` the node has no `.const`, so the guard fails. Accumulate instead (see code).
+- **`toDatasetField` must copy `enum`.** Otherwise the merged `status` enum is dropped. Apify's dataset `fields` is a JSON-Schema-style descriptor map that **does** accept `enum` and nested `properties` on a field (verified against the docs and a green platform build).
+
+`buildSuccessRecord` content rules (identical on both surfaces): every content field — `txt`/`markdown`/`json`/`html` and `original` — is a `ContentNode` (`hash` + `bytes` always present). The **dataset** destination wins when both are selected: the content is inlined under `content`; otherwise the blob goes to the **key-value store** and is referenced by `key` + `url`. `original` is **always** present (at least `{ hash, bytes }`); its raw HTML is included (as `content`, or `key`/`url`) only when `"original"` is in `save`.
+
+### KVS key scheme — research decision
+
+Researched per Apify conventions (May 2026): Apify's own `apify/screenshot-url` keys per-URL blobs by **URL + MD5** (not content-hash, not slug). Content-hash keying is wrong here (breaks overwrite-on-recrawl, orphans blobs; the records already carry the raw HTML hash as `original.hash` and each content node's `hash`). KVS keys must match `^[a-zA-Z0-9!\-_.'()]{1,256}$` (no `/`, `:`, `?`, `#`) — slugs can violate this and exceed the length limit. **Decision: `{format}-{md5(url)}.{ext}`** (full 32-hex MD5 of `result.url`), identical on both surfaces. The **format prefix** lets `key_value_store_schema.json` group cleanly by `keyPrefix` (one collection per format).
+
+### Content-node field naming — research decision
+
+Researched (May 2026): the industry norm for a content object is a **single UTF-8 byte size** field, not a separate char count — JS `String.length` is UTF-16 code units (not chars or bytes), a char count is ambiguous and consumer-derivable, and S3/GitHub/HTTP expose bytes only. Field names: `hash` (MD5 hex), **`bytes`** (UTF-8 byte length), `content` (inline string, per the GitHub Contents API), `key` + `url` (KVS reference). So `ContentNode = { hash, bytes, content?, key?, url? }` — replacing the old `ContentRef` + `ContentField` union + the per-format `*Hash` top-level fields.
+
+### Input field renames (verified against `apify/website-content-crawler`)
+
+Rename four input fields to the WCC convention (greenfield, no backward-compat). `customHttpHeaders` and `respectRobotsTxtFile` **already match WCC — leave them** (Crawlee's own option is `respectRobotsTxtFile`). Internal crawler/CrawlConfig option names (`globs`, `excludes`, `maxCrawlingDepth`, `maxPages`, `crawlDepth`) and CLI flags (`--glob`, `--exclude`, `--max-pages`, `--crawl-depth`) stay; only the input-schema field names + their read sites change.
+
+- `maxPagesPerCrawl` → `maxCrawlPages`
+- `maxCrawlingDepth` → `maxCrawlDepth`
+- `globs` → `includeUrlGlobs` (keep the `{glob}` array shape + `globs` editor)
+- `excludes` → `excludeUrlGlobs` (same)
+
+Read sites: `apps/apify-actor/src/config.ts` (`buildCrawlerOpts`), `apps/apify-actor/src/run.ts` (the sitemap block reads `input.includeUrlGlobs`/`input.excludeUrlGlobs` — **easy to miss**), `apps/standalone/src/config.ts` (`buildCrawlConfig`), `apps/standalone/src/cliProgram.ts` (the `s.maxCrawlPages._def` / `s.maxCrawlDepth._def` default reads + the `buildSchemaOverrides` output keys). Update `packages/schema/test/input.test.ts` + `apps/apify-actor/src/config.test.ts` mocks; regenerate `input_schema.json` + the `@generated` README input table via `pnpm docs:update`. `status` is kept (its values disambiguate it from `httpStatusCode`).
+
+### Dataset envelope field naming (research + user decisions, May 2026)
+
+A naming pass on the OUTPUT record (input untouched), aligned with apify/website-content-crawler (WCC) + the explicit-`bytes` philosophy:
+
+- **Nest crawl-provenance under `crawl`** (WCC style). Success `crawl: { loadedUrl, loadedTime, httpStatusCode, depth, referrerUrl }`; `url` + `status` stay top-level. The **failed** record nests only `crawl: { loadedUrl (nullable) }` (a SUBSET of success `Crawl`, so the dataset-schema branch merge keeps the success superset — **no transformer change**); `errors`/`retryCount`/`crawledTime` stay top-level on failed.
+- **Two timestamp conventions** (intentional category split, research-endorsed): crawl-EVENT timestamps use `*Time` (`crawl.loadedTime`, `crawledTime`); content-metadata dates use `*At` (`metadata.publishedAt`).
+- **Renames**: `httpStatus` → `httpStatusCode` (WCC; disambiguates from the `status` discriminator; nested in `crawl`); `metadata.lang` → `languageCode` (WCC + explicit; the rename lives in `packages/extraction/src/metadata.ts` `projectMetadata` + `DatasetMetadata`, which flows to the output); `errorMessages` → `errors`.
+- **No `metadata.modifiedAt`**: the rs-trafilatura napi binding exposes only a single publication `date` (→ `publishedAt`); there is no modified date to source, so it is omitted (don't add a permanently-null field).
+- Keep: `url`, `status`, `metadata.title`/`author`/`description`/`siteName`/`publishedAt`, `crawl.depth`/`referrerUrl`, `retryCount`, `skipReason`. The Console Overview view uses dot-notation paths (`crawl.loadedUrl`, `crawl.httpStatusCode`, `metadata.languageCode`).
 
 ## File-by-file changes
 
 ### `packages/schema/src/source-of-truth/output.ts` — discriminated union
 
-Replace the single `z.object` with a discriminated union. Preserve the rs-trafilatura naming-convention header comment (extend it to note the three shapes). Keep `.describe()` on every field. Order success fields to match the runtime write order in `sinks.ts` (`url, loadedUrl, status, loadedAt, metadata, httpStatus, originalHash, crawl`, then content, then hashes) so the generated `fields` map and dataset preview read naturally.
+Replace the single `z.object` with a discriminated union. Keep the rs-trafilatura naming-convention header (extended to note the three shapes). `.describe()` on every field. Success fields ordered to match the runtime write order.
 
 ```ts
 import { z } from 'zod';
@@ -106,17 +146,23 @@ import { z } from 'zod';
  * upstream Python trafilatura metadata fields.
  */
 
-const ContentRef = z.object({
+// One piece of content (an extracted format or the raw original HTML). hash +
+// bytes are always present; `content` is the inline string (dataset) and
+// `key`/`url` reference the stored blob (key-value-store). No more ContentField
+// union and no top-level `*Hash` fields.
+const ContentNode = z.object({
   hash: z.string().describe('MD5 hex digest of the content'),
-  length: z.number().int().describe('Byte length of the content'),
-  key: z.string().optional().describe('Key-value store key'),
-  url: z.string().optional().describe('Public URL to the key-value store item'),
+  bytes: z.number().int().describe('UTF-8 byte length of the content'),
+  content: z
+    .string()
+    .optional()
+    .describe('Inline content string. Present when saveDestination includes "dataset".'),
+  key: z
+    .string()
+    .optional()
+    .describe('Key-value store key. Present when stored in the key-value store.'),
+  url: z.string().optional().describe('Public URL to the key-value store item.'),
 });
-
-const ContentField = z.union([
-  ContentRef,
-  z.string().describe('Inline string content when saveDestination includes "dataset"'),
-]);
 
 const Metadata = z
   .object({
@@ -125,12 +171,17 @@ const Metadata = z
     publishedAt: z.string().nullable().describe('ISO 8601 publication date'),
     description: z.string().nullable().describe('Page description or summary'),
     siteName: z.string().nullable().describe('Site name (sitename in trafilatura)'),
-    lang: z.string().nullable().describe('Detected content language code'),
+    languageCode: z.string().nullable().describe('Detected content language code (ISO 639)'),
   })
   .describe('Extracted page metadata');
 
+// Crawl provenance is nested here (apify/website-content-crawler style); crawl-EVENT
+// timestamps use `*Time`. Content-metadata dates use `*At` (Metadata.publishedAt).
 const Crawl = z
   .object({
+    loadedUrl: z.string().describe('The URL that was loaded (post-redirect)'),
+    loadedTime: z.string().describe('ISO 8601 timestamp when the page was loaded'),
+    httpStatusCode: z.number().int().describe('HTTP response status code (currently always 200; see SPEC)'),
     depth: z.number().int().describe('Link distance from a start URL (0 for start URLs)'),
     referrerUrl: z.string().nullable().describe('The linking page URL, or null for start URLs'),
   })
@@ -138,33 +189,35 @@ const Crawl = z
 
 const SuccessRecord = z.object({
   url: z.string().describe('The original request URL'),
-  loadedUrl: z.string().describe('The URL that was loaded (post-redirect)'),
   status: z.literal('success').describe('Record outcome discriminator'),
-  loadedAt: z.string().describe('ISO 8601 timestamp when the page was loaded'),
   metadata: Metadata,
-  httpStatus: z.number().int().describe('HTTP response status code (currently always 200; see SPEC)'),
-  originalHash: z.string().describe('MD5 hex digest of the raw page HTML'),
   crawl: Crawl,
-  original: ContentField.optional().describe(
-    'Raw page HTML captured before extraction. Present when "original" is in save.',
+  // `original` is a required ContentNode: hash+bytes always present; content/key/url when in save.
+  original: ContentNode.describe(
+    'The raw page HTML. "hash" and "bytes" are always present. When "original" is in save, the raw HTML is included as "content" (dataset) or "key"/"url" (key-value store).',
   ),
-  txt: ContentField.optional().describe('Extracted plain text. Present when "txt" is in save.'),
-  markdown: ContentField.optional().describe('Extracted Markdown. Present when "markdown" is in save.'),
-  json: ContentField.optional().describe('Extracted structured JSON. Present when "json" is in save.'),
-  html: ContentField.optional().describe('Cleaned extracted HTML. Present when "html" is in save.'),
-  txtHash: z.string().optional().describe('MD5 hex of inline txt. Present when saveDestination includes "dataset".'),
-  markdownHash: z.string().optional().describe('MD5 hex of inline markdown. Present when saveDestination includes "dataset".'),
-  jsonHash: z.string().optional().describe('MD5 hex of inline json. Present when saveDestination includes "dataset".'),
-  htmlHash: z.string().optional().describe('MD5 hex of inline html. Present when saveDestination includes "dataset".'),
+  txt: ContentNode.optional().describe('Extracted plain text. Present when "txt" is in save.'),
+  markdown: ContentNode.optional().describe('Extracted Markdown. Present when "markdown" is in save.'),
+  json: ContentNode.optional().describe('Extracted structured JSON. Present when "json" is in save.'),
+  html: ContentNode.optional().describe('Cleaned extracted HTML. Present when "html" is in save.'),
 });
 
 const FailedRecord = z.object({
   url: z.string().describe('The original request URL'),
-  loadedUrl: z.string().describe('The URL that was loaded before failure (post-redirect)'),
   status: z.literal('failed').describe('Record outcome discriminator'),
-  errorMessages: z.array(z.string()).describe('Error messages from the final attempt'),
+  // `failed.crawl` holds only loadedUrl (nullable) — a SUBSET of success Crawl, so the
+  // dataset-schema branch merge keeps success Crawl's superset (no transformer change).
+  crawl: z
+    .object({
+      loadedUrl: z
+        .string()
+        .nullable()
+        .describe('The URL that was loaded before failure, or null if navigation never completed'),
+    })
+    .describe('Crawl provenance for this page'),
+  errors: z.array(z.string()).describe('Error messages from the final attempt'),
   retryCount: z.number().int().describe('Number of retries before the request was abandoned'),
-  crawledAt: z.string().describe('ISO 8601 timestamp when the failed request was abandoned'),
+  crawledTime: z.string().describe('ISO 8601 timestamp when the failed request was abandoned'),
 });
 
 const SkippedRecord = z.object({
@@ -182,53 +235,55 @@ export const ContextractorOutput = z.discriminatedUnion('status', [
 ]);
 ```
 
-**Verify nullability before finalizing:** confirm the real types of `info.loadedUrl`, `info.errorMessages`, `info.retryCount` on `onFailedRequest`, and the `skipReason` union, against `packages/crawler/src/createCrawler.ts`. If `loadedUrl` can be `null`/absent on a failed record, make it `.nullable()` / `.optional()` accordingly — the schema must match what `run.ts` actually writes.
+`packages/schema/src/index.ts` already had `export type ContextractorOutputType = z.infer<typeof ContextractorOutput>` — it becomes a 3-member union automatically.
 
-`packages/schema/src/index.ts` already does `export type ContextractorOutputType = z.infer<typeof ContextractorOutput>` — it becomes a 3-member union automatically. No other change needed there (no runtime consumer of the type exists).
-
-### `packages/schema/src/apify/output-views.ts` (new) — presentation config
-
-The single home for Apify presentation facts. The `overview` view name is defined once and reused by both the dataset views and the output schema.
+### `packages/schema/src/apify/output-views.ts` (new) — presentation + KVS config
 
 ```ts
-/**
- * Apify presentation config for the dataset/output schemas. These are
- * UI concerns NOT derivable from the Zod data schema (column choice,
- * display formats, output link templates). The dataset/output schema
- * generators consume this alongside `ContextractorOutput`.
- */
 export const OutputViews = {
   title: 'Output schema',
   views: {
     overview: {
       title: 'Overview',
-      transformation: {
-        fields: ['loadedUrl', 'httpStatus', 'metadata.title', 'metadata.lang'],
-      },
+      transformation: { fields: ['crawl.loadedUrl', 'crawl.httpStatusCode', 'metadata.title', 'metadata.languageCode'] },
       display: {
         component: 'table',
         properties: {
-          loadedUrl: { label: 'URL', format: 'link' },
-          httpStatus: { label: 'Status', format: 'number' },
+          'crawl.loadedUrl': { label: 'URL', format: 'link' },
+          'crawl.httpStatusCode': { label: 'Status', format: 'number' },
           'metadata.title': { label: 'Title', format: 'text' },
-          'metadata.lang': { label: 'Language', format: 'text' },
+          'metadata.languageCode': { label: 'Language', format: 'text' },
         },
       },
     },
   },
   output: {
-    overview: {
-      type: 'string',
-      title: 'Overview',
-      template: '{{links.apiDefaultDatasetUrl}}/items?view=overview',
-    },
+    overview: { type: 'string', title: 'Overview', template: '{{links.apiDefaultDatasetUrl}}/items?view=overview' },
+  },
+} as const;
+
+/**
+ * KVS collections. Each content format is written under a deterministic
+ * `{format}-{md5(url)}.{ext}` key (see the crawler sink core), so collections
+ * group cleanly by `keyPrefix`. These prefixes MUST stay in sync with `kvsKey`
+ * in `@contextractor/crawler`; a test asserts they match. (contentTypes is
+ * omitted to avoid charset-matching pitfalls on the platform build.)
+ */
+export const KvsCollections = {
+  title: 'Stored content',
+  collections: {
+    txt: { title: 'Plain text', keyPrefix: 'txt-' },
+    markdown: { title: 'Markdown', keyPrefix: 'markdown-' },
+    json: { title: 'JSON', keyPrefix: 'json-' },
+    html: { title: 'Extracted HTML', keyPrefix: 'html-' },
+    original: { title: 'Original HTML', keyPrefix: 'original-' },
   },
 } as const;
 ```
 
 ### `packages/schema/src/apify/to-dataset-schema.ts` (new) — the transformer
 
-Pure functions, no I/O except the thin `write*` wrapper (matches `to-apify-schema.ts`). Merge the `oneOf` branches into one flat `fields` map; recurse into nested `properties`; collapse nullable `anyOf` to its non-null branch; represent the `ContentField` union as the `ContentRef` object (the richer KVS shape — Apify dataset `fields` accept nested `properties` under `type:'object'`). The only cross-branch key conflict in this schema is `status` (differing `const`s) → collapse to `{type:'string', enum:[…]}`.
+Merge the `oneOf` branches into one flat `fields` map; recurse nested `properties`; collapse nullable `anyOf` to its non-null branch; pick the `ContentNode` object for the content union; **accumulate the `status` consts into an `enum`** and **preserve `enum` on leaf fields**.
 
 ```ts
 import { writeFileSync } from 'node:fs';
@@ -238,7 +293,7 @@ import { OutputViews } from './output-views.js';
 type JsonNode = Record<string, unknown>;
 type Field = Record<string, unknown>;
 
-export function toDatasetSchema(schema: z.ZodTypeAny, views = OutputViews) {
+export function toDatasetSchema(schema: z.ZodType, views = OutputViews) {
   const jsonSchema = z.toJSONSchema(schema, {
     target: 'draft-07',
     unrepresentable: 'any',
@@ -251,44 +306,48 @@ export function toDatasetSchema(schema: z.ZodTypeAny, views = OutputViews) {
     const field = toDatasetField(node);
     if (field) fields[name] = field;
   }
-
   return { actorSpecification: 1, fields, views: views.views };
 }
 
-export function writeDatasetSchema(schema: z.ZodTypeAny, outPath: string): void {
+export function writeDatasetSchema(schema: z.ZodType, outPath: string): void {
   writeFileSync(outPath, `${JSON.stringify(toDatasetSchema(schema), null, 2)}\n`, 'utf8');
 }
 
 /** Merge every discriminated-union branch's properties into one flat map. */
 function mergeBranchProperties(jsonSchema: JsonNode): Record<string, JsonNode> {
-  const branches = Array.isArray(jsonSchema.oneOf)
-    ? (jsonSchema.oneOf as JsonNode[])
-    : [jsonSchema];
+  const branches = Array.isArray(jsonSchema.oneOf) ? (jsonSchema.oneOf as JsonNode[]) : [jsonSchema];
   const out: Record<string, JsonNode> = {};
   for (const branch of branches) {
     const props = (branch.properties as Record<string, JsonNode>) ?? {};
     for (const [name, node] of Object.entries(props)) {
-      out[name] = name in out ? mergeNode(out[name], node) : node;
+      const existing = out[name];
+      out[name] = existing ? mergeNode(existing, node) : node;
     }
   }
   return out;
 }
 
-/** The only real conflict is the `status` discriminator: collapse consts → enum. */
+/**
+ * Merge a field that appears in multiple branches. The only real cross-branch
+ * conflict is the `status` discriminator: accumulate each branch's `const` into
+ * one `enum` (accumulating, not pairwise-collapsing, so all three values
+ * survive a 3-branch merge). Any other shared field (e.g. `loadedUrl`) keeps the
+ * first branch's node — safe because `toDatasetField` normalizes leaf types
+ * downstream (nullable `anyOf:[X,null]` collapses to `X` regardless).
+ */
 function mergeNode(a: JsonNode, b: JsonNode): JsonNode {
-  if (a.const !== undefined && b.const !== undefined) {
-    const values = [...new Set([a.const, b.const])];
-    return { type: 'string', enum: values, description: a.description ?? b.description };
+  const av = Array.isArray(a.enum) ? a.enum : a.const !== undefined ? [a.const] : null;
+  const bv = Array.isArray(b.enum) ? b.enum : b.const !== undefined ? [b.const] : null;
+  if (av && bv) {
+    return { type: 'string', enum: [...new Set([...av, ...bv])], description: a.description ?? b.description };
   }
   return a;
 }
 
 /**
- * Convert one JSON-Schema node into an Apify dataset field descriptor.
- * Recurses into object `properties`, collapses nullable `anyOf:[X,null]`
- * to X, and represents the ContentField union (`anyOf:[ContentRef, string]`)
- * as the richer ContentRef object. Leaf types: string, integer, number,
- * boolean, array, object, null.
+ * Convert one JSON-Schema node into an Apify dataset field descriptor. Recurses
+ * into object `properties` (e.g. `metadata`, `crawl`, and the `ContentNode`
+ * content fields), collapses nullable `anyOf:[X,null]` to X, and preserves `enum`.
  */
 function toDatasetField(raw: unknown): Field | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -324,6 +383,7 @@ function toDatasetField(raw: unknown): Field | null {
     if (Object.keys(nested).length > 0) field.properties = nested;
   }
 
+  if (Array.isArray(prop.enum)) field.enum = prop.enum; // CORRECTION: preserve enum
   if (prop.title) field.title = prop.title;
   if (description) field.description = description;
   return field;
@@ -337,145 +397,270 @@ import { writeFileSync } from 'node:fs';
 import { OutputViews } from './output-views.js';
 
 export function toOutputSchema(views = OutputViews) {
-  return {
-    actorOutputSchemaVersion: 1,
-    title: views.title,
-    properties: views.output,
-  };
+  return { actorOutputSchemaVersion: 1, title: views.title, properties: views.output };
 }
-
 export function writeOutputSchema(outPath: string): void {
   writeFileSync(outPath, `${JSON.stringify(toOutputSchema(), null, 2)}\n`, 'utf8');
 }
 ```
 
+### `packages/schema/src/apify/to-kvs-schema.ts` (new)
+
+```ts
+import { writeFileSync } from 'node:fs';
+import { KvsCollections } from './output-views.js';
+
+export function toKeyValueStoreSchema(collections = KvsCollections) {
+  return { actorKeyValueStoreSchemaVersion: 1, title: collections.title, collections: collections.collections };
+}
+export function writeKeyValueStoreSchema(outPath: string): void {
+  writeFileSync(outPath, `${JSON.stringify(toKeyValueStoreSchema(), null, 2)}\n`, 'utf8');
+}
+```
+
 ### `packages/schema/src/index.ts`
 
-Export the new functions and config alongside the existing ones:
-`toDatasetSchema`, `writeDatasetSchema`, `toOutputSchema`, `writeOutputSchema`, `OutputViews`.
+Export alongside the existing input exports: `OutputViews`, `KvsCollections`, `toDatasetSchema`, `writeDatasetSchema`, `toOutputSchema`, `writeOutputSchema`, `toKeyValueStoreSchema`, `writeKeyValueStoreSchema`.
 
 ### `tools/gen-input-schema/src/main.ts` — slim to orchestration
 
-Delete the local `writeDatasetSchema` (moved into the package). Import the writers from `@contextractor/schema` and call all three, each followed by the existing Biome-format step. Keep the repo-root resolution comment and the `process.argv[2]` override behavior for the input path.
+Delete the local `writeDatasetSchema`; **drop the now-unused `import { z } from 'zod'`**; import the four writers; emit all four files, each followed by the existing Biome-format step. Keep repo-root resolution and the `process.argv[2]` input-path override (only the input path is overridable; dataset/output/kvs always write the repo's `.actor`).
 
 ```ts
-import { ContextractorInput, ContextractorOutput, writeApifyInputSchema,
-         writeDatasetSchema, writeOutputSchema } from '@contextractor/schema';
-// …resolve repoRoot as today…
+import { execFileSync } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  ContextractorInput, ContextractorOutput,
+  writeApifyInputSchema, writeDatasetSchema, writeKeyValueStoreSchema, writeOutputSchema,
+} from '@contextractor/schema';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(here, '../../..');
 const actorDir = resolve(repoRoot, 'apps/apify-actor/.actor');
-writeApifyInputSchema(ContextractorInput, resolve(actorDir, 'input_schema.json'), { title: 'Contextractor' });
-writeDatasetSchema(ContextractorOutput, resolve(actorDir, 'dataset_schema.json'));
-writeOutputSchema(resolve(actorDir, 'output_schema.json'));
-// …biome format --write each output…
+const inputOut = process.argv[2] ? resolve(process.cwd(), process.argv[2]) : resolve(actorDir, 'input_schema.json');
+
+function emit(outPath: string, write: (p: string) => void): void {
+  write(outPath);
+  execFileSync('pnpm', ['exec', 'biome', 'format', '--write', outPath], { cwd: repoRoot, stdio: 'inherit' });
+  console.log(`Wrote ${outPath}`);
+}
+
+emit(inputOut, (p) => writeApifyInputSchema(ContextractorInput, p, { title: 'Contextractor' }));
+emit(resolve(actorDir, 'dataset_schema.json'), (p) => writeDatasetSchema(ContextractorOutput, p));
+emit(resolve(actorDir, 'output_schema.json'), (p) => writeOutputSchema(p));
+emit(resolve(actorDir, 'key_value_store_schema.json'), (p) => writeKeyValueStoreSchema(p));
 ```
 
-### `apps/standalone/src/sinks.ts` — match the Actor's dataset record
+### `packages/crawler/src/sinks/storage.ts` (new) — the shared sink core
 
-In the `toDataset` block (lines 55-72), nest `metadata` instead of spreading it, and add `loadedAt` + `httpStatus` so CLI and Actor records agree:
+Storage-agnostic; both apps wrap it. `computeContentInfo` and `OutputFormat` come from `@contextractor/extraction` (crawler already depends on it).
 
 ```ts
-const record: Record<string, unknown> = {
-  url: result.url,
-  loadedUrl: result.loadedUrl,
-  status: 'success',
-  loadedAt: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
-  metadata: result.metadata,
-  httpStatus: 200,
-  originalHash: result.rawHtmlHash,
-  crawl: { depth: result.crawlDepth, referrerUrl: result.referrerUrl },
+import { createHash } from 'node:crypto';
+import { computeContentInfo, type OutputFormat } from '@contextractor/extraction';
+import type { ExtractionResult } from './types.js';
+
+export type ContentKind = OutputFormat | 'original';
+
+interface KvsSpec { ext: string; contentType: string; keyPrefix: string; }
+
+/** keyPrefix values MUST match `KvsCollections` in @contextractor/schema (a test asserts this). */
+const KVS_SPECS: Record<ContentKind, KvsSpec> = {
+  txt: { ext: 'txt', contentType: 'text/plain; charset=utf-8', keyPrefix: 'txt-' },
+  markdown: { ext: 'md', contentType: 'text/markdown; charset=utf-8', keyPrefix: 'markdown-' },
+  json: { ext: 'json', contentType: 'application/json; charset=utf-8', keyPrefix: 'json-' },
+  html: { ext: 'html', contentType: 'text/html; charset=utf-8', keyPrefix: 'html-' },
+  original: { ext: 'html', contentType: 'text/html; charset=utf-8', keyPrefix: 'original-' },
+};
+
+const CONTENT_FORMATS: readonly OutputFormat[] = ['txt', 'markdown', 'json', 'html'];
+
+export interface ContentNode { hash: string; bytes: number; content?: string; key?: string; url?: string; }
+
+export interface KvsLike {
+  setValue(key: string, value: string, options?: { contentType?: string }): Promise<void>;
+  getPublicUrl?(key: string): string | Promise<string>;
+}
+
+/** Deterministic KVS key for a content blob: `{keyPrefix}{md5(url)}.{ext}`. */
+export function kvsKey(kind: ContentKind, url: string): string {
+  const spec = KVS_SPECS[kind];
+  return `${spec.keyPrefix}${createHash('md5').update(url).digest('hex')}.${spec.ext}`;
+}
+
+// Build a ContentNode: dataset wins → inline `content`; else write the blob to
+// the KVS and reference it by `key` (+ `url` when the store has a public URL).
+async function buildContentNode(kvs: KvsLike, kind: ContentKind, url: string, content: string, info: { hash: string; bytes: number }, toKvs: boolean, toDataset: boolean): Promise<ContentNode> {
+  const node: ContentNode = { hash: info.hash, bytes: info.bytes };
+  if (toDataset) {
+    node.content = content;
+  } else if (toKvs) {
+    const key = kvsKey(kind, url);
+    await kvs.setValue(key, content, { contentType: KVS_SPECS[kind].contentType });
+    node.key = key;
+    if (kvs.getPublicUrl) {
+      const publicUrl = await kvs.getPublicUrl(key);
+      if (publicUrl) node.url = publicUrl;
+    }
+  }
+  return node;
+}
+
+export interface BuildSuccessRecordOpts { kvs: KvsLike; toKvs: boolean; toDataset: boolean; saveOriginal: boolean; }
+
+/**
+ * Assemble the `status: 'success'` record, shared by the Actor and CLI/lib so
+ * their records are identical. Every content field (`txt`/`markdown`/`json`/
+ * `html` and `original`) is a `ContentNode`: inline `content` for the dataset, or
+ * `key`/`url` for the KVS (dataset wins when both selected). `original` is always
+ * present (at least `{ hash, bytes }`); its raw HTML is included only when in save.
+ */
+export async function buildSuccessRecord(result: ExtractionResult, opts: BuildSuccessRecordOpts): Promise<Record<string, unknown>> {
+  const { kvs, toKvs, toDataset, saveOriginal } = opts;
+  const data: Record<string, unknown> = {
+    url: result.url,
+    status: 'success',
+    metadata: result.metadata, // carries `languageCode` (projectMetadata maps language -> languageCode)
+    crawl: {
+      loadedUrl: result.loadedUrl,
+      loadedTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      httpStatusCode: 200,
+      depth: result.crawlDepth,
+      referrerUrl: result.referrerUrl,
+    },
+  };
+
+  // `original` always present; raw HTML included (content/key/url) only when in save.
+  const originalInfo = { hash: result.rawHtmlHash, bytes: result.rawHtmlLength };
+  data.original = saveOriginal
+    ? await buildContentNode(kvs, 'original', result.url, result.html, originalInfo, toKvs, toDataset)
+    : { ...originalInfo };
+
+  for (const fmt of CONTENT_FORMATS) {
+    const content = result.formats[fmt];
+    if (content === undefined) continue;
+    const info = computeContentInfo(content); // { hash, length }
+    data[fmt] = await buildContentNode(kvs, fmt, result.url, content, { hash: info.hash, bytes: info.length }, toKvs, toDataset);
+  }
+  return data;
+}
+
+export interface FailedRequestInfo { url: string; loadedUrl: string | null; errorMessages: string[]; retryCount: number; }
+
+export function buildFailedRecord(info: FailedRequestInfo): Record<string, unknown> {
+  // FailedRequestInfo keeps `loadedUrl`/`errorMessages` (the crawler input); the
+  // OUTPUT record nests loadedUrl under `crawl` and renames to `errors`/`crawledTime`.
+  return {
+    url: info.url, status: 'failed',
+    crawl: { loadedUrl: info.loadedUrl },
+    errors: info.errorMessages, retryCount: info.retryCount,
+    crawledTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+  };
+}
+
+export function buildSkippedRecord(url: string, skipReason: string): Record<string, unknown> {
+  return { url, status: 'skipped', skipReason };
+}
+```
+
+Export from `packages/crawler/src/index.ts`: `kvsKey`, `buildSuccessRecord`, `buildFailedRecord`, `buildSkippedRecord`, and the types `ContentKind`, `ContentNode`, `KvsLike`, `FailedRequestInfo`, `BuildSuccessRecordOpts`.
+
+### `apps/apify-actor/src/` — wrap the shared core; delete `extraction.ts`
+
+`sinks.ts` collapses to a thin wrapper (import `buildSuccessRecord`, `ExtractionResult`, `KvsLike`, `Sink` from `@contextractor/crawler`):
+
+```ts
+return async (result) => {
+  const data = await buildSuccessRecord(result, { kvs, toKvs, toDataset, saveOriginal });
+  await dataset.pushData(data);
 };
 ```
 
-The per-format `record[fmt]` / `record[`${fmt}Hash`]` loop stays. This is a **breaking change** to the CLI dataset record (top-level `title`/`author`/… move under `metadata.`). Confirm acceptable, then update `apps/standalone/SPEC.md` accordingly (see Docs).
+`run.ts` failed/skipped handlers use `buildFailedRecord(info)` / `buildSkippedRecord(url, reason)`. **Delete `apps/apify-actor/src/extraction.ts`** (its `ContentInfo`/`saveContentToKvs` moved into the shared core; the Apify SDK `KeyValueStore` satisfies `KvsLike` structurally — it has `setValue` + `getPublicUrl`). Repoint the `KvsLike` type import in `sinks.test.ts` to `@contextractor/crawler`, and update the original-key test to `/^original-[0-9a-f]{32}\.html$/`.
+
+### `apps/standalone/src/` — full parity via the shared core
+
+`sinks.ts`: rewrite `createCrawleeStorageSink` to call `buildSuccessRecord`. **Keep the `formats` opt** (derive `saveOriginal = formats.includes('original')` internally) so the `cliProgram.ts` call site and `exitCode.test.ts` call-arg assertions are unchanged. Wrap the build + `pushData` in a try/catch (warn to stderr + continue — the CLI's existing resilience contract). Pass a `kvsLike` that **omits `getPublicUrl`** so local `ContentNode`s have no (misleading) `url`:
+
+```ts
+const kvsLike: KvsLike = { setValue: (key, value, options) => kvs.setValue(key, value, options) };
+```
+
+Remove `urlToFilename` and `KVS_FORMAT_INFO` (and the now-unused `computeContentInfo`/`createHash` imports). Drop the `urlToFilename` tests from `sinks.test.ts` and `cli.test.ts`. `cliProgram.ts` failed/skipped pushes use `buildFailedRecord`/`buildSkippedRecord` (keep the in-memory `failedRecords` array for the exit-code-2 check).
+
+### `apps/apify-actor/.actor/actor.json`
+
+Add `"keyValueStore": "./key_value_store_schema.json"` to `storages` (hand-edit; `actor.json` stays hand-written).
 
 ## Flagged findings — do NOT fix in this change
 
-- **`httpStatus` hardcoded `200`** in both sinks. `ExtractionResult` (`packages/crawler/src/sinks/types.ts`) has no status field; the Playwright/adaptive handlers build results from `page.content()` and never read the navigation response. A real fix means adding `httpStatus` to `ExtractionResult`, sourcing it per crawler type at the three sink-call sites in `packages/crawler/src/handler.ts`, and updating both sinks — a separate, cross-package change. Keep `200`, document `httpStatus` as "currently always 200," and note it in the PR.
-- **`crawledAt` vs `loadedAt`**: keep them distinct. Success records "loaded" (`loadedAt`); failed records never loaded (`crawledAt` = abandonment time). The dataset schema lists both as separate fields — correct. Do not rename.
+- **`crawl.httpStatusCode` hardcoded `200`** in `buildSuccessRecord`. `ExtractionResult` has no status field; a real fix means adding the HTTP status to `ExtractionResult`, sourcing it per crawler type in `packages/crawler/src/handler.ts`, and updating the sink — a separate cross-package change. Keep `200`, document "currently always 200," note in the PR.
+- **`crawledTime` (failed) vs `crawl.loadedTime` (success)**: keep distinct (success loaded; failed never loaded).
+- **`onSkippedUrl` is synchronous** (`(url, reason) => void`), so `void dataset.pushData(buildSkippedRecord(...))` is a floating promise on both surfaces — pre-existing, identical, not in scope.
+- **`tools/platform-test-runner/` is pre-existing-stale — leave it.** `src/dataset-item.ts` validates against removed output fields (`extractedText`, `extractedXmlTei`, `rawHtml`) and `test-suites/*/settings.json` use the OLD input names (`maxPagesPerCrawl`, `maxCrawlingDepth`) plus long-removed fields (`trafilaturaConfig`, `saveRawHtmlToKeyValueStore`). The input renames make its page/depth-limit suites silently no-op (the input schema ignores unknown keys). It still builds (its `ContentRef`/`DatasetItem` are local types) and is not in the `pnpm test` assertion path, so it does not block this change — but flag that the platform-test-runner needs its own cleanup pass before it is usable again.
 
-## Optional stretch — `key_value_store_schema.json`
+## Tests (same response as source — `.claude/rules/test-maintenance.md`)
 
-Only if explicitly desired. The Actor writes content blobs to KVS with hash-prefixed keys (`{hash}.txt`, `{hash}-original.html`, …). Apify KVS collections group by `keyPrefix` or `contentTypes`; the hash prefix means `keyPrefix` grouping does not fit. If added, group by `contentTypes` (e.g. `text/markdown`, `text/html`) and wire it into `actor.json` `storages.keyValueStore`. Otherwise skip and note it as future work.
-
-## Tests
-
-Add/update tests in the **same change** as the source (`.claude/rules/test-maintenance.md`). Use `ts-pro` for implementation and `apify-schemas` for schema conventions.
-
-### Local — library (`packages/schema`, `packages/extraction`)
-
-- **New `packages/schema/test/output.test.ts`** — `ContextractorOutput.parse(...)`:
-  - a success record with **KVS-style** content refs (`{hash,length,key,url}`) parses;
-  - a success record with **inline-string** content + the `*Hash` fields parses (exercises both `ContentField` union arms);
-  - `metadata` with a mix of strings and `null`s, `crawl:{depth:0, referrerUrl:null}` parses;
-  - a **failed** record (`status:'failed'`, `errorMessages`, `retryCount`, `crawledAt`) parses;
-  - a **skipped** record (`status:'skipped'`, valid `skipReason`) parses; an invalid `skipReason` is rejected;
-  - a record with an unknown `status` is rejected.
-- **New `packages/schema/test/to-dataset-schema.test.ts`** — assert `toDatasetSchema(ContextractorOutput)` deep-equals the on-disk `apps/apify-actor/.actor/dataset_schema.json` (snapshot, mirroring `to-apify-schema.test.ts`), plus invariants: `fields.metadata.properties.title.type === 'string'` (nullable collapsed), `fields.metadata.properties.lang`, `fields.crawl.properties.depth.type === 'integer'`, `fields.txt.properties.hash.type === 'string'` (ContentRef chosen over string), `fields.status.enum` contains all three values, `fields.skipReason.type === 'string'`, `fields.errorMessages.type === 'array'`, and `views.overview.transformation.fields` unchanged. Add a `toOutputSchema()` deep-equal against `output_schema.json`. Assert determinism (two calls byte-identical) and a single trailing newline from the `write*` wrappers.
-- **`packages/extraction`** — no API change; confirm the existing fixture tests in `packages/extraction/test/` and `projectMetadata` behavior still pass untouched.
-
-### Local — standalone CLI + library API (`apps/standalone`)
-
-- Update **`apps/standalone/src/sinks.test.ts`**: the metadata assertion must read `item.metadata.title` (was top-level `item.title`); add assertions for `item.loadedAt` (matches `/Z$/`) and `item.httpStatus === 200`. Keep the `crawl`, `url`, `loadedUrl`, `originalHash`, `{fmt}Hash` assertions.
-- `apps/standalone/src/cli.test.ts` and `exitCode.test.ts` must stay green.
-- **End-to-end CLI**: `pnpm -F @contextractor/standalone build` then `node apps/standalone/dist/cli.js https://example.com --max-pages 1 --save markdown --save-destination dataset` — confirm a dataset record with nested `metadata` and the new fields. (`@contextractor/standalone` is a CLI **and** a library — `exports['.']` is the programmatic API; a minimal `import { … } from '@contextractor/standalone'` smoke is enough since the sink is shared.)
-
-### Local — Apify Actor (`apps/apify-actor`)
-
-- Update **`apps/apify-actor/src/sinks.test.ts`** for any shape assertions touched by the schema (the sink object itself is unchanged; this is mostly confirming the success record still matches `SuccessRecord`).
-- **Regenerate + diff**: run the generator (`pnpm -F @contextractor/gen-input-schema start`), then `git diff apps/apify-actor/.actor/` — the diff to `dataset_schema.json` (nested members, new fields) and `output_schema.json` (now generated) must be intentional and match the snapshot tests. The first run is the new committed baseline.
-- **Full local gate** (also what the Apify build runs): `pnpm build`, `pnpm lint`, `pnpm test`, `cargo build --workspace`, `cargo clippy --workspace --all-targets -- -D warnings`. All green.
-- **Actor smoke**: `apify run` (or `mcpc @apify` call locally) with a tiny input (`{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxPagesPerCrawl":1,"save":["markdown"]}`); inspect the dataset item shape and confirm it validates against the new schema.
-
-### Apify platform
-
-Use `/platform:deploy-and-test` (deploys to the **test** actor `glueo/contextractor-test` by default; **never** production unless explicitly asked — `.claude/rules/apify-production.md`). It validates locally, `git push origin HEAD:dev`, waits for the Git-connected build, and runs a test crawl. Then verify on the platform:
-
-- Build is `SUCCEEDED` — in particular **no `Invalid dataset schema` / `Invalid output schema`** build error (see the error table in `.claude/commands/platform/deploy-and-test.md`); these are the failure modes the new generated files could introduce.
-- Apify Console → the run's **Storage/Output** tab renders the **Overview** view with the `metadata.title` and `metadata.lang` columns populated, and the generated `output_schema.json` "Overview" link resolves to `…/items?view=overview`.
-- A sample dataset item carries the full success shape (`url`, `status:'success'`, `loadedAt`, nested `metadata`, `httpStatus`, `originalHash`, `crawl`, content + hashes).
-- Optionally trigger a failed/skipped record (e.g. a 404 start URL, or `storeSkippedUrls:true` with a robots-blocked URL) and confirm those records and their fields appear.
-- Report the build and run URLs.
+- **`packages/schema/test/output.test.ts`** — `ContextractorOutput.parse` for: success w/ KVS content nodes (`{hash,bytes,key,url}`); success w/ inline content nodes (`{hash,bytes,content}`); mixed-null `metadata` + nested `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode`/`depth`/`referrerUrl`); `failed` (incl. `crawl.loadedUrl: null`, `errors`, `crawledTime`); `skipped` (valid + invalid `skipReason`); unknown `status` rejected.
+- **`packages/schema/test/to-dataset-schema.test.ts`** — deep-equal vs on-disk `dataset_schema.json` (read it with `JSON.parse(readFileSync(...))` — `any` from JSON.parse avoids explicit-`any` lint); invariants on the on-disk JSON: `fields.status.enum` is `['success','failed','skipped']`, `fields.metadata.properties.title.type==='string'`, `fields.crawl.properties.{loadedUrl,loadedTime,httpStatusCode,depth,referrerUrl}`, `fields.metadata.properties.languageCode`, `fields.txt.properties.hash.type==='string'`, `fields.skipReason.type==='string'`, `fields.errors.type==='array'`, `fields.crawledTime`, no top-level `loadedUrl`/`loadedAt`/`httpStatus`/`lang`, `views.overview.transformation.fields` = the dot-notation `crawl.*`/`metadata.*` paths; `toOutputSchema()`/`toKeyValueStoreSchema()` deep-equal their files; determinism + single trailing newline.
+- **`packages/crawler/src/sinks/storage.test.ts`** — `kvsKey` matches `/^{prefix}[0-9a-f]{32}\.{ext}$/` per kind; `buildSuccessRecord` for KVS-only (`{hash,bytes,key}`, no `content`/`*Hash`), dataset-only (`{hash,bytes,content}`; `original` inlined too), both (dataset wins → all inline, KVS not written), and `original` always present (`{hash, bytes}` even when not in `save`; no top-level `originalHash`); a public-URL test (platform `KvsLike` with `getPublicUrl` sets `ContentNode.url`, local omits it, same key+hash); `buildFailedRecord`/`buildSkippedRecord` shapes.
+- **`apps/apify-actor/src/storage-keys.test.ts`** — coupling: `kvsKey(kind, url)` starts with `KvsCollections.collections[kind].keyPrefix` (imports `kvsKey` from crawler + `KvsCollections` from schema — apify-actor depends on both).
+- **Update** `apps/standalone/src/sinks.test.ts` for the new behavior (KVS-only still pushes a record of `ContentNode`s; dataset-mode content is `{hash,bytes,content}` not an inline string; `item.metadata.title`/`languageCode`; nested `crawl` (`item.crawl.loadedUrl`, `item.crawl.loadedTime` matches `/Z$/`, `item.crawl.httpStatusCode===200`); `both` mode: dataset wins so KVS not written; `original` always `{hash,bytes}`; no `*Hash`) and `apps/apify-actor/src/sinks.test.ts` (content fields are objects; import the `ContentNode` type from `@contextractor/crawler`). Keep `cli.test.ts`/`exitCode.test.ts` green.
+- **Easy-to-miss test reader: `tools/proxy-rotation-tester/src/cli.test.ts`** reads the dataset item's `item.txt` **as a string** (`String(item.txt ?? '')`) — in dataset mode `txt` is now a `ContentNode`, so read `(item.txt as { content?: string }).content`. The sibling `lib.test.ts` reads `result.formats?.txt` (the in-memory `ExtractionResult`, **unchanged** — no change needed). After any output-shape change, grep the whole repo (incl. `tools/`) for readers of `item.{txt,markdown,json,html,original}` / `*Hash`. After the **envelope** rename also grep for `item.loadedUrl` / `item.loadedAt` / `item.httpStatus` / `item.errorMessages` / `item.crawledAt` / `metadata.lang` — they move to `item.crawl.{loadedUrl,loadedTime,httpStatusCode}` / `item.errors` / `item.crawledTime` / `metadata.languageCode`. Readers live in `tools/` (proxy-rotation-tester, platform-test-runner) **and `examples/`** (e.g. `examples/library-ts/src/main.ts` read `item.errorMessages`); `examples/` is not built/linted/tested (not a workspace member, knip-ignored), so the **code-reviewer** catches those, not CI — fix them anyway.
 
 ## Verification — run from repo root, in order
 
 - `pnpm install`
-- `pnpm -F @contextractor/gen-input-schema start` → regenerates all three `.actor` JSON files; `git diff apps/apify-actor/.actor/` is intentional (commit as the new baseline).
-- `pnpm build` · `pnpm lint` · `pnpm test` — all green; the new snapshot tests guard drift.
+- **Regenerate via the full `pnpm build`** (not just the schema package): it rebuilds packages in dependency order, runs `gen-input-schema` (the four `.actor` JSON files) **and** `docs:update` (the `@generated` README regions). The intentional new baseline: `dataset_schema.json` gains the content-node members, `input_schema.json` gets the 4 renamed fields, `output_schema.json` is byte-unchanged, and the README input/enum tables update. **Gotcha:** do NOT regenerate by building only `@contextractor/schema` then running `pnpm docs:update` — `gen-md-regions` calls the standalone `buildProgram()`, which reads `ContextractorInput.shape` for CLI-flag defaults (`s.maxCrawlPages._def…`); against a stale `@contextractor/standalone` dist it throws `Cannot read properties of undefined (reading '_def')`. Use the full build (or rebuild `@contextractor/standalone` before `docs:update`). The same dependency-order rule applies to the `metadata.lang`→`languageCode` rename: it lives in `packages/extraction` (`DatasetMetadata` + `projectMetadata`), so until extraction's dist rebuilds, `@contextractor/crawler` + the apps see the stale `DatasetMetadata` and report `'languageCode' does not exist in type 'DatasetMetadata'` on the test fixtures (`ExtractionResult.metadata` literals carry `languageCode`). The full `pnpm build` resolves it; the stale-dist LSP diagnostics clear after the rebuild.
+- `pnpm build` · `pnpm lint` · `pnpm test` — all green. `npx knip --reporter compact` shows no dead **code** (two unused-**dependency** findings — `@contextractor/extraction` in standalone, `zod` in gen-input-schema — are transitive-type **false positives**; removing them needs a `pnpm install` and risks breaking type resolution, so leave them).
 - `cargo build --workspace` · `cargo clippy --workspace --all-targets -- -D warnings` — green (unchanged).
-- `apify run` smoke — produces a dataset item matching the schema.
-- `/platform:deploy-and-test` — build `SUCCEEDED` on `glueo/contextractor-test`, test crawl produces ≥1 item, Output tab renders.
+- **CLI e2e**: `pnpm -F @contextractor/standalone build` then `CRAWLEE_STORAGE_DIR=/tmp/ctx-smoke node apps/standalone/dist/cli.js extract https://example.com --max-pages 1 --save markdown --save-destination key-value-store` → the dataset record has nested `metadata` (with `languageCode`), `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode:200`/`depth`/`referrerUrl`), and `markdown` as a `ContentNode` `{hash,bytes,key:"markdown-{md5}.md"}` with **no `content`/`url`** (local); the KVS holds `markdown-{md5}.md`. (Note: the CLI uses `extract` subcommand + `--save`/`--max-pages`.)
+- **Platform** (`/platform:deploy-and-test`, test actor only — `.claude/rules/apify-production.md`): see deploy notes below. Build must be `SUCCEEDED` with no `Invalid dataset/output/key-value-store schema`. A test run's dataset item must carry the full success shape with `markdown` as a `ContentNode` that **does** have a public `url` (platform) — the documented parity-modulo-`url` difference, with the identical `{format}-{md5}.{ext}` key on both surfaces. Report build + run URLs.
+- Run `code-reviewer` over the diff before finishing.
+
+### Platform deploy — operational notes (learned the hard way)
+
+- **The dev push may NOT auto-trigger a build** for `glueo/contextractor-test`. After `git push origin HEAD:dev`, if no new build appears within ~1 min, trigger explicitly:
+  ```bash
+  apify builds create glueo/contextractor-test --version 0.3 --tag latest --log
+  ```
+  `--log` follows the build to completion ("ACTOR: Build finished." + image push = success). Multiple versions share the `latest` tag (0.0, 0.1, 0.3), so `--version 0.3` (the Git-connected one) is required.
+- **`apify builds ls --json --limit N` is flaky** (returns an arbitrary subset / inconsistent ordering — it may not even include the just-created build). Trust the `builds create --log` output, not the listing.
+- **mcpc sessions expire.** Use the Apify CLI for the test run instead (the production deny rule does not cover the test actor):
+  ```bash
+  apify call glueo/contextractor-test -b latest -t 240 -s -o -i '{"startUrls":[{"url":"https://en.wikipedia.org/wiki/Web_scraping"}],"maxCrawlPages":1,"save":["markdown"],"saveDestination":["dataset"]}'
+  ```
+  (`-o` and `--json` are mutually exclusive — use `-o` to print the dataset. The Actor input uses `save`/`maxCrawlPages`, **not** `outputFormat`/`maxRequestsPerCrawl`. With `saveDestination:["dataset"]`, each content field is a `ContentNode` `{hash, bytes, content}`; the renamed `maxCrawlPages` being honored confirms the input rename built on the platform.)
 
 ## Acceptance criteria
 
-- `packages/schema` is the **only** place output fields and record shapes are declared; all three `.actor` schema JSON files are generated, none hand-edited (except `actor.json`, which stays hand-written).
-- `dataset_schema.json` exposes nested `properties` for `metadata`, `crawl`, and the content `ContentRef`s, and enumerates every field across success/failed/skipped (incl. `url`, `status` enum, `originalHash`, per-format `*Hash`, `errorMessages`, `retryCount`, `crawledAt`, `skipReason`). The `views.overview` block is preserved.
-- `output_schema.json` is generated from `OutputViews`; the `overview` name is defined once.
-- The Apify presentation config lives in a typed `.ts` file, not hardcoded in the generator.
-- Standalone CLI and Actor dataset success records have the same shape (nested `metadata`, `loadedAt`, `httpStatus`).
-- All local tests/lints/builds pass; the platform build on `glueo/contextractor-test` is `SUCCEEDED` and the Output tab renders.
-- `httpStatus`-real-status and any KVS schema remain explicitly flagged as out of scope.
+- `packages/schema` is the **only** place output fields/record shapes are declared; **all four** `.actor` schema JSON files are generated (input, dataset, output, key-value-store), none hand-edited except `actor.json`.
+- `dataset_schema.json` exposes nested `properties` for `metadata`/`crawl`/`ContentNode`s, a `status` enum of all three values, and every field across success/failed/skipped. The `views.overview` block is preserved.
+- `output_schema.json` and `key_value_store_schema.json` are generated from `OutputViews` / `KvsCollections`; `actor.json` references the KVS schema.
+- **Dataset records and KVS output are identical across the Apify Actor, the NPM CLI, and the NPM lib** (one shared sink core), the only difference being `ContentNode.url` (platform-only); the unified KVS key scheme is `{format}-{md5(url)}.{ext}`.
+- All local tests/lints/builds pass; the platform build on `glueo/contextractor-test` is `SUCCEEDED` and a test run's dataset item validates against the new schema.
+- `crawl.httpStatusCode`-real-status remains explicitly flagged as out of scope.
 
 ## Constraints
 
-- `.claude/rules/minimal-diff.md` — Edit, not Write, on existing files; no reformatting untouched files. The first generator run reflows/rewrites the two generated JSON files — commit that as the baseline; thereafter the snapshot tests keep the diff empty.
+- `.claude/rules/minimal-diff.md` — Edit, not Write, on existing files (the new transformer/sink files and the `output.ts`/`main.ts` rewrites are intentional full rewrites). The first generator run reflows the generated JSON — commit that as the baseline; thereafter the snapshot tests keep the diff empty.
 - `.claude/rules/spec-maintenance.md` + `.claude/rules/test-maintenance.md` — update SPECs and tests in the same change.
 - `.claude/rules/native-addon-boundary.md` — no Rust/napi changes; `txt` stays `txt`.
-- `.claude/rules/json-config-only.md`, `.claude/rules/no-confirmation-prompts.md`, `.claude/rules/user-facing-docs.md` (no deploy/internal notes in the public Actor README), `.claude/rules/apify-production.md` (test actor only).
+- `.claude/rules/apify-production.md` — test actor only; package.json dependency changes are ask-first (hence the two knip false-positives are left in place).
+- `.claude/rules/json-config-only.md`, `.claude/rules/no-confirmation-prompts.md`, `.claude/rules/user-facing-docs.md`.
 
 ## Docs to sync
 
-- `packages/schema/SPEC.md` — output section: document the discriminated union and the three record shapes; revise the "additional envelope fields not declared in this schema" note (those fields are now declared).
-- `apps/apify-actor/SPEC.md` — lines 28-34 already accurate; add a line that `dataset_schema.json`/`output_schema.json` are generated from `ContextractorOutput` + `OutputViews`.
-- `apps/standalone/SPEC.md` — update the success-record description to nested `metadata` + `loadedUrl` + `loadedAt` + `httpStatus`.
-- Root `SPEC.md` — output section: reflect the generated output schema and the standalone record change.
-- `tools/gen-input-schema/README.md` (if present) — note it now emits all three `.actor` schema files.
+- `packages/schema/SPEC.md` + `README.md` — discriminated union, three shapes, four-writer generator, new exports; remove the "additional envelope fields not declared in this schema" note (now declared).
+- `packages/crawler/SPEC.md` + `README.md` — the new shared sink core (`kvsKey`, `buildSuccessRecord`/`buildFailedRecord`/`buildSkippedRecord`, `ContentNode`/`KvsLike`); both apps are thin wrappers.
+- `apps/apify-actor/SPEC.md` + `README.md` — schemas generated; `ContentNode` (not `ContentInfo`); `{format}-{md5}.{ext}` KVS keys.
+- `apps/standalone/SPEC.md` + `README.md` — nested `metadata` (`languageCode`) + `crawl` (`loadedUrl`/`loadedTime`/`httpStatusCode`/`depth`/`referrerUrl`); a dataset record is always pushed (ContentNode for KVS, inline for dataset); new KVS keys; parity note.
+- Root `SPEC.md` + `README.md` + `CLAUDE.md` — generated output schemas, unified KVS keys, the nested-`crawl` envelope + `*Time`/`*At` convention, "all four `.actor` schemas" / "input + output" structure comments.
+- `tools/gen-input-schema/README.md` — now emits all four `.actor` schema files.
+- `tools/platform-test-runner/src/` — re-align `DatasetItem` + `runner.ts` to the nested `crawl` (`crawl.loadedUrl`, `crawl.httpStatusCode`), `metadata.languageCode`, `errors`, `crawledTime` (it reads these fields).
 
 ## Suggested sequence
 
-- Expand `output.ts` (discriminated union) → add `output-views.ts` → add `to-dataset-schema.ts` + `to-output-schema.ts` → export from `index.ts` → slim `main.ts`.
-- Regenerate the `.actor` files; commit as baseline.
-- Standalone sink + its test updates.
-- New lib tests (`output.test.ts`, `to-dataset-schema.test.ts`).
-- Docs/SPEC sync.
-- Local gate → `apify run` smoke → `/platform:deploy-and-test`.
-- Run `code-reviewer` over the diff before finishing.
+`output.ts` union → `output-views.ts` (+`KvsCollections`) → `to-dataset/-output/-kvs-schema.ts` (with the three corrections) → `index.ts` → slim `main.ts` → shared crawler sink core + crawler index exports → Actor sink/run (+ delete `extraction.ts`) → standalone sink/cliProgram (remove `urlToFilename`) → regenerate `.actor` + wire `actor.json` (commit baseline) → tests → docs/SPEC/README sync → local gate → CLI e2e → `/platform:deploy-and-test` (manual `builds create` if no auto-trigger) → `code-reviewer`.
+```

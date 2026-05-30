@@ -4,14 +4,14 @@ import { buildCrawlerOpts } from './config.js';
 
 const BASE_INPUT: ContextractorInputType = {
   startUrls: [{ url: 'https://example.com' }],
-  globs: [],
-  excludes: [],
+  includeUrlGlobs: [],
+  excludeUrlGlobs: [],
   linkSelector: '',
   keepUrlFragments: false,
   respectRobotsTxtFile: false,
-  maxPagesPerCrawl: 0,
+  maxCrawlPages: 0,
   maxResultsPerCrawl: 0,
-  maxCrawlingDepth: 0,
+  maxCrawlDepth: 0,
   maxConcurrency: 50,
   maxRequestRetries: 3,
   headless: true,

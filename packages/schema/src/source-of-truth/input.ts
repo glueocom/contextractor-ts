@@ -63,7 +63,7 @@ export const ContextractorInput = z.object({
     )
     .meta({ title: 'Rendering type detection', ...apifyMeta({ unit: '%' }) }),
 
-  globs: z
+  includeUrlGlobs: z
     .array(z.object({ glob: z.string() }).loose())
     .default([])
     .describe(
@@ -74,7 +74,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'globs' }),
     }),
 
-  excludes: z
+  excludeUrlGlobs: z
     .array(z.object({ glob: z.string() }).loose())
     .default([])
     .describe(
@@ -159,7 +159,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'json', prefill: {} }),
     }),
 
-  maxPagesPerCrawl: z
+  maxCrawlPages: z
     .int()
     .min(0)
     .default(0)
@@ -180,7 +180,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ unit: 'results' }),
     }),
 
-  maxCrawlingDepth: z
+  maxCrawlDepth: z
     .int()
     .min(0)
     .default(0)

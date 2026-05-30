@@ -1,6 +1,5 @@
-import type { ExtractionResult } from '@contextractor/crawler';
+import type { ContentNode, ExtractionResult, KvsLike } from '@contextractor/crawler';
 import { describe, expect, it, vi } from 'vitest';
-import type { KvsLike } from './extraction.js';
 import { createApifySink } from './sinks.js';
 
 const FAKE_RESULT: ExtractionResult = {
@@ -15,7 +14,7 @@ const FAKE_RESULT: ExtractionResult = {
     publishedAt: null,
     description: null,
     siteName: null,
-    lang: 'en',
+    languageCode: 'en',
   },
   formats: {
     markdown: '# Test Page',
@@ -63,17 +62,23 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
     expect(kvs.calls.length).toBeGreaterThan(0);
 
     const item = dataset.items[0] as Record<string, unknown>;
-    // The data key for markdown should be a ContentInfo object (has `hash`), not a raw string
+    // markdown is a ContentNode object referencing the blob (has `key`, no `content`)
     expect(typeof item.markdown).toBe('object');
-    expect(item.markdown).not.toBe('# Test Page');
-    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect((item.markdown as ContentNode).key).toMatch(/^markdown-[0-9a-f]{32}\.md$/);
+    expect((item.markdown as ContentNode).content).toBeUndefined();
+    expect((item.original as ContentNode).hash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.markdownHash).toBeUndefined();
     expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
-    expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
+    const crawl = item.crawl as Record<string, unknown>;
+    expect(crawl.loadedUrl).toBe(FAKE_RESULT.loadedUrl);
+    expect(crawl.httpStatusCode).toBe(200);
+    expect(crawl.depth).toBe(2);
+    expect(crawl.referrerUrl).toBe('https://example.com/');
+    expect(item.loadedUrl).toBeUndefined();
   });
 
-  it('dataset item contains both url and loadedUrl', async () => {
+  it('dataset item carries url top-level and loadedUrl under crawl', async () => {
     const redirectedResult: ExtractionResult = {
       ...FAKE_RESULT,
       url: 'https://example.com/old',
@@ -93,12 +98,12 @@ describe('createApifySink — saveDestination: ["key-value-store"]', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe('https://example.com/old');
-    expect(item.loadedUrl).toBe('https://example.com/new');
+    expect((item.crawl as Record<string, unknown>).loadedUrl).toBe('https://example.com/new');
   });
 });
 
 describe('createApifySink — saveDestination: ["dataset"]', () => {
-  it('content appears as inline strings on the dataset item; KVS setValue not called for content', async () => {
+  it('content appears as inline content nodes on the dataset item; KVS setValue not called', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
 
@@ -116,21 +121,20 @@ describe('createApifySink — saveDestination: ["dataset"]', () => {
 
     const item = dataset.items[0] as Record<string, unknown>;
     expect(item.url).toBe(FAKE_RESULT.url);
-    expect(item.loadedUrl).toBe(FAKE_RESULT.loadedUrl);
-    expect(item.markdown).toBe('# Test Page');
-    expect(item.txt).toBe('Test Page');
-    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
-    expect(typeof item.markdownHash).toBe('string');
-    expect(item.markdownHash as string).toHaveLength(32);
-    expect(typeof item.txtHash).toBe('string');
-    expect(item.txtHash as string).toHaveLength(32);
+    expect((item.crawl as Record<string, unknown>).loadedUrl).toBe(FAKE_RESULT.loadedUrl);
+    expect((item.markdown as ContentNode).content).toBe('# Test Page');
+    expect((item.txt as ContentNode).content).toBe('Test Page');
+    expect(typeof (item.markdown as ContentNode).bytes).toBe('number');
+    expect((item.original as ContentNode).hash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect(item.markdownHash).toBeUndefined();
+    expect(item.txtHash).toBeUndefined();
     expect(item.status).toBe('success');
-    expect(item.crawl).toEqual({ depth: 2, referrerUrl: 'https://example.com/' });
+    expect((item.crawl as Record<string, unknown>).depth).toBe(2);
   });
 });
 
 describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-store"]', () => {
-  it(`KVS key for raw HTML is \${keyBase}-original.html`, async () => {
+  it('KVS key for raw HTML is original-{md5}.html', async () => {
     const kvs = makeKvs();
     const dataset = makeDataset();
 
@@ -143,14 +147,11 @@ describe('createApifySink — saveOriginal: true, saveDestination: ["key-value-s
 
     await sink(FAKE_RESULT);
 
-    const originalCall = kvs.calls.find((c) => c.key.endsWith('-original.html'));
+    const originalCall = kvs.calls.find((c) => c.key.startsWith('original-'));
     expect(originalCall).toBeDefined();
-    expect(originalCall?.key).toMatch(/-original\.html$/);
-    // Confirm the old key pattern is not used
-    const oldKeyCall = kvs.calls.find((c) => c.key.endsWith('-raw.html'));
-    expect(oldKeyCall).toBeUndefined();
+    expect(originalCall?.key).toMatch(/^original-[0-9a-f]{32}\.html$/);
     const item = dataset.items[0] as Record<string, unknown>;
-    expect(item.originalHash).toBe(FAKE_RESULT.rawHtmlHash);
+    expect((item.original as { hash: string }).hash).toBe(FAKE_RESULT.rawHtmlHash);
     expect(item.status).toBe('success');
   });
 });

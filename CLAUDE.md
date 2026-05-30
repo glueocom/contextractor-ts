@@ -10,11 +10,11 @@ apps/
 └── standalone/                # CLI
 packages/
 ├── extraction/                # Pure extraction package + napi-rs Rust crate
-├── crawler/                   # Shared Crawlee + Playwright crawler package
-└── schema/                    # Shared input schema package
+├── crawler/                   # Shared Crawlee + Playwright crawler package (incl. shared sink core)
+└── schema/                    # Shared input + output schema package
 tools/
 ├── platform-test-runner/      # test orchestrator
-├── gen-input-schema/          # generates .actor/input_schema.json from Zod schema
+├── gen-input-schema/          # generates all four .actor/*.json schemas from Zod
 ├── gen-md-regions/            # rewrites @generated markdown regions in READMEs
 ├── proxy-simulator/           # mock HTTP proxy server for testing
 └── proxy-rotation-tester/     # proxy rotation test suite for all entry points

@@ -90,11 +90,15 @@ async function saveTestCaseOutput(
  * Match dataset items to test cases by URL
  */
 function matchDatasetItemToUrl(items: DatasetItem[], url: string): DatasetItem | null {
+  const norm = (u: string) => u.replace(/\/$/, '');
   return (
-    items.find(
-      (item) =>
-        item.loadedUrl === url || item.loadedUrl.replace(/\/$/, '') === url.replace(/\/$/, ''),
-    ) || null
+    items.find((item) => {
+      // success/failed records carry `crawl.loadedUrl`; skipped records only `url`.
+      const candidates = [item.crawl?.loadedUrl, item.url].filter(
+        (v): v is string => typeof v === 'string',
+      );
+      return candidates.some((c) => c === url || norm(c) === norm(url));
+    }) || null
   );
 }
 
@@ -130,11 +134,15 @@ async function runSuite(suite: TestSuite): Promise<SuiteRunResult> {
         errorMessage: 'No dataset item found for URL',
         datasetItemPath: null,
       };
-    } else if (datasetItem['#error']) {
+    } else if (datasetItem.status !== 'success') {
+      const message =
+        datasetItem.status === 'failed'
+          ? datasetItem.errors?.join('; ') || 'Request failed'
+          : `Skipped: ${datasetItem.skipReason ?? 'unknown'}`;
       result = {
         url: testCase.url,
         status: 'error',
-        errorMessage: datasetItem['#errorMessage'] || 'Unknown error',
+        errorMessage: message,
         datasetItemPath: path.join(OUTPUT_DIR, suite.slug, testCase.slug, 'dataset-item.json'),
       };
     } else {

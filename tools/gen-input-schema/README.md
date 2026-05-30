@@ -1,11 +1,17 @@
 # `@contextractor/gen-input-schema`
 
-Build-time generator that emits
-`apps/apify-actor/.actor/input_schema.json` from the Zod 4 schema in
-`@contextractor/schema`. The Apify build pipeline runs it via
-`pnpm --filter @contextractor/gen-input-schema start` before `tsc`; the snapshot test in
-`@contextractor/schema` guards against drift between the Zod schema and the
-emitted JSON.
+Build-time generator that emits all four generated `apps/apify-actor/.actor/`
+schema files from the Zod 4 source of truth in `@contextractor/schema`:
+
+- `input_schema.json` — from `ContextractorInput`
+- `dataset_schema.json` — from the `ContextractorOutput` discriminated union + `OutputViews`
+- `output_schema.json` — from `OutputViews`
+- `key_value_store_schema.json` — from `KvsCollections`
+
+(`actor.json` stays hand-written.) The Apify build pipeline runs it via
+`pnpm --filter @contextractor/gen-input-schema start` before `tsc`; snapshot
+tests in `@contextractor/schema` guard against drift between the Zod schema and
+the emitted JSON.
 
 Contextractor is built on
 [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
