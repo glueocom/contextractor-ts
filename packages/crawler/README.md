@@ -11,9 +11,12 @@ It owns the browser-facing pieces of the re-architecture:
 - `createContextractorCrawler()` and `buildRequests()`
 - Cookie defences via Ghostery and optional autoconsent fallback
 - Built-in scrolling via Crawlee `infiniteScroll()`
-- Shared sink helpers: `memorySink()` and `Sink<T>`
+- Shared sink core: `memorySink()`, `Sink<T>`, and the storage helpers
+  (`kvsKey`, `buildSuccessRecord` / `buildFailedRecord` / `buildSkippedRecord`,
+  `ContentRef` / `KvsLike`) that assemble dataset records and derive KVS keys
 
-App-specific sinks stay outside this package:
+Both the Apify Actor and the standalone CLI/lib are thin wrappers over the
+shared storage core, so their dataset and key-value-store output is identical:
 
-- `apps/apify-actor/src/` owns the Apify dataset / key-value-store sinks
-- `apps/standalone/src/` owns any CLI-only sink composition
+- `apps/apify-actor/src/` wires the Apify dataset / key-value store to the core
+- `apps/standalone/src/` wires the Crawlee dataset / key-value store to the core

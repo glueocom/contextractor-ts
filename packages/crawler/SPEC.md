@@ -26,6 +26,15 @@ type Sink<T> = (result: T) => Promise<void>;
 
 - `memorySink()` — accumulates results in memory (tests)
 
+### Shared storage sink core (`sinks/storage.ts`)
+
+Record assembly and key-value-store key derivation shared by the Apify Actor and the standalone CLI/lib, so their dataset records and KVS output are identical (the only difference is `ContentRef.url`, present only where a public KVS URL exists). Exports:
+
+- `kvsKey(kind, url)` — deterministic KVS key `{format}-{md5(url)}.{ext}` for `txt | markdown | json | html | original`
+- `buildSuccessRecord(result, { kvs, toKvs, toDataset, saveOriginal })` — assembles the `status: 'success'` record: an inline string + `{fmt}Hash` for the dataset, a `ContentRef` for the key-value store (dataset wins when both are selected; `original` prefers the KVS to avoid inlining large raw HTML)
+- `buildFailedRecord(info)` / `buildSkippedRecord(url, reason)` — the `failed` / `skipped` records
+- types `ContentRef`, `KvsLike`, `ContentKind`
+
 ### `ExtractionResult` (sink input)
 
 `url` (original request URL), `loadedUrl` (final URL after redirects), `html`, `rawHtmlHash`, `rawHtmlLength`, `formats: Partial<Record<OutputFormat, string>>`, `metadata: Metadata`, `crawlDepth: number` (link distance from start URL; 0 for start URLs), `referrerUrl: string | null` (URL of the linking page; `null` for start URLs).

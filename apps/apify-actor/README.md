@@ -101,7 +101,8 @@ When `saveDestination` includes `dataset`: each enabled format (`markdown`,
 `{format}Hash` field (e.g. `markdownHash`) containing its 32-char MD5 hex.
 
 When `saveDestination` includes `key-value-store` (default): each enabled
-format appears as a `ContentInfo` object (`hash`, `length`, `key`, `url`);
-raw HTML is stored under `{hash}-original.html` when `save` includes
-`"original"`.
+format appears as a `ContentRef` object (`hash`, `length`, `key`, `url`)
+referencing the stored blob; raw HTML is stored when `save` includes
+`"original"`. Key-value-store keys are `{format}-{md5(url)}.{ext}` (e.g.
+`markdown-…md`, `original-…html`).
 

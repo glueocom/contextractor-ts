@@ -119,10 +119,10 @@ packages/
 │   └── native/                 # napi-rs Rust crate wrapping rs-trafilatura
 │       └── npm/<platform>/     # Per-platform .node prebuilds (workspace packages)
 ├── crawler/                    # Shared Crawlee + Playwright crawler package
-└── schema/                     # Shared Zod input schema package
+└── schema/                     # Shared Zod input + output schema package
 tools/
 ├── platform-test-runner/       # TypeScript test orchestrator
-├── gen-input-schema/           # Generates .actor/input_schema.json from Zod schema
+├── gen-input-schema/           # Generates all four .actor/*.json schemas from Zod
 ├── gen-md-regions/             # Rewrites @generated markdown regions in READMEs
 ├── proxy-simulator/            # Mock HTTP proxy server for proxy rotation testing
 └── proxy-rotation-tester/      # Proxy rotation test suite for all entry points
