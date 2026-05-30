@@ -1,29 +1,23 @@
-/** Actor input settings from settings.json (Contextractor schema) */
+/**
+ * Actor input settings from a suite's `settings.json` (a subset of the
+ * Contextractor input schema; the Actor validates the full input with Zod).
+ * `startUrls` is added by the runner from `urls.json`.
+ */
 export interface ActorSettings {
-  // Crawl settings
+  save?: Array<'txt' | 'markdown' | 'json' | 'html' | 'original'>;
+  saveDestination?: Array<'key-value-store' | 'dataset'>;
+  mode?: 'precision' | 'balanced' | 'recall';
+  crawlerType?: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
+  maxCrawlPages?: number;
+  maxCrawlDepth?: number;
+  maxResultsPerCrawl?: number;
   maxRequestRetries?: number;
   pageLoadTimeoutSecs?: number;
-  maxConcurrency?: number;
-  headless?: boolean;
-  launcher?: 'CHROMIUM' | 'FIREFOX';
-  closeCookieModals?: boolean;
-  maxScrollHeightPixels?: number;
-  ignoreSslErrors?: boolean;
-  downloadMedia?: boolean;
-  downloadCss?: boolean;
-
-  // Export options
-  exportHtml?: boolean;
-  exportText?: boolean;
-  exportJson?: boolean;
-  exportMarkdown?: boolean;
-  exportXml?: boolean;
-  exportXmlTei?: boolean;
-
-  // Extraction options
-  extractionMode?: 'FAVOR_PRECISION' | 'BALANCED' | 'FAVOR_RECALL';
-  includeMetadata?: boolean;
+  linkSelector?: string;
+  keepUrlFragments?: boolean;
+  includeUrlGlobs?: Array<{ glob: string }>;
+  excludeUrlGlobs?: Array<{ glob: string }>;
 
   [key: string]: unknown;
 }
