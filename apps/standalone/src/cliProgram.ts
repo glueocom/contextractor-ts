@@ -554,13 +554,7 @@ async function runExtractAction(
     });
   }
 
-  const failedRecords: Array<{
-    url: string;
-    loadedUrl: string | null;
-    status: 'failed';
-    errorMessages: string[];
-    retryCount: number;
-  }> = [];
+  let failedCount = 0;
 
   const crawler = createContextractorCrawler({
     startUrls: cfg.urls,
@@ -609,13 +603,7 @@ async function runExtractAction(
     maxSessionRotations: cfg.maxSessionRotations,
     requestQueue,
     onFailedRequest: async (info) => {
-      failedRecords.push({
-        url: info.url,
-        loadedUrl: info.loadedUrl,
-        status: 'failed',
-        errorMessages: info.errorMessages,
-        retryCount: info.retryCount,
-      });
+      failedCount++;
       await ds.pushData(buildFailedRecord(info));
     },
     ...(parsed.data.storeSkippedUrls
@@ -630,7 +618,7 @@ async function runExtractAction(
   await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));
 
   process.stderr.write('Done.\n');
-  if (failedRecords.length > 0) process.exit(2);
+  if (failedCount > 0) process.exit(2);
 }
 
 // ---------------------------------------------------------------------------

@@ -25,6 +25,15 @@ describe('ContextractorInput', () => {
     expect(() => ContextractorInput.parse({ startUrls: [] })).toThrow();
   });
 
+  it('rejects an empty saveDestination', () => {
+    expect(() =>
+      ContextractorInput.parse({
+        startUrls: [{ url: 'https://example.com' }],
+        saveDestination: [],
+      }),
+    ).toThrow();
+  });
+
   it('rejects unknown enum values', () => {
     expect(() =>
       ContextractorInput.parse({

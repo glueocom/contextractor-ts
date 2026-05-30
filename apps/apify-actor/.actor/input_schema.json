@@ -233,7 +233,8 @@
         "type": "string",
         "enum": ["key-value-store", "dataset"],
         "enumTitles": ["Key-value store", "Dataset"]
-      }
+      },
+      "minItems": 1
     },
     "datasetName": {
       "title": "Dataset name",

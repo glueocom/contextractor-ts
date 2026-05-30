@@ -278,6 +278,7 @@ export const ContextractorInput = z.object({
 
   saveDestination: z
     .array(z.enum(['key-value-store', 'dataset']))
+    .min(1, 'Select at least one save destination')
     .default(['key-value-store'])
     .describe('Where to save extracted content. Supported by both Actor and CLI.')
     .meta({

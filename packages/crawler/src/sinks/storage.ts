@@ -53,6 +53,11 @@ export function kvsKey(kind: ContentKind, url: string): string {
   return `${spec.keyPrefix}${hash}.${spec.ext}`;
 }
 
+/** Current time as an ISO 8601 timestamp truncated to whole seconds. */
+function isoSecond(): string {
+  return new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+}
+
 /**
  * Build a `ContentNode` for one piece of content. The dataset destination wins
  * when both are selected: `content` is inlined. Otherwise the blob is written to
@@ -111,7 +116,7 @@ export async function buildSuccessRecord(
     metadata: result.metadata,
     crawl: {
       loadedUrl: result.loadedUrl,
-      loadedTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+      loadedTime: isoSecond(),
       httpStatusCode: 200,
       depth: result.crawlDepth,
       referrerUrl: result.referrerUrl,
@@ -164,7 +169,7 @@ export function buildFailedRecord(info: FailedRequestInfo): Record<string, unkno
     crawl: { loadedUrl: info.loadedUrl },
     errors: info.errorMessages,
     retryCount: info.retryCount,
-    crawledTime: new Date().toISOString().replace(/\.\d+Z$/, 'Z'),
+    crawledTime: isoSecond(),
   };
 }
 
