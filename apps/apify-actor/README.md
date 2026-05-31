@@ -1,36 +1,100 @@
-# `@contextractor/apify`
+# Contextractor
 
-Apify Actor that crawls websites and extracts main-content text.
+**Crawl any website and extract clean, boilerplate-free main content** as
+**Markdown, plain text, JSON, HTML, or raw original HTML** — ready to feed
+**LLMs, RAG pipelines, and vector databases**. Contextractor uses the
+[`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) extraction
+engine to strip away navigation, ads, and cookie banners, and an adaptive
+[Crawlee](https://crawlee.dev/) + Playwright crawler that automatically switches
+between a real browser and fast HTTP — with proxy rotation and anti-blocking
+handled for you.
 
-Built on [`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
-(extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
-Playwright).
+Point it at a single page or crawl an entire site: Contextractor returns only the
+content that matters, in the exact format your AI workflow needs.
 
-## Supported output formats
+## What can Contextractor do?
 
-`txt`, `markdown`, `json`, `html`, `original` (raw page HTML).
+- **Extract clean main content** — the rs-trafilatura engine isolates the article
+  body and removes navigation, headers, footers, ads, and cookie banners.
+- **Five output formats** — Markdown, plain text (`txt`), JSON, cleaned HTML, and
+  the original raw HTML, saved individually or together.
+- **Adaptive crawling** — automatically switches between a headless browser (for
+  JavaScript-heavy pages) and fast raw HTTP per page; or force Chromium, Firefox,
+  or HTTP-only.
+- **Whole-site crawling** — follow links with a CSS selector and scope the crawl
+  with include/exclude URL globs, sitemaps, and depth and page limits.
+- **Tunable extraction** — choose `precision`, `balanced`, or `recall`, and toggle
+  tables, links, images (alt text), and comments.
+- **Built-in anti-blocking** — proxy rotation, persistent session pools, and
+  automatic IP/fingerprint rotation when a block is detected.
+- **Page metadata** — captures title, author, publication date, description, site
+  name, and detected language.
+- **Handles modern pages** — dismisses cookie modals, waits for selectors or
+  network idle, scrolls lazy-loaded content, and accepts custom cookies and HTTP
+  headers for logged-in or gated pages.
+- **Deduplication** — skip already-seen pages by canonical URL or by
+  extracted-content hash.
 
-## Local prerequisites
+## Designed for LLMs, RAG, and AI pipelines
 
-- **Rust toolchain** via `rustup` (cargo + rustc on PATH for napi build).
-- **Apify CLI ≥ 1.4** (older versions reject the modern `actor.json` format).
-- **Node 22+**, **pnpm 10+**.
+Contextractor turns messy web pages into clean, structured text that's ready for AI:
 
-## Local development
+- **Build RAG knowledge bases** — crawl docs, blogs, or help centers and ingest
+  clean Markdown into a vector database.
+- **Feed and contextualize LLMs** — supply boilerplate-free content as context for
+  ChatGPT, Claude, or your custom GPTs.
+- **Create training and fine-tuning datasets** — gather large volumes of clean
+  article text.
+- **Bulk content processing** — summarize, translate, classify, or proofread pages
+  at scale.
+- **Content and SEO research** — archive competitor or reference content as plain
+  text or JSON.
 
-```bash
-pnpm install
-pnpm --filter @contextractor/apify build
-apify run            # from apps/apify-actor/
-```
+Each output format is suited to a different job:
+
+| Format | Best for |
+|--------|----------|
+| `markdown` | Chunking and embeddings, chat context, notebooks — the default for RAG. |
+| `txt` | Lightweight NLP, keyword stats, and simple text pipelines. |
+| `json` | Structured, programmatic downstream processing. |
+| `html` | Layout-aware processing or feeding other HTML tools. |
+| `original` | The full, unmodified page for re-processing, archival, or auditing. |
+
+## How does it work?
+
+Contextractor runs a simple three-stage pipeline for every page:
+
+- **Crawl** — an adaptive Crawlee + Playwright crawler fetches each page and follows
+  links within the scope you set (selectors, URL globs, depth, sitemaps), respecting
+  `robots.txt` when enabled.
+- **Extract** — the rs-trafilatura engine isolates the main content and discards
+  navigation, ads, and cookie modals, using your chosen precision/balanced/recall
+  mode.
+- **Output** — each page is emitted in the formats you selected, with an MD5 `hash`
+  and byte length, and saved to your dataset or key-value store.
+
+## How to use Contextractor
+
+No code required — run it straight from the Apify Console:
+
+1. **Add your start URLs** — one or more pages or site sections you want to extract.
+2. **Choose your output format(s)** — any of Markdown, plain text, JSON, HTML, or
+   the original raw HTML.
+3. **Pick where to save** — the key-value store (default) and/or the dataset.
+4. *(Optional)* **Set the crawl scope and behavior** — link selector, include/exclude
+   URL globs, depth, and page limits to follow links across a site; enable proxy
+   rotation, `robots.txt`, or render waits as needed.
+5. **Click Start** and watch the run progress live.
+6. **Download your data** — from the dataset (JSON, CSV, Excel) or the key-value
+   store, or pull it programmatically via the Apify API.
+
+Every option is documented in the input form and in the [Input](#input) table below.
 
 ## Input
 
-The full input surface is generated from the Zod 4 schema in
-[`@contextractor/schema`](../../packages/schema/README.md) by
-[`@contextractor/gen-input-schema`](../../tools/gen-input-schema/README.md);
-the table below is auto-rebuilt from that schema by
-[`@contextractor/gen-md-regions`](../../tools/gen-md-regions/).
+Configure Contextractor entirely from the input form in the Apify Console — every
+field below is also editable as JSON. **Start URLs** are the only required field;
+everything else has a sensible default.
 
 <!-- @generated:start name="apify-input-schema" -->
 
@@ -87,21 +151,172 @@ the table below is auto-rebuilt from that schema by
 
 <!-- @generated:end name="apify-input-schema" -->
 
-## Output
+## Crawler and extraction options
 
-Successful dataset entries include `status: 'success'` together with nested
-`metadata` (title, author, publishedAt, description, siteName, languageCode),
-a `crawl` object (`loadedUrl`, `loadedTime`, `httpStatusCode`, `depth`,
-`referrerUrl`), and `original` — a `ContentNode` whose `hash` and `bytes` are
-always present (`content`, or `key` and `url`, are added when the raw HTML is
-stored). Failed requests are stored as
-`status: 'failed'` records after retries are exhausted, and skipped URLs can
-be recorded as `status: 'skipped'` when `storeSkippedUrls` is enabled.
+The most important multiple-choice settings and what each value means. See the
+[Input](#input) table above for the full list of fields.
 
-Each content field (`markdown`, `txt`, `json`, `html`, and `original`) is a
-`ContentNode` object: `hash` (MD5) and `bytes` (UTF-8 byte length) are always
-present. When `saveDestination` includes `dataset`, the content is inline under
-`content`; when `key-value-store` (default), the blob is stored and referenced
-by `key` + `url`. Key-value-store keys are `{format}-{md5(url)}.{ext}` (e.g.
-`markdown-…md`, `original-…html`).
+<!-- @generated:start name="enum-values" -->
 
+<!-- This block is auto-generated by @contextractor/gen-md-regions. Do not edit. -->
+
+### `crawlerType` (default `playwright-adaptive`)
+
+| Value | Title |
+|-------|-------|
+| `playwright-adaptive` | Adaptive switching (Recommended) |
+| `playwright-firefox` | Headless browser (Firefox+Playwright) |
+| `playwright-chromium` | Headless browser (Chromium+Playwright) |
+| `cheerio` | Raw HTTP client (Cheerio) |
+
+### `deduplication` (default `url`)
+
+| Value | Title |
+|-------|-------|
+| `none` | None — URL only |
+| `url` | URL — canonical URL (default) |
+| `content-hash` | Content hash — canonical URL + content hash |
+
+### `mode` (default `balanced`)
+
+| Value | Title |
+|-------|-------|
+| `precision` | Precision (less noise) |
+| `balanced` | Balanced (default) |
+| `recall` | Recall (more content) |
+
+### `proxyRotation` (default `recommended`)
+
+| Value | Title |
+|-------|-------|
+| `recommended` | Recommended |
+| `per-request` | Rotate per request |
+| `until-failure` | Use until failure |
+
+### `waitUntil` (default `load`)
+
+| Value | Title |
+|-------|-------|
+| `load` | Load event |
+| `domcontentloaded` | DOM content loaded |
+| `networkidle` | Network idle |
+| `commit` | Commit |
+
+<!-- @generated:end name="enum-values" -->
+
+## What data does Contextractor return?
+
+Every crawled page becomes one dataset record. Successful pages carry
+`status: "success"` with the extracted content and metadata; failed and skipped
+pages are recorded too, so nothing is silently dropped.
+
+| Field | Description |
+|-------|-------------|
+| `url` | The original request URL. |
+| `status` | Record outcome: `success`, `failed`, or `skipped`. |
+| `metadata` | Extracted page metadata: `title`, `author`, `publishedAt`, `description`, `siteName`, `languageCode`. |
+| `crawl` | Crawl provenance: `loadedUrl` (final URL after redirects), `loadedTime`, `httpStatusCode`, `depth` (link distance from a start URL), `referrerUrl` (the linking page). |
+| `original` | The raw page HTML as a content node — `hash` (MD5) and `bytes` always present; `content`, or `key` + `url`, added when `original` is saved. |
+| `txt`, `markdown`, `json`, `html` | One content node per saved format — `hash` and `bytes`, plus inline `content` (dataset) or a `key` + `url` reference (key-value store). |
+| `errors`, `retryCount`, `crawledTime` | On `failed` records only: the error messages, number of retries, and when the request was abandoned. |
+| `skipReason` | On `skipped` records only: `robotsTxt`, `limit`, `enqueueLimit`, `filters`, `redirect`, or `depth`. |
+
+Example success record (default settings — Markdown saved to the key-value store):
+
+```json
+{
+  "url": "https://blog.example.com/why-rag-matters",
+  "status": "success",
+  "metadata": {
+    "title": "Why RAG Matters",
+    "author": "Jane Doe",
+    "publishedAt": "2026-01-15",
+    "description": "A practical look at retrieval-augmented generation.",
+    "siteName": "Example Blog",
+    "languageCode": "en"
+  },
+  "crawl": {
+    "loadedUrl": "https://blog.example.com/why-rag-matters",
+    "loadedTime": "2026-05-31T10:00:00.000Z",
+    "httpStatusCode": 200,
+    "depth": 1,
+    "referrerUrl": "https://blog.example.com/"
+  },
+  "original": {
+    "hash": "f8e6bd335e04d03e1be6798c2c72349c",
+    "bytes": 89898
+  },
+  "markdown": {
+    "hash": "43f204bfbee5dbe6862cb38620f257b5",
+    "bytes": 5234,
+    "key": "markdown-1a2b3c4d5e6f7890.md",
+    "url": "https://api.apify.com/v2/key-value-stores/<storeId>/records/markdown-1a2b3c4d5e6f7890.md"
+  }
+}
+```
+
+### Where your content is saved
+
+- **Key-value store (default)** — each format is stored as a separate file keyed
+  `{format}-{md5(url)}.{ext}` (e.g. `markdown-1a2b3c4d….md`), and the dataset record
+  references it by `key` and `url`. Best for large content and bulk download.
+- **Dataset** — the extracted content is embedded inline in each record under
+  `content`. Best when you want everything in a single JSON, CSV, or Excel export.
+
+Choose one or both with the **Save destination** option.
+
+## Integrations and automation
+
+Contextractor outputs standard JSON and Markdown, so its results drop straight into
+AI and data pipelines:
+
+- **Apify API & SDKs** — start runs, stream the dataset, and fetch key-value-store
+  files programmatically from Python or JavaScript.
+- **Scheduling & monitoring** — schedule recurring runs and monitor them from the
+  Apify Console.
+- **MCP server** — expose the Actor to AI agents through the Model Context Protocol.
+- **No-code connectors** — pipe results into Make, Zapier, n8n, Google Drive, Slack,
+  and more via Apify's integrations.
+- **LLM frameworks** — feed the extracted Markdown or JSON into LangChain,
+  LlamaIndex, or a vector database such as Pinecone, Qdrant, Weaviate, or Chroma for
+  retrieval-augmented generation.
+
+## FAQ
+
+### Is it legal to scrape website content?
+
+Scraping publicly available, non-personal data is generally legal in most
+jurisdictions. Contextractor can honor each site's `robots.txt` (enable **Respect
+robots.txt**), and you remain responsible for complying with each site's Terms of
+Service and for how you use extracted content — especially copyrighted material you
+intend to republish.
+
+### Why is some content missing or noisy?
+
+Switch the **extraction mode**: `precision` removes more boilerplate (and may drop
+borderline content), while `recall` keeps more (and may include some noise). For
+pages that load content with JavaScript, add a **Wait for selector**, increase
+**Dynamic content wait**, or raise **Max scroll height** so lazy-loaded sections
+appear before extraction.
+
+### How do I avoid getting blocked?
+
+Enable **Proxy configuration** with proxy rotation, set a **Session pool name** to
+reuse working sessions across runs, and allow **session rotations** so the crawler
+switches IP and fingerprint when a block is detected.
+
+### How do I crawl an entire website?
+
+Set a **Link selector** (e.g. `a[href]`) to follow links, then bound the crawl with
+**include/exclude URL globs**, **Max crawl depth**, and **Max crawl pages**. Enable
+**Use sitemaps** to also pull URLs from each domain's `sitemap.xml`.
+
+### How do I remove duplicate pages?
+
+Use **Deduplication**: `url` skips pages whose canonical URL was already extracted,
+and `content-hash` additionally skips pages with identical extracted text.
+
+### Found a bug or have a feature request?
+
+Contextractor is actively maintained — please open an issue on the **Issues** tab,
+and we'll take a look.

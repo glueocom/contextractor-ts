@@ -2,7 +2,7 @@
   "actorSpecification": 1,
   "name": "contextractor-test",
   "title": "Contextractor",
-  "description": "Crawls websites and extracts main-content text. Built on rs-trafilatura and Crawlee.",
+  "description": "Crawl any website and extract clean main-content text as Markdown, plain text, JSON, or HTML — ready for LLMs, RAG pipelines, and vector databases. Built on the rs-trafilatura engine and an adaptive Crawlee + Playwright crawler.",
   "version": "0.3",
   "buildTag": "latest",
   "meta": {

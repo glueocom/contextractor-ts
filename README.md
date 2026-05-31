@@ -1,9 +1,10 @@
 # Contextractor
 
-Crawl websites and extract clean, readable main-content text. Built on
-[`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura)
-(extraction) and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving
-Playwright).
+Crawl any website and extract clean, boilerplate-free main-content text as
+Markdown, plain text, JSON, HTML, or raw original HTML — ready to feed LLMs, RAG
+pipelines, and vector databases. Built on
+[`rs-trafilatura`](https://github.com/Murrough-Foley/rs-trafilatura) (extraction)
+and [Crawlee](https://crawlee.dev/) (TypeScript crawler driving Playwright).
 
 This monorepo hosts:
 
@@ -16,9 +17,22 @@ This monorepo hosts:
 - **[`packages/crawler`](./packages/crawler/README.md)** — Shared Crawlee +
   Playwright crawler package.
 
-## Supported output formats
+## Features
 
-`txt`, `markdown`, `json`, `html`, `original` (raw page HTML).
+- **Clean main-content extraction** via `rs-trafilatura` — strips navigation,
+  headers, footers, ads, and cookie banners.
+- **Adaptive crawling** — switches between a headless browser and raw HTTP per
+  page, or force Chromium, Firefox, or HTTP-only (Cheerio).
+- **Five output formats** — `txt`, `markdown`, `json`, `html`, and `original`
+  (raw page HTML).
+- **Whole-site crawling** — link-following with CSS selectors, include/exclude URL
+  globs, sitemaps, and depth/page limits.
+- **Anti-blocking** — proxy rotation, persistent session pools, and IP/fingerprint
+  rotation on block detection.
+- **Metadata + deduplication** — extracts title, author, date, description, site
+  name, and language; deduplicates by canonical URL or content hash.
+- **One engine, two surfaces** — identical extraction in the Apify Actor and the
+  standalone CLI, driven by a shared Zod input schema.
 
 ## Input schema
 
@@ -130,4 +144,4 @@ tools/
 
 ## Docs version
 
-2026-05-19T23:46:06Z
+2026-05-31T08:58:52Z
