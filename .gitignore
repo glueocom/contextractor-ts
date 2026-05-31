@@ -3,6 +3,7 @@
 storage/
 !apps/standalone/src/storage/
 output/
+autonomous-task-output/
 .cache/
 .claude/settings.local.json
 tools/platform-test-runner/test-suites-output/
