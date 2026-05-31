@@ -37,7 +37,7 @@ apify run                                                  # Run Actor locally
 /proxy-test --no-fix                                       # Run proxy rotation tests without retry
 ```
 
-Production deploys go through a **Git-connected build** in Apify Console (not `apify push`). `.node` prebuilds ship via `optionalDependencies` — no Rust toolchain needed in the image.
+Production deploys go through a **Git-connected build** in Apify Console (not `apify push`) — built from the `glueocom/contextractor-ts` repo's `main` branch. `.node` prebuilds ship via `optionalDependencies` — no Rust toolchain needed in the image.
 
 Proxy rotation testing requires:
 
@@ -88,6 +88,7 @@ The `typescript-lsp@claude-plugins-official` plugin wires `typescript-language-s
 - [Preserve TODOs](.claude/rules/preserve-todos.md) — never delete a TODO unless the fix directly resolves it
 - [Rule coverage](.claude/rules/rule-coverage.md) — every rule must be referenced in CLAUDE.md, an agent, or a command
 - [User-facing docs](.claude/rules/user-facing-docs.md) — deploy and maintenance info must not appear in the public Actor README
+- [Memory promotion](.claude/rules/memory-promotion.md) — promote durable repo-level facts from memory into CLAUDE.md/.claude/rules in the same session; personal preferences stay in memory only
 
 ## Agents
 
