@@ -249,8 +249,8 @@ Example success record (default settings — Markdown saved to the key-value sto
   "markdown": {
     "hash": "43f204bfbee5dbe6862cb38620f257b5",
     "bytes": 5234,
-    "key": "markdown-1a2b3c4d5e6f7890.md",
-    "url": "https://api.apify.com/v2/key-value-stores/<storeId>/records/markdown-1a2b3c4d5e6f7890.md"
+    "key": "markdown-c485356090a92c6a45e8c1155c14d8ee.md",
+    "url": "https://api.apify.com/v2/key-value-stores/<storeId>/records/markdown-c485356090a92c6a45e8c1155c14d8ee.md"
   }
 }
 ```

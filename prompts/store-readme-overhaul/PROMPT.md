@@ -96,6 +96,10 @@ Fully rewrite with `Write`. Section order (value-first → mechanism → proof �
   content is saved` explainer (key-value store default keyed `{format}-{md5(url)}.{ext}`
   vs inline dataset `content`). The dataset record shape is the source of truth in
   `apps/apify-actor/.actor/dataset_schema.json`. Do not end lists with "etc."
+  - In the example, every content `hash` and the `{md5(url)}` portion of each KVS
+    `key`/`url` MUST be a full 32-char MD5 hex (per `apps/apify-actor/SPEC.md`) — never
+    a truncated placeholder. Compute the real md5 of the example URL so the example is
+    internally consistent: `node -e "console.log(require('crypto').createHash('md5').update('<example-url>').digest('hex'))"`.
 - `## Integrations and automation` — generic, truthful bullets only (Apify API & SDKs;
   scheduling/monitoring; MCP server; no-code connectors Make/Zapier/n8n; feeding the
   Markdown/JSON into LangChain/LlamaIndex/Pinecone/Qdrant/Weaviate/Chroma). Output is
@@ -146,7 +150,9 @@ git status --short                                  # expect only README.md, app
 Correctness sweep on `apps/apify-actor/README.md`: exactly one `# ` H1 (`# Contextractor`);
 both `@generated` regions present and populated; structured Output table + JSON example;
 zero matches for `contextractor/apify|local prerequisite|local development|pnpm install|
-apify run|rustup|contextractor-test|glueo/|Dockerfile|\.claude/`.
+apify run|rustup|contextractor-test|glueo/|Dockerfile|\.claude/`. Verify the example's
+MD5 values are full 32-char hex (no truncated keys/hashes): every `[0-9a-f]` run inside a
+`hash`, `key`, or KVS `url` must be exactly 32 chars.
 
 ## Notes
 

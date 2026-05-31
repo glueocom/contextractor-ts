@@ -216,3 +216,9 @@ Project conventions accumulated from past reviews. Apply in Step ANALYZE alongsi
 ### Deploy safety
 - No `apify push` command anywhere in scripts, tooling, or documentation — always `git push origin HEAD:dev` for test, `HEAD:main` for production
 - `apps/apify-actor/.actor/actor.json` `name` must be `contextractor-test` for test deploys (never `contextractor`)
+
+### Documentation examples (READMEs, store page)
+- `apps/apify-actor/README.md` is the public Apify Store page — it must contain NO deploy/build/dev content, NO internal names (`contextractor-test`, `glueo/…`), NO npm package name as H1, exactly ONE H1 (`# Contextractor`), and NO repo-relative links (they 404 on apify.com). Deploy/dev docs live in `CLAUDE.md`/`SPEC.md` per `.claude/rules/user-facing-docs.md`
+- Example output records must match `apps/apify-actor/.actor/dataset_schema.json`: every content `hash` and the `{md5(url)}` portion of every KVS `key`/`url` is a full 32-char MD5 hex (per `apps/apify-actor/SPEC.md`) — never a truncated placeholder
+- Format VALUES in examples stay `txt`/`markdown`/`json`/`html`/`original`; "text" only as prose ("plain text"), never as a save/format value
+- Never hand-edit inside `<!-- @generated:start … -->` regions; after editing a README run `pnpm docs:update` and confirm a second run reports `0 file(s) updated`
