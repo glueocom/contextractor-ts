@@ -1,7 +1,7 @@
 # Make Contextractor Available Through an MCP Server
 
-> **TLDR**: Build a new `@contextractor/mcp` workspace package that exposes two tools — `extract_html`
-> (pure HTML → content) and `extract_url` (fetch + extract) — over **stdio** and **Streamable HTTP**,
+> **TLDR**: Build a new `@contextractor/mcp` workspace package that exposes a single tool — `extract_url`
+> (fetch + extract: a URL → clean markdown/text/JSON/HTML) — over **stdio** and **Streamable HTTP**,
 > reusing `@contextractor/extraction`, `@contextractor/crawler`, and `@contextractor/schema`. Then make the
 > Apify actor itself an MCP endpoint via **Actor Standby**. Finally, run a real **test step** that exercises
 > the local server (stdio + HTTP) and the Apify actor through MCP. The Apify production actor
@@ -38,8 +38,8 @@ Agents:
 - `test-runner` — local format, lint, unit, smoke.
 - `web-research-specialist` — fallback for unexpected MCP SDK or Apify Standby behavior.
 
-Steps TOOL-HTML, TOOL-URL, and TRANSPORT-STDIO can be developed in parallel after SCAFFOLD and SCHEMA land;
-TRANSPORT-HTTP and ACTOR-STANDBY depend on the tool handlers existing.
+Steps TOOL-URL and TRANSPORT-STDIO can be developed in parallel after SCAFFOLD and SCHEMA land;
+TRANSPORT-HTTP and ACTOR-STANDBY depend on the tool handler existing.
 
 ## Rules
 
@@ -112,28 +112,17 @@ Create `apps/mcp-server/` mirroring `apps/standalone`:
 Verify `pnpm install` links the workspace deps and `pnpm -F @contextractor/mcp build` compiles an empty
 `src/server.ts`. Commit when complete.
 
-## Step SCHEMA: Derive tool inputs from the source of truth
+## Step SCHEMA: Derive the tool input from the source of truth
 
-In `apps/mcp-server/src/`, derive both tools' zod input shapes from `ContextractorInput` so the MCP contract
-never drifts from the CLI and actor schema:
+In `apps/mcp-server/src/`, derive the `extract_url` zod input shape from `ContextractorInput` so the MCP
+contract never drifts from the CLI and actor schema:
 
 - `extract_url` input: `.pick()` the crawl/extract fields that make sense for a single URL (e.g. `crawlerType`,
   `mode`, `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `save`,
   `waitUntil`, `pageLoadTimeoutSecs`, `headless`) plus a required `url: z.string().url()`. Keep
   `maxCrawlPages` defaulted to `1` for the tool.
-- `extract_html` input: a required `html: z.string()`, optional `url`, `format` (the four `OutputFormat`s),
-  and the same extraction toggles where they apply to pure-HTML extraction.
 
 Pass the ZodRawShape (the `.shape` object) to `registerTool`, not a wrapped `z.object`. Commit when complete.
-
-## Step TOOL-HTML: `extract_html`
-
-Implement a pure, no-network tool: build a `ContentExtractor` from the toggles, call
-`extract(html, { url, format })`, optionally attach `extractMetadata(html, url)`. Return an MCP result with a
-text `content` block (the extracted string) and `structuredContent` (content + metadata) — but only declare
-an `outputSchema` if you reliably return matching `structuredContent` (see the desktop research caveat).
-Handle `null` extraction as an explicit, non-throwing error message. Add a vitest test using a fixture HTML
-string asserting non-empty output for each format. Commit when complete.
 
 ## Step TOOL-URL: `extract_url`
 
@@ -146,6 +135,8 @@ Implement the fetch+extract tool by reusing the crawler, following `runExtractAc
 - `const sink = memorySink<ExtractionResult>();` pass it as `sink`; run
   `await crawler.run(buildRequests([url]))`; read `sink.results`.
 - Return the extracted formats + projected metadata as the MCP result (text + optional structuredContent).
+  Only declare an `outputSchema` if you reliably return matching `structuredContent` (see the desktop
+  research caveat). Handle a failed or empty extraction as an explicit, non-throwing error message.
 - Bound it: enforce `maxPages: 1` and a sane timeout so a tool call can't run unbounded.
 
 Add a vitest test that drives `extract_url` against a local fixture page (serve a fixture or stub the crawl
@@ -153,13 +144,13 @@ boundary; do not hit the public internet in unit tests). Commit when complete.
 
 ## Step TRANSPORT-STDIO: stdio server
 
-Wire `McpServer` + `StdioServerTransport` in `src/server.ts`; register both tools. **stdout is the JSON-RPC
+Wire `McpServer` + `StdioServerTransport` in `src/server.ts`; register the `extract_url` tool. **stdout is the JSON-RPC
 channel** — never `console.log`; route all logging (`pino`, matching the repo) to **stderr**. The `bin`
 (`contextractor-mcp`) launches this by default. Commit when complete.
 
 ## Step TRANSPORT-HTTP: Streamable HTTP server
 
-Add a `--http [port]` mode that serves the same tools over `StreamableHTTPServerTransport` (this is route A′
+Add a `--http [port]` mode that serves the same tool over `StreamableHTTPServerTransport` (this is route A′
 — the only local-built path the Claude Messages-API **MCP connector** can reach, since the connector requires
 a remote HTTPS URL and cannot use stdio). Document that the connector needs the beta header
 `anthropic-beta: mcp-client-2025-11-20` and a Bearer `authorization_token`, and that exposing this publicly
@@ -174,14 +165,14 @@ Make the actor itself a branded remote MCP server via Apify **Standby**, reusing
   `apify-actor-development` / `apify-schemas` skills and `mcpc @apify search-apify-docs`).
 - Enable Standby and a Streamable-HTTP MCP path (`usesStandbyMode`, `webServerMcpPath` — confirm exact keys
   against current Apify docs; the `mcpServers` placeholder in `packages/schema/src/apify/apify-meta.ts` is
-  the aligned schema hook). Wire the actor's standby entry to serve the same `extract_html`/`extract_url`
-  handlers so there is one implementation, not two.
+  the aligned schema hook). Wire the actor's standby entry to serve the same `extract_url` handler so there
+  is one implementation, not two.
 - Build only. **Do not deploy to production.** If a live deploy is needed, use `/platform:deploy-and-test`
   against the test actor (`dev` → `glueo/contextractor-test`). Commit when complete.
 
 ## Step DOCS-SPEC: Docs and specs
 
-- Add `apps/mcp-server/SPEC.md` (tools, inputs/outputs, transports, the publish-posture decision) and wire it
+- Add `apps/mcp-server/SPEC.md` (the `extract_url` tool, its input/output, transports, the publish-posture decision) and wire it
   into the root `SPEC.md`.
 - Add registration instructions to the appropriate developer doc (not a public README): `claude mcp add
   --transport stdio contextractor -- npx -y @contextractor/mcp`, a Claude Desktop `mcpServers` block, and the
@@ -196,8 +187,7 @@ This is the required test step. Run all of it; report results plainly.
 - **Local stdio MCP**: build, then with `mcpc` (already installed and configured per `CLAUDE.md`) connect the
   stdio binary and confirm both tools and a real call:
   - `mcpc connect "node apps/mcp-server/dist/server.js" @ctx` (or via an `mcp.json` reference).
-  - `mcpc @ctx tools-list` shows `extract_html` and `extract_url`.
-  - `mcpc @ctx tools-call extract_html html:='"<html><body><article>hi</article></body></html>"' format:=markdown`.
+  - `mcpc @ctx tools-list` shows `extract_url`.
   - `mcpc @ctx tools-call extract_url url:="https://example.com" format:=markdown`.
 - **Local HTTP MCP**: start `node apps/mcp-server/dist/server.js --http 8765` and
   `mcpc connect http://127.0.0.1:8765 @ctxhttp` then `mcpc @ctxhttp tools-list`. Stop the server after.
