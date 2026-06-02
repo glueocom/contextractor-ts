@@ -275,3 +275,15 @@ ls -1 ./contextractor-output    # expect human-named .md/.txt/... files + manife
 - If any proxy code was touched (this change is docs-only for proxy), run `/proxy-test`.
 
 Then commit on the `dev` branch (no Claude / `Co-Authored-By` footer). Do NOT push to Apify production.
+
+---
+
+## Step COMMIT: Commit and push
+
+Run `/git:commit` to commit all changes on the `dev` branch and push to the remote. Commit messages must NOT mention Claude or add a `Co-Authored-By` footer. Do NOT push to Apify production.
+
+---
+
+## Step MAINTENANCE: Run the full maintenance pipeline
+
+Run `.claude/commands/autonomous/maintenance-all-shell.md` — the full autonomous/maintenance pipeline — auto-fixing any failures and iterating until all steps pass.
