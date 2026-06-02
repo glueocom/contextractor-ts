@@ -24,3 +24,15 @@ review CLI commands and documentation and also documentation and readme files: w
 - delete the `list`, `get`, `kvs`, and `storage-dir` subcommands from the NPM CLI - they are not useful. Instead add an `export` command that exports the extracted data from storage to a directory. No `export` command ever existed (verified git history) - design it fresh using Crawlee's mechanism (`Dataset.exportToJSON` / `Dataset.exportToCSV`, or `Dataset.open()` + `getData()` + write to the target dir). Match how crawlee.dev implements dataset export.
 
 - all changes requested for the NPM CLI must be mirrored to the NPM lib where applicable.
+
+- the published NPM package is `contextractor`, but the workspace package is named `@contextractor/standalone` (`private: true`, v0.1.0). Rename it to `contextractor`, remove `private`, and update every internal reference: root `SPEC.md`, `apps/standalone/README.md`, `apps/standalone/SPEC.md`, the `gen-md-regions` dependency + import (`tools/gen-md-regions`), `examples/library-ts` (package.json dep + import), `dev-utils/installation/lib/pkg.ts` (`STANDALONE_PKG`), and the tools-repo site content pages (`html.md`, `trafilatura*.md`, site `SPEC.md`, `main.tsx` descriptions).
+
+- the website fixes above apply to ALL generated variants, not just "macOS / Linux — run.sh": also fix the "Windows — run.cmd" template, the TypeScript library example (import + setup comment), the `main.tsx` UI descriptions, and the site `SPEC.md` in `tools/apps/contextractor-site` - each currently uses `@contextractor/standalone` and/or the `list` command. Remove the "Zero-to-data" fluff comments from both scripts.
+
+- flag/param renames must go deep through the Zod source of truth `packages/schema/src/source-of-truth/input.ts`, not just the CLI flag surface: rename the schema key too (e.g. `targetLanguage` -> `languageCode`, `dynamicContentWaitSecs` -> `waitForDynamicContentSecs`), which also renames the Apify Actor input field. This is a breaking change for existing Apify input - that is acceptable.
+
+- after any flag/param rename, run `pnpm build` then `pnpm docs:update` to regenerate the `@generated` regions in `apps/standalone/README.md` and the Apify input schema `apps/apify-actor/.actor/input_schema.json` (both derive from the Zod source of truth) so docs and schema stay in sync. A full `pnpm build` must run first because `gen-md-regions` imports the built CLI.
+
+- `apps/standalone/SPEC.md` documents `--deduplication` with stale values `minimal`/`basic`/`full` (default `basic`); the actual schema is `none`/`url`/`content-hash` (default `url`). Sync all SPEC.md docs to the schema source of truth.
+
+- rename `--rendering-detection-pct` (it abbreviates "pct" and drops "type") to match its schema key `renderingTypeDetectionPercentage` - e.g. `--rendering-type-detection-percentage`, or another clear, consistent name. Treat this as a concrete case of the param-naming review above.
