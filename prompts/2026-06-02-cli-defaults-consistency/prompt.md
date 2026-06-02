@@ -1,4 +1,4 @@
-> **TLDR**: Make the contextractor CLI, lib, and Apify Actor consistent and clean. Rename three poorly-named flags (and any others the audit justifies) deep through the Zod source of truth; expose the full storage-name trio as flags; delete the low-value `list`/`get`/`kvs`/`storage-dir` subcommands and add a real `export` command that writes stored content to a user output directory; rename the published package to `contextractor`; purge stale docs (deduplication enum, tiered proxy, `--save jsonl`, redundant default flags); then rebuild, regenerate `@generated` docs + the Apify input schema, sync all SPECs, deep-test, and autofix until green.
+> **TLDR**: Make the contextractor CLI, lib, and Apify Actor consistent and clean, and align crawler-layer parameter names with **Crawlee** (the framework underneath) — the source of truth. Rename schema keys deep through the Zod source of truth to match Crawlee's option names (incl. two semantic changes: `maxRequestsPerCrawl` request-counting and `renderingTypeDetectionRatio` 0–1), plus the locked extraction/clarity renames; expose the full storage-name trio as flags; delete the low-value `list`/`get`/`kvs`/`storage-dir` subcommands and add a real `export` command that writes stored content to a user output directory; rename the published package to `contextractor`; purge stale docs (deduplication enum, tiered proxy, `--save jsonl`, redundant default flags); then rebuild, regenerate `@generated` docs + the Apify input schema, sync all SPECs, deep-test, and autofix until green.
 
 ## Context
 
@@ -24,14 +24,16 @@ This is a breaking change for existing Apify input (renamed schema keys / Actor 
 
 ## Locked decisions
 
+- **Naming authority — Crawlee FIRST**: contextractor is built on [Crawlee](https://crawlee.dev/) (JS), so Crawlee's option names are the PRIMARY authority for crawler-layer schema keys and library-object property names. Match Crawlee's exact option name wherever Crawlee has a real equivalent — including its generic names and its semantics (see the resolved forks below). For extraction-layer params use the trafilatura/extraction wrapper as the authority; WCC and clig.dev are only tertiary inspiration where neither Crawlee nor the extraction layer applies. The full mapping is in Step CRAWLEE-ALIGN.
+- **The Zod schema is not yet shipped**: its keys are being defined now and are freely changeable. Existing Apify input compatibility is explicitly NOT a constraint — the break is accepted. This is why we can adopt Crawlee names (and semantics) directly.
+- **Resolved naming forks (locked)**:
+  - **Adopt Crawlee's generic names**: `includeUrlGlobs` → `globs`, `excludeUrlGlobs` → `exclude`, `linkSelector` → `selector` (Crawlee `EnqueueLinksOptions`). This SUPERSEDES the earlier `--include-url-globs`/`--exclude-url-globs` flag plan.
+  - **Match Crawlee names AND semantics** for the two divergent fields: `maxCrawlPages` → `maxRequestsPerCrawl` (switch to request-counting: retries/redirects count) and `renderingTypeDetectionPercentage` → `renderingTypeDetectionRatio` (switch input to a 0–1 ratio).
+  - **Apply the safe Crawlee renames**: `pageLoadTimeoutSecs` → `navigationTimeoutSecs`, `maxScrollHeightPixels` → `maxScrollHeight`, `keepUrlFragments` → `keepUrlFragment`, `ignoreSslErrors` → `ignoreHttpsErrors`. KEEP `initialConcurrency` (clearer than Crawlee's `desiredConcurrency`).
 - **Storage flags**: expose all three. Keep `--dataset` → `datasetName`; ADD `--key-value-store <name>` → `keyValueStoreName` and `--request-queue <name>` → `requestQueueName`. This removes the asymmetric CLI/schema coverage.
-- **Param audit**: apply the renames justified by industry / clig.dev conventions and internal consistency — not only the three named below. The decided set is enumerated in Step PARAM-AUDIT; document a rationale table for each rename applied.
-- **WCC is inspiration only**: Apify's `website-content-crawler` (WCC) is a reference point we may borrow from, NOT a spec we must comply with. Where a stronger industry convention or internal consistency wins, diverge freely.
-- **The Zod schema is not yet shipped**: its keys are being defined now and are freely changeable. Choose the clearest name on each surface; schema keys and CLI flags can both move. (Existing Apify input compatibility is explicitly not a constraint — the break is accepted.)
-- **Three explicit renames**:
-  - `--target-language` → `--language`; schema key `targetLanguage` → `languageCode` (matches Apify first-party `languageCode`; `target-` wrongly implies a translation pair).
-  - `--dynamic-content-wait` → `--wait-for-dynamic-content` (consistent with the `--wait-for-selector` family); schema key `dynamicContentWaitSecs` → `waitForDynamicContentSecs`; CLI placeholder `<seconds>`.
-  - `--rendering-detection-pct` → `--rendering-type-detection <percentage>`. The schema key STAYS `renderingTypeDetectionPercentage` (camelCase API identifier). Rationale (researched): well-designed CLIs name *what*, not *units* — the unit lives in the value placeholder (curl `--max-time <seconds>`, modern kubectl `--cpu=80%` deprecating `--cpu-percent`, clig.dev). The `<percentage>` metavar both carries the unit and prevents the flag reading as a boolean toggle.
+- **Extraction / clarity renames (locked; not Crawlee — these are extraction-layer or contextractor concepts)**:
+  - `--target-language` → `--language`; schema key `targetLanguage` → `languageCode` (`target-` wrongly implies a translation pair; `languageCode` is the metadata field name already used in output records).
+  - `--dynamic-content-wait` → `--wait-for-dynamic-content` (consistent with the `--wait-for-selector` family); schema key `dynamicContentWaitSecs` → `waitForDynamicContentSecs`; CLI placeholder `<seconds>`. (No Crawlee equivalent — WCC-layer concept.)
 
 ## Enum-casing convention (do not violate)
 
@@ -43,40 +45,64 @@ Contextractor-owned enum values are kebab-case across schema/CLI/lib/Actor (`ded
 
 File: `packages/schema/src/source-of-truth/input.ts`
 
-- `targetLanguage` (≈ lines 256-262) → `languageCode`.
-- `dynamicContentWaitSecs` (≈ lines 419-426) → `waitForDynamicContentSecs`.
-- Keep `renderingTypeDetectionPercentage` (≈ lines 56-64) as-is.
-- Apply any additional schema-key renames decided in Step PARAM-AUDIT.
+Apply ALL of these key renames (see Step CRAWLEE-ALIGN for the rationale per field):
+
+- Crawlee-name renames (key only, value/validation unchanged):
+  - `includeUrlGlobs` (≈ lines 66-75) → `globs`
+  - `excludeUrlGlobs` (≈ lines 77-86) → `exclude`
+  - `linkSelector` (≈ lines 88-95) → `selector`
+  - `pageLoadTimeoutSecs` (≈ lines 385-393) → `navigationTimeoutSecs`
+  - `maxScrollHeightPixels` (≈ lines 462-472) → `maxScrollHeight` (also drop the `unit: 'pixels'` meta — name no longer carries the unit; keep the `<px>` sense in the description prose)
+  - `keepUrlFragments` (≈ lines 97-103) → `keepUrlFragment`
+  - `ignoreSslErrors` (≈ lines 485-489) → `ignoreHttpsErrors`
+- Crawlee-name renames WITH a semantic/validation change:
+  - `maxCrawlPages` (≈ lines 162-169) → `maxRequestsPerCrawl`. Update the description to say it counts **requests** (retries and redirects count), not pages, and that it maps to Crawlee's native `maxRequestsPerCrawl`. The implementation must pass this straight to Crawlee's `BasicCrawlerOptions.maxRequestsPerCrawl` (verify `createCrawler`/`config` and switch any page-counting logic to Crawlee's request count). Keep `.int().min(0).default(0)` (0 = unlimited).
+  - `renderingTypeDetectionPercentage` (≈ lines 56-64) → `renderingTypeDetectionRatio`. Change the Zod type from `z.int().min(0).max(100).default(10)` to `z.number().min(0).max(1).default(0.1)`; drop the `unit: '%'` meta; rewrite the description for a 0–1 ratio. The mapping in `createCrawler` must pass the ratio straight to the adaptive crawler's `renderingTypeDetectionRatio` (remove any `/100` conversion).
+- Extraction / clarity renames (key only):
+  - `targetLanguage` (≈ lines 256-262) → `languageCode`.
+  - `dynamicContentWaitSecs` (≈ lines 419-426) → `waitForDynamicContentSecs`.
 - Update field titles/descriptions/`enumTitles` prose accordingly; keep enum *values* unchanged and kebab-cased per the convention above.
 
 The Apify Actor input field names derive from these keys and will change — that is the intended breaking change.
 
 ---
 
-## Step PARAM-AUDIT: Review every param against industry standards (WCC as inspiration)
+## Step CRAWLEE-ALIGN: Match crawler-layer names to Crawlee
 
-Reference: general industry / clig.dev conventions FIRST, with Apify's `apify/website-content-crawler` (WCC) input keys as a secondary inspiration where they happen to align. WCC is NOT a spec to comply with — where a stronger best practice or internal consistency wins (e.g. the `--wait-for-*` family over WCC's `dynamicContentWaitSecs`), diverge freely and document why. The Zod schema is unshipped and its keys are freely changeable, so pick the clearest name on each surface.
+Authority order: **Crawlee** (the framework) for crawler-layer params → extraction wrapper for extraction params → WCC/clig.dev only where neither applies. Names verified against the Crawlee JS API docs (`https://crawlee.dev/js/api/`). For each rename applied, produce a row `old → new | surface(s) | Crawlee interface / rationale` in the commit body.
 
-- Walk every field in the schema and every CLI flag in `addExtractionOptions`.
-- The CLI flag and the schema key may legitimately differ within their own surface (e.g. `--include-url-globs` → `includeUrlGlobs`); keep each consistent internally.
-- Apply every rename in the decided set below (locked). For each rename produce a row: `old → new | surface(s) | rationale (industry convention / internal consistency)`. Put this table in the commit body.
-- Avoid abbreviations and unit suffixes in flag NAMES (carry units in the `<placeholder>`); avoid misleading prefixes. Prefer the shortest idiomatic name when context is unambiguous (clig.dev).
+### Rename to Crawlee's exact option name
 
-### Decided renames (CLI flag only; schema keys already match)
+- `includeUrlGlobs` → `globs` — Crawlee `EnqueueLinksOptions.globs`.
+- `excludeUrlGlobs` → `exclude` — Crawlee `EnqueueLinksOptions.exclude`.
+- `linkSelector` → `selector` — Crawlee `EnqueueLinksOptions.selector`.
+- `pageLoadTimeoutSecs` → `navigationTimeoutSecs` — Crawlee `BrowserCrawlerOptions.navigationTimeoutSecs`.
+- `maxScrollHeightPixels` → `maxScrollHeight` — Crawlee `infiniteScroll` `maxScrollHeight` (px).
+- `keepUrlFragments` → `keepUrlFragment` — Crawlee `RequestOptions.keepUrlFragment` (singular).
+- `ignoreSslErrors` → `ignoreHttpsErrors` — Playwright/Crawlee `launchOptions.ignoreHTTPSErrors`.
 
-- `--ignore-cors` → `--ignore-cors-and-csp` (maps to schema `ignoreCorsAndCsp`) — current name is misleading; it also disables CSP.
-- `--glob` → `--include-url-globs` (maps to schema `includeUrlGlobs`) — clarity + symmetry with the exclude flag.
-- `--exclude` → `--exclude-url-globs` (maps to schema `excludeUrlGlobs`) — "exclude what?" is vague; symmetry with include.
-- `--max-pages` → `--max-crawl-pages` (maps to schema `maxCrawlPages`) — match the schema key; disambiguate from result/output counts.
-- `--crawl-depth` → `--max-crawl-depth` (maps to schema `maxCrawlDepth`) — match the schema key; the value is a maximum, so add `max-`.
+### Rename to Crawlee's name AND adopt its semantics
 
-These are CLI-flag-only renames — their schema keys already match, so they add NO schema-key renames beyond the locked `languageCode` / `waitForDynamicContentSecs`. Enum VALUES stay locked kebab-case.
+- `maxCrawlPages` → `maxRequestsPerCrawl` — Crawlee `BasicCrawlerOptions.maxRequestsPerCrawl`. Counts requests (retries + redirects), not pages. Pass through to Crawlee's native option; update the description.
+- `renderingTypeDetectionPercentage` → `renderingTypeDetectionRatio` — Crawlee `AdaptivePlaywrightCrawlerOptions.renderingTypeDetectionRatio`. 0–1 ratio (default `0.1`), not a 0–100 percentage. See the Zod type change in Step SCHEMA.
+
+### Already match Crawlee — keep, do NOT rename
+
+`maxConcurrency`, `maxRequestRetries`, `maxSessionRotations`, `maxCrawlDepth`, `respectRobotsTxtFile`, `proxyConfiguration`, `headless`, `userAgent`, and the `waitUntil` values are Crawlee/Playwright names already. The CLI flag `--crawl-depth` → `--max-crawl-depth` rename for the already-aligned `maxCrawlDepth` key still applies (flag clarity; see Step CLI).
+
+### No Crawlee equivalent — keep contextractor/extraction names
+
+These are WCC-layer, contextractor-orchestration, or extraction (trafilatura) concepts with no Crawlee option, so they keep their current names: `maxResultsPerCrawl`, `waitForDynamicContentSecs` (renamed from `dynamicContentWaitSecs` for the `--wait-for-*` family), `sessionPoolName`, `blockMedia`, `closeCookieModals`, `initialCookies`, `customHttpHeaders`, `ignoreCorsAndCsp` (Crawlee only surfaces CSP via `launchOptions.bypassCSP`, not CORS — keep the accurate combined name), `useSitemaps`, `crawlerType`, `storeSkippedUrls`, `initialConcurrency` (kept over Crawlee's `desiredConcurrency` for clarity), `proxyRotation`, `mode`, `includeComments`/`includeTables`/`includeImages`/`includeLinks`, `languageCode`, `save`, `saveDestination`, `deduplication`, `datasetName`/`keyValueStoreName`/`requestQueueName`, `startUrls`, `waitForSelector`, `softWaitForSelector`.
+
+### Output / dataset record shape — no change
+
+The dataset record shape (`url`, `metadata`, `crawl`, per-format `ContentNode`s) and the Apify dataset/output schemas are contextractor-defined — Crawlee does not dictate dataset item structure. Leave them as-is; the metadata field is already `languageCode`, which matches the renamed input key. The four `.actor/*.json` schemas are regenerated from Zod by `gen-input-schema` (Step BUILD-DOCS), so output-side field names track the input rename automatically where they overlap.
 
 ### Considered and rejected (do NOT apply — researched)
 
-- `--max-retries` → `--max-request-retries`: REJECTED. `--max-retries` is the idiomatic form (curl `--retry`, wget `--tries`, kubectl `--retries`, AWS SDK `max_attempts`); the longer form adds no clarity and violates clig.dev "prefer shorter when unambiguous." Keep `--max-retries`.
-- `--respect-robots-txt` → `--respect-robots-txt-file`: REJECTED. No CLI tool appends `-file` to a robots flag (wget2 `--robots`/`--no-robots`; Scrapy `ROBOTSTXT_OBEY`); `respectRobotsTxtFile` exists only as Crawlee's internal object key, not a CLI convention. Keep `--respect-robots-txt`.
+- `initialConcurrency` → `desiredConcurrency`: REJECTED (per locked fork) — `initialConcurrency` is clearer to users than Crawlee's autoscaler term.
 - `--save` → `--format`: REJECTED. The `save` enum includes `original` (raw source), which is NOT a format — folding a raw passthrough into a format enum is a category error with no precedent in comparable tools (ffmpeg keeps `-c copy` separate from `-f`; yt-dlp keeps `--write-pages` separate from `--format`; trafilatura's `--output-format` has no `original` value). Under the verb `--save`, `original` reads correctly. Keep `--save` and its schema key `save` unchanged.
+- `--max-retries` → `--max-request-retries`, `--respect-robots-txt` → `--respect-robots-txt-file`: REJECTED — both add length without clarity; `--max-retries` and `--respect-robots-txt` are the idiomatic CLI forms. (The schema keys `maxRequestRetries` / `respectRobotsTxtFile` already match Crawlee and stay; only the CLI flags keep the short idiomatic spelling.)
 
 ---
 
@@ -84,18 +110,19 @@ These are CLI-flag-only renames — their schema keys already match, so they add
 
 Files: `apps/standalone/src/cliProgram.ts`, `apps/standalone/src/config.ts`
 
-- In `addExtractionOptions` (≈ lines 142-284):
-  - `--target-language <lang>` → `--language <lang>`.
-  - `--dynamic-content-wait <seconds>` → `--wait-for-dynamic-content <seconds>`.
-  - `--rendering-detection-pct <n>` → `--rendering-type-detection <percentage>`.
-  - Apply every flag rename in the Step PARAM-AUDIT decided set. Mind commander's derived prop names: e.g. `--include-url-globs` → `opts.includeUrlGlobs`, `--exclude-url-globs` → `opts.excludeUrlGlobs`, `--max-crawl-pages` → `opts.maxCrawlPages`, `--max-crawl-depth` → `opts.maxCrawlDepth`, `--ignore-cors-and-csp` → `opts.ignoreCorsAndCsp`, `--language` → `opts.language`, `--wait-for-dynamic-content` → `opts.waitForDynamicContent`, `--rendering-type-detection` → `opts.renderingTypeDetection`.
+- In `addExtractionOptions` (≈ lines 142-284), apply these flag renames (CLI flags are a separate kebab-case surface — they mirror the schema key but keep the short idiomatic CLI spelling where one exists):
+  - Crawlee-aligned: `--glob` → `--globs` (→ `globs`); `--link-selector` → `--selector` (→ `selector`); `--max-pages` → `--max-requests-per-crawl` (→ `maxRequestsPerCrawl`); `--page-load-timeout <secs>` → `--navigation-timeout <secs>` (→ `navigationTimeoutSecs`); `--keep-url-fragments` → `--keep-url-fragment` (→ `keepUrlFragment`); `--ignore-ssl-errors` → `--ignore-https-errors` (→ `ignoreHttpsErrors`); `--rendering-detection-pct <n>` → `--rendering-type-detection <ratio>` (→ `renderingTypeDetectionRatio`, 0–1). KEEP `--exclude` (now → `exclude`) and `--max-scroll-height` (now → `maxScrollHeight`) — flag names already fine.
+  - Clarity (kept from prior decisions): `--ignore-cors` → `--ignore-cors-and-csp` (→ `ignoreCorsAndCsp`); `--crawl-depth` → `--max-crawl-depth` (→ `maxCrawlDepth`).
+  - Extraction: `--target-language <lang>` → `--language <lang>` (→ `languageCode`); `--dynamic-content-wait <seconds>` → `--wait-for-dynamic-content <seconds>` (→ `waitForDynamicContentSecs`).
+  - KEEP `--max-retries` and `--respect-robots-txt` (idiomatic CLI spellings; schema keys `maxRequestRetries`/`respectRobotsTxtFile` already match Crawlee).
+  - Mind commander's derived prop names: `--globs` → `opts.globs`, `--selector` → `opts.selector`, `--max-requests-per-crawl` → `opts.maxRequestsPerCrawl`, `--navigation-timeout` → `opts.navigationTimeout`, `--keep-url-fragment` → `opts.keepUrlFragment`, `--ignore-https-errors` → `opts.ignoreHttpsErrors`, `--rendering-type-detection` → `opts.renderingTypeDetection`, `--ignore-cors-and-csp` → `opts.ignoreCorsAndCsp`, `--language` → `opts.language`, `--wait-for-dynamic-content` → `opts.waitForDynamicContent`.
 - On the `extract` command (and `export`, see below) add the storage trio:
   - keep `--dataset <name>` → `datasetName`,
   - add `--key-value-store <name>` → `keyValueStoreName`,
   - add `--request-queue <name>` → `requestQueueName`.
-- Update `buildSchemaOverrides()` (≈ lines 317-404) so each renamed flag prop maps to its schema key (e.g. `opts.includeUrlGlobs` → `includeUrlGlobs`, `opts.excludeUrlGlobs` → `excludeUrlGlobs`, `opts.maxCrawlPages` → `maxCrawlPages`, `opts.ignoreCorsAndCsp` → `ignoreCorsAndCsp`), and the new storage flags map to `keyValueStoreName` / `requestQueueName`.
+- Update `buildSchemaOverrides()` (≈ lines 317-404) so each renamed flag prop maps to its renamed schema key (e.g. `opts.globs` → `globs`, `opts.selector` → `selector`, `opts.maxRequestsPerCrawl` → `maxRequestsPerCrawl`, `opts.navigationTimeout` → `navigationTimeoutSecs`, `opts.renderingTypeDetection` → `renderingTypeDetectionRatio`), and the new storage flags map to `keyValueStoreName` / `requestQueueName`.
 - Update any commander option types / interfaces (`ExtractOpts`, etc.) for the renames.
-- In `apps/standalone/src/config.ts` (`buildCrawlConfig`), change the schema-read sites for the locked schema-key renames — `input.targetLanguage` → `input.languageCode` (≈ line 146) and `input.dynamicContentWaitSecs` → `input.waitForDynamicContentSecs` (≈ line 137). KEEP the internal `CrawlConfig` field names unchanged (`targetLanguage`, `dynamicContentWaitSecs`) so the crawler/native boundary stays untouched — see Step BOUNDARY.
+- In `apps/standalone/src/config.ts` (`buildCrawlConfig`), update the schema-read sites for every renamed key (`input.globs`, `input.exclude`, `input.selector`, `input.maxRequestsPerCrawl`, `input.navigationTimeoutSecs`, `input.maxScrollHeight`, `input.keepUrlFragment`, `input.ignoreHttpsErrors`, `input.renderingTypeDetectionRatio`, `input.languageCode`, `input.waitForDynamicContentSecs`). Adopt the Crawlee names in the internal crawler-layer config/options too (see Step BOUNDARY) so the mapping to Crawlee is a near pass-through; extraction-layer internals (`targetLanguage` feeding the wrapper) stay per the native boundary.
 
 ---
 
@@ -136,19 +163,19 @@ This replaces the deleted `kvs`/`list`/`get` read paths.
 
 ---
 
-## Step BOUNDARY: Keep extraction-param renames on the TypeScript side
+## Step BOUNDARY: Crawler-layer matches Crawlee; extraction-layer stays at the wrapper
 
-Per `.claude/rules/native-addon-boundary.md` (reinforced by `prompts/2026-06-01-trafilatura-config-wrapper-isolation`):
+Two layers, two authorities. Crawler-layer params (those that flow into Crawlee) adopt Crawlee names through to the library-facing options; extraction-layer params (those that flow into the trafilatura wrapper) keep the wrapper's names per `.claude/rules/native-addon-boundary.md` (reinforced by `prompts/2026-06-01-trafilatura-config-wrapper-isolation`).
 
-- Do NOT touch `packages/extraction/native/src/lib.rs` (keeps `target_language`) or the extraction package's `TrafilaturaConfig` (mirrors upstream `targetLanguage`).
-- For `languageCode`: rename the schema key, the CLI flag, the Apify input field, and the schema→config mapping. The translation to the wrapper stays at the existing point — `toTrafilaturaConfig` in `packages/crawler/src/createCrawler.ts` maps the schema-derived option to `TrafilaturaConfig.targetLanguage`; `toNativeConfig` in `packages/extraction/src/index.ts` is untouched.
+- **Crawler-layer (match Crawlee end-to-end)**: adopt the Crawlee names in the library-facing crawler options (`ContextractorCrawlerOptions` in `packages/crawler/src/createCrawler.ts`) and the internal `CrawlConfig`, so passing them to Crawlee is a near pass-through. In `createCrawler`, map `renderingTypeDetectionRatio` straight to the adaptive crawler's `renderingTypeDetectionRatio` (remove any `/100` conversion) and `maxRequestsPerCrawl` straight to `BasicCrawlerOptions.maxRequestsPerCrawl` (drop any custom page counter).
+- **Extraction-layer (do NOT cross the native edge)**: do NOT touch `packages/extraction/native/src/lib.rs` (keeps `target_language`) or the extraction package's `TrafilaturaConfig` (mirrors upstream `targetLanguage`). For `languageCode`: rename the schema key, the CLI flag, the Apify input field, and the schema→config mapping; the translation to the wrapper stays at the existing point — `toTrafilaturaConfig` in `createCrawler.ts` maps the schema-derived option to `TrafilaturaConfig.targetLanguage`; `toNativeConfig` in `packages/extraction/src/index.ts` is untouched.
 
 ---
 
 ## Step STALE-PURGE: Remove stale docs and stale flag usage
 
 - `apps/standalone/SPEC.md` (≈ line 37): the `--deduplication` doc shows stale `minimal`/`basic`/`full` (default `basic`). Replace with the real schema: `none | url | content-hash` (default `url`).
-- `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection`, `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-crawl-pages`, and any other flag in the Step PARAM-AUDIT decided set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication none`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
+- `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection` (value now 0–1), `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-requests-per-crawl`, and any other flag in the Step CRAWLEE-ALIGN set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication none`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
 - `examples/library-ts/src/main.ts`: fix `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--ignore-canonical-url` → `--deduplication none`, and the import path (see PACKAGE-RENAME). The `Dataset`/`KeyValueStore` read-back stays valid.
 - Tiered proxy (removed in `prompts/2026-05-26-drop-tiered-proxy`): purge `tieredProxyUrls`/`tieredProxyConfig` references from `tools/proxy-rotation-tester/README.md`, `tools/proxy-rotation-tester/src/lib.test.ts`, and `.claude/commands/proxy-test.md`.
 - Removed `--save jsonl` format (dropped in `prompts/2026-05-12-remove-jsonl-saving`): purge from `.claude/commands/autonomous/maintenance/sync/docs.md`. Since the `list` subcommand is now deleted, the `list --format jsonl` carve-out in that doc is also moot — remove it.
@@ -181,7 +208,7 @@ pnpm docs:update
 ```
 
 - Confirm the `@generated` regions in `apps/standalone/README.md` (`cli-flags`, `enum-values`) reflect the renamed flags and the new storage/export flags.
-- Confirm `apps/apify-actor/.actor/input_schema.json` (and the Actor README `@generated` regions) show `languageCode`, `waitForDynamicContentSecs`, and any audit renames — and no old keys.
+- Confirm `apps/apify-actor/.actor/input_schema.json` (and the Actor README `@generated` regions) show the Crawlee-aligned keys (`globs`, `exclude`, `selector`, `maxRequestsPerCrawl`, `renderingTypeDetectionRatio`, `navigationTimeoutSecs`, `maxScrollHeight`, `keepUrlFragment`, `ignoreHttpsErrors`) plus `languageCode` / `waitForDynamicContentSecs` — and NO old keys.
 - A second `pnpm docs:update` must leave NO diff.
 
 ---
@@ -192,9 +219,9 @@ Update only affected sections (`minimal-diff`):
 
 - root `SPEC.md` — package name, brief surface description.
 - `apps/standalone/SPEC.md` — renamed flags, deleted subcommands, new `export` command, new storage flags, corrected `--deduplication` values, package name.
-- `apps/apify-actor/SPEC.md` — renamed Actor input fields.
-- `packages/schema/SPEC.md` — renamed keys.
-- `packages/crawler/SPEC.md` — the `deduplication?: 'minimal' | 'basic' | 'full'` at ≈ line 62 describes the INTERNAL crawler API, not the user schema. Read the code before editing; change it ONLY if the internal API actually changed.
+- `apps/apify-actor/SPEC.md` — renamed Actor input fields (Crawlee-aligned keys).
+- `packages/schema/SPEC.md` — renamed keys (Crawlee alignment + the two semantic changes).
+- `packages/crawler/SPEC.md` — update the library-facing crawler options (`ContextractorCrawlerOptions`) to the Crawlee-aligned names. Note: the `deduplication?: 'minimal' | 'basic' | 'full'` at ≈ line 62 describes the INTERNAL crawler API, not the user schema. Read the code before editing; change it ONLY if the internal API actually changed.
 
 ---
 
@@ -203,7 +230,8 @@ Update only affected sections (`minimal-diff`):
 Per `.claude/rules/test-maintenance.md` (`apps/standalone/src/*.test.ts`):
 
 - Add tests for the new `export` command: KVS-blob path (default destination) and inline `content` path (dataset destination), readable filename derivation, manifest emission, collision handling (`html` vs `original` → `.html`), and the empty-dataset case.
-- Update flag tests for all renames (the three locked renames + the Step PARAM-AUDIT decided set) plus the new storage flags (`--key-value-store`, `--request-queue`).
+- Update flag tests for all renames (the Step CRAWLEE-ALIGN set + the extraction/clarity renames) plus the new storage flags (`--key-value-store`, `--request-queue`).
+- Add/adjust tests for the two semantic changes: `renderingTypeDetectionRatio` accepts a 0–1 value (and rejects >1) and `maxRequestsPerCrawl` maps to Crawlee's request count.
 - Remove tests for the deleted `list`/`get`/`kvs`/`storage-dir` subcommands.
 - Update any schema/snapshot tests referencing the renamed keys.
 
@@ -223,13 +251,13 @@ cargo clippy --workspace --all-targets -- -D warnings
 npx knip --reporter compact   # confirm no dead code left by the deleted subcommands
 ```
 
-Catch-all grep for stragglers — must return ONLY the intentional native-boundary keepers (`packages/extraction/native`, `TrafilaturaConfig`, `toTrafilaturaConfig`, `toNativeConfig`):
+Catch-all grep for stragglers — must return ONLY the intentional native-boundary keepers (`packages/extraction/native`, `TrafilaturaConfig`, `toTrafilaturaConfig`, `toNativeConfig` keep `targetLanguage`):
 
 ```bash
-rg -n 'targetLanguage|dynamicContentWaitSecs|--target-language|--dynamic-content-wait|--rendering-detection-pct|@contextractor/standalone'
+rg -n 'targetLanguage|dynamicContentWaitSecs|renderingTypeDetectionPercentage|includeUrlGlobs|excludeUrlGlobs|linkSelector|maxCrawlPages|pageLoadTimeoutSecs|maxScrollHeightPixels|keepUrlFragments|ignoreSslErrors|--target-language|--dynamic-content-wait|--rendering-detection-pct|--max-pages|--page-load-timeout|--ignore-ssl-errors|--keep-url-fragments|--link-selector|@contextractor/standalone'
 ```
 
-Also grep `apps/apify-actor/src` for `targetLanguage` / `dynamicContentWaitSecs` read sites and update any Actor-side input mapping to the renamed keys (`languageCode` / `waitForDynamicContentSecs`).
+Also grep `apps/apify-actor/src` for any read sites of the renamed keys and update any Actor-side input mapping to the new Crawlee-aligned keys (and `languageCode` / `waitForDynamicContentSecs`).
 
 End-to-end smoke (real content files must appear):
 
