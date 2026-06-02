@@ -1,4 +1,4 @@
-> **TLDR**: Make the contextractor CLI, lib, and Apify Actor consistent and clean, and align crawler-layer parameter names with **Crawlee** (the framework underneath) — the source of truth. Rename schema keys deep through the Zod source of truth to match Crawlee's option names (incl. two semantic changes: `maxRequestsPerCrawl` request-counting and `renderingTypeDetectionRatio` 0–1), plus the locked extraction/clarity renames; expose the full storage-name trio as flags; delete the low-value `list`/`get`/`kvs`/`storage-dir` subcommands and add a real `export` command that writes stored content to a user output directory; rename the published package to `contextractor`; purge stale docs (deduplication enum, tiered proxy, `--save jsonl`, redundant default flags); then rebuild, regenerate `@generated` docs + the Apify input schema, sync all SPECs, deep-test, and autofix until green.
+> **TLDR**: Make the contextractor CLI, lib, and Apify Actor consistent and clean, and align crawler-layer parameter names with **Crawlee** (the framework underneath) — the source of truth. Rename schema keys deep through the Zod source of truth to match Crawlee's option names (incl. two semantic changes: `maxRequestsPerCrawl` final-page-counting and `renderingTypeDetectionRatio` 0–1), plus the locked extraction/clarity renames; expose the full storage-name trio as flags; delete the low-value `list`/`get`/`kvs`/`storage-dir` subcommands and add a real `export` command that writes stored content to a user output directory; rename the published package to `contextractor`; purge stale docs (deduplication enum, tiered proxy, `--save jsonl`, redundant default flags); then rebuild, regenerate `@generated` docs + the Apify input schema, sync all SPECs, deep-test, and autofix until green.
 
 ## Context
 
@@ -56,7 +56,7 @@ Apply ALL of these key renames (see Step CRAWLEE-ALIGN for the rationale per fie
   - `keepUrlFragments` (≈ lines 97-103) → `keepUrlFragment`
   - `ignoreSslErrors` (≈ lines 485-489) → `ignoreHttpsErrors`
 - Crawlee-name renames WITH a semantic/validation change:
-  - `maxCrawlPages` (≈ lines 162-169) → `maxRequestsPerCrawl`. Update the description to say it counts **requests** (retries and redirects count), not pages, and that it maps to Crawlee's native `maxRequestsPerCrawl`. The implementation must pass this straight to Crawlee's `BasicCrawlerOptions.maxRequestsPerCrawl` (verify `createCrawler`/`config` and switch any page-counting logic to Crawlee's request count). Keep `.int().min(0).default(0)` (0 = unlimited).
+  - `maxCrawlPages` (≈ lines 162-169) → `maxRequestsPerCrawl`. Update the description to reflect Crawlee's model: it counts **handled page outcomes** (successes and final failures), not retry attempts. Keep the intent (maximum pages to process) but remove any language implying "retries and redirects count as separate requests." The implementation must pass this straight to Crawlee's `BasicCrawlerOptions.maxRequestsPerCrawl`. Keep `.int().min(0).default(0)` (0 = unlimited).
   - `renderingTypeDetectionPercentage` (≈ lines 56-64) → `renderingTypeDetectionRatio`. Change the Zod type from `z.int().min(0).max(100).default(10)` to `z.number().min(0).max(1).default(0.1)`; drop the `unit: '%'` meta; rewrite the description for a 0–1 ratio. The mapping in `createCrawler` must pass the ratio straight to the adaptive crawler's `renderingTypeDetectionRatio` (remove any `/100` conversion).
 - Extraction / clarity renames (key only):
   - `targetLanguage` (≈ lines 256-262) → `languageCode`.
@@ -76,10 +76,10 @@ Authority order: **Crawlee** (the framework) for crawler-layer params → extrac
 - `includeUrlGlobs` → `globs` — Crawlee `EnqueueLinksOptions.globs`.
 - `excludeUrlGlobs` → `exclude` — Crawlee `EnqueueLinksOptions.exclude`.
 - `linkSelector` → `selector` — Crawlee `EnqueueLinksOptions.selector`.
-- `pageLoadTimeoutSecs` → `navigationTimeoutSecs` — Crawlee `BrowserCrawlerOptions.navigationTimeoutSecs`.
+- `pageLoadTimeoutSecs` → `navigationTimeoutSecs` — Crawlee `BrowserCrawlerOptions.navigationTimeoutSecs`. Note: the current implementation also maps the same value to `requestHandlerTimeoutSecs`; preserve both mappings during the rename.
 - `maxScrollHeightPixels` → `maxScrollHeight` — Crawlee `infiniteScroll` `maxScrollHeight` (px).
 - `keepUrlFragments` → `keepUrlFragment` — Crawlee `RequestOptions.keepUrlFragment` (singular).
-- `ignoreSslErrors` → `ignoreHttpsErrors` — Playwright/Crawlee `launchOptions.ignoreHTTPSErrors`.
+- `ignoreSslErrors` → `ignoreHttpsErrors` — maps to Playwright's `launchOptions.ignoreHTTPSErrors` (Crawlee does not expose this option directly on crawler options, only via launch context).
 
 ### Rename to Crawlee's name AND adopt its semantics
 
@@ -167,7 +167,11 @@ This replaces the deleted `kvs`/`list`/`get` read paths.
 
 Two layers, two authorities. Crawler-layer params (those that flow into Crawlee) adopt Crawlee names through to the library-facing options; extraction-layer params (those that flow into the trafilatura wrapper) keep the wrapper's names per `.claude/rules/native-addon-boundary.md` (reinforced by `prompts/2026-06-01-trafilatura-config-wrapper-isolation`).
 
-- **Crawler-layer (match Crawlee end-to-end)**: adopt the Crawlee names in the library-facing crawler options (`ContextractorCrawlerOptions` in `packages/crawler/src/createCrawler.ts`) and the internal `CrawlConfig`, so passing them to Crawlee is a near pass-through. In `createCrawler`, map `renderingTypeDetectionRatio` straight to the adaptive crawler's `renderingTypeDetectionRatio` (remove any `/100` conversion) and `maxRequestsPerCrawl` straight to `BasicCrawlerOptions.maxRequestsPerCrawl` (drop any custom page counter).
+- **Crawler-layer (match Crawlee end-to-end)**: adopt the Crawlee names in the library-facing crawler options (`ContextractorCrawlerOptions` in `packages/crawler/src/createCrawler.ts`) and the internal `CrawlConfig`, so passing them to Crawlee is a near pass-through. This includes renaming library-layer fields:
+  - `maxCrawlingDepth` → `maxCrawlDepth` (to match Crawlee's `BasicCrawlerOptions.maxCrawlDepth`)
+  - `excludes` → `exclude` (plural to singular, to match Crawlee's `EnqueueLinksOptions.exclude`)
+  - Any other field names that diverge from their Crawlee counterparts — grep the handler and crawler files for names that conflict.
+  - In `createCrawler`, map `renderingTypeDetectionRatio` straight to the adaptive crawler's `renderingTypeDetectionRatio` (remove any `/100` conversion) and `maxRequestsPerCrawl` straight to `BasicCrawlerOptions.maxRequestsPerCrawl`.
 - **Extraction-layer (do NOT cross the native edge)**: do NOT touch `packages/extraction/native/src/lib.rs` (keeps `target_language`) or the extraction package's `TrafilaturaConfig` (mirrors upstream `targetLanguage`). For `languageCode`: rename the schema key, the CLI flag, the Apify input field, and the schema→config mapping; the translation to the wrapper stays at the existing point — `toTrafilaturaConfig` in `createCrawler.ts` maps the schema-derived option to `TrafilaturaConfig.targetLanguage`; `toNativeConfig` in `packages/extraction/src/index.ts` is untouched.
 
 ---
@@ -184,7 +188,7 @@ Two layers, two authorities. Crawler-layer params (those that flow into Crawlee)
 
 ## Step PACKAGE-RENAME: `@contextractor/standalone` → `contextractor`
 
-The published npm package is `contextractor` (https://www.npmjs.com/package/contextractor); the workspace package name was wrong.
+The published npm package should be `contextractor` (verify ownership at https://www.npmjs.com/package/contextractor before starting); the workspace package name is currently wrong at `@contextractor/standalone`.
 
 - `apps/standalone/package.json`: set `"name": "contextractor"`, remove `"private": true`, keep `version` and `bin.contextractor`.
 - Update every internal reference:
@@ -221,7 +225,7 @@ Update only affected sections (`minimal-diff`):
 - `apps/standalone/SPEC.md` — renamed flags, deleted subcommands, new `export` command, new storage flags, corrected `--deduplication` values, package name.
 - `apps/apify-actor/SPEC.md` — renamed Actor input fields (Crawlee-aligned keys).
 - `packages/schema/SPEC.md` — renamed keys (Crawlee alignment + the two semantic changes).
-- `packages/crawler/SPEC.md` — update the library-facing crawler options (`ContextractorCrawlerOptions`) to the Crawlee-aligned names. Note: the `deduplication?: 'minimal' | 'basic' | 'full'` at ≈ line 62 describes the INTERNAL crawler API, not the user schema. Read the code before editing; change it ONLY if the internal API actually changed.
+- `packages/crawler/SPEC.md` — update the library-facing crawler options (`ContextractorCrawlerOptions`) to the Crawlee-aligned names. The `deduplication?: 'minimal' | 'basic' | 'full'` at ≈ line 62 is already stale — the code uses `'none' | 'url' | 'content-hash'` (see `createCrawler.ts` line 91). Update it to match the code.
 
 ---
 
