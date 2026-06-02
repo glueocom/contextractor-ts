@@ -12,7 +12,8 @@ review CLI commands and documentation and also documentation and readme files: w
 
     - `  --dynamic-content-wait <seconds>     Seconds to wait for network idle after navigation (0 = disabled)` - consider renaming to `--wait-for-dynamic-content`, because there is another parameter `--wait-for-selector` so lets make it consistent
 
-- do not put any fluff text to the code examples at "macOS / Linux — run.sh": `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-06-02-cli-defaults-consistency/meta/contextractor-playground-generated-commands.png` - do not put any calling of the list command. instead put there a command that exports data from the storage foe the user.
+- do not put any fluff text to the code examples at "macOS / Linux — run.sh": `/Users/miroslavsekera/r/contextractor-ts/prompts/2026-06-02-cli-defaults-consistency/meta/contextractor-playground-generated-commands.png` - do not put any calling of the list command. instead put there a command that exports data from the storage foe the user. also `npm install @contextractor/standalone
+` seems wrong, the package name is contextractor. it is the documentation for end users, the NPM package is living at https://www.npmjs.com/package/contextractor
 
 - consider renaming `--target-language` so something like "filter by langauage" etc. -do deepo ressearch what is inustry standard name.
 
