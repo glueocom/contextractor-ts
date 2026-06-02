@@ -51,17 +51,17 @@ is generated from the schema at build time by
 interface ContextractorInputType {
   startUrls: Array<{ url: string }>;
   crawlerType: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
-  renderingTypeDetectionPercentage: number;
-  includeUrlGlobs: Array<{ glob: string }>;
-  excludeUrlGlobs: Array<{ glob: string }>;
-  linkSelector: string;
-  keepUrlFragments: boolean;
+  renderingTypeDetectionRatio: number;
+  globs: Array<{ glob: string }>;
+  exclude: Array<{ glob: string }>;
+  selector: string;
+  keepUrlFragment: boolean;
   useSitemaps: boolean;
   deduplication: 'none' | 'url' | 'content-hash';
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
-  maxCrawlPages: number;
+  maxRequestsPerCrawl: number;
   maxResultsPerCrawl: number;
   maxCrawlDepth: number;
   initialConcurrency: number;
@@ -72,7 +72,7 @@ interface ContextractorInputType {
   includeTables: boolean;
   includeImages: boolean;
   includeLinks: boolean;
-  targetLanguage: string;
+  languageCode: string;
   save: Array<'txt' | 'markdown' | 'json' | 'html' | 'original'>;
   saveDestination: Array<'key-value-store' | 'dataset'>;
   datasetName?: string;
@@ -83,18 +83,18 @@ interface ContextractorInputType {
   proxyRotation: 'recommended' | 'per-request' | 'until-failure';
   sessionPoolName?: string;
   maxSessionRotations: number;
-  pageLoadTimeoutSecs: number;
+  navigationTimeoutSecs: number;
   blockMedia: boolean;
   waitForSelector: string;
   softWaitForSelector: string;
-  dynamicContentWaitSecs: number;
+  waitForDynamicContentSecs: number;
   waitUntil: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   headless: boolean;
   ignoreCorsAndCsp: boolean;
   closeCookieModals: boolean;
-  maxScrollHeightPixels: number;
+  maxScrollHeight: number;
   userAgent: string;
-  ignoreSslErrors: boolean;
+  ignoreHttpsErrors: boolean;
 }
 ```
 

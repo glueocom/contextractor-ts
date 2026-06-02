@@ -10,11 +10,11 @@ describe('emitters', () => {
     expect(out).toContain('_required_');
   });
 
-  it('cli-flags lists Commander flags including --max-pages', () => {
+  it('cli-flags lists Commander flags including --max-requests-per-crawl', () => {
     const out = emitters['cli-flags']?.();
     expect(out).toBeDefined();
     expect(out).toContain('| Option | Description |');
-    expect(out).toContain('`--max-pages`');
+    expect(out).toContain('`--max-requests-per-crawl`');
     expect(out).toContain('`--config`');
   });
 

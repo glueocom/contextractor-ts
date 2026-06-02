@@ -40,7 +40,7 @@ COPY tools/gen-md-regions/ tools/gen-md-regions/
 RUN pnpm --filter @contextractor/schema build \
     && pnpm --filter @contextractor/extraction build \
     && pnpm --filter @contextractor/crawler build \
-    && pnpm --filter @contextractor/standalone build \
+    && pnpm --filter contextractor build \
     && pnpm --filter @contextractor/apify build \
     && pnpm --filter @contextractor/apify --prod deploy /deploy
 

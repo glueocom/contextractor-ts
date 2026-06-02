@@ -7,8 +7,8 @@
         "dataset"
     ],
     "maxRequestRetries": 3,
-    "pageLoadTimeoutSecs": 60,
-    "maxCrawlPages": 10,
+    "navigationTimeoutSecs": 60,
+    "maxRequestsPerCrawl": 10,
     "maxCrawlDepth": 1,
-    "linkSelector": "a[href]"
+    "selector": "a[href]"
 }

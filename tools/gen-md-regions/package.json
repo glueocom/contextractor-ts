@@ -16,8 +16,8 @@
   },
   "dependencies": {
     "@contextractor/schema": "workspace:*",
-    "@contextractor/standalone": "workspace:*",
     "commander": "^15.0.0",
+    "contextractor": "workspace:*",
     "zod": "^4.4.3"
   },
   "devDependencies": {

@@ -34,15 +34,15 @@ export interface ContextractorCrawlerOptions {
   includeTables?: boolean;
   includeImages?: boolean;
   includeLinks?: boolean;
-  targetLanguage?: string;
+  languageCode?: string;
   scroll?: ScrollConfig;
   cookieStrategy?: 'ghostery' | 'autoconsent' | 'none';
   sessionPool?: boolean | SessionPoolOptions;
-  maxPages?: number;
+  maxRequestsPerCrawl?: number;
   maxRetries?: number;
   initialConcurrency?: number;
   maxConcurrency?: number;
-  pageLoadTimeoutSecs?: number;
+  navigationTimeoutSecs?: number;
   /**
    * Navigation lifecycle event to wait for in `page.goto`.
    * Forwarded to Crawlee via `preNavigationHooks` → `gotoOptions.waitUntil`.
@@ -51,18 +51,18 @@ export interface ContextractorCrawlerOptions {
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   headless?: boolean;
   crawlerType?: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
-  renderingTypeDetectionPercentage?: number;
-  ignoreSslErrors?: boolean;
+  renderingTypeDetectionRatio?: number;
+  ignoreHttpsErrors?: boolean;
   bypassCSP?: boolean;
   initialCookies?: unknown[];
   extraHTTPHeaders?: Record<string, string>;
   userAgent?: string;
-  linkSelector?: string;
-  maxCrawlingDepth?: number;
+  selector?: string;
+  maxCrawlDepth?: number;
   maxResults?: number;
   globs?: string[];
-  excludes?: string[];
-  keepUrlFragments?: boolean;
+  exclude?: string[];
+  keepUrlFragment?: boolean;
   proxyConfiguration?: ProxyConfiguration;
   /**
    * Proxy rotation strategy. Maps to Crawlee `sessionPoolOptions`.
@@ -78,7 +78,7 @@ export interface ContextractorCrawlerOptions {
   requestList?: SitemapRequestList;
   blockMedia?: boolean;
   respectRobotsTxt?: boolean;
-  dynamicContentWaitSecs?: number;
+  waitForDynamicContentSecs?: number;
   waitForSelector?: string;
   softWaitForSelector?: string;
   onFailedRequest?: (info: {
@@ -103,8 +103,8 @@ function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConf
     includeLinks: opts.includeLinks ?? DEFAULT_CONFIG.includeLinks,
     deduplicate: false,
     targetLanguage:
-      opts.targetLanguage !== undefined && opts.targetLanguage !== ''
-        ? opts.targetLanguage
+      opts.languageCode !== undefined && opts.languageCode !== ''
+        ? opts.languageCode
         : DEFAULT_CONFIG.targetLanguage,
     withMetadata: true,
     onlyWithMetadata: false,
@@ -147,11 +147,11 @@ export function createContextractorCrawler(
       sink: opts.sink,
       formats,
       maxResults: opts.maxResults,
-      linkSelector: opts.linkSelector,
-      maxCrawlingDepth: opts.maxCrawlingDepth,
+      selector: opts.selector,
+      maxCrawlDepth: opts.maxCrawlDepth,
       globs: opts.globs,
-      excludes: opts.excludes,
-      keepUrlFragments: opts.keepUrlFragments,
+      exclude: opts.exclude,
+      keepUrlFragment: opts.keepUrlFragment,
       onSkippedUrl: opts.onSkippedUrl,
       deduplication,
       seenCanonicals,
@@ -167,13 +167,16 @@ export function createContextractorCrawler(
       ...(Object.keys(cheerioSessionPoolOpts).length > 0
         ? { sessionPoolOptions: cheerioSessionPoolOpts }
         : {}),
-      maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
+      maxRequestsPerCrawl:
+        opts.maxRequestsPerCrawl && opts.maxRequestsPerCrawl > 0
+          ? opts.maxRequestsPerCrawl
+          : undefined,
       maxRequestRetries: opts.maxRetries ?? 3,
       maxSessionRotations: opts.maxSessionRotations ?? 10,
       ...(opts.initialConcurrency ? { minConcurrency: opts.initialConcurrency } : {}),
       ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
-      ...(opts.pageLoadTimeoutSecs !== undefined
-        ? { requestHandlerTimeoutSecs: opts.pageLoadTimeoutSecs }
+      ...(opts.navigationTimeoutSecs !== undefined
+        ? { requestHandlerTimeoutSecs: opts.navigationTimeoutSecs }
         : {}),
       ...(opts.respectRobotsTxt !== undefined
         ? { respectRobotsTxtFile: opts.respectRobotsTxt }
@@ -203,7 +206,7 @@ export function createContextractorCrawler(
 
   const launchOptions = buildBrowserLaunchOptions({
     launcher,
-    ignoreSslErrors: opts.ignoreSslErrors,
+    ignoreHttpsErrors: opts.ignoreHttpsErrors,
   });
 
   const useSessionPool = opts.sessionPool !== false;
@@ -250,15 +253,18 @@ export function createContextractorCrawler(
     useSessionPool,
     persistCookiesPerSession: useSessionPool,
     sessionPoolOptions,
-    maxRequestsPerCrawl: opts.maxPages && opts.maxPages > 0 ? opts.maxPages : undefined,
+    maxRequestsPerCrawl:
+      opts.maxRequestsPerCrawl && opts.maxRequestsPerCrawl > 0
+        ? opts.maxRequestsPerCrawl
+        : undefined,
     maxRequestRetries: opts.maxRetries ?? 3,
     maxSessionRotations: opts.maxSessionRotations ?? 10,
     ...(opts.initialConcurrency ? { minConcurrency: opts.initialConcurrency } : {}),
     ...(opts.maxConcurrency !== undefined ? { maxConcurrency: opts.maxConcurrency } : {}),
-    ...(opts.pageLoadTimeoutSecs !== undefined
+    ...(opts.navigationTimeoutSecs !== undefined
       ? {
-          requestHandlerTimeoutSecs: opts.pageLoadTimeoutSecs,
-          navigationTimeoutSecs: opts.pageLoadTimeoutSecs,
+          requestHandlerTimeoutSecs: opts.navigationTimeoutSecs,
+          navigationTimeoutSecs: opts.navigationTimeoutSecs,
         }
       : {}),
     ...(opts.respectRobotsTxt !== undefined ? { respectRobotsTxtFile: opts.respectRobotsTxt } : {}),
@@ -306,11 +312,11 @@ export function createContextractorCrawler(
       sink: opts.sink,
       formats,
       maxResults: opts.maxResults,
-      linkSelector: opts.linkSelector,
-      maxCrawlingDepth: opts.maxCrawlingDepth,
+      selector: opts.selector,
+      maxCrawlDepth: opts.maxCrawlDepth,
       globs: opts.globs,
-      excludes: opts.excludes,
-      keepUrlFragments: opts.keepUrlFragments,
+      exclude: opts.exclude,
+      keepUrlFragment: opts.keepUrlFragment,
       onSkippedUrl: opts.onSkippedUrl,
       deduplication,
       seenCanonicals,
@@ -319,7 +325,7 @@ export function createContextractorCrawler(
     const adaptiveCrawler = new AdaptivePlaywrightCrawler({
       ...baseOptions,
       preventDirectStorageAccess: false,
-      renderingTypeDetectionRatio: (opts.renderingTypeDetectionPercentage ?? 10) / 100,
+      renderingTypeDetectionRatio: opts.renderingTypeDetectionRatio ?? 0.1,
       ...(adaptivePreHooks.length > 0 ? { preNavigationHooks: adaptivePreHooks } : {}),
       ...(adaptivePostHooks.length > 0 ? { postNavigationHooks: adaptivePostHooks } : {}),
       ...(opts.onFailedRequest
@@ -373,13 +379,13 @@ export function createContextractorCrawler(
     scroll: opts.scroll,
     formats,
     maxResults: opts.maxResults,
-    linkSelector: opts.linkSelector,
-    maxCrawlingDepth: opts.maxCrawlingDepth,
+    selector: opts.selector,
+    maxCrawlDepth: opts.maxCrawlDepth,
     globs: opts.globs,
-    excludes: opts.excludes,
-    keepUrlFragments: opts.keepUrlFragments,
+    exclude: opts.exclude,
+    keepUrlFragment: opts.keepUrlFragment,
     onSkippedUrl: opts.onSkippedUrl,
-    dynamicContentWaitSecs: opts.dynamicContentWaitSecs,
+    waitForDynamicContentSecs: opts.waitForDynamicContentSecs,
     waitForSelector: opts.waitForSelector,
     softWaitForSelector: opts.softWaitForSelector,
     deduplication,
@@ -408,6 +414,6 @@ export function createContextractorCrawler(
   return crawler;
 }
 
-export function buildRequests(startUrls: string[], keepUrlFragments = false): Request[] {
-  return startUrls.map((url) => new Request({ url, keepUrlFragment: keepUrlFragments }));
+export function buildRequests(startUrls: string[], keepUrlFragment = false): Request[] {
+  return startUrls.map((url) => new Request({ url, keepUrlFragment: keepUrlFragment }));
 }

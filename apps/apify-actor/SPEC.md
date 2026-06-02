@@ -37,7 +37,7 @@ Every record has a `status` field. Three record shapes are possible:
 
 ## Config
 
-`buildCrawlerOpts(input, sink, proxyConfig, requestQueue, proxyRotation?)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`. Passes `mode`, `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `targetLanguage`, `crawlerType`, `renderingTypeDetectionPercentage`, `blockMedia`, `initialConcurrency`, `dynamicContentWaitSecs`, `waitForSelector`, `softWaitForSelector`, `deduplication`, `sessionPoolName`, and `maxSessionRotations` directly from input.
+`buildCrawlerOpts(input, sink, proxyConfig, requestQueue, proxyRotation?)` maps `ContextractorInputType` → `ContextractorCrawlerOptions`. Passes `mode`, `includeComments`, `includeTables`, `includeImages`, `includeLinks`, `languageCode`, `crawlerType`, `renderingTypeDetectionRatio`, `blockMedia`, `initialConcurrency`, `waitForDynamicContentSecs`, `waitForSelector`, `softWaitForSelector`, `deduplication`, `sessionPoolName`, and `maxSessionRotations` directly from input.
 
 ## Proxy
 

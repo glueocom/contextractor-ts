@@ -58,8 +58,8 @@ export async function runActor(): Promise<void> {
     const sitemapUrls = [...new Set(startUrls.map((u) => `${new URL(u).origin}/sitemap.xml`))];
     sitemapList = await SitemapRequestList.open({
       sitemapUrls,
-      globs: input.includeUrlGlobs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
-      exclude: input.excludeUrlGlobs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+      globs: input.globs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+      exclude: input.exclude.map((g) => g.glob).filter((g): g is string => Boolean(g)),
     });
   }
 
@@ -77,6 +77,6 @@ export async function runActor(): Promise<void> {
         }
       : {}),
   });
-  await crawler.run(buildRequests(startUrls, input.keepUrlFragments));
+  await crawler.run(buildRequests(startUrls, input.keepUrlFragment));
   await Actor.exit();
 }

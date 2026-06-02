@@ -17,9 +17,9 @@ const run = await client.actor('glueo/contextractor-test').call({
   blockMedia: true,
   useSitemaps: true,
   storeSkippedUrls: true,
-  dynamicContentWaitSecs: 5,
+  waitForDynamicContentSecs: 5,
   waitForSelector: 'article',
-  ignoreCanonicalUrl: true,
+  deduplication: 'none',
 });
 
 console.log('Run finished:', run.status);

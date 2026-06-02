@@ -7,7 +7,7 @@ Contextractor crawls websites and extracts clean, readable main-content text. Bu
 Available as:
 
 - **Apify Actor** — `glueo/contextractor` on the Apify platform; output saved to the run's Key-Value Store + Dataset
-- **Standalone CLI** (`@contextractor/standalone`) — local TypeScript CLI; output written to disk and/or Crawlee storage (Dataset / KeyValueStore)
+- **Standalone CLI** (`contextractor`) — local TypeScript CLI; output written to disk and/or Crawlee storage (Dataset / KeyValueStore)
 - **Extraction library** (`@contextractor/extraction`) — embedded engine used by both surfaces above
 
 Supported output formats: `txt | markdown | json | html | original`.
@@ -84,7 +84,7 @@ The public input surface exposes first-class top-level extraction fields rather 
 - `includeTables` — boolean, default `true`
 - `includeImages` — boolean, default `false`
 - `includeLinks` — boolean, default `true`
-- `targetLanguage` — string, default `''` (empty means accept any language)
+- `languageCode` — string, default `''` (empty means accept any language)
 
 Internal binding-only knobs (`favorPrecision`, `favorRecall`, `includeFormatting`, `withMetadata`, `onlyWithMetadata`, `teiValidation`, `deduplicate`, `fast`) remain inside `@contextractor/extraction` / `@contextractor/crawler` and are not part of the user-facing schema.
 

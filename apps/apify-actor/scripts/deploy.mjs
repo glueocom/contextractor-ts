@@ -33,7 +33,7 @@ for (const extra of [
   'node_modules/@contextractor/gen-md-regions',
   'node_modules/@contextractor/generated-unit-tests',
   'node_modules/@contextractor/opencode-sync',
-  'node_modules/@contextractor/standalone',
+  'node_modules/contextractor',
   'node_modules/@tools',
 ]) {
   await rm(resolve(outputDir, extra), { recursive: true, force: true });

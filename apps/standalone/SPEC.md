@@ -6,11 +6,8 @@ Standalone TypeScript CLI for local content extraction. Also exports a programma
 
 ```bash
 contextractor extract [URLS...]
-contextractor list [dataset]
-contextractor get <dataset> <index>
-contextractor kvs put|get|ls|rm
+contextractor export [--output-dir <path>]
 contextractor purge [--all]
-contextractor storage-dir
 ```
 
 Full flag reference: auto-generated table in `apps/standalone/README.md`.
@@ -21,42 +18,39 @@ Full flag reference: auto-generated table in `apps/standalone/README.md`.
 
 Extracts content from one or more URLs. Writes to Crawlee storage (Dataset or Key-Value Store), depending on `--save-destination`.
 
-Options: all extraction flags (`--save`, `--max-pages`, `--headless`, `--crawler-type`, `--rendering-detection-pct`, etc.) plus:
+Options: all extraction flags (`--save`, `--max-requests-per-crawl`, `--headless`, `--crawler-type`, `--rendering-type-detection`, etc.) plus:
 - `--input-file <file>` — read URLs line by line from a file
 - `--dataset <name>` — named dataset for Crawlee storage (default `default`)
+- `--key-value-store <name>` — named key-value store for content blobs (default `default`)
+- `--request-queue <name>` — named request queue for pending URLs
 - `--save-destination <dest>` — repeatable; `key-value-store` (default) or `dataset`
 - `--clean` — purge default Dataset, Key-Value Store, and Request Queue before extracting
 - `--storage-dir <path>` — override Crawlee storage directory
-- `--use-sitemaps` — fetch `sitemap.xml` at each start URL domain root and enqueue matching URLs (filtered by `--glob` / `--exclude`) in addition to link-following
+- `--use-sitemaps` — fetch `sitemap.xml` at each start URL domain root and enqueue matching URLs (filtered by `--globs` / `--exclude`) in addition to link-following
 - `--store-skipped-urls` — push skipped URL records (`status: 'skipped'`) to the Crawlee dataset after the crawl
 - `--initial-concurrency <n>` — initial parallel requests; Crawlee auto-scales up to `--max-concurrency`; `0` (default) lets Crawlee pick the starting concurrency
 - `--block-media` / `--no-block-media` — block images, stylesheets, fonts, PDFs, and ZIPs (no effect for `cheerio`)
-- `--dynamic-content-wait <seconds>` — seconds to wait for network idle after navigation; also sets the timeout for `--wait-for-selector` / `--soft-wait-for-selector`; 0 disables (Playwright only)
+- `--wait-for-dynamic-content <seconds>` — seconds to wait for network idle after navigation; also sets the timeout for `--wait-for-selector` / `--soft-wait-for-selector`; 0 disables (Playwright only)
 - `--wait-for-selector <selector>` — CSS selector to wait for before extracting; request fails and is retried if selector does not appear within the timeout (Playwright only)
 - `--soft-wait-for-selector <selector>` — like `--wait-for-selector` but continues extraction even if the selector does not appear (Playwright only)
-- `--deduplication <level>` — deduplication level: `minimal` (URL dedup only), `basic` (default, canonical URL dedup across all handler types), or `full` (canonical URL + content hash dedup)
+- `--deduplication <level>` — deduplication level: `none` (URL dedup only), `url` (default, canonical URL dedup across all handler types), or `content-hash` (canonical URL + content hash dedup)
 - `--session-pool-name <name>` — named session pool for cross-run session sharing (`persistStateKey`)
 - `--max-session-rotations <n>` — max session rotations per request on block detection (default `10`)
 
-### `list`
+### `export`
 
-Reads a Dataset and prints items as JSON, JSONL, or CSV.
+Exports stored extraction content to a user-facing output directory. The dataset is the record index; with the default `key-value-store` destination, content lives as KVS blobs that this command reads back. Only `success` records produce content files; every record (incl. failed/skipped) is written to `manifest.json`. Backed by the library-callable `runExportAction`.
 
-### `get`
+- `--output-dir <path>` — output directory (default `./contextractor-output`)
+- `--dataset <name>` — dataset to read the record index from (default `default`)
+- `--key-value-store <name>` — key-value store holding content blobs (default `default`)
+- `--storage-dir <path>` — override Crawlee storage directory
 
-Reads a single item from a Dataset by 0-based index.
-
-### `kvs`
-
-Sub-commands: `put <key> <file|->`, `get <key>`, `ls`, `rm <key>`.
+Readable file names are derived from `metadata.title` (falling back to the URL host/path, then `page`). Within a record, kinds are processed `markdown, txt, json, html, original` so the primary format keeps the clean `<slug>.<ext>` name; the `html`/`original` extension clash is resolved with a kind tag (`<slug>.original.html`), then a URL-hash suffix.
 
 ### `purge`
 
 Drops the default Dataset and KeyValueStore. `--all` drops all named stores.
-
-### `storage-dir`
-
-Prints the resolved Crawlee storage directory and exits.
 
 ## Config merge order
 
@@ -70,12 +64,12 @@ Controlled by `saveDestination` / `--save-destination` (default `key-value-store
 
 - **`key-value-store`** — content blobs are written under `{format}-{md5(url)}.{ext}` keys (e.g. `txt-…txt`, `original-…html`), and the dataset record references each as a `ContentNode` (`{ hash, bytes, key }`; local storage has no public `url`)
 - **`dataset`** — content is inlined on the dataset record under each `ContentNode`'s `content` field (dataset takes precedence when both destinations are selected)
-- A dataset record is pushed for every page regardless of destination; all three crawl outcomes are queryable via `contextractor list`:
+- A dataset record is pushed for every page regardless of destination; all three crawl outcomes appear in the dataset index (and in `manifest.json` after `contextractor export`):
   - `status: 'success'` — `url`, `status`, nested `metadata`, `crawl: { loadedUrl, loadedTime, httpStatusCode, depth, referrerUrl }`, `original`, and per-format content — each a `ContentNode` (`hash` + `bytes` always present; inline `content` for `dataset`, or `key`/`url` for `key-value-store`)
   - `status: 'failed'` — always pushed; record has `url`, `crawl: { loadedUrl }`, `errors`, `retryCount`, `crawledTime` (ISO 8601)
   - `status: 'skipped'` — pushed only when `--store-skipped-urls` is set; record has `url` and `skipReason`
 
-`datasetName`, `keyValueStoreName`, and `requestQueueName` are taken from the shared input schema when present; the CLI-only `--dataset` flag overrides `datasetName` for the output dataset.
+`datasetName`, `keyValueStoreName`, and `requestQueueName` are taken from the shared input schema when present; the CLI flags `--dataset`, `--key-value-store`, and `--request-queue` override them for the output run.
 
 Storage errors (write failures) are logged to stderr and do not abort extraction.
 
@@ -99,12 +93,13 @@ See `tools/proxy-rotation-tester/README.md` for test documentation.
 
 ## Programmatic API
 
-`@contextractor/standalone` exports:
+`contextractor` exports:
 
 - `buildProgram()` — returns a configured Commander `Command` for programmatic use
 - `runCli(program, argv)` — entry point used by the binary
 - `isMainEntry(metaUrl)` — helper to detect if a module is the main entry
 - `program` — pre-built program instance (from `./cli.js`)
+- `runExportAction(opts)` — library-callable `export` action; returns `ExportResult` (does not call `process.exit`)
 - `configureStorage(storageDir)` — sets Crawlee `localDataDirectory` and `purgeOnStart: false`
 - `resolveStorageDir(flagValue?)` — five-level storage dir resolution
 - `Dataset`, `DatasetContent`, `KeyValueStore`, `Configuration` — re-exported from `crawlee`

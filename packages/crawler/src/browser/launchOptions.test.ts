@@ -29,13 +29,13 @@ describe('buildBrowserLaunchOptions', () => {
     expect(opts.args).not.toContain('--disable-blink-features=AutomationControlled');
   });
 
-  it('sets ignoreHTTPSErrors when ignoreSslErrors is true', () => {
-    const opts = buildBrowserLaunchOptions({ launcher: 'chromium', ignoreSslErrors: true });
+  it('sets ignoreHTTPSErrors when ignoreHttpsErrors is true', () => {
+    const opts = buildBrowserLaunchOptions({ launcher: 'chromium', ignoreHttpsErrors: true });
     expect(opts.ignoreHTTPSErrors).toBe(true);
   });
 
-  it('does not set ignoreHTTPSErrors when ignoreSslErrors is false', () => {
-    const opts = buildBrowserLaunchOptions({ launcher: 'chromium', ignoreSslErrors: false });
+  it('does not set ignoreHTTPSErrors when ignoreHttpsErrors is false', () => {
+    const opts = buildBrowserLaunchOptions({ launcher: 'chromium', ignoreHttpsErrors: false });
     expect(opts.ignoreHTTPSErrors).toBeUndefined();
   });
 

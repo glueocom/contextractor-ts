@@ -29,7 +29,7 @@ The input configuration used:
 ```json
 {
   "waitUntil": "networkidle",
-  "pageLoadTimeoutSecs": 60
+  "navigationTimeoutSecs": 60
 }
 ```
 
@@ -62,7 +62,7 @@ WARN  PlaywrightCrawler: Navigation timed out after 60 seconds.
   {"url":"https://medium.com/tag/technology","retryCount":1}
 ```
 
-All navigation timeouts occurred at exactly 60 seconds (matching `pageLoadTimeoutSecs`).
+All navigation timeouts occurred at exactly 60 seconds (matching `navigationTimeoutSecs`).
 
 ### Memory Pressure (Contributing Factor)
 
@@ -103,7 +103,7 @@ The source code already has correct defaults:
     "prefill": "domcontentloaded",
     "default": "domcontentloaded"
   },
-  "pageLoadTimeoutSecs": {
+  "navigationTimeoutSecs": {
     "default": 30
   }
 }
@@ -114,7 +114,7 @@ The source code already has correct defaults:
 The timeout occurred because the user explicitly overrode defaults with:
 ```json
 "waitUntil": "networkidle",
-"pageLoadTimeoutSecs": 60
+"navigationTimeoutSecs": 60
 ```
 
 ### Recommended Configuration for News Sites
@@ -122,7 +122,7 @@ The timeout occurred because the user explicitly overrode defaults with:
 ```json
 {
   "waitUntil": "domcontentloaded",
-  "pageLoadTimeoutSecs": 30,
+  "navigationTimeoutSecs": 30,
   "maxConcurrency": 3,
   "closeCookieModals": true
 }
@@ -147,7 +147,7 @@ After the timed-out runs, successful runs completed with blog URLs:
 1. Use `domcontentloaded` for all sites (default)
 2. Only use `networkidle` for specific sites you've tested
 3. Use lower concurrency (3-5) with more memory
-4. Set shorter `pageLoadTimeoutSecs` (30s) to fail fast
+4. Set shorter `navigationTimeoutSecs` (30s) to fail fast
 
 ### For Documentation
 1. Add warning about `networkidle` + news sites
@@ -174,7 +174,7 @@ After the timed-out runs, successful runs completed with blog URLs:
     {"url": "https://www.nytimes.com/section/technology"}
   ],
   "waitUntil": "domcontentloaded",
-  "pageLoadTimeoutSecs": 30,
+  "navigationTimeoutSecs": 30,
   "maxConcurrency": 2
 }
 ```

@@ -1,4 +1,4 @@
-# `@contextractor/standalone`
+# `contextractor`
 
 TypeScript CLI for Contextractor.
 
@@ -20,7 +20,7 @@ contextractor extract [URLS...]
 contextractor extract https://example.com
 contextractor extract https://example.com --mode precision --save json
 contextractor extract https://example.com --save-destination dataset
-contextractor extract --config config.json --max-pages 10
+contextractor extract --config config.json --max-requests-per-crawl 10
 ```
 
 ## Subcommands
@@ -99,7 +99,7 @@ Storage directory is resolved in this order (first match wins):
 
 ## Library use (Crawlee re-exports)
 
-`@contextractor/standalone` re-exports Crawlee's storage types for library consumers:
+`contextractor` re-exports Crawlee's storage types for library consumers:
 
 ```typescript
 import {
@@ -107,7 +107,7 @@ import {
   type DatasetContent,
   KeyValueStore,
   Configuration,
-} from '@contextractor/standalone';
+} from 'contextractor';
 
 const ds = await Dataset.open('my-dataset');
 await ds.forEach((item: DatasetContent) => console.log(item));
@@ -128,10 +128,12 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 |--------|-------------|
 | `--input-file` | Read URLs (one per line) from a file |
 | `--dataset` | Route output to a named dataset (default: default) |
+| `--key-value-store` | Route content blobs to a named key-value store (default: default) |
+| `--request-queue` | Route pending URLs to a named request queue |
 | `--config`, `-c` | Path to JSON config file |
 | `--clean` | Purge default storage before extracting (datasets, KVS, request queues) |
-| `--max-pages` | Max pages to crawl (0 = unlimited) |
-| `--crawl-depth` | Max link depth from start URLs (0 = start only) |
+| `--max-requests-per-crawl` | Max requests to handle (0 = unlimited) |
+| `--max-crawl-depth` | Max link depth from start URLs (0 = start only) |
 | `--headless` | Run browser in headless mode |
 | `--no-headless` | Run browser with UI |
 | `--proxy` | Proxy URL (repeatable) |
@@ -139,20 +141,20 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--session-pool-name` | Named session pool for cross-run session sharing |
 | `--max-session-rotations` | Max session rotations per request on block detection |
 | `--crawler-type` | Crawler engine: adaptive, firefox, chromium, cheerio |
-| `--rendering-detection-pct` | Rendering type detection percentage (adaptive only) |
+| `--rendering-type-detection` | Rendering type detection ratio 0–1 (adaptive only) |
 | `--wait-until` | Page load event: load, domcontentloaded, networkidle, commit |
-| `--page-load-timeout` | Page load timeout in seconds |
+| `--navigation-timeout` | Page load timeout in seconds |
 | `--block-media` | Block images, stylesheets, fonts, PDFs, and ZIPs |
 | `--no-block-media` | Do not block media requests (default) |
-| `--ignore-cors` | Disable CORS/CSP restrictions |
+| `--ignore-cors-and-csp` | Disable CORS/CSP restrictions |
 | `--close-cookie-modals` | Auto-dismiss cookie banners |
 | `--max-scroll-height` | Max scroll height in pixels |
-| `--ignore-ssl-errors` | Skip SSL certificate verification |
+| `--ignore-https-errors` | Skip SSL certificate verification |
 | `--user-agent` | Custom User-Agent string |
-| `--glob` | Glob pattern to include (repeatable) |
+| `--globs` | Glob pattern to include (repeatable) |
 | `--exclude` | Glob pattern to exclude (repeatable) |
-| `--link-selector` | CSS selector for links to follow |
-| `--keep-url-fragments` | Preserve URL fragments |
+| `--selector` | CSS selector for links to follow |
+| `--keep-url-fragment` | Preserve URL fragments |
 | `--use-sitemaps` | Discover and enqueue URLs from sitemap.xml at each start URL domain root |
 | `--respect-robots-txt` | Honor robots.txt |
 | `--cookies` | JSON array of cookie objects |
@@ -168,12 +170,12 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--no-tables` | Exclude tables from output |
 | `--images` | Include image alt text and captions |
 | `--no-images` | Exclude image alt text and captions (default) |
-| `--target-language` | Filter by language (e.g. en) |
+| `--language` | Filter by language (e.g. en) |
 | `--verbose`, `-v` | Enable verbose logging |
 | `--save-destination` | Where to save: key-value-store\|dataset (repeatable) |
 | `--storage-dir` | Override Crawlee storage directory |
 | `--store-skipped-urls` | Push skipped URL records to the dataset after crawl |
-| `--dynamic-content-wait` | Seconds to wait for network idle after navigation (0 = disabled) |
+| `--wait-for-dynamic-content` | Seconds to wait for network idle after navigation (0 = disabled) |
 | `--wait-for-selector` | CSS selector to wait for before extracting (fails on timeout) |
 | `--soft-wait-for-selector` | CSS selector to wait for before extracting (continues on timeout) |
 | `--deduplication` | Deduplication level: none, url (default), or content-hash |
@@ -199,7 +201,7 @@ shared CLI input schema. Convert to the Apify-input camelCase shape below.
 {
   "startUrls": [{ "url": "https://example.com" }],
   "headless": false,
-  "maxCrawlPages": 10,
+  "maxRequestsPerCrawl": 10,
   "mode": "recall",
   "includeImages": true,
   "save": ["txt"],
@@ -271,6 +273,6 @@ Unknown keys are stripped by `ContextractorInput.parse()`.
 
 ```bash
 pnpm install
-pnpm --filter @contextractor/standalone build
+pnpm --filter contextractor build
 node apps/standalone/dist/cli.js extract https://example.com
 ```

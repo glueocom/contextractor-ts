@@ -1,5 +1,5 @@
-import { program } from '@contextractor/standalone';
 import type { Option } from 'commander';
+import { program } from 'contextractor';
 
 const MULTI_LINE_RE = /\s*\n\s*/g;
 

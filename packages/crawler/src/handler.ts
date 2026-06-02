@@ -22,15 +22,15 @@ interface HandlerOpts {
   scroll?: ScrollConfig;
   formats: OutputFormat[];
   maxResults?: number;
-  linkSelector?: string;
-  maxCrawlingDepth?: number;
+  selector?: string;
+  maxCrawlDepth?: number;
   globs?: string[];
-  excludes?: string[];
-  keepUrlFragments?: boolean;
+  exclude?: string[];
+  keepUrlFragment?: boolean;
   onSkippedUrl?: (url: string, reason: string) => void;
   waitForSelector?: string;
   softWaitForSelector?: string;
-  dynamicContentWaitSecs?: number;
+  waitForDynamicContentSecs?: number;
   deduplication: 'none' | 'url' | 'content-hash';
   seenCanonicals: Set<string>;
   seenContentHashes: Set<string>;
@@ -75,13 +75,13 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
       await autoScroll(context, opts.scroll);
     }
 
-    if (opts.dynamicContentWaitSecs && opts.dynamicContentWaitSecs > 0) {
+    if (opts.waitForDynamicContentSecs && opts.waitForDynamicContentSecs > 0) {
       await page
-        .waitForLoadState('networkidle', { timeout: opts.dynamicContentWaitSecs * 1000 })
+        .waitForLoadState('networkidle', { timeout: opts.waitForDynamicContentSecs * 1000 })
         .catch(() => {});
     }
 
-    const selectorTimeoutMs = (opts.dynamicContentWaitSecs ?? 30) * 1000;
+    const selectorTimeoutMs = (opts.waitForDynamicContentSecs ?? 30) * 1000;
 
     if (opts.waitForSelector) {
       await page.waitForSelector(opts.waitForSelector, { timeout: selectorTimeoutMs });
@@ -142,7 +142,7 @@ export function createHandler(opts: HandlerOpts): RequestHandler<PlaywrightCrawl
       throw new Error('MAX_RESULTS_REACHED');
     }
 
-    if (opts.linkSelector) {
+    if (opts.selector) {
       await enqueueLinks(context, opts);
     }
   };
@@ -152,23 +152,23 @@ async function enqueueLinks(context: PlaywrightCrawlingContext, opts: HandlerOpt
   const rawDepth = context.request.userData?.depth;
   const currentDepth = typeof rawDepth === 'number' ? rawDepth : 0;
   if (
-    opts.maxCrawlingDepth !== undefined &&
-    opts.maxCrawlingDepth !== 0 &&
-    currentDepth >= opts.maxCrawlingDepth
+    opts.maxCrawlDepth !== undefined &&
+    opts.maxCrawlDepth !== 0 &&
+    currentDepth >= opts.maxCrawlDepth
   ) {
     return;
   }
   const newDepth = currentDepth + 1;
   const referrerUrl = context.request.url;
   const globs = opts.globs?.filter(Boolean) ?? [];
-  const excludes = opts.excludes?.filter(Boolean) ?? [];
+  const exclude = opts.exclude?.filter(Boolean) ?? [];
   await context.enqueueLinks({
-    selector: opts.linkSelector,
+    selector: opts.selector,
     ...(globs.length > 0 ? { globs } : {}),
-    ...(excludes.length > 0 ? { exclude: excludes } : {}),
+    ...(exclude.length > 0 ? { exclude: exclude } : {}),
     userData: { depth: newDepth, referrerUrl },
     transformRequestFunction: (request) => {
-      request.keepUrlFragment = opts.keepUrlFragments ?? false;
+      request.keepUrlFragment = opts.keepUrlFragment ?? false;
       return request;
     },
     ...(opts.onSkippedUrl
@@ -245,7 +245,7 @@ export function createCheerioHandler(opts: HandlerOpts): RequestHandler<CheerioC
       throw new Error('MAX_RESULTS_REACHED');
     }
 
-    if (opts.linkSelector) {
+    if (opts.selector) {
       await enqueueLinksCheerio(context, opts);
     }
   };
@@ -322,7 +322,7 @@ export function createAdaptiveHandler(
       throw new Error('MAX_RESULTS_REACHED');
     }
 
-    if (opts.linkSelector) {
+    if (opts.selector) {
       await enqueueLinksAdaptive(context, opts);
     }
   };
@@ -335,23 +335,23 @@ async function enqueueLinksCheerio(
   const rawDepth = context.request.userData?.depth;
   const currentDepth = typeof rawDepth === 'number' ? rawDepth : 0;
   if (
-    opts.maxCrawlingDepth !== undefined &&
-    opts.maxCrawlingDepth !== 0 &&
-    currentDepth >= opts.maxCrawlingDepth
+    opts.maxCrawlDepth !== undefined &&
+    opts.maxCrawlDepth !== 0 &&
+    currentDepth >= opts.maxCrawlDepth
   ) {
     return;
   }
   const newDepth = currentDepth + 1;
   const referrerUrl = context.request.url;
   const globs = opts.globs?.filter(Boolean) ?? [];
-  const excludes = opts.excludes?.filter(Boolean) ?? [];
+  const exclude = opts.exclude?.filter(Boolean) ?? [];
   await context.enqueueLinks({
-    selector: opts.linkSelector,
+    selector: opts.selector,
     ...(globs.length > 0 ? { globs } : {}),
-    ...(excludes.length > 0 ? { exclude: excludes } : {}),
+    ...(exclude.length > 0 ? { exclude: exclude } : {}),
     userData: { depth: newDepth, referrerUrl },
     transformRequestFunction: (request) => {
-      request.keepUrlFragment = opts.keepUrlFragments ?? false;
+      request.keepUrlFragment = opts.keepUrlFragment ?? false;
       return request;
     },
     ...(opts.onSkippedUrl
@@ -367,23 +367,23 @@ async function enqueueLinksAdaptive(
   const rawDepth = context.request.userData?.depth;
   const currentDepth = typeof rawDepth === 'number' ? rawDepth : 0;
   if (
-    opts.maxCrawlingDepth !== undefined &&
-    opts.maxCrawlingDepth !== 0 &&
-    currentDepth >= opts.maxCrawlingDepth
+    opts.maxCrawlDepth !== undefined &&
+    opts.maxCrawlDepth !== 0 &&
+    currentDepth >= opts.maxCrawlDepth
   ) {
     return;
   }
   const newDepth = currentDepth + 1;
   const referrerUrl = context.request.url;
   const globs = opts.globs?.filter(Boolean) ?? [];
-  const excludes = opts.excludes?.filter(Boolean) ?? [];
+  const exclude = opts.exclude?.filter(Boolean) ?? [];
   const enqueueOpts: EnqueueLinksOptions = {
-    selector: opts.linkSelector,
+    selector: opts.selector,
     ...(globs.length > 0 ? { globs } : {}),
-    ...(excludes.length > 0 ? { exclude: excludes } : {}),
+    ...(exclude.length > 0 ? { exclude: exclude } : {}),
     userData: { depth: newDepth, referrerUrl },
     transformRequestFunction: (request) => {
-      request.keepUrlFragment = opts.keepUrlFragments ?? false;
+      request.keepUrlFragment = opts.keepUrlFragment ?? false;
       return request;
     },
     ...(opts.onSkippedUrl

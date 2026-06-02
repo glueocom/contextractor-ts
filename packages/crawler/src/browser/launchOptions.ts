@@ -5,7 +5,7 @@ interface BrowserLaunchOptions {
 
 export function buildBrowserLaunchOptions(opts: {
   launcher: 'chromium' | 'firefox';
-  ignoreSslErrors?: boolean;
+  ignoreHttpsErrors?: boolean;
 }): BrowserLaunchOptions {
   const args: string[] = [];
 
@@ -17,6 +17,6 @@ export function buildBrowserLaunchOptions(opts: {
   }
 
   const options: BrowserLaunchOptions = { args };
-  if (opts.ignoreSslErrors) options.ignoreHTTPSErrors = true;
+  if (opts.ignoreHttpsErrors) options.ignoreHTTPSErrors = true;
   return options;
 }

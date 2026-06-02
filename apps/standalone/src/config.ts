@@ -38,33 +38,33 @@ export function validateSaveFormats(formats: string[]): SaveFormat[] {
 
 interface CrawlConfig {
   urls: string[];
-  maxPages: number;
-  crawlDepth: number;
+  maxRequestsPerCrawl: number;
+  maxCrawlDepth: number;
   headless: boolean;
   mode: 'precision' | 'balanced' | 'recall';
   includeComments: boolean;
   includeTables: boolean;
   includeImages: boolean;
   includeLinks: boolean;
-  targetLanguage: string;
+  languageCode: string;
 
   // Browser.
   crawlerType: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
-  renderingTypeDetectionPercentage: number;
+  renderingTypeDetectionRatio: number;
   waitUntil: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
-  pageLoadTimeout: number;
+  navigationTimeoutSecs: number;
   ignoreCors: boolean;
   closeCookieModals: boolean;
   maxScrollHeight: number;
   blockMedia: boolean;
-  ignoreSslErrors: boolean;
+  ignoreHttpsErrors: boolean;
   userAgent: string;
 
   // Crawl filtering.
   globs: string[];
-  excludes: string[];
-  linkSelector: string;
-  keepUrlFragments: boolean;
+  exclude: string[];
+  selector: string;
+  keepUrlFragment: boolean;
   respectRobotsTxt: boolean;
 
   // Cookies & headers.
@@ -78,7 +78,7 @@ interface CrawlConfig {
   maxResults: number;
 
   // Selector waits.
-  dynamicContentWaitSecs: number;
+  waitForDynamicContentSecs: number;
   waitForSelector: string;
   softWaitForSelector: string;
 
@@ -111,22 +111,22 @@ export function buildCrawlConfig(
     save: cli.save,
 
     headless: input.headless,
-    maxPages: input.maxCrawlPages,
-    crawlDepth: input.maxCrawlDepth,
+    maxRequestsPerCrawl: input.maxRequestsPerCrawl,
+    maxCrawlDepth: input.maxCrawlDepth,
     crawlerType: input.crawlerType,
-    renderingTypeDetectionPercentage: input.renderingTypeDetectionPercentage,
+    renderingTypeDetectionRatio: input.renderingTypeDetectionRatio,
     waitUntil: input.waitUntil,
-    pageLoadTimeout: input.pageLoadTimeoutSecs,
+    navigationTimeoutSecs: input.navigationTimeoutSecs,
     ignoreCors: input.ignoreCorsAndCsp,
     closeCookieModals: input.closeCookieModals,
-    maxScrollHeight: input.maxScrollHeightPixels,
+    maxScrollHeight: input.maxScrollHeight,
     blockMedia: input.blockMedia,
-    ignoreSslErrors: input.ignoreSslErrors,
+    ignoreHttpsErrors: input.ignoreHttpsErrors,
     userAgent: input.userAgent,
-    globs: input.includeUrlGlobs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
-    excludes: input.excludeUrlGlobs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
-    linkSelector: input.linkSelector,
-    keepUrlFragments: input.keepUrlFragments,
+    globs: input.globs.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+    exclude: input.exclude.map((g) => g.glob).filter((g): g is string => Boolean(g)),
+    selector: input.selector,
+    keepUrlFragment: input.keepUrlFragment,
     respectRobotsTxt: input.respectRobotsTxtFile,
     cookies: input.initialCookies ?? [],
     headers: input.customHttpHeaders ?? {},
@@ -134,7 +134,7 @@ export function buildCrawlConfig(
     maxConcurrency: input.maxConcurrency,
     maxRetries: input.maxRequestRetries,
     maxResults: input.maxResultsPerCrawl,
-    dynamicContentWaitSecs: input.dynamicContentWaitSecs,
+    waitForDynamicContentSecs: input.waitForDynamicContentSecs,
     waitForSelector: input.waitForSelector,
     softWaitForSelector: input.softWaitForSelector,
     deduplication: input.deduplication,
@@ -143,7 +143,7 @@ export function buildCrawlConfig(
     includeTables: input.includeTables,
     includeImages: input.includeImages,
     includeLinks: input.includeLinks,
-    targetLanguage: input.targetLanguage,
+    languageCode: input.languageCode,
     sessionPoolName: input.sessionPoolName,
     maxSessionRotations: input.maxSessionRotations,
   };

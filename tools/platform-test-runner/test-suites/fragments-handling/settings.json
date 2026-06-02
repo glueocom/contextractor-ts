@@ -7,7 +7,7 @@
         "dataset"
     ],
     "maxRequestRetries": 3,
-    "pageLoadTimeoutSecs": 60,
-    "maxCrawlPages": 3,
-    "keepUrlFragments": true
+    "navigationTimeoutSecs": 60,
+    "maxRequestsPerCrawl": 3,
+    "keepUrlFragment": true
 }

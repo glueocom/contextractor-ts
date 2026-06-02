@@ -19,6 +19,7 @@ import {
   type SaveFormat,
   validateSaveFormats,
 } from './config.js';
+import { runExportAction } from './exportAction.js';
 import { createCrawleeStorageSink } from './sinks.js';
 import { configureStorage, resolveStorageDir } from './storage/index.js';
 
@@ -29,6 +30,12 @@ import { configureStorage, resolveStorageDir } from './storage/index.js';
 function toInt(value: string): number {
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed)) throw new Error(`Expected integer, got '${value}'`);
+  return parsed;
+}
+
+function toFloat(value: string): number {
+  const parsed = Number.parseFloat(value);
+  if (Number.isNaN(parsed)) throw new Error(`Expected number, got '${value}'`);
   return parsed;
 }
 
@@ -120,21 +127,6 @@ function parseStringRecord(raw: string, flagName: string): Record<string, string
   return out;
 }
 
-function toCsv(items: Record<string, unknown>[]): string {
-  const [first] = items;
-  if (!first) return '';
-  const keys = Object.keys(first);
-  const csvCell = (v: unknown): string => {
-    const s = v == null ? '' : String(v);
-    return s.includes(',') || s.includes('"') || s.includes('\n')
-      ? `"${s.replace(/"/g, '""')}"`
-      : s;
-  };
-  const header = keys.map(csvCell).join(',');
-  const rows = items.map((item) => keys.map((k) => csvCell(item[k])).join(','));
-  return [header, ...rows].join('\n');
-}
-
 // ---------------------------------------------------------------------------
 // Shared option applier
 // ---------------------------------------------------------------------------
@@ -145,12 +137,12 @@ function addExtractionOptions(cmd: Command): Command {
     .option('-c, --config <path>', 'Path to JSON config file')
     .option('--clean', 'Purge default storage before extracting (datasets, KVS, request queues)')
     .addOption(
-      new Option('--max-pages <n>', 'Max pages to crawl (0 = unlimited)')
+      new Option('--max-requests-per-crawl <n>', 'Max requests to handle (0 = unlimited)')
         .argParser(toInt)
-        .default(s.maxCrawlPages._def.defaultValue, 'unlimited'),
+        .default(s.maxRequestsPerCrawl._def.defaultValue, 'unlimited'),
     )
     .addOption(
-      new Option('--crawl-depth <n>', 'Max link depth from start URLs (0 = start only)')
+      new Option('--max-crawl-depth <n>', 'Max link depth from start URLs (0 = start only)')
         .argParser(toInt)
         .default(s.maxCrawlDepth._def.defaultValue, 'unlimited'),
     )
@@ -172,29 +164,29 @@ function addExtractionOptions(cmd: Command): Command {
     )
     .option('--crawler-type <type>', 'Crawler engine: adaptive, firefox, chromium, cheerio')
     .option(
-      '--rendering-detection-pct <n>',
-      'Rendering type detection percentage (adaptive only)',
-      toInt,
+      '--rendering-type-detection <ratio>',
+      'Rendering type detection ratio 0–1 (adaptive only)',
+      toFloat,
     )
     .option('--wait-until <event>', 'Page load event: load, domcontentloaded, networkidle, commit')
     .addOption(
-      new Option('--page-load-timeout <secs>', 'Page load timeout in seconds')
+      new Option('--navigation-timeout <secs>', 'Page load timeout in seconds')
         .argParser(toInt)
-        .default(s.pageLoadTimeoutSecs._def.defaultValue),
+        .default(s.navigationTimeoutSecs._def.defaultValue),
     )
     .option('--block-media', 'Block images, stylesheets, fonts, PDFs, and ZIPs')
     .option('--no-block-media', 'Do not block media requests (default)')
-    .option('--ignore-cors', 'Disable CORS/CSP restrictions')
+    .option('--ignore-cors-and-csp', 'Disable CORS/CSP restrictions')
     .option(
       '--close-cookie-modals',
       'Auto-dismiss cookie banners',
       s.closeCookieModals._def.defaultValue,
     )
     .option('--max-scroll-height <px>', 'Max scroll height in pixels', toInt)
-    .option('--ignore-ssl-errors', 'Skip SSL certificate verification')
+    .option('--ignore-https-errors', 'Skip SSL certificate verification')
     .option('--user-agent <ua>', 'Custom User-Agent string')
     .option(
-      '--glob <pattern>',
+      '--globs <pattern>',
       'Glob pattern to include (repeatable)',
       collectValues,
       [] as string[],
@@ -205,8 +197,8 @@ function addExtractionOptions(cmd: Command): Command {
       collectValues,
       [] as string[],
     )
-    .option('--link-selector <css>', 'CSS selector for links to follow')
-    .option('--keep-url-fragments', 'Preserve URL fragments')
+    .option('--selector <css>', 'CSS selector for links to follow')
+    .option('--keep-url-fragment', 'Preserve URL fragments')
     .option(
       '--use-sitemaps',
       'Discover and enqueue URLs from sitemap.xml at each start URL domain root',
@@ -250,7 +242,7 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--no-tables', 'Exclude tables from output')
     .option('--images', 'Include image alt text and captions')
     .option('--no-images', 'Exclude image alt text and captions (default)')
-    .option('--target-language <lang>', 'Filter by language (e.g. en)')
+    .option('--language <lang>', 'Filter by language (e.g. en)')
     .option('-v, --verbose', 'Enable verbose logging')
     .option(
       '--save-destination <dest>',
@@ -261,7 +253,7 @@ function addExtractionOptions(cmd: Command): Command {
     .option('--storage-dir <path>', 'Override Crawlee storage directory')
     .option('--store-skipped-urls', 'Push skipped URL records to the dataset after crawl')
     .option(
-      '--dynamic-content-wait <seconds>',
+      '--wait-for-dynamic-content <seconds>',
       'Seconds to wait for network idle after navigation (0 = disabled)',
       toInt,
     )
@@ -320,14 +312,15 @@ function buildSchemaOverrides(
 ): Partial<ContextractorInputType> {
   const out: Partial<ContextractorInputType> = {};
 
-  if (isCliOverride(command, 'maxPages')) out.maxCrawlPages = opts.maxPages;
-  if (isCliOverride(command, 'crawlDepth')) out.maxCrawlDepth = opts.crawlDepth;
+  if (isCliOverride(command, 'maxRequestsPerCrawl'))
+    out.maxRequestsPerCrawl = opts.maxRequestsPerCrawl;
+  if (isCliOverride(command, 'maxCrawlDepth')) out.maxCrawlDepth = opts.maxCrawlDepth;
   if (isCliOverride(command, 'headless')) out.headless = opts.headless;
   if (isCliOverride(command, 'crawlerType') && opts.crawlerType) {
     out.crawlerType = parseCrawlerType(opts.crawlerType);
   }
-  if (isCliOverride(command, 'renderingDetectionPct')) {
-    out.renderingTypeDetectionPercentage = opts.renderingDetectionPct;
+  if (isCliOverride(command, 'renderingTypeDetection')) {
+    out.renderingTypeDetectionRatio = opts.renderingTypeDetection;
   }
   if (isCliOverride(command, 'waitUntil') && opts.waitUntil) {
     out.waitUntil = parseWaitUntil(opts.waitUntil);
@@ -335,23 +328,24 @@ function buildSchemaOverrides(
   if (isCliOverride(command, 'proxyRotation') && opts.proxyRotation) {
     out.proxyRotation = parseProxyRotation(opts.proxyRotation);
   }
-  if (isCliOverride(command, 'pageLoadTimeout')) out.pageLoadTimeoutSecs = opts.pageLoadTimeout;
+  if (isCliOverride(command, 'navigationTimeout'))
+    out.navigationTimeoutSecs = opts.navigationTimeout;
   if (isCliOverride(command, 'blockMedia')) out.blockMedia = opts.blockMedia;
-  if (isCliOverride(command, 'ignoreCors')) out.ignoreCorsAndCsp = opts.ignoreCors;
+  if (isCliOverride(command, 'ignoreCorsAndCsp')) out.ignoreCorsAndCsp = opts.ignoreCorsAndCsp;
   if (isCliOverride(command, 'closeCookieModals')) {
     out.closeCookieModals = opts.closeCookieModals;
   }
-  if (isCliOverride(command, 'maxScrollHeight')) out.maxScrollHeightPixels = opts.maxScrollHeight;
-  if (isCliOverride(command, 'ignoreSslErrors')) out.ignoreSslErrors = opts.ignoreSslErrors;
+  if (isCliOverride(command, 'maxScrollHeight')) out.maxScrollHeight = opts.maxScrollHeight;
+  if (isCliOverride(command, 'ignoreHttpsErrors')) out.ignoreHttpsErrors = opts.ignoreHttpsErrors;
   if (isCliOverride(command, 'userAgent')) out.userAgent = opts.userAgent;
-  if (isCliOverride(command, 'glob') && opts.glob?.length) {
-    out.includeUrlGlobs = opts.glob.map((s) => ({ glob: s }));
+  if (isCliOverride(command, 'globs') && opts.globs?.length) {
+    out.globs = opts.globs.map((s) => ({ glob: s }));
   }
   if (isCliOverride(command, 'exclude') && opts.exclude?.length) {
-    out.excludeUrlGlobs = opts.exclude.map((s) => ({ glob: s }));
+    out.exclude = opts.exclude.map((s) => ({ glob: s }));
   }
-  if (isCliOverride(command, 'linkSelector')) out.linkSelector = opts.linkSelector;
-  if (isCliOverride(command, 'keepUrlFragments')) out.keepUrlFragments = opts.keepUrlFragments;
+  if (isCliOverride(command, 'selector')) out.selector = opts.selector;
+  if (isCliOverride(command, 'keepUrlFragment')) out.keepUrlFragment = opts.keepUrlFragment;
   if (isCliOverride(command, 'useSitemaps')) out.useSitemaps = opts.useSitemaps;
   if (isCliOverride(command, 'respectRobotsTxt')) {
     out.respectRobotsTxtFile = opts.respectRobotsTxt;
@@ -367,8 +361,8 @@ function buildSchemaOverrides(
   if (isCliOverride(command, 'maxConcurrency')) out.maxConcurrency = opts.maxConcurrency;
   if (isCliOverride(command, 'maxRetries')) out.maxRequestRetries = opts.maxRetries;
   if (isCliOverride(command, 'maxResults')) out.maxResultsPerCrawl = opts.maxResults;
-  if (isCliOverride(command, 'dynamicContentWait')) {
-    out.dynamicContentWaitSecs = opts.dynamicContentWait;
+  if (isCliOverride(command, 'waitForDynamicContent')) {
+    out.waitForDynamicContentSecs = opts.waitForDynamicContent;
   }
   if (isCliOverride(command, 'waitForSelector')) out.waitForSelector = opts.waitForSelector;
   if (isCliOverride(command, 'softWaitForSelector')) {
@@ -383,7 +377,7 @@ function buildSchemaOverrides(
   if (isCliOverride(command, 'images')) out.includeImages = opts.images;
   if (isCliOverride(command, 'links')) out.includeLinks = opts.links;
   if (isCliOverride(command, 'comments')) out.includeComments = opts.comments;
-  if (isCliOverride(command, 'targetLanguage')) out.targetLanguage = opts.targetLanguage;
+  if (isCliOverride(command, 'language')) out.languageCode = opts.language;
   if (isCliOverride(command, 'saveDestination')) {
     // TODO: remove cast when getExplicitRepeatedValues is refactored to return typed values
     out.saveDestination = getExplicitRepeatedValues(
@@ -483,11 +477,12 @@ async function runExtractAction(
 
   const destinations = parsed.data.saveDestination;
 
-  const kvs = await KeyValueStore.open(parsed.data.keyValueStoreName ?? 'default');
+  const kvs = await KeyValueStore.open(
+    opts.keyValueStore ?? parsed.data.keyValueStoreName ?? 'default',
+  );
   const ds = await Dataset.open(datasetName ?? parsed.data.datasetName ?? 'default');
-  const requestQueue = parsed.data.requestQueueName
-    ? await RequestQueue.open(parsed.data.requestQueueName)
-    : undefined;
+  const requestQueueName = opts.requestQueue ?? parsed.data.requestQueueName;
+  const requestQueue = requestQueueName ? await RequestQueue.open(requestQueueName) : undefined;
 
   if (opts.clean) {
     await rm(path.join(storageDir, 'datasets', 'default'), { recursive: true, force: true });
@@ -550,7 +545,7 @@ async function runExtractAction(
     sitemapList = await SitemapRequestList.open({
       sitemapUrls,
       globs: cfg.globs,
-      exclude: cfg.excludes,
+      exclude: cfg.exclude,
     });
   }
 
@@ -567,32 +562,33 @@ async function runExtractAction(
     includeTables: cfg.includeTables,
     includeImages: cfg.includeImages,
     includeLinks: cfg.includeLinks,
-    targetLanguage: cfg.targetLanguage,
+    languageCode: cfg.languageCode,
     cookieStrategy: cfg.closeCookieModals ? 'ghostery' : 'none',
     scroll: cfg.maxScrollHeight > 0 ? { maxScrollHeight: cfg.maxScrollHeight } : undefined,
     headless: cfg.headless,
     crawlerType: cfg.crawlerType,
-    renderingTypeDetectionPercentage: cfg.renderingTypeDetectionPercentage,
-    ignoreSslErrors: cfg.ignoreSslErrors,
+    renderingTypeDetectionRatio: cfg.renderingTypeDetectionRatio,
+    ignoreHttpsErrors: cfg.ignoreHttpsErrors,
     bypassCSP: cfg.ignoreCors,
     initialCookies: cfg.cookies,
     extraHTTPHeaders: cfg.headers,
     userAgent: cfg.userAgent || undefined,
-    maxPages: cfg.maxPages,
+    maxRequestsPerCrawl: cfg.maxRequestsPerCrawl,
     maxRetries: cfg.maxRetries,
     initialConcurrency: cfg.initialConcurrency,
     maxConcurrency: cfg.maxConcurrency,
     blockMedia: cfg.blockMedia,
-    pageLoadTimeoutSecs: cfg.pageLoadTimeout,
+    navigationTimeoutSecs: cfg.navigationTimeoutSecs,
     waitUntil: cfg.waitUntil,
     maxResults: cfg.maxResults > 0 ? cfg.maxResults : undefined,
-    linkSelector: cfg.linkSelector || undefined,
-    maxCrawlingDepth: cfg.crawlDepth,
+    selector: cfg.selector || undefined,
+    maxCrawlDepth: cfg.maxCrawlDepth,
     globs: cfg.globs,
-    excludes: cfg.excludes,
-    keepUrlFragments: cfg.keepUrlFragments,
+    exclude: cfg.exclude,
+    keepUrlFragment: cfg.keepUrlFragment,
     respectRobotsTxt: cfg.respectRobotsTxt,
-    dynamicContentWaitSecs: cfg.dynamicContentWaitSecs > 0 ? cfg.dynamicContentWaitSecs : undefined,
+    waitForDynamicContentSecs:
+      cfg.waitForDynamicContentSecs > 0 ? cfg.waitForDynamicContentSecs : undefined,
     waitForSelector: cfg.waitForSelector || undefined,
     softWaitForSelector: cfg.softWaitForSelector || undefined,
     deduplication: cfg.deduplication,
@@ -615,7 +611,7 @@ async function runExtractAction(
       : {}),
   });
 
-  await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragments));
+  await crawler.run(buildRequests(cfg.urls, cfg.keepUrlFragment));
 
   process.stderr.write('Done.\n');
   if (failedCount > 0) process.exit(2);
@@ -641,6 +637,11 @@ export function buildProgram(): Command {
   extract.argument('[urls...]', 'URLs to extract content from');
   extract.option('--input-file <file>', 'Read URLs (one per line) from a file');
   extract.option('--dataset <name>', 'Route output to a named dataset (default: default)');
+  extract.option(
+    '--key-value-store <name>',
+    'Route content blobs to a named key-value store (default: default)',
+  );
+  extract.option('--request-queue <name>', 'Route pending URLs to a named request queue');
   addExtractionOptions(extract);
   extract.action(
     async (
@@ -654,179 +655,29 @@ export function buildProgram(): Command {
   program.addCommand(extract);
 
   // ---------------------------------------------------------------------------
-  // list subcommand
+  // export subcommand
   // ---------------------------------------------------------------------------
-  const list = new Command('list');
-  list
-    .description('List items in a dataset')
-    .argument('[dataset]', 'Dataset name (default: default)')
-    .option('--limit <n>', 'Max items to return', toInt)
-    .option('--offset <n>', 'Number of items to skip', toInt)
-    .option('--format <fmt>', 'Output format: json|jsonl|csv (default: jsonl)')
-    .option('--desc', 'Return items in descending order')
-    .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .action(async (datasetArg: string | undefined, opts: ListOpts) => {
-      const storageDir = resolveStorageDir(opts.storageDir);
-      configureStorage(storageDir);
-      const ds = await Dataset.open(datasetArg ?? 'default');
-      const data = await ds.getData({
-        offset: opts.offset ?? 0,
-        limit: opts.limit ?? 1000,
-        desc: opts.desc ?? false,
-      });
-      const fmt = opts.format ?? 'jsonl';
-      if (fmt === 'json') {
-        process.stdout.write(`${JSON.stringify(data.items, null, 2)}\n`);
-      } else if (fmt === 'csv') {
-        process.stdout.write(`${toCsv(data.items)}\n`);
-      } else {
-        for (const item of data.items) {
-          process.stdout.write(`${JSON.stringify(item)}\n`);
-        }
-      }
-    });
-  program.addCommand(list);
-
-  // ---------------------------------------------------------------------------
-  // get subcommand
-  // ---------------------------------------------------------------------------
-  const get = new Command('get');
-  get
-    .description('Get a single item from a dataset by 0-based index')
-    .argument('<dataset>', 'Dataset name')
-    .argument('<index>', 'Item index (0-based)', toInt)
-    .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .action(async (datasetName: string, index: number, opts: { storageDir?: string }) => {
-      const storageDir = resolveStorageDir(opts.storageDir);
-      configureStorage(storageDir);
-      const ds = await Dataset.open(datasetName);
-      const data = await ds.getData({ offset: index, limit: 1 });
-      if (data.items.length === 0) {
-        process.stderr.write(`No item at index ${index} in dataset "${datasetName}"\n`);
-        process.exit(1);
-      }
-      process.stdout.write(`${JSON.stringify(data.items[0], null, 2)}\n`);
-    });
-  program.addCommand(get);
-
-  // ---------------------------------------------------------------------------
-  // kvs subcommand group
-  // ---------------------------------------------------------------------------
-  const kvs = new Command('kvs').description('Key-value store operations');
-
-  const kvsPut = new Command('put');
-  kvsPut
-    .description('Write a file or stdin to the key-value store')
-    .argument('<key>', 'Key name')
-    .argument('<file>', 'File path or - to read from stdin')
-    .option('--store <name>', 'KVS store name (default: default)')
-    .option('--content-type <mime>', 'MIME content-type override')
-    .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .action(async (key: string, fileOrStdin: string, opts: KvsPutOpts) => {
-      const storageDir = resolveStorageDir(opts.storageDir);
-      configureStorage(storageDir);
-      const store = await KeyValueStore.open(opts.store ?? 'default');
-
-      let content: Buffer;
-      if (fileOrStdin === '-') {
-        const chunks: Buffer[] = [];
-        process.stdin.resume();
-        for await (const chunk of process.stdin) {
-          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as string));
-        }
-        content = Buffer.concat(chunks);
-      } else {
-        content = await readFile(fileOrStdin);
-      }
-
-      let contentType = opts.contentType;
-      if (!contentType) {
-        const ext = path.extname(fileOrStdin === '-' ? '' : fileOrStdin).toLowerCase();
-        const mimeMap: Record<string, string> = {
-          '.json': 'application/json',
-          '.txt': 'text/plain',
-          '.html': 'text/html',
-          '.htm': 'text/html',
-          '.md': 'text/markdown',
-        };
-        contentType = mimeMap[ext] ?? 'application/octet-stream';
-      }
-
-      await store.setValue(key, content, { contentType });
-      process.stderr.write(`Stored key "${key}" in store "${opts.store ?? 'default'}"\n`);
-    });
-  kvs.addCommand(kvsPut);
-
-  const kvsGet = new Command('get');
-  kvsGet
-    .description('Read a value from the key-value store and write to stdout')
-    .argument('<key>', 'Key name')
-    .option('--store <name>', 'KVS store name (default: default)')
-    .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .action(async (key: string, opts: { store?: string; storageDir?: string }) => {
-      const storageDir = resolveStorageDir(opts.storageDir);
-      configureStorage(storageDir);
-      const store = await KeyValueStore.open(opts.store ?? 'default');
-      const value = await store.getValue(key);
-      if (value === null || value === undefined) {
-        process.stderr.write(`Key "${key}" not found in store "${opts.store ?? 'default'}"\n`);
-        process.exit(1);
-      }
-      if (Buffer.isBuffer(value)) {
-        process.stdout.write(value);
-      } else if (typeof value === 'string') {
-        process.stdout.write(value);
-      } else {
-        process.stdout.write(`${JSON.stringify(value, null, 2)}\n`);
-      }
-    });
-  kvs.addCommand(kvsGet);
-
-  const kvsLs = new Command('ls');
-  kvsLs
-    .description('List keys in a key-value store')
-    .option('--store <name>', 'KVS store name (default: default)')
-    .option('--limit <n>', 'Max keys to list', toInt)
-    .option('--exclusive-start-key <key>', 'Start listing after this key')
+  const exportCmd = new Command('export');
+  exportCmd
+    .description('Export stored extraction content to a user-facing output directory')
+    .option('--output-dir <path>', 'Output directory (default: ./contextractor-output)')
+    .option('--dataset <name>', 'Dataset to read the record index from (default: default)')
+    .option('--key-value-store <name>', 'Key-value store holding content blobs (default: default)')
     .option('--storage-dir <path>', 'Override Crawlee storage directory')
     .action(
       async (opts: {
-        store?: string;
-        limit?: number;
-        exclusiveStartKey?: string;
+        outputDir?: string;
+        dataset?: string;
+        keyValueStore?: string;
         storageDir?: string;
       }) => {
-        const storageDir = resolveStorageDir(opts.storageDir);
-        configureStorage(storageDir);
-        const store = await KeyValueStore.open(opts.store ?? 'default');
-        let count = 0;
-        const limit = opts.limit ?? Number.POSITIVE_INFINITY;
-        await store.forEachKey((key) => {
-          if (count >= limit) return;
-          if (opts.exclusiveStartKey && key <= opts.exclusiveStartKey) return;
-          process.stdout.write(`${key}\n`);
-          count++;
-        });
+        const result = await runExportAction(opts);
+        process.stderr.write(
+          `Exported ${result.filesWritten} file(s) from ${result.recordsTotal} record(s) → ${result.outputDir}\n`,
+        );
       },
     );
-  kvs.addCommand(kvsLs);
-
-  const kvsRm = new Command('rm');
-  kvsRm
-    .description('Delete a key from the key-value store')
-    .argument('<key>', 'Key name')
-    .option('--store <name>', 'KVS store name (default: default)')
-    .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .action(async (key: string, opts: { store?: string; storageDir?: string }) => {
-      const storageDir = resolveStorageDir(opts.storageDir);
-      configureStorage(storageDir);
-      const store = await KeyValueStore.open(opts.store ?? 'default');
-      await store.setValue(key, null);
-      process.stderr.write(`Deleted key "${key}" from store "${opts.store ?? 'default'}"\n`);
-    });
-  kvs.addCommand(kvsRm);
-
-  program.addCommand(kvs);
+  program.addCommand(exportCmd);
 
   // ---------------------------------------------------------------------------
   // purge subcommand
@@ -852,18 +703,6 @@ export function buildProgram(): Command {
       }
     });
   program.addCommand(purge);
-
-  // ---------------------------------------------------------------------------
-  // storage-dir subcommand
-  // ---------------------------------------------------------------------------
-  const storageDir = new Command('storage-dir');
-  storageDir
-    .description('Print the resolved Crawlee storage directory and exit')
-    .option('--storage-dir <path>', 'Override Crawlee storage directory')
-    .action((opts: { storageDir?: string }) => {
-      process.stdout.write(`${resolveStorageDir(opts.storageDir)}\n`);
-    });
-  program.addCommand(storageDir);
 
   return program;
 }
@@ -894,25 +733,25 @@ export function isMainEntry(metaUrl: string, argv1 = process.argv[1]): boolean {
 interface ExtractOpts {
   config?: string;
   clean?: boolean;
-  maxPages?: number;
-  crawlDepth?: number;
+  maxRequestsPerCrawl?: number;
+  maxCrawlDepth?: number;
   headless?: boolean;
   proxy?: string[];
   proxyRotation?: string;
   crawlerType?: string;
-  renderingDetectionPct?: number;
+  renderingTypeDetection?: number;
   waitUntil?: string;
-  pageLoadTimeout?: number;
+  navigationTimeout?: number;
   blockMedia?: boolean;
-  ignoreCors?: boolean;
+  ignoreCorsAndCsp?: boolean;
   closeCookieModals?: boolean;
   maxScrollHeight?: number;
-  ignoreSslErrors?: boolean;
+  ignoreHttpsErrors?: boolean;
   userAgent?: string;
-  glob?: string[];
+  globs?: string[];
   exclude?: string[];
-  linkSelector?: string;
-  keepUrlFragments?: boolean;
+  selector?: string;
+  keepUrlFragment?: boolean;
   useSitemaps?: boolean;
   respectRobotsTxt?: boolean;
   cookies?: string;
@@ -927,29 +766,17 @@ interface ExtractOpts {
   comments?: boolean;
   tables?: boolean;
   images?: boolean;
-  targetLanguage?: string;
+  language?: string;
   verbose?: boolean;
   saveDestination?: ContextractorInputType['saveDestination'];
   storageDir?: string;
+  keyValueStore?: string;
+  requestQueue?: string;
   storeSkippedUrls?: boolean;
-  dynamicContentWait?: number;
+  waitForDynamicContent?: number;
   waitForSelector?: string;
   softWaitForSelector?: string;
   deduplication?: ContextractorInputType['deduplication'];
   sessionPoolName?: string;
   maxSessionRotations?: number;
-}
-
-interface ListOpts {
-  limit?: number;
-  offset?: number;
-  format?: string;
-  desc?: boolean;
-  storageDir?: string;
-}
-
-interface KvsPutOpts {
-  store?: string;
-  contentType?: string;
-  storageDir?: string;
 }

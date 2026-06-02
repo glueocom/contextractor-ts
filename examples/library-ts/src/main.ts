@@ -4,7 +4,7 @@ import {
   Dataset,
   KeyValueStore,
   resolveStorageDir,
-} from '@contextractor/standalone';
+} from 'contextractor';
 
 const storageDir = resolveStorageDir();
 configureStorage(storageDir);
@@ -26,11 +26,12 @@ await program.parseAsync([
   '--initial-concurrency',
   '3',
   '--block-media',
-  '--dynamic-content-wait',
+  '--wait-for-dynamic-content',
   '5',
   '--wait-for-selector',
   'article',
-  '--ignore-canonical-url',
+  '--deduplication',
+  'none',
 ]);
 
 // Read results back via re-exported Dataset API

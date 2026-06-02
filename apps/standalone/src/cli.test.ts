@@ -17,10 +17,10 @@ describe('config helpers', () => {
     expect(cfg.maxConcurrency).toBe(50);
     expect(cfg.headless).toBe(true);
     expect(cfg.crawlerType).toBe('playwright-adaptive');
-    expect(cfg.renderingTypeDetectionPercentage).toBe(10);
+    expect(cfg.renderingTypeDetectionRatio).toBe(0.1);
     expect(cfg.waitUntil).toBe('load');
-    expect(cfg.maxPages).toBe(0);
-    expect(cfg.crawlDepth).toBe(0);
+    expect(cfg.maxRequestsPerCrawl).toBe(0);
+    expect(cfg.maxCrawlDepth).toBe(0);
     expect(cfg.maxScrollHeight).toBe(5000);
     expect(cfg.closeCookieModals).toBe(true);
     expect(cfg.urls).toEqual(['https://example.com']);
@@ -81,10 +81,74 @@ describe('buildProgram — --soft-wait-for-selector flag', () => {
   });
 });
 
-describe('buildProgram — --dynamic-content-wait flag', () => {
+describe('buildProgram — --wait-for-dynamic-content flag', () => {
   it('is a recognized option on the extract subcommand', () => {
     const program = buildProgram();
-    expect(getExtractOptions(program)).toContain('--dynamic-content-wait');
+    expect(getExtractOptions(program)).toContain('--wait-for-dynamic-content');
+  });
+});
+
+describe('buildProgram — Crawlee-aligned flag renames', () => {
+  const renamed = [
+    '--max-requests-per-crawl',
+    '--max-crawl-depth',
+    '--rendering-type-detection',
+    '--navigation-timeout',
+    '--ignore-https-errors',
+    '--ignore-cors-and-csp',
+    '--globs',
+    '--selector',
+    '--keep-url-fragment',
+    '--language',
+  ];
+  it.each(renamed)('exposes %s on the extract subcommand', (flag) => {
+    expect(getExtractOptions(buildProgram())).toContain(flag);
+  });
+
+  const removed = [
+    '--max-pages',
+    '--crawl-depth',
+    '--rendering-detection-pct',
+    '--page-load-timeout',
+    '--ignore-ssl-errors',
+    '--ignore-cors',
+    '--glob',
+    '--link-selector',
+    '--keep-url-fragments',
+    '--target-language',
+    '--dynamic-content-wait',
+  ];
+  it.each(removed)('no longer exposes the old flag %s', (flag) => {
+    expect(getExtractOptions(buildProgram())).not.toContain(flag);
+  });
+});
+
+describe('buildProgram — storage trio flags', () => {
+  it.each([
+    '--dataset',
+    '--key-value-store',
+    '--request-queue',
+  ])('exposes %s on the extract subcommand', (flag) => {
+    expect(getExtractOptions(buildProgram())).toContain(flag);
+  });
+});
+
+describe('buildProgram — export subcommand', () => {
+  it('is registered with its output flags', () => {
+    const program = buildProgram();
+    const exportCmd = program.commands.find((c) => c.name() === 'export');
+    expect(exportCmd).toBeDefined();
+    const longs = exportCmd?.options.map((o) => o.long) ?? [];
+    expect(longs).toContain('--output-dir');
+    expect(longs).toContain('--key-value-store');
+    expect(longs).not.toContain('--request-queue');
+  });
+});
+
+describe('buildProgram — removed subcommands', () => {
+  it.each(['list', 'get', 'kvs', 'storage-dir'])('no longer registers "%s"', (name) => {
+    const program = buildProgram();
+    expect(program.commands.find((c) => c.name() === name)).toBeUndefined();
   });
 });
 

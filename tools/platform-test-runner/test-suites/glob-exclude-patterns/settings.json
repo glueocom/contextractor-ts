@@ -7,10 +7,10 @@
         "dataset"
     ],
     "maxRequestRetries": 3,
-    "pageLoadTimeoutSecs": 60,
-    "maxCrawlPages": 5,
-    "linkSelector": "a[href]",
-    "excludeUrlGlobs": [
+    "navigationTimeoutSecs": 60,
+    "maxRequestsPerCrawl": 5,
+    "selector": "a[href]",
+    "exclude": [
         {
             "glob": "**/api/**"
         },

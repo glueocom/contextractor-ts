@@ -53,17 +53,17 @@ export const ContextractorInput = z.object({
       }),
     }),
 
-  renderingTypeDetectionPercentage: z
-    .int()
+  renderingTypeDetectionRatio: z
+    .number()
     .min(0)
-    .max(100)
-    .default(10)
+    .max(1)
+    .default(0.1)
     .describe(
-      '(Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower.',
+      '(Adaptive only) Ratio (0–1) of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower.',
     )
-    .meta({ title: 'Rendering type detection', ...apifyMeta({ unit: '%' }) }),
+    .meta({ title: 'Rendering type detection' }),
 
-  includeUrlGlobs: z
+  globs: z
     .array(z.object({ glob: z.string() }).loose())
     .default([])
     .describe(
@@ -74,7 +74,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'globs' }),
     }),
 
-  excludeUrlGlobs: z
+  exclude: z
     .array(z.object({ glob: z.string() }).loose())
     .default([])
     .describe(
@@ -85,7 +85,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'globs' }),
     }),
 
-  linkSelector: z
+  selector: z
     .string()
     .default('')
     .describe('CSS selector for links to enqueue. Leave empty to disable link enqueueing.')
@@ -94,7 +94,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'textfield' }),
     }),
 
-  keepUrlFragments: z
+  keepUrlFragment: z
     .boolean()
     .default(false)
     .describe(
@@ -159,12 +159,12 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'json', prefill: {} }),
     }),
 
-  maxCrawlPages: z
+  maxRequestsPerCrawl: z
     .int()
     .min(0)
     .default(0)
     .describe(
-      'Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited.',
+      'Maximum number of requests the crawler will handle. Counts handled page outcomes (successes and final failures), including start URLs and pagination pages. The crawler automatically finishes after reaching this number. 0 means unlimited.',
     )
     .meta({ title: 'Max pages' }),
 
@@ -253,7 +253,7 @@ export const ContextractorInput = z.object({
     .describe('Include hyperlinks in the extracted text.')
     .meta({ title: 'Include links' }),
 
-  targetLanguage: z
+  languageCode: z
     .string()
     .default('')
     .describe(
@@ -382,7 +382,7 @@ export const ContextractorInput = z.object({
       title: 'Max session rotations',
     }),
 
-  pageLoadTimeoutSecs: z
+  navigationTimeoutSecs: z
     .int()
     .min(1)
     .default(60)
@@ -416,7 +416,7 @@ export const ContextractorInput = z.object({
     )
     .meta({ title: 'Soft wait for selector', ...apifyMeta({ editor: 'textfield' }) }),
 
-  dynamicContentWaitSecs: z
+  waitForDynamicContentSecs: z
     .int()
     .min(0)
     .default(0)
@@ -459,16 +459,15 @@ export const ContextractorInput = z.object({
     .describe('Automatically dismiss cookie consent modals with Ghostery-based blocking.')
     .meta({ title: 'Close cookie modals' }),
 
-  maxScrollHeightPixels: z
+  maxScrollHeight: z
     .int()
     .min(0)
     .default(5000)
     .describe(
-      'Maximum pixels to scroll down the page until all content is loaded. Setting to 0 disables scrolling.',
+      'Maximum pixels (px) to scroll down the page until all content is loaded. Setting to 0 disables scrolling.',
     )
     .meta({
       title: 'Max scroll height',
-      ...apifyMeta({ unit: 'pixels' }),
     }),
 
   userAgent: z
@@ -482,7 +481,7 @@ export const ContextractorInput = z.object({
       ...apifyMeta({ editor: 'textfield' }),
     }),
 
-  ignoreSslErrors: z
+  ignoreHttpsErrors: z
     .boolean()
     .default(false)
     .describe('Ignore SSL certificate errors. Use at your own risk.')

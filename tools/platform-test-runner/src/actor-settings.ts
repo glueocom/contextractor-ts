@@ -9,15 +9,15 @@ export interface ActorSettings {
   mode?: 'precision' | 'balanced' | 'recall';
   crawlerType?: 'playwright-adaptive' | 'playwright-firefox' | 'playwright-chromium' | 'cheerio';
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
-  maxCrawlPages?: number;
+  maxRequestsPerCrawl?: number;
   maxCrawlDepth?: number;
   maxResultsPerCrawl?: number;
   maxRequestRetries?: number;
-  pageLoadTimeoutSecs?: number;
-  linkSelector?: string;
-  keepUrlFragments?: boolean;
-  includeUrlGlobs?: Array<{ glob: string }>;
-  excludeUrlGlobs?: Array<{ glob: string }>;
+  navigationTimeoutSecs?: number;
+  selector?: string;
+  keepUrlFragment?: boolean;
+  globs?: Array<{ glob: string }>;
+  exclude?: Array<{ glob: string }>;
 
   [key: string]: unknown;
 }

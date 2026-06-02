@@ -1,7 +1,6 @@
 {
-  "name": "@contextractor/standalone",
+  "name": "contextractor",
   "version": "0.1.0",
-  "private": true,
   "description": "Standalone CLI for Contextractor. Built on rs-trafilatura and Crawlee.",
   "type": "module",
   "bin": {

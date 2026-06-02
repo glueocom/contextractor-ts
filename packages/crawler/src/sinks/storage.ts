@@ -53,6 +53,11 @@ export function kvsKey(kind: ContentKind, url: string): string {
   return `${spec.keyPrefix}${hash}.${spec.ext}`;
 }
 
+/** File extension for a content kind (`txt`, `md`, `json`, `html`; `original` → `html`). */
+export function extForKind(kind: ContentKind): string {
+  return KVS_SPECS[kind].ext;
+}
+
 /** Current time as an ISO 8601 timestamp truncated to whole seconds. */
 function isoSecond(): string {
   return new Date().toISOString().replace(/\.\d+Z$/, 'Z');

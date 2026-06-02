@@ -129,19 +129,19 @@ describe('ContextractorInput — deduplication field', () => {
   });
 });
 
-describe('ContextractorInput — dynamicContentWaitSecs field', () => {
+describe('ContextractorInput — waitForDynamicContentSecs field', () => {
   it('defaults to 0', () => {
     const result = ContextractorInput.parse(BASE);
-    expect(result.dynamicContentWaitSecs).toBe(0);
+    expect(result.waitForDynamicContentSecs).toBe(0);
   });
 
   it('accepts positive integers', () => {
-    const result = ContextractorInput.parse({ ...BASE, dynamicContentWaitSecs: 10 });
-    expect(result.dynamicContentWaitSecs).toBe(10);
+    const result = ContextractorInput.parse({ ...BASE, waitForDynamicContentSecs: 10 });
+    expect(result.waitForDynamicContentSecs).toBe(10);
   });
 
   it('rejects negative values', () => {
-    expect(() => ContextractorInput.parse({ ...BASE, dynamicContentWaitSecs: -1 })).toThrow();
+    expect(() => ContextractorInput.parse({ ...BASE, waitForDynamicContentSecs: -1 })).toThrow();
   });
 });
 

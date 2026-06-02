@@ -11,7 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BIN_NAME = 'contextractor';
-const STANDALONE_PKG = '@contextractor/standalone';
+const STANDALONE_PKG = 'contextractor';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const STANDALONE_DIR = path.join(REPO_ROOT, 'apps/standalone');

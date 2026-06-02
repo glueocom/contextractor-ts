@@ -104,17 +104,17 @@ everything else has a sensible default.
 |-------|------|---------|-------------|
 | `startUrls` | array | _required_ | URLs to extract content from |
 | `crawlerType` | enum (`playwright-adaptive` \| `playwright-firefox` \| `playwright-chromium` \| `cheerio`) | `"playwright-adaptive"` | Browser engine or HTTP client for crawling. playwright-adaptive automatically switches between browser and HTTP client per page. cheerio uses raw HTTP only (fastest, no JS). |
-| `renderingTypeDetectionPercentage` | integer | `10` | (Adaptive only) Percentage of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower. |
-| `includeUrlGlobs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
-| `excludeUrlGlobs` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
-| `linkSelector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
-| `keepUrlFragments` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
+| `renderingTypeDetectionRatio` | number | `0.1` | (Adaptive only) Ratio (0–1) of pages on which the crawler runs a rendering-type detection probe. Higher values are more accurate but slower. |
+| `globs` | array | `[]` | Glob patterns matching URLs of pages that will be included in crawling. Setting this option allows you to customize the crawling scope. For example `https://{store,docs}.example.com/**` lets the craw… |
+| `exclude` | array | `[]` | Glob patterns matching URLs of pages that will be excluded from crawling. Note that this affects only links found on pages, but not Start URLs, which are always crawled. |
+| `selector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
+| `keepUrlFragment` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
 | `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
 | `deduplication` | enum (`none` \| `url` \| `content-hash`) | `"url"` | Deduplication level applied on top of Crawlee's built-in URL deduplication. url (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. content-hash: also… |
 | `respectRobotsTxtFile` | boolean | `false` | If enabled, the crawler will consult the robots.txt file for each domain before crawling pages. |
 | `initialCookies` | array | _optional_ | Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For e… |
 | `customHttpHeaders` | object | _optional_ | HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to… |
-| `maxCrawlPages` | integer | `0` | Maximum pages to crawl. Includes start URLs and pagination pages. The crawler will automatically finish after reaching this number. 0 means unlimited. |
+| `maxRequestsPerCrawl` | integer | `0` | Maximum number of requests the crawler will handle. Counts handled page outcomes (successes and final failures), including start URLs and pagination pages. The crawler automatically finishes after re… |
 | `maxResultsPerCrawl` | integer | `0` | Maximum number of results that will be saved to dataset. The scraper will terminate after reaching this number. 0 means unlimited. |
 | `maxCrawlDepth` | integer | `0` | Maximum link depth from Start URLs. Pages discovered further from start URLs than this limit will not be crawled. 0 means unlimited. |
 | `initialConcurrency` | integer | `0` | Initial number of browser pages or HTTP clients running in parallel. Crawlee auto-scales up to maxConcurrency. 0 lets Crawlee pick the default. |
@@ -125,7 +125,7 @@ everything else has a sensible default.
 | `includeTables` | boolean | `true` | Include table content in the extracted text. |
 | `includeImages` | boolean | `false` | Include image alt text and captions in the extracted text. |
 | `includeLinks` | boolean | `true` | Include hyperlinks in the extracted text. |
-| `targetLanguage` | string | `""` | Filter extracted content by language code (e.g. "en"). Leave empty to accept any language. |
+| `languageCode` | string | `""` | Filter extracted content by language code (e.g. "en"). Leave empty to accept any language. |
 | `save` | array | `["markdown"]` | Output formats to extract and save. "original" saves the raw page HTML before extraction. |
 | `saveDestination` | array | `["key-value-store"]` | Where to save extracted content. Supported by both Actor and CLI. |
 | `datasetName` | string | _optional_ | Name or ID of the dataset for storing results. Leave empty to use the default run dataset. |
@@ -136,18 +136,18 @@ everything else has a sensible default.
 | `proxyRotation` | enum (`recommended` \| `per-request` \| `until-failure`) | `"recommended"` | Proxy rotation strategy. recommended automatically picks the best proxies. per-request uses a new proxy for each request. until-failure uses one proxy until it fails. |
 | `sessionPoolName` | string | _optional_ | Name for a persistent, shared session pool. Sessions (IP + cookies) are saved under this key and reused across Actor runs. Useful when proxies are frequently blocked — previously working sessions are… |
 | `maxSessionRotations` | integer | `10` | Maximum number of session (IP + browser fingerprint) rotations per request on block detection. Independent of maxRequestRetries. Set to 0 to disable session rotation. |
-| `pageLoadTimeoutSecs` | integer | `60` | Maximum time to wait for page load in seconds |
+| `navigationTimeoutSecs` | integer | `60` | Maximum time to wait for page load in seconds |
 | `blockMedia` | boolean | `false` | Block loading of images, stylesheets, fonts (.woff), PDFs, and ZIPs. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium on… |
 | `waitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. The request fails and is retried if the selector does not appear within the timeout. Leave empty to disable. |
 | `softWaitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. Unlike waitForSelector, the request continues even if the selector does not appear within the timeout. Leave empty to disable. |
-| `dynamicContentWaitSecs` | integer | `0` | Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also… |
+| `waitForDynamicContentSecs` | integer | `0` | Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also… |
 | `waitUntil` | enum (`load` \| `domcontentloaded` \| `networkidle` \| `commit`) | `"load"` | When to consider navigation finished. networkidle waits for 500ms of network silence (best for JS-heavy SPAs, slower); load waits for the load event (default, good for most articles); domcontentloade… |
 | `headless` | boolean | `true` | Run browser in headless mode |
 | `ignoreCorsAndCsp` | boolean | `false` | Ignore Content Security Policy and Cross-Origin Resource Sharing restrictions. Enables free XHR/Fetch requests from pages. |
 | `closeCookieModals` | boolean | `true` | Automatically dismiss cookie consent modals with Ghostery-based blocking. |
-| `maxScrollHeightPixels` | integer | `5000` | Maximum pixels to scroll down the page until all content is loaded. Setting to 0 disables scrolling. |
+| `maxScrollHeight` | integer | `5000` | Maximum pixels (px) to scroll down the page until all content is loaded. Setting to 0 disables scrolling. |
 | `userAgent` | string | `""` | Custom User-Agent string for the browser. Leave empty to use the default browser User-Agent. |
-| `ignoreSslErrors` | boolean | `false` | Ignore SSL certificate errors. Use at your own risk. |
+| `ignoreHttpsErrors` | boolean | `false` | Ignore SSL certificate errors. Use at your own risk. |
 
 <!-- @generated:end name="apify-input-schema" -->
 

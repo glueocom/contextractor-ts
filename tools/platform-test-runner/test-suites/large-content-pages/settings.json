@@ -10,6 +10,6 @@
         "dataset"
     ],
     "maxRequestRetries": 3,
-    "pageLoadTimeoutSecs": 90,
-    "maxCrawlPages": 2
+    "navigationTimeoutSecs": 90,
+    "maxRequestsPerCrawl": 2
 }

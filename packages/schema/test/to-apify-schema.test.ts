@@ -99,10 +99,9 @@ describe('toApifyInputSchema', () => {
     expect(out.properties.closeCookieModals?.default).toBe(true);
   });
 
-  it('preserves integer constraints (maxScrollHeightPixels)', () => {
+  it('preserves integer constraints (maxScrollHeight)', () => {
     const out = toApifyInputSchema(ContextractorInput, { title: 'Contextractor' });
-    const m = out.properties.maxScrollHeightPixels;
-    expect(m?.unit).toBe('pixels');
+    const m = out.properties.maxScrollHeight;
     expect(m?.minimum).toBe(0);
   });
 

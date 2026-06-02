@@ -13,6 +13,7 @@ export {
   buildSuccessRecord,
   type ContentKind,
   type ContentNode,
+  extForKind,
   type FailedRequestInfo,
   type KvsLike,
   kvsKey,

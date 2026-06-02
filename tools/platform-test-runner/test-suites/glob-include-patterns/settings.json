@@ -7,10 +7,10 @@
         "dataset"
     ],
     "maxRequestRetries": 3,
-    "pageLoadTimeoutSecs": 60,
-    "maxCrawlPages": 5,
-    "linkSelector": "a[href]",
-    "includeUrlGlobs": [
+    "navigationTimeoutSecs": 60,
+    "maxRequestsPerCrawl": 5,
+    "selector": "a[href]",
+    "globs": [
         {
             "glob": "https://crawlee.dev/docs/**"
         }

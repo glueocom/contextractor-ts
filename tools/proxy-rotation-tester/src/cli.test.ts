@@ -54,7 +54,7 @@ describe('Proxy Rotation - CLI', () => {
             'txt',
             '--save-destination',
             'dataset',
-            '--max-pages',
+            '--max-requests-per-crawl',
             '1',
             // Use cheerio to avoid Chromium browser dependency in test environment
             '--crawler-type',
