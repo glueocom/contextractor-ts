@@ -29,7 +29,7 @@
     "playwright": "^1.60.0"
   },
   "optionalDependencies": {
-    "@duckduckgo/autoconsent": "^14.87.0"
+    "@duckduckgo/autoconsent": "^14.88.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",

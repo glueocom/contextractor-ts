@@ -110,7 +110,8 @@
     "setdefault",
     "mkstemp",
     "fdopen",
-    "qdrant"
+    "qdrant",
+    "xhigh"
   ],
   "ignoreWords": [
     "RAQSG",
