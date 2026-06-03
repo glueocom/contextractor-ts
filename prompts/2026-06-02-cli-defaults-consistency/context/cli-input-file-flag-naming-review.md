@@ -301,3 +301,78 @@ one release.
    enhancement — do not block the rename on it.
 4. **Short form.** None recommended now. If wanted later, `-i` is free (only `-c`/`-v` are taken) and
    matches wget; `-l` matches ProjectDiscovery but is subordinate authority here.
+
+---
+
+## Appendix — full config-file flag survey (verified, 2026-06-03)
+
+### Method
+
+Six parallel ecosystem finders (Python, Go/cloud-native, Node.js, system daemons/databases,
+security/scraper/HTTP + Rust/Java/Ruby, and a targeted exact-string hunt) ran as `web-research-specialist`
+agents. Their exact-match claims were deduped and passed through an **adversarial verification pass** — each
+claimed `--config-file` was independently re-confirmed (or refuted) against its authoritative man page,
+official docs, or source. Totals: 27 agents, ~655 tool calls. Every entry below traces to a primary source.
+
+### Exact `--config-file` matches (17)
+
+See the [17-tool table above](#verified-survey--does-real-software-use-exactly---config-file-2026-06-03).
+Summary by ecosystem: Python (mypy, pytest `-c`, mkdocs `-f`, uv); Node (`@babel/cli`, `@babel/node`,
+cypress `-C`); containers/infra (dockerd, etcd); ClamAV (clamd `-c`, freshclam `-c`, clamdscan `-c`);
+terminal (alacritty `-C`); Go (kafkactl `-C`); Ruby (unicorn `-c`); core Unix (man `-C`, git maintenance).
+
+### Refuted on verification
+
+- **jupyter** — claimed `--config-file`; the real CLI flag is `--config` (jupyter_core `application.py`
+  alias key is `"config"`; `config_file` is the Python trait name, not the flag). Adversarial pass caught it.
+
+### How the rest of the ecosystem spells it (variant catalog)
+
+The dominant spelling is `--config` / `-c`; the long tail uses many other forms. Grouped by pattern:
+
+- **`--config` / `-c` (two-dash, no "file" suffix) — most common.**
+  Python: black, flake8 (+ `--append-config`), ruff, gunicorn `-c`, celery, alembic `-c`, ansible-config
+  `-c`, locust, pre-commit `-c`. Go/cloud-native: caddy, grafana-server, containerd `-c`, cri-o `-c`,
+  telegraf (+ `--config-directory`), fluent-bit `-c`, fluentd `-c`, vector `-c`, nats-server `-c`, minio,
+  kubelet, kubeadm, crictl `-c`, podman, rclone, OpenTelemetry Collector, golangci-lint `-c`, Trivy,
+  hadolint `-c`. Node: eslint `-c`, prettier, jest `-c`, vitest `-c`, vite `-c`, rollup `-c`, webpack `-c`,
+  stylelint `-c`, mocha, commitlint `-c`, ava, playwright `-c`, nodemon, nestjs `-c`. Other: curl `-K`,
+  wget `--config=FILE`, mongod `-f`, rsync daemon, logstash `-f`, puma `-C`.
+- **Single-dash Go style `-config`.** vault, nomad, nuclei, httpx, katana, subfinder, amass, ffuf, nikto.
+  Special hybrid: **consul `-config-file`** (single-dash *plus* the word "file" — repeatable).
+- **`--config.file` / `-config.file` (dot separator, Prometheus lineage).** prometheus, alertmanager,
+  blackbox_exporter, node_exporter (`--config.file`); loki, promtail, cortex, mimir (`-config.file`).
+- **`--configfile` (no separator).** ntpd (NTPsec) `-c`. CamelCase cousin: **traefik `--configFile`**.
+- **Namespaced / component-specific (substring "config-file", not a bare flag).** thanos
+  (`--objstore.config-file`, `--tracing.config-file`, …); kube-apiserver
+  (`--admission-control-config-file`, `--authentication-token-webhook-config-file`, …); gatsby
+  (`--open-tracing-config-file`); node runtime (`--experimental-config-file`).
+- **Different name entirely.** pylint `--rcfile`, coverage.py `--rcfile`, isort `--settings-file` /
+  `--settings-path`, tox `--conf`, masscan `--conf`, dnsmasq `--conf-file`, aria2c `--conf-path`, sphinx-build
+  `--conf-dir` (dir), salt `--config-dir` (dir), supervisord/ctl `--configuration`, uwsgi
+  `--ini`/`--yaml`/`--xml`/`--json`, yt-dlp `--config-locations` / `--config-location`, **biome
+  `--config-path`**, tsc `-p`/`--project`, storybook `--config-dir` (dir), gulp `--gulpfile`, grunt
+  `--gruntfile`, npm `--userconfig`/`--globalconfig`, pnpm `--config.<key>`, kubectl `--kubeconfig`, helm
+  `--registry-config`, mysqld `--defaults-file`, php-fpm `--fpm-config`, fail2ban `--conf` (dir), spring boot
+  `--spring.config.location`, kafka native `--command-config`, just `--justfile`, semantic-release `--extends`.
+- **Short-flag only (no long form).** nginx `-c`, apache httpd `-f`, sshd `-f`, ssh `-F`, haproxy `-f`, BIND
+  named `-c`, chronyd `-f`, dovecot `-c`, squid `-f`, varnishd `-f`, collectd `-C`, rsyslogd `-f`, postgres
+  `-D` (data dir), bandit `-c`/`--ini`, sqlmap `-c`, sidekiq `-C`.
+- **Positional argument.** redis-server, logrotate, wg-quick.
+- **Env var only (no CLI flag).** pip `PIP_CONFIG_FILE`, httpie `HTTPIE_CONFIG_DIR`, packer `PACKER_CONFIG`,
+  terraform `TF_CLI_CONFIG_FILE`, ripgrep `RIPGREP_CONFIG_PATH`, bat `BAT_CONFIG_PATH`, sccache `SCCACHE_CONF`,
+  elasticsearch `ES_PATH_CONF`.
+- **Auto-discovery only (no flag).** feroxbuster, wpscan, httrack, nmap, fd, scrapy, rails.
+- **Requested but not implemented.** superfile (`--config-file` proposed in issue #586, not shipped as of
+  June 2026) — excluded from the confirmed count.
+
+### `--config-file-path`
+
+No surveyed tool uses `--config-file-path`. The nearest is **biome's `--config-path`**. Avoid
+`--config-file-path`.
+
+### Bottom line
+
+`--config-file` is a common, legitimate spelling (17 verified tools across every major ecosystem), but
+`--config` / `-c` remains the single most common form. The contextractor decision is therefore
+consistency-driven, not precedent-driven — see [The decision](#the-decision) above.
