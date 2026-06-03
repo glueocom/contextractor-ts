@@ -31,6 +31,7 @@ This is a breaking change for existing Apify input (renamed schema keys / Actor 
   - **Match Crawlee names AND semantics** for the two divergent fields: `maxCrawlPages` → `maxRequestsPerCrawl` (switch to request-counting: retries/redirects count) and `renderingTypeDetectionPercentage` → `renderingTypeDetectionRatio` (switch input to a 0–1 ratio).
   - **Apply the safe Crawlee renames**: `pageLoadTimeoutSecs` → `navigationTimeoutSecs`, `maxScrollHeightPixels` → `maxScrollHeight`, `keepUrlFragments` → `keepUrlFragment`, `ignoreSslErrors` → `ignoreHttpsErrors`. KEEP `initialConcurrency` (clearer than Crawlee's `desiredConcurrency`).
 - **Storage flags**: expose all three. Keep `--dataset` → `datasetName`; ADD `--key-value-store <name>` → `keyValueStoreName` and `--request-queue <name>` → `requestQueueName`. This removes the asymmetric CLI/schema coverage.
+- **Orchestration flags (CLI-only, no schema key)**: rename `--input-file <file>` → `--start-urls-file <path>` and `-c, --config <path>` → `-c, --config-file <path>` (keep the `-c` alias), unifying all four path-valued flags on the `<path>` placeholder and the `--<noun>-file` form. Both are CLI-only — NO schema change (`--start-urls-file` content merges into the existing `startUrls`; `--config-file` loads JSON). Rationale, ecosystem survey, and exact touchpoints: `prompts/2026-06-02-cli-defaults-consistency/context/cli-input-file-flag-naming-review.md`.
 - **Extraction / clarity renames (locked; not Crawlee — these are extraction-layer or contextractor concepts)**:
   - `--target-language` → `--language`; schema key `targetLanguage` → `languageCode` (`target-` wrongly implies a translation pair; `languageCode` is the metadata field name already used in output records).
   - `--dynamic-content-wait` → `--wait-for-dynamic-content` (consistent with the `--wait-for-selector` family); schema key `dynamicContentWaitSecs` → `waitForDynamicContentSecs`; CLI placeholder `<seconds>`. (No Crawlee equivalent — WCC-layer concept.)
@@ -115,6 +116,7 @@ Files: `apps/standalone/src/cliProgram.ts`, `apps/standalone/src/config.ts`
   - Clarity (kept from prior decisions): `--ignore-cors` → `--ignore-cors-and-csp` (→ `ignoreCorsAndCsp`); `--crawl-depth` → `--max-crawl-depth` (→ `maxCrawlDepth`).
   - Extraction: `--target-language <lang>` → `--language <lang>` (→ `languageCode`); `--dynamic-content-wait <seconds>` → `--wait-for-dynamic-content <seconds>` (→ `waitForDynamicContentSecs`).
   - KEEP `--max-retries` and `--respect-robots-txt` (idiomatic CLI spellings; schema keys `maxRequestRetries`/`respectRobotsTxtFile` already match Crawlee).
+  - Orchestration (CLI-only, no schema key — see `context/cli-input-file-flag-naming-review.md`): `--input-file <file>` → `--start-urls-file <path>` (`extract`-only, `cliProgram.ts:640`; Commander prop `inputFile` → `startUrlsFile`; rename the `runExtractAction` local param and the `opts.inputFile` arg at `:651`/`:654`; leave the URL-merge precedence `:447-460` unchanged; content still merges into `startUrls` — no schema change); `-c, --config <path>` → `-c, --config-file <path>` (`cliProgram.ts:139`; keep `-c`; Commander prop `config` → `configFile`; rename `loadConfigFile(opts.config)` → `opts.configFile` and the "via --config" error text at `:464`). Fixes the lone `<file>` placeholder so all path flags use `<path>`. `ExtractOpts` has no `inputFile` field but DOES have a `config` field → rename it to `configFile`; also update the inline `extract.action` opts type. `config.ts` needs NO change — `loadConfigFile` keeps its name (only its `opts.configFile` call sites move).
   - Mind commander's derived prop names: `--globs` → `opts.globs`, `--selector` → `opts.selector`, `--max-requests-per-crawl` → `opts.maxRequestsPerCrawl`, `--navigation-timeout` → `opts.navigationTimeout`, `--keep-url-fragment` → `opts.keepUrlFragment`, `--ignore-https-errors` → `opts.ignoreHttpsErrors`, `--rendering-type-detection` → `opts.renderingTypeDetection`, `--ignore-cors-and-csp` → `opts.ignoreCorsAndCsp`, `--language` → `opts.language`, `--wait-for-dynamic-content` → `opts.waitForDynamicContent`.
 - On the `extract` command (and `export`, see below) add the storage trio:
   - keep `--dataset <name>` → `datasetName`,
@@ -179,7 +181,7 @@ Two layers, two authorities. Crawler-layer params (those that flow into Crawlee)
 ## Step STALE-PURGE: Remove stale docs and stale flag usage
 
 - `apps/standalone/SPEC.md` (≈ line 37): keep the `--deduplication` doc in sync with the schema: `minimal | standard | aggressive` (default `standard`).
-- `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection` (value now 0–1), `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-requests-per-crawl`, and any other flag in the Step CRAWLEE-ALIGN set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication minimal`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
+- `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection` (value now 0–1), `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-requests-per-crawl`, `--input-file` → `--start-urls-file`, `--config` → `--config-file` (if shown), and any other flag in the Step CRAWLEE-ALIGN set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication minimal`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
 - `examples/library-ts/src/main.ts`: fix `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--ignore-canonical-url` → `--deduplication minimal`, and the import path (see PACKAGE-RENAME). The `Dataset`/`KeyValueStore` read-back stays valid.
 - `apps/apify-actor/README.md` hand-written prose: the FAQ and feature bullets live OUTSIDE the `@generated` regions, so `pnpm docs:update` will NOT fix them. Update the "How do I remove duplicate pages?" FAQ to the new dedup values (`standard`/`aggressive`/`minimal` — never the old `url`/`content-hash`), and sync any UI-label references to the refreshed field titles (`Dynamic content wait` → `Wait for dynamic content`, `Max crawl pages` → `Max requests per crawl`).
 - Tiered proxy (removed in `prompts/2026-05-26-drop-tiered-proxy`): purge `tieredProxyUrls`/`tieredProxyConfig` references from `tools/proxy-rotation-tester/README.md`, `tools/proxy-rotation-tester/src/lib.test.ts`, and `.claude/commands/proxy-test.md`.
@@ -223,7 +225,7 @@ pnpm docs:update
 Update only affected sections (`minimal-diff`):
 
 - root `SPEC.md` — package name, brief surface description.
-- `apps/standalone/SPEC.md` — renamed flags, deleted subcommands, new `export` command, new storage flags, corrected `--deduplication` values, package name.
+- `apps/standalone/SPEC.md` — renamed flags (incl. orchestration `--start-urls-file`/`--config-file`), deleted subcommands, new `export` command, new storage flags, corrected `--deduplication` values, package name.
 - `apps/apify-actor/SPEC.md` — renamed Actor input fields (Crawlee-aligned keys). Also grep the SPEC *prose* for stale code identifiers, not just field tables — e.g. `excludes` → `exclude` (singular) in the sitemap-filtering sentence.
 - `packages/schema/SPEC.md` — renamed keys (Crawlee alignment + the two semantic changes).
 - `packages/crawler/SPEC.md` — update the library-facing crawler options (`ContextractorCrawlerOptions`) to the Crawlee-aligned names. Keep the `deduplication` type in sync with the code: it is `'minimal' | 'standard' | 'aggressive'` (default `'standard'`) per the dedup-naming decision (see `createCrawler.ts` and `handler.ts`) — never the older `'minimal' | 'basic' | 'full'` nor the interim `'none' | 'url' | 'content-hash'`.
@@ -235,7 +237,8 @@ Update only affected sections (`minimal-diff`):
 Per `.claude/rules/test-maintenance.md` (`apps/standalone/src/*.test.ts`):
 
 - Add tests for the new `export` command: KVS-blob path (default destination) and inline `content` path (dataset destination), readable filename derivation, manifest emission, collision handling (`html` vs `original` → `.html`), and the empty-dataset case.
-- Update flag tests for all renames (the Step CRAWLEE-ALIGN set + the extraction/clarity renames) plus the new storage flags (`--key-value-store`, `--request-queue`).
+- Update flag tests for all renames (the Step CRAWLEE-ALIGN set + the extraction/clarity renames) plus the new storage flags (`--key-value-store`, `--request-queue`) and the orchestration renames (`--start-urls-file`, `--config-file`).
+- Also update generated-doc assertions that pin flag strings: `tools/gen-md-regions/test/emitters.test.ts` asserts the rendered `cli-flags` table contains specific flag names (e.g. `--config-file`, `--start-urls-file`) — update them for every renamed flag, or `pnpm test` fails even though the rename is correct.
 - Add/adjust tests for the two semantic changes: `renderingTypeDetectionRatio` accepts a 0–1 value (and rejects >1) and `maxRequestsPerCrawl` maps to Crawlee's request count.
 - Remove tests for the deleted `list`/`get`/`kvs`/`storage-dir` subcommands.
 - Update any schema/snapshot tests referencing the renamed keys.
@@ -259,7 +262,7 @@ npx knip --reporter compact   # confirm no dead code left by the deleted subcomm
 Catch-all grep for stragglers — must return ONLY the intentional native-boundary keepers (`packages/extraction/native`, `TrafilaturaConfig`, `toTrafilaturaConfig`, `toNativeConfig` keep `targetLanguage`):
 
 ```bash
-rg -n 'targetLanguage|dynamicContentWaitSecs|renderingTypeDetectionPercentage|includeUrlGlobs|excludeUrlGlobs|linkSelector|maxCrawlPages|pageLoadTimeoutSecs|maxScrollHeightPixels|keepUrlFragments|ignoreSslErrors|--target-language|--dynamic-content-wait|--rendering-detection-pct|--max-pages|--page-load-timeout|--ignore-ssl-errors|--keep-url-fragments|--link-selector|@contextractor/standalone'
+rg -n 'targetLanguage|dynamicContentWaitSecs|renderingTypeDetectionPercentage|includeUrlGlobs|excludeUrlGlobs|linkSelector|maxCrawlPages|pageLoadTimeoutSecs|maxScrollHeightPixels|keepUrlFragments|ignoreSslErrors|--target-language|--dynamic-content-wait|--rendering-detection-pct|--max-pages|--page-load-timeout|--ignore-ssl-errors|--keep-url-fragments|--link-selector|--input-file|inputFile|@contextractor/standalone'
 ```
 
 Also sweep the stragglers that codegen will NOT fix — these were the exact gaps the first pass missed (`pnpm docs:update` only rewrites `@generated` regions, so hand-written README/FAQ prose must be checked manually):
@@ -269,6 +272,8 @@ Also sweep the stragglers that codegen will NOT fix — these were the exact gap
 rg -n 'tieredProxy' -g '!node_modules' -g '!prompts'
 # old dedup enum values — expect zero outside prompts/ and the superseded section of the dedup-naming review
 rg -n 'content-hash|ignoreCanonicalUrl|ignore-canonical-url' -g '!node_modules' -g '!prompts'
+# orchestration-flag rename (context/cli-input-file-flag-naming-review.md) — bare --config/opts.config must be gone (excluding --config-file/configFile); expect zero outside prompts/
+rg -n '\-\-config\b|opts\.config\b' -g '!node_modules' -g '!prompts' | rg -v '\-\-config-file|configFile'
 # stale UI-title strings left after key renames (hand-written README/CLI prose) — expect zero (extraction package keeps targetLanguage)
 rg -n 'Page load timeout|Target language|Dynamic content wait|Keep URL fragments|Ignore SSL|Max pages' -g '*.md' -g '*.ts' -g '!prompts' -g '!node_modules' -g '!packages/extraction'
 ```
