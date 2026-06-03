@@ -141,14 +141,14 @@ function addExtractionOptions(cmd: Command): Command {
     .addOption(
       new Option('--max-requests-per-crawl <n>', 'Max requests to handle (0 = unlimited)')
         .argParser(toInt)
-        .default(s.maxRequestsPerCrawl._def.defaultValue, 'unlimited'),
+        .default(s.maxRequestsPerCrawl.def.defaultValue, 'unlimited'),
     )
     .addOption(
       new Option('--max-crawl-depth <n>', 'Max link depth from start URLs (0 = start only)')
         .argParser(toInt)
-        .default(s.maxCrawlDepth._def.defaultValue, 'unlimited'),
+        .default(s.maxCrawlDepth.def.defaultValue, 'unlimited'),
     )
-    .option('--headless', 'Run browser in headless mode', s.headless._def.defaultValue)
+    .option('--headless', 'Run browser in headless mode', s.headless.def.defaultValue)
     .option('--no-headless', 'Run browser with UI')
     .option('--proxy <url>', 'Proxy URL (repeatable)', collectValues, [] as string[])
     .option(
@@ -162,7 +162,7 @@ function addExtractionOptions(cmd: Command): Command {
         'Max session rotations per request on block detection',
       )
         .argParser(toInt)
-        .default(s.maxSessionRotations._def.defaultValue),
+        .default(s.maxSessionRotations.def.defaultValue),
     )
     .option('--crawler-type <type>', 'Crawler engine: adaptive, firefox, chromium, cheerio')
     .option(
@@ -174,7 +174,7 @@ function addExtractionOptions(cmd: Command): Command {
     .addOption(
       new Option('--navigation-timeout <secs>', 'Navigation timeout in seconds')
         .argParser(toInt)
-        .default(s.navigationTimeoutSecs._def.defaultValue),
+        .default(s.navigationTimeoutSecs.def.defaultValue),
     )
     .option('--block-media', 'Block images, stylesheets, fonts, PDFs, and ZIPs')
     .option('--no-block-media', 'Do not block media requests (default)')
@@ -182,7 +182,7 @@ function addExtractionOptions(cmd: Command): Command {
     .option(
       '--close-cookie-modals',
       'Auto-dismiss cookie banners',
-      s.closeCookieModals._def.defaultValue,
+      s.closeCookieModals.def.defaultValue,
     )
     .option('--max-scroll-height <px>', 'Max scroll height in pixels', toInt)
     .option('--ignore-https-errors', 'Skip HTTPS certificate verification')
@@ -212,23 +212,23 @@ function addExtractionOptions(cmd: Command): Command {
     .addOption(
       new Option('--max-concurrency <n>', 'Max parallel requests')
         .argParser(toInt)
-        .default(s.maxConcurrency._def.defaultValue),
+        .default(s.maxConcurrency.def.defaultValue),
     )
     .addOption(
       new Option('--max-retries <n>', 'Max request retries')
         .argParser(toInt)
-        .default(s.maxRequestRetries._def.defaultValue),
+        .default(s.maxRequestRetries.def.defaultValue),
     )
     .addOption(
       new Option('--max-results <n>', 'Max results per crawl (0 = unlimited)')
         .argParser(toInt)
-        .default(s.maxResultsPerCrawl._def.defaultValue, 'unlimited'),
+        .default(s.maxResultsPerCrawl.def.defaultValue, 'unlimited'),
     )
     .option(
       '--save <format>',
       'Output format: markdown, txt, json, html, original, all (repeatable)',
       collectValues,
-      s.save._def.defaultValue,
+      s.save.def.defaultValue,
     )
     .addOption(
       new Option(
@@ -250,7 +250,7 @@ function addExtractionOptions(cmd: Command): Command {
       '--save-destination <dest>',
       'Where to save: key-value-store|dataset (repeatable)',
       parseSaveDestination,
-      s.saveDestination._def.defaultValue,
+      s.saveDestination.def.defaultValue,
     )
     .option('--storage-dir <path>', 'Override Crawlee storage directory')
     .option('--store-skipped-urls', 'Push skipped URL records to the dataset after crawl')
