@@ -16,7 +16,7 @@ consistency call (refined lean: **`--config-file`** — see below):
 | Flag | Before | After |
 |---|---|---|
 | start-URLs file | `--input-file <file>` | `--start-urls-file <path>` |
-| config | `-c, --config <path>` | `-c, --config <path>` *(or `-c, --config-file <path>` — see below)* |
+| config | `-c, --config <path>` | `-c, --config-file <path>` *(refined lean; `-c, --config <path>` also defensible — see below)* |
 | storage dir | `--storage-dir <path>` | unchanged |
 | output dir | `--output-dir <path>` | unchanged |
 
