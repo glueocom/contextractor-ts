@@ -20,7 +20,7 @@ contextractor extract [URLS...]
 contextractor extract https://example.com
 contextractor extract https://example.com --mode precision --save json
 contextractor extract https://example.com --save-destination dataset
-contextractor extract --config config.json --max-requests-per-crawl 10
+contextractor extract --config-file config.json --max-requests-per-crawl 10
 ```
 
 ## Subcommands
@@ -39,11 +39,11 @@ when at least one request fails after retries.
 ```bash
 contextractor extract https://example.com
 contextractor extract https://a.com https://b.com --save txt
-contextractor extract --input-file urls.txt --dataset my-archive
+contextractor extract --start-urls-file urls.txt --dataset my-archive
 contextractor extract https://example.com --save-destination key-value-store --save-destination dataset
 ```
 
-- `--input-file <file>` — read URLs (one per line) from a file
+- `--start-urls-file <path>` — read start URLs (one per line) from a file
 - `--dataset <name>` — route to a named dataset (default: `default`)
 - `--save-destination <dest>` — repeatable: `key-value-store` (default) or `dataset`
 - `--storage-dir <path>` — override Crawlee storage directory for this run
@@ -113,11 +113,11 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 
 | Option | Description |
 |--------|-------------|
-| `--input-file` | Read URLs (one per line) from a file |
+| `--start-urls-file` | Read start URLs (one per line) from a file |
 | `--dataset` | Route output to a named dataset (default: default) |
 | `--key-value-store` | Route content blobs to a named key-value store (default: default) |
 | `--request-queue` | Route pending URLs to a named request queue |
-| `--config`, `-c` | Path to JSON config file |
+| `--config-file`, `-c` | Path to JSON config file |
 | `--clean` | Purge default storage before extracting (datasets, KVS, request queues) |
 | `--max-requests-per-crawl` | Max requests to handle (0 = unlimited) |
 | `--max-crawl-depth` | Max link depth from start URLs (0 = start only) |
@@ -171,7 +171,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 
 ## JSON config
 
-Pass `--config path/to/config.json`. The file is validated by the Zod 4
+Pass `--config-file path/to/config.json`. The file is validated by the Zod 4
 schema in
 [`@contextractor/schema`](../../packages/schema/README.md), so
 keys use the same camelCase shape as the

@@ -19,7 +19,7 @@ Full flag reference: auto-generated table in `apps/standalone/README.md`.
 Extracts content from one or more URLs. Writes to Crawlee storage (Dataset or Key-Value Store), depending on `--save-destination`.
 
 Options: all extraction flags (`--save`, `--max-requests-per-crawl`, `--headless`, `--crawler-type`, `--rendering-type-detection`, etc.) plus:
-- `--input-file <file>` — read URLs line by line from a file
+- `--start-urls-file <path>` — read start URLs line by line from a file
 - `--dataset <name>` — named dataset for Crawlee storage (default `default`)
 - `--key-value-store <name>` — named key-value store for content blobs (default `default`)
 - `--request-queue <name>` — named request queue for pending URLs

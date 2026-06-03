@@ -136,7 +136,7 @@ function parseStringRecord(raw: string, flagName: string): Record<string, string
 function addExtractionOptions(cmd: Command): Command {
   const s = ContextractorInput.shape;
   return cmd
-    .option('-c, --config <path>', 'Path to JSON config file')
+    .option('-c, --config-file <path>', 'Path to JSON config file')
     .option('--clean', 'Purge default storage before extracting (datasets, KVS, request queues)')
     .addOption(
       new Option('--max-requests-per-crawl <n>', 'Max requests to handle (0 = unlimited)')
@@ -430,7 +430,7 @@ function resolveCliOnly(
 async function runExtractAction(
   urls: string[],
   opts: ExtractOpts,
-  inputFile?: string,
+  startUrlsFile?: string,
   datasetName?: string,
   command?: Command,
 ): Promise<void> {
@@ -439,15 +439,15 @@ async function runExtractAction(
   const storageDir = resolveStorageDir(opts.storageDir);
   configureStorage(storageDir);
 
-  const fromFile: Partial<ContextractorInputType> = opts.config
-    ? await loadConfigFile(opts.config)
+  const fromFile: Partial<ContextractorInputType> = opts.configFile
+    ? await loadConfigFile(opts.configFile)
     : {};
   const fromCli = buildSchemaOverrides(opts, command);
 
   const collectedUrls = [...urls];
 
-  if (inputFile) {
-    const text = await readFile(inputFile, 'utf8');
+  if (startUrlsFile) {
+    const text = await readFile(startUrlsFile, 'utf8');
     const fileUrls = text
       .split('\n')
       .map((s) => s.trim())
@@ -461,7 +461,7 @@ async function runExtractAction(
 
   const startUrlsLayered = Array.isArray(layered.startUrls) ? layered.startUrls : undefined;
   if (!startUrlsLayered || startUrlsLayered.length === 0) {
-    console.error('Error: No URLs specified. Provide URLs as arguments or via --config.');
+    console.error('Error: No URLs specified. Provide URLs as arguments or via --config-file.');
     process.exit(1);
   }
 
@@ -637,7 +637,7 @@ export function buildProgram(): Command {
   const extract = new Command('extract');
   extract.description('Extract content from URLs and save to storage');
   extract.argument('[urls...]', 'URLs to extract content from');
-  extract.option('--input-file <file>', 'Read URLs (one per line) from a file');
+  extract.option('--start-urls-file <path>', 'Read start URLs (one per line) from a file');
   extract.option('--dataset <name>', 'Route output to a named dataset (default: default)');
   extract.option(
     '--key-value-store <name>',
@@ -648,10 +648,10 @@ export function buildProgram(): Command {
   extract.action(
     async (
       urls: string[],
-      opts: ExtractOpts & { inputFile?: string; dataset?: string },
+      opts: ExtractOpts & { startUrlsFile?: string; dataset?: string },
       command: Command,
     ) => {
-      await runExtractAction(urls, opts, opts.inputFile, opts.dataset, command);
+      await runExtractAction(urls, opts, opts.startUrlsFile, opts.dataset, command);
     },
   );
   program.addCommand(extract);
@@ -733,7 +733,7 @@ export function isMainEntry(metaUrl: string, argv1 = process.argv[1]): boolean {
 // ---------------------------------------------------------------------------
 
 interface ExtractOpts {
-  config?: string;
+  configFile?: string;
   clean?: boolean;
   maxRequestsPerCrawl?: number;
   maxCrawlDepth?: number;

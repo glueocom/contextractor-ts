@@ -117,7 +117,7 @@ describe('runExtractAction — exit code 2 on partial failure', () => {
     const { Dataset, KeyValueStore, RequestQueue } = await import('crawlee');
     const program = buildProgram();
 
-    await runCli(program, ['node', 'contextractor', 'extract', '--config', configPath]);
+    await runCli(program, ['node', 'contextractor', 'extract', '--config-file', configPath]);
 
     expect(crawlerOpts).toMatchObject({
       mode: 'recall',
@@ -168,7 +168,7 @@ describe('runExtractAction — exit code 2 on partial failure', () => {
       'node',
       'contextractor',
       'extract',
-      '--config',
+      '--config-file',
       configPath,
       '--mode',
       'precision',
@@ -188,6 +188,87 @@ describe('runExtractAction — exit code 2 on partial failure', () => {
     expect(vi.mocked(createCrawleeStorageSink)).toHaveBeenCalledWith(
       expect.objectContaining({ destinations: ['key-value-store'], formats: ['markdown'] }),
     );
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it('merges --start-urls-file URLs with positional URLs', async () => {
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'contextractor-cli-urls-file-'));
+    tempDirs.push(tempDir);
+    const urlsPath = path.join(tempDir, 'urls.txt');
+    writeFileSync(
+      urlsPath,
+      [
+        '# leading comment',
+        'https://from-file-1.example.com',
+        '',
+        'https://from-file-2.example.com',
+      ].join('\n'),
+      'utf8',
+    );
+
+    let crawlerOpts:
+      | Parameters<typeof import('@contextractor/crawler')['createContextractorCrawler']>[0]
+      | undefined;
+
+    const { createContextractorCrawler } = await import('@contextractor/crawler');
+    vi.mocked(createContextractorCrawler).mockImplementationOnce((opts) => {
+      crawlerOpts = opts;
+      return { run: async () => ({}) as never } as never;
+    });
+
+    const { buildProgram, runCli } = await import('./cliProgram.js');
+    const program = buildProgram();
+
+    await runCli(program, [
+      'node',
+      'contextractor',
+      'extract',
+      'https://positional.example.com',
+      '--start-urls-file',
+      urlsPath,
+      '--crawler-type',
+      'cheerio',
+    ]);
+
+    expect(crawlerOpts?.startUrls).toEqual([
+      'https://positional.example.com',
+      'https://from-file-1.example.com',
+      'https://from-file-2.example.com',
+    ]);
+    expect(exitSpy).toHaveBeenCalledWith(0);
+  });
+
+  it('loads config via the -c alias for --config-file', async () => {
+    const tempDir = mkdtempSync(path.join(os.tmpdir(), 'contextractor-cli-c-alias-'));
+    tempDirs.push(tempDir);
+    const configPath = path.join(tempDir, 'config.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        startUrls: [{ url: 'https://example.com' }],
+        mode: 'recall',
+        crawlerType: 'cheerio',
+      }),
+      'utf8',
+    );
+
+    let crawlerOpts:
+      | Parameters<typeof import('@contextractor/crawler')['createContextractorCrawler']>[0]
+      | undefined;
+
+    const { createContextractorCrawler } = await import('@contextractor/crawler');
+    vi.mocked(createContextractorCrawler).mockImplementationOnce((opts) => {
+      crawlerOpts = opts;
+      return { run: async () => ({}) as never } as never;
+    });
+
+    const { buildProgram, runCli } = await import('./cliProgram.js');
+    const program = buildProgram();
+
+    await runCli(program, ['node', 'contextractor', 'extract', '-c', configPath]);
+
+    expect(crawlerOpts).toMatchObject({ mode: 'recall' });
+    expect(crawlerOpts?.startUrls).toEqual(['https://example.com']);
     expect(exitSpy).toHaveBeenCalledWith(0);
   });
 });

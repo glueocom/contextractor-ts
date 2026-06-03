@@ -239,3 +239,34 @@ describe('buildProgram — removed stale flags', () => {
     expect(getExtractOptions(program)).not.toContain('--no-metadata');
   });
 });
+
+describe('buildProgram — --start-urls-file flag', () => {
+  it('is a recognized option on the extract subcommand', () => {
+    const program = buildProgram();
+    expect(getExtractOptions(program)).toContain('--start-urls-file');
+  });
+
+  it('no longer exposes the old --input-file flag', () => {
+    const program = buildProgram();
+    expect(getExtractOptions(program)).not.toContain('--input-file');
+  });
+});
+
+describe('buildProgram — --config-file flag', () => {
+  it('is a recognized option on the extract subcommand', () => {
+    const program = buildProgram();
+    expect(getExtractOptions(program)).toContain('--config-file');
+  });
+
+  it('keeps the -c short alias', () => {
+    const program = buildProgram();
+    const extract = program.commands.find((c) => c.name() === 'extract');
+    const opt = extract?.options.find((o) => o.long === '--config-file');
+    expect(opt?.short).toBe('-c');
+  });
+
+  it('no longer exposes the old --config flag', () => {
+    const program = buildProgram();
+    expect(getExtractOptions(program)).not.toContain('--config');
+  });
+});

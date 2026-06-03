@@ -22,7 +22,7 @@ contextractor extract "$URL1" --key-value-store my-blobs --request-queue my-queu
 # Input file — reads URLs line by line
 echo "$URL1" > /tmp/urls.txt
 echo "$URL2" >> /tmp/urls.txt
-contextractor extract --input-file /tmp/urls.txt
+contextractor extract --start-urls-file /tmp/urls.txt
 
 # Export stored content to a user-facing output directory (human-named files + manifest.json)
 contextractor export --output-dir ./contextractor-output

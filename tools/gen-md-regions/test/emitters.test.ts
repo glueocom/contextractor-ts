@@ -15,7 +15,8 @@ describe('emitters', () => {
     expect(out).toBeDefined();
     expect(out).toContain('| Option | Description |');
     expect(out).toContain('`--max-requests-per-crawl`');
-    expect(out).toContain('`--config`');
+    expect(out).toContain('`--config-file`');
+    expect(out).toContain('`--start-urls-file`');
   });
 
   it('input-type renders a TS interface block', () => {
