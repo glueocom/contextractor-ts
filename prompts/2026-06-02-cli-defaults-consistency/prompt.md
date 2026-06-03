@@ -61,7 +61,7 @@ Apply ALL of these key renames (see Step CRAWLEE-ALIGN for the rationale per fie
 - Extraction / clarity renames (key only):
   - `targetLanguage` (≈ lines 256-262) → `languageCode`.
   - `dynamicContentWaitSecs` (≈ lines 419-426) → `waitForDynamicContentSecs`.
-- Update field titles/descriptions/`enumTitles` prose accordingly; keep enum *values* unchanged and kebab-cased per the convention above.
+- Refresh each renamed field's `meta.title`, description, and `enumTitles` to match the new name — REQUIRED, not optional (the first pass left stale titles like `Page load timeout`/`Target language`/`Max pages` that had to be fixed afterward). Apply: `navigationTimeoutSecs`→`Navigation timeout` (desc "page load"→"page navigation"), `keepUrlFragment`→`Keep URL fragment` (singular), `languageCode`→`Language`, `maxRequestsPerCrawl`→`Max requests per crawl`, `waitForDynamicContentSecs`→`Wait for dynamic content`, `ignoreHttpsErrors`→`Ignore HTTPS errors` (desc "SSL"→"HTTPS"). Keep enum *values* unchanged and kebab-cased per the convention above. A title IS the Apify Console label, so propagate each change to the matching CLI flag help in `cliProgram.ts` (`--navigation-timeout`, `--ignore-https-errors`, …) and to any non-`@generated` README prose that names the old label (see Step STALE-PURGE).
 
 The Apify Actor input field names derive from these keys and will change — that is the intended breaking change.
 
@@ -181,6 +181,7 @@ Two layers, two authorities. Crawler-layer params (those that flow into Crawlee)
 - `apps/standalone/SPEC.md` (≈ line 37): keep the `--deduplication` doc in sync with the schema: `minimal | standard | aggressive` (default `standard`).
 - `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection` (value now 0–1), `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-requests-per-crawl`, and any other flag in the Step CRAWLEE-ALIGN set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication minimal`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
 - `examples/library-ts/src/main.ts`: fix `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--ignore-canonical-url` → `--deduplication minimal`, and the import path (see PACKAGE-RENAME). The `Dataset`/`KeyValueStore` read-back stays valid.
+- `apps/apify-actor/README.md` hand-written prose: the FAQ and feature bullets live OUTSIDE the `@generated` regions, so `pnpm docs:update` will NOT fix them. Update the "How do I remove duplicate pages?" FAQ to the new dedup values (`standard`/`aggressive`/`minimal` — never the old `url`/`content-hash`), and sync any UI-label references to the refreshed field titles (`Dynamic content wait` → `Wait for dynamic content`, `Max crawl pages` → `Max requests per crawl`).
 - Tiered proxy (removed in `prompts/2026-05-26-drop-tiered-proxy`): purge `tieredProxyUrls`/`tieredProxyConfig` references from `tools/proxy-rotation-tester/README.md`, `tools/proxy-rotation-tester/src/lib.test.ts`, and `.claude/commands/proxy-test.md`.
 - Removed `--save jsonl` format (dropped in `prompts/2026-05-12-remove-jsonl-saving`): purge from `.claude/commands/autonomous/maintenance/sync/docs.md`. Since the `list` subcommand is now deleted, the `list --format jsonl` carve-out in that doc is also moot — remove it.
 
@@ -223,9 +224,9 @@ Update only affected sections (`minimal-diff`):
 
 - root `SPEC.md` — package name, brief surface description.
 - `apps/standalone/SPEC.md` — renamed flags, deleted subcommands, new `export` command, new storage flags, corrected `--deduplication` values, package name.
-- `apps/apify-actor/SPEC.md` — renamed Actor input fields (Crawlee-aligned keys).
+- `apps/apify-actor/SPEC.md` — renamed Actor input fields (Crawlee-aligned keys). Also grep the SPEC *prose* for stale code identifiers, not just field tables — e.g. `excludes` → `exclude` (singular) in the sitemap-filtering sentence.
 - `packages/schema/SPEC.md` — renamed keys (Crawlee alignment + the two semantic changes).
-- `packages/crawler/SPEC.md` — update the library-facing crawler options (`ContextractorCrawlerOptions`) to the Crawlee-aligned names. The `deduplication?: 'minimal' | 'basic' | 'full'` at ≈ line 62 is already stale — the code uses `'none' | 'url' | 'content-hash'` (see `createCrawler.ts` line 91). Update it to match the code.
+- `packages/crawler/SPEC.md` — update the library-facing crawler options (`ContextractorCrawlerOptions`) to the Crawlee-aligned names. Keep the `deduplication` type in sync with the code: it is `'minimal' | 'standard' | 'aggressive'` (default `'standard'`) per the dedup-naming decision (see `createCrawler.ts` and `handler.ts`) — never the older `'minimal' | 'basic' | 'full'` nor the interim `'none' | 'url' | 'content-hash'`.
 
 ---
 
@@ -259,6 +260,17 @@ Catch-all grep for stragglers — must return ONLY the intentional native-bounda
 
 ```bash
 rg -n 'targetLanguage|dynamicContentWaitSecs|renderingTypeDetectionPercentage|includeUrlGlobs|excludeUrlGlobs|linkSelector|maxCrawlPages|pageLoadTimeoutSecs|maxScrollHeightPixels|keepUrlFragments|ignoreSslErrors|--target-language|--dynamic-content-wait|--rendering-detection-pct|--max-pages|--page-load-timeout|--ignore-ssl-errors|--keep-url-fragments|--link-selector|@contextractor/standalone'
+```
+
+Also sweep the stragglers that codegen will NOT fix — these were the exact gaps the first pass missed (`pnpm docs:update` only rewrites `@generated` regions, so hand-written README/FAQ prose must be checked manually):
+
+```bash
+# tiered-proxy leftovers (Step STALE-PURGE) — expect zero outside prompts/
+rg -n 'tieredProxy' -g '!node_modules' -g '!prompts'
+# old dedup enum values — expect zero outside prompts/ and the superseded section of the dedup-naming review
+rg -n 'content-hash|ignoreCanonicalUrl|ignore-canonical-url' -g '!node_modules' -g '!prompts'
+# stale UI-title strings left after key renames (hand-written README/CLI prose) — expect zero (extraction package keeps targetLanguage)
+rg -n 'Page load timeout|Target language|Dynamic content wait|Keep URL fragments|Ignore SSL|Max pages' -g '*.md' -g '*.ts' -g '!prompts' -g '!node_modules' -g '!packages/extraction'
 ```
 
 Also grep `apps/apify-actor/src` for any read sites of the renamed keys and update any Actor-side input mapping to the new Crawlee-aligned keys (and `languageCode` / `waitForDynamicContentSecs`).
