@@ -11,9 +11,8 @@ Playwright).
 This test suite verifies that:
 - Proxy configuration is correctly passed through each entry point
 - Proxies are correctly rotated according to the selected mode (`RECOMMENDED`, `PER_REQUEST`)
-- Tiered proxy escalation works via `tieredProxyUrls` for automatic domain-level escalation
+- Tiered proxy escalation works via Crawlee's native `ProxyConfiguration({ tieredProxyUrls })` for automatic domain-level escalation
 - Extracted content identifies which proxy was used
-- Mutual exclusivity guards (`tieredProxyUrls` + `useApifyProxy`) are enforced at the Actor entry point
 
 ## Test Coverage
 
@@ -28,15 +27,12 @@ Direct tests of the Contextractor library API (`createContextractorCrawler`):
 
 Tests of the standalone CLI (`apps/standalone/`):
 - Flat proxy routing via `--proxy` flags and `--proxy-rotation recommended` (ports 8084–8086)
-- Tiered proxy routing via `--config tieredProxyUrls` (config file, ports 8095–8097)
 
 ### Actor Tests (`actor.test.ts`)
 
 Tests of the Apify Actor (`apps/apify-actor/`):
 - Content extraction through flat proxy via `proxyConfiguration.proxyUrls` (ports 8087–8089)
 - `PER_REQUEST` rotation via flat proxy (ports 8087–8089)
-- Tiered proxy routing via `tieredProxyUrls` Actor input (ports 8098–8099)
-- Mutual exclusivity rejection: `tieredProxyUrls` + `proxyConfiguration.useApifyProxy: true` (ports 8098)
 
 ## Running Tests
 
@@ -78,8 +74,6 @@ Port assignments (to prevent inter-file conflicts in parallel runs):
 - `cli.test.ts` flat tests: 8084–8086
 - `actor.test.ts` flat tests: 8087–8089
 - `lib.test.ts` tiered tests: 8091–8094
-- `cli.test.ts` tiered tests: 8095–8097
-- `actor.test.ts` tiered tests: 8098–8099
 
 ## Expected Output
 
@@ -87,7 +81,7 @@ Successful run:
 
 ```
 Test Files  3 passed (3)
-Tests     10 passed (10)
+Tests      6 passed (6)
 ```
 
 ## Troubleshooting

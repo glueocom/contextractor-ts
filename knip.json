@@ -4,5 +4,12 @@
     "packages/extraction/native/index.js",
     "dev-utils/installation/lib/pkg.ts",
     "examples/**"
+  ],
+  "ignoreDependencies": [
+    "cspell",
+    "@cspell/dict-bash",
+    "@cspell/dict-en-gb",
+    "@cspell/dict-git",
+    "@cspell/dict-rust"
   ]
 }

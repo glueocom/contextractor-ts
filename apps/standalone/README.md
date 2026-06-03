@@ -48,43 +48,30 @@ contextractor extract https://example.com --save-destination key-value-store --s
 - `--save-destination <dest>` — repeatable: `key-value-store` (default) or `dataset`
 - `--storage-dir <path>` — override Crawlee storage directory for this run
 
-### `list`
+### `export`
+
+Export stored extraction content to a user-facing output directory. Reads the
+dataset record index and, for every `success` record, writes one file per saved
+format — using the inline `content` or fetching the key-value-store blob by
+`key`. File names are derived from the record title (then its URL, then `page`),
+and a `manifest.json` listing every record (including failed and skipped) is
+written alongside the files.
 
 ```bash
-contextractor list                          # list default dataset
-contextractor list my-archive --format json --limit 10
-contextractor list my-archive --format jsonl --desc
+contextractor export                                  # → ./contextractor-output
+contextractor export --output-dir ./out --dataset my-archive
 ```
 
-Formats: `json`, `jsonl` (default), `csv`.
-
-### `get`
-
-```bash
-contextractor get default 0   # 0-based index
-```
-
-### `kvs`
-
-```bash
-contextractor kvs put my-key ./file.json
-echo '{"ok":true}' | contextractor kvs put my-key - --content-type application/json
-contextractor kvs get my-key
-contextractor kvs ls --limit 20
-contextractor kvs rm my-key
-```
+- `--output-dir <path>` — output directory (default: `./contextractor-output`)
+- `--dataset <name>` — dataset to read the record index from (default: `default`)
+- `--key-value-store <name>` — key-value store holding content blobs (default: `default`)
+- `--storage-dir <path>` — override Crawlee storage directory
 
 ### `purge`
 
 ```bash
 contextractor purge        # purge default dataset and key-value store
 contextractor purge --all  # purge all datasets and key-value stores
-```
-
-### `storage-dir`
-
-```bash
-contextractor storage-dir  # prints the resolved storage path and exits
 ```
 
 ## Storage directory resolution

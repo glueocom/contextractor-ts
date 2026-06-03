@@ -19,7 +19,7 @@ packages/extraction/        TypeScript engine + napi-rs Rust crate
 packages/crawler/           Shared Crawlee + Playwright crawler factory
 packages/schema/            Zod 4 single source of truth for input
 apps/apify-actor/           Apify Actor  (depends on extraction + crawler + schema)
-apps/standalone/            Standalone CLI (depends on extraction + crawler + schema)
+apps/standalone/            Standalone CLI (depends on crawler + schema; extraction transitive via crawler)
 ```
 
 Data flow:

@@ -104,7 +104,13 @@
     "actorize",
     "stackoverflow",
     "permissioning",
-    "wfile"
+    "wfile",
+    "refetched",
+    "expanduser",
+    "setdefault",
+    "mkstemp",
+    "fdopen",
+    "qdrant"
   ],
   "ignoreWords": [
     "RAQSG",
@@ -117,7 +123,9 @@
     "maxcopell",
     "poidata",
     "vdrmota",
-    "Technica"
+    "Technica",
+    "SERP",
+    "rawhash"
   ],
   "flagWords": ["hte", "teh", "recieve", "seperate"],
   "ignorePaths": [
