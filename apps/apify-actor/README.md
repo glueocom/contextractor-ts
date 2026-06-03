@@ -1,5 +1,7 @@
 # Contextractor
 
+<img align="right" width="220" src="https://www.contextractor.com/media/cover-mini.svg" alt="Contextractor">
+
 **Crawl any website and extract clean, boilerplate-free main content** as
 **Markdown, plain text, JSON, HTML, or raw original HTML** — ready to feed
 **LLMs, RAG pipelines, and vector databases**. Contextractor uses the
