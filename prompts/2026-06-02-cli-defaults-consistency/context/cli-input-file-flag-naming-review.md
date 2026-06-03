@@ -28,6 +28,11 @@ runner-up is the more concise **`--urls-file <path>`**; the trade-off is discuss
 This is a **CLI-only flag rename — no Zod/schema change** (the flag has no backing schema key; its content
 merges into the existing `startUrls` array).
 
+On the follow-up question of whether to *also* rename `--config` → `--config-file` (for a uniform
+`--<noun>-file` form once `--start-urls-file` exists): **keep `-c, --config <path>`**. `--config-file` is a
+defensible alternative but loses a near-universal idiom — full analysis in
+[`--config` vs `--config-file`](#--config-vs---config-file) below.
+
 ---
 
 ## TL;DR
@@ -181,6 +186,51 @@ fact.)*
   repo-dominant `<path>` → all four path flags (`--config`, `--storage-dir`, `--output-dir`,
   `--start-urls-file`) become uniform. Do **not** flip everything to a `<file>`/`<path>` file-vs-dir split
   mid-rename — that would *invent* a new convention rather than apply the existing one (see Open questions).
+
+---
+
+## `--config` vs `--config-file`
+
+**Verdict: keep `-c, --config <path>`.** `--config-file` is internally defensible but is not recommended;
+this is a genuine team-style call since the user raised it.
+
+The trigger: once `--input-file` becomes `--start-urls-file`, should `--config` become `--config-file` so
+both "read settings/URLs from a file" flags share the `--<noun>-file` form?
+
+### Keep `--config` (recommended)
+
+- **It is the dominant, universally-recognized config-flag spelling.** Cited: curl `-K, --config <file>`,
+  docker `--config`, wget `--config=FILE`, gau `--config`, and the CLI11 framework's default `set_config("--config")`
+  (cliutils.github.io). A 2026-06-03 web survey concluded "neither `--config` nor `--config-file` has
+  universal dominance … `--config` appears shorter and more concise" (clig.dev / oclif / Go-CLI guides).
+- **The single closest analog keeps it.** wget — a URL downloader that has *both* a URL-list-from-file flag
+  and a config-file flag — spells them `--input-file` + `--config`, **not** `--config-file` (man7.org). Tools
+  that have both flags do **not** make them parallel.
+- **The repo's idiomatic-short-form rule protects it** (`prompt.md:113`), reinforced by the rejected verbose
+  renames `--max-request-retries` / `--respect-robots-txt-file` (`prompt.md:105`). `--config` is the idiomatic
+  short form; `--config-file` adds length without clarity.
+- `-c` is a natural short alias for `--config`. And `--config` is a **top-level, sui-generis concept**, not a
+  peer of the niche `--start-urls-file` bulk-input flag — so the form mismatch is more apparent than real.
+
+### Rename to `--config-file` (the alternative)
+
+- **Formal parallelism**: `--start-urls-file <path>` + `--config-file <path>` establishes a teachable rule —
+  `--<noun>-file <path>` = "load `<noun>` from a file" — cleaner than mixing a compound (`--start-urls-file`)
+  with a bare idiom (`--config`).
+- Slightly more explicit that the value is a file (not a directory or inline value).
+- Precedent exists but is **weak and varied**: tools wanting explicitness rarely land on exactly
+  `--config-file` — Prometheus/Alertmanager use `--config.file` (dot, not hyphen; prometheus.io), yt-dlp uses
+  `--config-locations`, kubectl uses `--kubeconfig`. So `--config-file` does not have a strong blessed
+  precedent the way `--config` does.
+- If chosen: spell it `-c, --config-file <path>` (keep `-c` as the short alias), and rename
+  `loadConfigFile(opts.config)` → `opts.configFile`. Still CLI-only (no schema key).
+
+### Why keep wins
+
+The wget precedent (the most relevant analog) plus the dominance and idiom-protection of `--config` outweigh
+the parallelism gain. *(This weighting is a judgment call, not a cited fact.)* If the team values a single
+uniform `--<noun>-file` convention above ecosystem idiom, `--config-file` is the consistent choice — and is
+trivial to apply alongside the `--start-urls-file` rename.
 
 ---
 
