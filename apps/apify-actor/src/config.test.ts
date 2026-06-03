@@ -32,7 +32,7 @@ const BASE_INPUT: ContextractorInputType = {
   waitForDynamicContentSecs: 0,
   useSitemaps: false,
   initialConcurrency: 0,
-  deduplication: 'url',
+  deduplication: 'standard',
   storeSkippedUrls: false,
   mode: 'balanced',
   includeComments: true,
@@ -60,7 +60,7 @@ describe('buildCrawlerOpts blockMedia pass-through', () => {
 });
 
 describe('buildCrawlerOpts deduplication pass-through', () => {
-  it.each(['none', 'url', 'content-hash'] as const)('passes deduplication: "%s"', (level) => {
+  it.each(['minimal', 'standard', 'aggressive'] as const)('passes deduplication: "%s"', (level) => {
     const input: ContextractorInputType = { ...BASE_INPUT, deduplication: level };
     const opts = buildCrawlerOpts(input, FAKE_SINK);
     expect(opts.deduplication).toBe(level);

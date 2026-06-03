@@ -1,8 +1,31 @@
 # Deduplication naming review
 
 Scope: two questions about the `deduplication` schema key / `--deduplication` CLI flag and its
-`none | url | content-hash` enum. Authority for this review is the **Crawlee + Apify ecosystem**
-only — trafilatura naming is explicitly out of scope.
+enum. Authority for this review is the **Crawlee + Apify ecosystem** only — trafilatura naming is
+explicitly out of scope.
+
+## DECISION (2026-06-03) — superseded the original recommendation below
+
+After review, the enum was changed from the mechanism names `none | url | content-hash` (default
+`url`) to honest **level names** `minimal | standard | aggressive` (default `standard`), implemented
+across schema, crawler, CLI, Actor, tests, generated docs, and SPECs.
+
+Two findings drove the change (they outweigh the "keep it" recommendation that follows):
+
+- **`none` was a misnomer.** Crawlee's built-in URL dedup is always on, so the lowest level is never
+  "none." The original 2026-05-18 design used `minimal` for exactly this reason; commit `8910555`
+  ("unify enum casing") replaced it with `none` — but `minimal/basic/full` were already
+  casing-compliant, so that rename was incidental, not required by the casing work.
+- **Level names read clearer than mechanism names** for a graduated setting, and `aggressive` echoes
+  Apify Website Content Crawler's `aggressivePrune` (its content-level dedup field). `standard` is the
+  honest default (canonical-URL dedup ON, matching WCC's effective default).
+
+Value mapping applied: `none → minimal`, `url → standard`, `content-hash → aggressive`. Behavior is
+unchanged; only the labels changed. The CLI flag stayed `--deduplication` (the noun verdict in Q1
+below still holds — only the enum *values* changed, not the flag name).
+
+The rest of this document is the original review that led to the decision; the Q2 "keep the choices"
+verdict is the part that was overridden.
 
 ## TL;DR
 

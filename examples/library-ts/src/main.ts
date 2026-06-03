@@ -31,7 +31,7 @@ await program.parseAsync([
   '--wait-for-selector',
   'article',
   '--deduplication',
-  'none',
+  'minimal',
 ]);
 
 // Read results back via re-exported Dataset API

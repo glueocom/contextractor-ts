@@ -72,4 +72,4 @@ contextractor extract "$URL1" --use-sitemaps --max-requests-per-crawl 50
 contextractor extract "$URL1" --initial-concurrency 5 --max-concurrency 20
 
 # Disable canonical URL deduplication — extract every loaded URL
-contextractor extract "$URL1" --deduplication none
+contextractor extract "$URL1" --deduplication minimal

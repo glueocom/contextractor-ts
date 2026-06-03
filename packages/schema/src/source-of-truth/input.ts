@@ -111,22 +111,22 @@ export const ContextractorInput = z.object({
     .meta({ title: 'Use sitemaps' }),
 
   deduplication: z
-    .enum(['none', 'url', 'content-hash'])
-    .default('url')
+    .enum(['minimal', 'standard', 'aggressive'])
+    .default('standard')
     .describe(
       "Deduplication level applied on top of Crawlee's built-in URL deduplication. " +
-        'url (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
-        'content-hash: also skip pages whose extracted text content matches a previously extracted page. ' +
-        "none: disable additional deduplication — only Crawlee's URL dedup remains active.",
+        'standard (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. ' +
+        'aggressive: also skip pages whose extracted text content matches a previously extracted page. ' +
+        "minimal: disable additional deduplication — only Crawlee's built-in URL dedup remains active.",
     )
     .meta({
       title: 'Deduplication',
       ...apifyMeta({
         editor: 'select',
         enumTitles: [
-          'None — URL only',
-          'URL — canonical URL (default)',
-          'Content hash — canonical URL + content hash',
+          'Minimal — Crawlee URL dedup only',
+          'Standard — + canonical URL (default)',
+          'Aggressive — + content hash',
         ],
       }),
     }),

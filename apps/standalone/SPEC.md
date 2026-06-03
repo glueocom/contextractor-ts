@@ -33,7 +33,7 @@ Options: all extraction flags (`--save`, `--max-requests-per-crawl`, `--headless
 - `--wait-for-dynamic-content <seconds>` — seconds to wait for network idle after navigation; also sets the timeout for `--wait-for-selector` / `--soft-wait-for-selector`; 0 disables (Playwright only)
 - `--wait-for-selector <selector>` — CSS selector to wait for before extracting; request fails and is retried if selector does not appear within the timeout (Playwright only)
 - `--soft-wait-for-selector <selector>` — like `--wait-for-selector` but continues extraction even if the selector does not appear (Playwright only)
-- `--deduplication <level>` — deduplication level: `none` (URL dedup only), `url` (default, canonical URL dedup across all handler types), or `content-hash` (canonical URL + content hash dedup)
+- `--deduplication <level>` — deduplication level: `minimal` (Crawlee's built-in URL dedup only), `standard` (default, canonical URL dedup across all handler types), or `aggressive` (canonical URL + content hash dedup)
 - `--session-pool-name <name>` — named session pool for cross-run session sharing (`persistStateKey`)
 - `--max-session-rotations <n>` — max session rotations per request on block detection (default `10`)
 

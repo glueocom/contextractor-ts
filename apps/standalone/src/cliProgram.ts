@@ -81,7 +81,9 @@ function parseProxyRotation(value: string): ContextractorInputType['proxyRotatio
 function parseDeduplication(value: string): ContextractorInputType['deduplication'] {
   const result = ContextractorInput.shape.deduplication.safeParse(value);
   if (!result.success) {
-    throw new Error(`Invalid --deduplication value: '${value}'. Use none, url, or content-hash.`);
+    throw new Error(
+      `Invalid --deduplication value: '${value}'. Use minimal, standard, or aggressive.`,
+    );
   }
   return result.data;
 }
@@ -268,9 +270,9 @@ function addExtractionOptions(cmd: Command): Command {
     .addOption(
       new Option(
         '--deduplication <level>',
-        'Deduplication level: none, url (default), or content-hash',
+        'Deduplication level: minimal, standard (default), or aggressive',
       )
-        .choices(['none', 'url', 'content-hash'])
+        .choices(['minimal', 'standard', 'aggressive'])
         .argParser(parseDeduplication),
     );
 }

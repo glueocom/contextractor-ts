@@ -171,7 +171,7 @@ describe('buildProgram — --deduplication flag', () => {
     const program = buildProgram();
     expect(getExtractOptions(program)).toContain('--deduplication');
   });
-  it.each(['none', 'url', 'content-hash'])('accepts "%s" as a valid choice', (level) => {
+  it.each(['minimal', 'standard', 'aggressive'])('accepts "%s" as a valid choice', (level) => {
     const program = buildProgram();
     const extract = program.commands.find((c) => c.name() === 'extract');
     const opt = extract?.options.find((o) => o.long === '--deduplication');
@@ -192,9 +192,9 @@ describe('buildProgram — argParser wiring', () => {
   it('parseDeduplication accepts valid values', () => {
     const parse = getParseArg(buildProgram(), '--deduplication');
     if (!parse) throw new Error('parseDeduplication not found');
-    expect(parse('none')).toBe('none');
-    expect(parse('url')).toBe('url');
-    expect(parse('content-hash')).toBe('content-hash');
+    expect(parse('minimal')).toBe('minimal');
+    expect(parse('standard')).toBe('standard');
+    expect(parse('aggressive')).toBe('aggressive');
   });
 
   it('parseDeduplication rejects invalid values', () => {

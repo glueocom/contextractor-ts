@@ -83,7 +83,7 @@ interface CrawlConfig {
   softWaitForSelector: string;
 
   // Deduplication.
-  deduplication: 'none' | 'url' | 'content-hash';
+  deduplication: 'minimal' | 'standard' | 'aggressive';
 
   // Output formats.
   save: SaveFormat[];

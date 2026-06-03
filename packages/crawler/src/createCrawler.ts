@@ -88,7 +88,7 @@ export interface ContextractorCrawlerOptions {
     retryCount: number;
   }) => Promise<void>;
   onSkippedUrl?: (url: string, reason: string) => void;
-  deduplication?: 'none' | 'url' | 'content-hash';
+  deduplication?: 'minimal' | 'standard' | 'aggressive';
 }
 
 function toTrafilaturaConfig(opts: ContextractorCrawlerOptions): TrafilaturaConfig {
@@ -137,7 +137,7 @@ export function createContextractorCrawler(
 
   const cookieStrategy = opts.cookieStrategy ?? 'ghostery';
   const formats = opts.formats ?? ['markdown'];
-  const deduplication: 'none' | 'url' | 'content-hash' = opts.deduplication ?? 'url';
+  const deduplication: 'minimal' | 'standard' | 'aggressive' = opts.deduplication ?? 'standard';
   const seenCanonicals = new Set<string>();
   const seenContentHashes = new Set<string>();
 

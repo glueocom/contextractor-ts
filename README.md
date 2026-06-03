@@ -57,7 +57,7 @@ interface ContextractorInputType {
   selector: string;
   keepUrlFragment: boolean;
   useSitemaps: boolean;
-  deduplication: 'none' | 'url' | 'content-hash';
+  deduplication: 'minimal' | 'standard' | 'aggressive';
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;

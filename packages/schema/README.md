@@ -55,7 +55,7 @@ interface ContextractorInputType {
   selector: string;
   keepUrlFragment: boolean;
   useSitemaps: boolean;
-  deduplication: 'none' | 'url' | 'content-hash';
+  deduplication: 'minimal' | 'standard' | 'aggressive';
   respectRobotsTxtFile: boolean;
   initialCookies?: Array<unknown>;
   customHttpHeaders?: Record<string, string>;
@@ -113,13 +113,13 @@ interface ContextractorInputType {
 | `playwright-chromium` | Headless browser (Chromium+Playwright) |
 | `cheerio` | Raw HTTP client (Cheerio) |
 
-### `deduplication` (default `url`)
+### `deduplication` (default `standard`)
 
 | Value | Title |
 |-------|-------|
-| `none` | None — URL only |
-| `url` | URL — canonical URL (default) |
-| `content-hash` | Content hash — canonical URL + content hash |
+| `minimal` | Minimal — Crawlee URL dedup only |
+| `standard` | Standard — + canonical URL (default) |
+| `aggressive` | Aggressive — + content hash |
 
 ### `mode` (default `balanced`)
 

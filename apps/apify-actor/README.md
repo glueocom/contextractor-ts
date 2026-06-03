@@ -110,7 +110,7 @@ everything else has a sensible default.
 | `selector` | string | `""` | CSS selector for links to enqueue. Leave empty to disable link enqueueing. |
 | `keepUrlFragment` | boolean | `false` | URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different page… |
 | `useSitemaps` | boolean | `false` | If enabled, the crawler looks for sitemap.xml at the root of each start URL domain and enqueues matching URLs from it in addition to link-following. |
-| `deduplication` | enum (`none` \| `url` \| `content-hash`) | `"url"` | Deduplication level applied on top of Crawlee's built-in URL deduplication. url (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. content-hash: also… |
+| `deduplication` | enum (`minimal` \| `standard` \| `aggressive`) | `"standard"` | Deduplication level applied on top of Crawlee's built-in URL deduplication. standard (default): skip pages whose <link rel="canonical"> was already extracted, across all handler types. aggressive: al… |
 | `respectRobotsTxtFile` | boolean | `false` | If enabled, the crawler will consult the robots.txt file for each domain before crawling pages. |
 | `initialCookies` | array | _optional_ | Cookies that will be pre-set to all pages the scraper opens. This is useful for pages that require login. The value is expected to be a JSON array of objects with `name` and `value` properties. For e… |
 | `customHttpHeaders` | object | _optional_ | HTTP headers that will be added to all requests made by the crawler. This is useful for setting custom authentication headers or other headers required by the target website. The value is expected to… |
@@ -169,13 +169,13 @@ The most important multiple-choice settings and what each value means. See the
 | `playwright-chromium` | Headless browser (Chromium+Playwright) |
 | `cheerio` | Raw HTTP client (Cheerio) |
 
-### `deduplication` (default `url`)
+### `deduplication` (default `standard`)
 
 | Value | Title |
 |-------|-------|
-| `none` | None — URL only |
-| `url` | URL — canonical URL (default) |
-| `content-hash` | Content hash — canonical URL + content hash |
+| `minimal` | Minimal — Crawlee URL dedup only |
+| `standard` | Standard — + canonical URL (default) |
+| `aggressive` | Aggressive — + content hash |
 
 ### `mode` (default `balanced`)
 

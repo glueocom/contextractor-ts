@@ -37,7 +37,7 @@ This is a breaking change for existing Apify input (renamed schema keys / Actor 
 
 ## Enum-casing convention (do not violate)
 
-Contextractor-owned enum values are kebab-case across schema/CLI/lib/Actor (`deduplication: none|url|content-hash`, `crawlerType: playwright-*`, `proxyRotation: per-request|until-failure`). Exceptions: `waitUntil` stays flat lowercase (verbatim Playwright tokens); foreign Apify constants (proxy groups, `READ`/`WRITE`) stay SCREAMING_SNAKE. Never revert `deduplication` to the old `minimal`/`basic`/`full`. See `prompts/2026-05-25-enum-casing-audit`.
+Contextractor-owned enum values are kebab-case across schema/CLI/lib/Actor (`deduplication: minimal|standard|aggressive`, `crawlerType: playwright-*`, `proxyRotation: per-request|until-failure`). Exceptions: `waitUntil` stays flat lowercase (verbatim Playwright tokens); foreign Apify constants (proxy groups, `READ`/`WRITE`) stay SCREAMING_SNAKE. `deduplication` uses honest level names — `minimal` (Crawlee's built-in URL dedup only, NOT zero), `standard` (default, + canonical URL), `aggressive` (+ content hash); see `prompts/2026-06-02-cli-defaults-consistency/context/deduplication-naming-review.md` for why the mechanism names `none|url|content-hash` were replaced. See `prompts/2026-05-25-enum-casing-audit`.
 
 ---
 
@@ -178,9 +178,9 @@ Two layers, two authorities. Crawler-layer params (those that flow into Crawlee)
 
 ## Step STALE-PURGE: Remove stale docs and stale flag usage
 
-- `apps/standalone/SPEC.md` (≈ line 37): the `--deduplication` doc shows stale `minimal`/`basic`/`full` (default `basic`). Replace with the real schema: `none | url | content-hash` (default `url`).
-- `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection` (value now 0–1), `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-requests-per-crawl`, and any other flag in the Step CRAWLEE-ALIGN set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication none`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
-- `examples/library-ts/src/main.ts`: fix `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--ignore-canonical-url` → `--deduplication none`, and the import path (see PACKAGE-RENAME). The `Dataset`/`KeyValueStore` read-back stays valid.
+- `apps/standalone/SPEC.md` (≈ line 37): keep the `--deduplication` doc in sync with the schema: `minimal | standard | aggressive` (default `standard`).
+- `examples/cli-npm/run.sh`: rewrite so it no longer calls the deleted `list`/`get`/`kvs`/`storage-dir` subcommands. Replace the read demos with an `export` demo. Fix every renamed flag it uses — `--rendering-detection-pct` → `--rendering-type-detection` (value now 0–1), `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--target-language` → `--language` (if shown), `--max-pages` → `--max-requests-per-crawl`, and any other flag in the Step CRAWLEE-ALIGN set (`--save` is UNCHANGED). Replace stale `--ignore-canonical-url` with `--deduplication minimal`. Remove the redundant default `--save-destination key-value-store` line (keep only non-default destination demos). Update the header comment package name to `contextractor`.
+- `examples/library-ts/src/main.ts`: fix `--dynamic-content-wait` → `--wait-for-dynamic-content`, `--ignore-canonical-url` → `--deduplication minimal`, and the import path (see PACKAGE-RENAME). The `Dataset`/`KeyValueStore` read-back stays valid.
 - Tiered proxy (removed in `prompts/2026-05-26-drop-tiered-proxy`): purge `tieredProxyUrls`/`tieredProxyConfig` references from `tools/proxy-rotation-tester/README.md`, `tools/proxy-rotation-tester/src/lib.test.ts`, and `.claude/commands/proxy-test.md`.
 - Removed `--save jsonl` format (dropped in `prompts/2026-05-12-remove-jsonl-saving`): purge from `.claude/commands/autonomous/maintenance/sync/docs.md`. Since the `list` subcommand is now deleted, the `list --format jsonl` carve-out in that doc is also moot — remove it.
 

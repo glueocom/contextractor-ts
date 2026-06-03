@@ -77,14 +77,14 @@
     "deduplication": {
       "title": "Deduplication",
       "type": "string",
-      "description": "Deduplication level applied on top of Crawlee's built-in URL deduplication. url (default): skip pages whose <link rel=\"canonical\"> was already extracted, across all handler types. content-hash: also skip pages whose extracted text content matches a previously extracted page. none: disable additional deduplication — only Crawlee's URL dedup remains active.",
+      "description": "Deduplication level applied on top of Crawlee's built-in URL deduplication. standard (default): skip pages whose <link rel=\"canonical\"> was already extracted, across all handler types. aggressive: also skip pages whose extracted text content matches a previously extracted page. minimal: disable additional deduplication — only Crawlee's built-in URL dedup remains active.",
       "editor": "select",
-      "default": "url",
-      "enum": ["none", "url", "content-hash"],
+      "default": "standard",
+      "enum": ["minimal", "standard", "aggressive"],
       "enumTitles": [
-        "None — URL only",
-        "URL — canonical URL (default)",
-        "Content hash — canonical URL + content hash"
+        "Minimal — Crawlee URL dedup only",
+        "Standard — + canonical URL (default)",
+        "Aggressive — + content hash"
       ]
     },
     "respectRobotsTxtFile": {

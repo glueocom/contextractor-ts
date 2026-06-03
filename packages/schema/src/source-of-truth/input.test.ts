@@ -118,14 +118,14 @@ describe('ContextractorInput — initialConcurrency field', () => {
 });
 
 describe('ContextractorInput — deduplication field', () => {
-  it('defaults to "url"', () => {
-    expect(ContextractorInput.parse(BASE).deduplication).toBe('url');
+  it('defaults to "standard"', () => {
+    expect(ContextractorInput.parse(BASE).deduplication).toBe('standard');
   });
-  it.each(['none', 'url', 'content-hash'] as const)('accepts "%s"', (level) => {
+  it.each(['minimal', 'standard', 'aggressive'] as const)('accepts "%s"', (level) => {
     expect(ContextractorInput.parse({ ...BASE, deduplication: level }).deduplication).toBe(level);
   });
   it('rejects unknown values', () => {
-    expect(() => ContextractorInput.parse({ ...BASE, deduplication: 'aggressive' })).toThrow();
+    expect(() => ContextractorInput.parse({ ...BASE, deduplication: 'full' })).toThrow();
   });
 });
 

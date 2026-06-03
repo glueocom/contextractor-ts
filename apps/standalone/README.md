@@ -165,7 +165,7 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--wait-for-dynamic-content` | Seconds to wait for network idle after navigation (0 = disabled) |
 | `--wait-for-selector` | CSS selector to wait for before extracting (fails on timeout) |
 | `--soft-wait-for-selector` | CSS selector to wait for before extracting (continues on timeout) |
-| `--deduplication` | Deduplication level: none, url (default), or content-hash |
+| `--deduplication` | Deduplication level: minimal, standard (default), or aggressive |
 
 <!-- @generated:end name="cli-flags" -->
 
@@ -215,13 +215,13 @@ Unknown keys are stripped by `ContextractorInput.parse()`.
 | `playwright-chromium` | Headless browser (Chromium+Playwright) |
 | `cheerio` | Raw HTTP client (Cheerio) |
 
-### `deduplication` (default `url`)
+### `deduplication` (default `standard`)
 
 | Value | Title |
 |-------|-------|
-| `none` | None — URL only |
-| `url` | URL — canonical URL (default) |
-| `content-hash` | Content hash — canonical URL + content hash |
+| `minimal` | Minimal — Crawlee URL dedup only |
+| `standard` | Standard — + canonical URL (default) |
+| `aggressive` | Aggressive — + content hash |
 
 ### `mode` (default `balanced`)
 
