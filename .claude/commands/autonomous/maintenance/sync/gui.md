@@ -18,38 +18,38 @@ This command only verifies and fixes files inside `/Users/miroslavsekera/r/conte
 
 Read every file below before making any change:
 
-- **Input schema (canonical for input fields)** — `packages/schema/src/input.ts` (the `ContextractorInput` Zod schema with every field's type, `.default(...)`, `.describe(...)`, and `apifyMeta(...)`). Capture every field, default, and enum.
+- **Input schema (canonical for input fields)** — `packages/schema/src/source-of-truth/input.ts` (the `ContextractorInput` Zod schema with every field's type, `.default(...)`, `.describe(...)`, and `apifyMeta(...)`). Capture every field, default, and enum.
 - **TS engine (canonical for extraction internals)** — `packages/extraction/src/index.ts` (the `TrafilaturaConfig` interface, `ContentExtractor` class, `OutputFormat` union, `DEFAULT_CONFIG`). Capture every field with type and default.
 - **napi-rs binding** — `packages/extraction/native/src/lib.rs`. Capture every `#[napi(object)]` field and the function signatures.
 - **Standalone CLI** — `apps/standalone/src/cli.ts` (re-exports `buildProgram()` for the generator) and `apps/standalone/src/cliProgram.ts` (owns the Commander flag definitions). Plus `apps/standalone/src/config.ts` for `CrawlConfig` and `loadConfigFile`.
 - **Apify schemas** —
-  - `apps/apify-actor/.actor/input_schema.json` — generated from `packages/schema/src/input.ts` by `@contextractor/gen-input-schema`; never hand-edit
+  - `apps/apify-actor/.actor/input_schema.json` — generated from `packages/schema/src/source-of-truth/input.ts` by `@contextractor/gen-input-schema`; never hand-edit
   - `apps/apify-actor/.actor/output_schema.json`
   - `apps/apify-actor/.actor/dataset_schema.json`
   - `apps/apify-actor/.actor/actor.json`
-- **Apify Actor TS** — `apps/apify-actor/src/{main.ts, run.ts, extraction.ts, sinks.ts, config.ts}` (consumes `ContextractorInput.parse()` and `@contextractor/extraction`).
+- **Apify Actor TS** — `apps/apify-actor/src/{main.ts, run.ts, sinks.ts, config.ts}` (consumes `ContextractorInput.parse()` and `@contextractor/extraction`; extraction itself runs inside `@contextractor/crawler`, not a local `extraction.ts`).
 
 ## Step VERIFY: Cross-Check Internal Consistency
 
 Run each check below. The Zod schema is canonical for input fields; the TS engine is canonical for extraction internals.
 
 - **Zod schema ⇄ generated `INPUT_SCHEMA.json`** — the `@contextractor/schema` snapshot test (`packages/schema/test/to-apify-schema.test.ts`) guards zero diff between `toApifyInputSchema(ContextractorInput)` and `apps/apify-actor/.actor/input_schema.json`. Run it via `pnpm --filter @contextractor/schema test`. If it fails, regenerate via `pnpm --filter @contextractor/gen-input-schema start` and commit the result; never hand-edit the JSON.
-- **Zod schema ⇄ Commander program** — every `ContextractorInput` field is reachable as a flag (kebab-case `--max-pages` ↔ camelCase `maxPagesPerCrawl`) or as a JSON config key (camelCase). The standalone CLI also exposes the documented CLI-only orchestration flags (`--config`, `--output-dir`, `--save`, `--start-url`, `--format`, `--proxy-urls`, `--verbose`, plus `trafilaturaConfig` shorthands like `--precision`, `--recall`, `--fast`, `--no-links`, `--no-comments`, etc.).
+- **Zod schema ⇄ Commander program** — every `ContextractorInput` field is reachable as a flag (kebab-case `--max-pages` ↔ camelCase `maxPagesPerCrawl`) or as a JSON config key (camelCase). The standalone CLI also exposes the documented CLI-only orchestration flags (`--config`, `--output-dir`, `--save`, `--start-url`, `--format`, `--proxy-urls`, `--verbose`, plus extraction shorthands like `--mode <precision|balanced|recall>`, `--no-links`, `--no-comments`, `--no-tables`, `--images`/`--no-images`, etc.). The CLI consolidates precision/recall into the single `--mode` flag (matching the canonical Zod `mode` enum); there is no `--precision`, `--recall`, or `--fast` flag — `TrafilaturaConfig.fast` is engine-internal and not an input-schema field.
 - **`npm run docs:check` passes** — running `npm run docs:update` followed by `git diff --exit-code -- '**/*.md'` must be clean. Drift here means a marker region was hand-edited and the rebuild reverted the change; pull the relevant fact into the canonical source instead.
 - **TS engine ⇄ napi-rs binding** — every `TrafilaturaConfig` field has a matching `#[napi(object)]` field. Names compare in camelCase (napi-rs auto-converts snake_case → camelCase in generated `.d.ts`). Function signatures match (`extract`, `extractMetadata`, `extractAllFormats`).
 - **Default values** — defaults agree across `DEFAULT_CONFIG` (TS engine), `Default` impl on the napi-rs struct (Rust), the Zod schema's `.default(...)` calls (input), and the generated `default` property in `input_schema.json`.
-- **OutputFormat union** — the TS `OutputFormat` union, the napi-rs string enum, and `FORMAT_EXTENSIONS` in the CLI must all be exactly `txt | markdown | json | html`. Any reappearance of `xml` or `xmltei` is a regression.
+- **OutputFormat union** — the TS `OutputFormat` union, the napi-rs string enum, and `CONTENT_FORMATS` (alongside `KVS_SPECS`) in `packages/crawler/src/sinks/storage.ts` must all be exactly `txt | markdown | json | html`. `KVS_SPECS` additionally carries the non-format `original` kind (mapped to a `.html` blob). Any reappearance of `xml` or `xmltei` is a regression.
 - **No-op fields** — `pruneXpath` and `dateExtractionParams` are dropped (no rs-trafilatura 0.2.x backing). Flag any reappearance.
 - **Actor metadata** — `actor.json.name` is `contextractor-test` (or `contextractor` for production); `actor.json.dockerContextDir` is `"../../.."`; `actor.json.description` mentions "built on rs-trafilatura and Crawlee".
-- **Workspace deps** — the Apify Actor and the standalone CLI both declare `"@contextractor/extraction": "*"` and `"@contextractor/schema": "*"` under the root npm workspaces setup (no `vendor/` directory).
+- **Workspace deps** — the Apify Actor and the standalone CLI both declare `"@contextractor/extraction": "workspace:*"` and `"@contextractor/schema": "workspace:*"` under the root pnpm workspaces setup (`pnpm-workspace.yaml`, `pnpm-lock.yaml`; no `vendor/` directory). `workspace:*` is correct — do not rewrite it to `"*"`.
 
 ## Step REPORT and AUTO-FIX
 
 For each inconsistency:
 
-- **`input_schema.json` drifted from the Zod schema** → re-run `pnpm --filter @contextractor/gen-input-schema start` and commit the regenerated file. Never hand-edit `input_schema.json`. If the snapshot test still fails, the fix belongs in `packages/schema/src/input.ts`.
+- **`input_schema.json` drifted from the Zod schema** → re-run `pnpm --filter @contextractor/gen-input-schema start` and commit the regenerated file. Never hand-edit `input_schema.json`. If the snapshot test still fails, the fix belongs in `packages/schema/src/source-of-truth/input.ts`.
 - **CLI missing a `ContextractorInput` field** → add a `program.option(...)` in `apps/standalone/src/cliProgram.ts` with sensible kebab-case name; map it through `buildSchemaOverrides` so it reaches `ContextractorInput.parse()`.
-- **Markdown region drift (`pnpm docs:check` fails)** → run `pnpm docs:update`, inspect the diff (the marker block was hand-edited and the rebuild reverted), and pull the desired fact into the canonical source (`packages/schema/src/input.ts` for input fields, `apps/standalone/src/cliProgram.ts` for CLI flags) before regenerating.
+- **Markdown region drift (`pnpm docs:check` fails)** → run `pnpm docs:update`, inspect the diff (the marker block was hand-edited and the rebuild reverted), and pull the desired fact into the canonical source (`packages/schema/src/source-of-truth/input.ts` for input fields, `apps/standalone/src/cliProgram.ts` for CLI flags) before regenerating.
 - **napi-rs binding missing a TS engine field** → list it for the implementer; the Rust struct must follow the TS interface, but adding it requires implementing the underlying call into `rs-trafilatura`.
 - **napi-rs binding has a field absent from TS engine** → flag it. The TS engine should expose what the binding offers, unless the field maps to a field that has no `rs-trafilatura` 0.2.x backing (e.g. `pruneXpath`) — in which case drop the napi-rs field too.
 - **Default disagreement** → list each surface's value; do **not** auto-pick. The fix for input-side defaults belongs in the Zod schema; the fix for engine-side defaults belongs in the TS engine.

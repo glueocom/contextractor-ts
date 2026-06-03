@@ -10,3 +10,4 @@ echo ""
 echo "==> Running: contextractor --help"
 node "$REPO_ROOT/apps/standalone/dist/cli.js" --help
 node "$REPO_ROOT/apps/standalone/dist/cli.js" extract --help
+node "$REPO_ROOT/apps/standalone/dist/cli.js" export --help
