@@ -136,7 +136,7 @@ everything else has a sensible default.
 | `proxyRotation` | enum (`recommended` \| `per-request` \| `until-failure`) | `"recommended"` | Proxy rotation strategy. recommended automatically picks the best proxies. per-request uses a new proxy for each request. until-failure uses one proxy until it fails. |
 | `sessionPoolName` | string | _optional_ | Name for a persistent, shared session pool. Sessions (IP + cookies) are saved under this key and reused across Actor runs. Useful when proxies are frequently blocked — previously working sessions are… |
 | `maxSessionRotations` | integer | `10` | Maximum number of session (IP + browser fingerprint) rotations per request on block detection. Independent of maxRequestRetries. Set to 0 to disable session rotation. |
-| `navigationTimeoutSecs` | integer | `60` | Maximum time to wait for page load in seconds |
+| `navigationTimeoutSecs` | integer | `60` | Maximum time to wait for page navigation in seconds |
 | `blockMedia` | boolean | `false` | Block loading of images, stylesheets, fonts (.woff), PDFs, and ZIPs. Reduces bandwidth and speeds up crawling. Has no effect when using the raw HTTP crawler type or non-Chromium browsers (Chromium on… |
 | `waitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. The request fails and is retried if the selector does not appear within the timeout. Leave empty to disable. |
 | `softWaitForSelector` | string | `""` | Wait for this CSS selector to appear before extracting content. Unlike waitForSelector, the request continues even if the selector does not appear within the timeout. Leave empty to disable. |
@@ -147,7 +147,7 @@ everything else has a sensible default.
 | `closeCookieModals` | boolean | `true` | Automatically dismiss cookie consent modals with Ghostery-based blocking. |
 | `maxScrollHeight` | integer | `5000` | Maximum pixels (px) to scroll down the page until all content is loaded. Setting to 0 disables scrolling. |
 | `userAgent` | string | `""` | Custom User-Agent string for the browser. Leave empty to use the default browser User-Agent. |
-| `ignoreHttpsErrors` | boolean | `false` | Ignore SSL certificate errors. Use at your own risk. |
+| `ignoreHttpsErrors` | boolean | `false` | Ignore HTTPS certificate errors. Use at your own risk. |
 
 <!-- @generated:end name="apify-input-schema" -->
 
@@ -296,7 +296,7 @@ intend to republish.
 Switch the **extraction mode**: `precision` removes more boilerplate (and may drop
 borderline content), while `recall` keeps more (and may include some noise). For
 pages that load content with JavaScript, add a **Wait for selector**, increase
-**Dynamic content wait**, or raise **Max scroll height** so lazy-loaded sections
+**Wait for dynamic content**, or raise **Max scroll height** so lazy-loaded sections
 appear before extraction.
 
 ### How do I avoid getting blocked?
@@ -308,13 +308,14 @@ switches IP and fingerprint when a block is detected.
 ### How do I crawl an entire website?
 
 Set a **Link selector** (e.g. `a[href]`) to follow links, then bound the crawl with
-**include/exclude URL globs**, **Max crawl depth**, and **Max crawl pages**. Enable
+**include/exclude URL globs**, **Max crawl depth**, and **Max requests per crawl**. Enable
 **Use sitemaps** to also pull URLs from each domain's `sitemap.xml`.
 
 ### How do I remove duplicate pages?
 
-Use **Deduplication**: `url` skips pages whose canonical URL was already extracted,
-and `content-hash` additionally skips pages with identical extracted text.
+Use **Deduplication**: `standard` (the default) skips pages whose canonical URL was
+already extracted; `aggressive` additionally skips pages with identical extracted text;
+`minimal` keeps only Crawlee's built-in URL deduplication.
 
 ### Found a bug or have a feature request?
 

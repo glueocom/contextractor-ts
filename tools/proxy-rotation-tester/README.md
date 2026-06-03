@@ -11,7 +11,6 @@ Playwright).
 This test suite verifies that:
 - Proxy configuration is correctly passed through each entry point
 - Proxies are correctly rotated according to the selected mode (`RECOMMENDED`, `PER_REQUEST`)
-- Tiered proxy escalation works via Crawlee's native `ProxyConfiguration({ tieredProxyUrls })` for automatic domain-level escalation
 - Extracted content identifies which proxy was used
 
 ## Test Coverage
@@ -21,7 +20,6 @@ This test suite verifies that:
 Direct tests of the Contextractor library API (`createContextractorCrawler`):
 - Content extraction through proxies (ports 8081–8083)
 - `PER_REQUEST` proxy rotation (ports 8081–8083)
-- Tiered proxy routing via `ProxyConfiguration({ tieredProxyUrls })` (ports 8091–8094)
 
 ### CLI Tests (`cli.test.ts`)
 
@@ -73,7 +71,6 @@ Port assignments (to prevent inter-file conflicts in parallel runs):
 - `lib.test.ts` flat tests: 8081–8083
 - `cli.test.ts` flat tests: 8084–8086
 - `actor.test.ts` flat tests: 8087–8089
-- `lib.test.ts` tiered tests: 8091–8094
 
 ## Expected Output
 
@@ -81,7 +78,7 @@ Successful run:
 
 ```
 Test Files  3 passed (3)
-Tests      6 passed (6)
+Tests      5 passed (5)
 ```
 
 ## Troubleshooting

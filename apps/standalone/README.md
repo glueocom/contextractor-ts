@@ -130,13 +130,13 @@ binary uses. Negatable flags (`--no-headless`, `--no-tables`, `--no-images`,
 | `--crawler-type` | Crawler engine: adaptive, firefox, chromium, cheerio |
 | `--rendering-type-detection` | Rendering type detection ratio 0–1 (adaptive only) |
 | `--wait-until` | Page load event: load, domcontentloaded, networkidle, commit |
-| `--navigation-timeout` | Page load timeout in seconds |
+| `--navigation-timeout` | Navigation timeout in seconds |
 | `--block-media` | Block images, stylesheets, fonts, PDFs, and ZIPs |
 | `--no-block-media` | Do not block media requests (default) |
 | `--ignore-cors-and-csp` | Disable CORS/CSP restrictions |
 | `--close-cookie-modals` | Auto-dismiss cookie banners |
 | `--max-scroll-height` | Max scroll height in pixels |
-| `--ignore-https-errors` | Skip SSL certificate verification |
+| `--ignore-https-errors` | Skip HTTPS certificate verification |
 | `--user-agent` | Custom User-Agent string |
 | `--globs` | Glob pattern to include (repeatable) |
 | `--exclude` | Glob pattern to exclude (repeatable) |

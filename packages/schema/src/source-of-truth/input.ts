@@ -100,7 +100,7 @@ export const ContextractorInput = z.object({
     .describe(
       'URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different pages.',
     )
-    .meta({ title: 'Keep URL fragments' }),
+    .meta({ title: 'Keep URL fragment' }),
 
   useSitemaps: z
     .boolean()
@@ -166,7 +166,7 @@ export const ContextractorInput = z.object({
     .describe(
       'Maximum number of requests the crawler will handle. Counts handled page outcomes (successes and final failures), including start URLs and pagination pages. The crawler automatically finishes after reaching this number. 0 means unlimited.',
     )
-    .meta({ title: 'Max pages' }),
+    .meta({ title: 'Max requests per crawl' }),
 
   maxResultsPerCrawl: z
     .int()
@@ -259,7 +259,7 @@ export const ContextractorInput = z.object({
     .describe(
       'Filter extracted content by language code (e.g. "en"). Leave empty to accept any language.',
     )
-    .meta({ title: 'Target language', ...apifyMeta({ editor: 'textfield' }) }),
+    .meta({ title: 'Language', ...apifyMeta({ editor: 'textfield' }) }),
 
   save: z
     .array(z.enum(['txt', 'markdown', 'json', 'html', 'original']))
@@ -386,9 +386,9 @@ export const ContextractorInput = z.object({
     .int()
     .min(1)
     .default(60)
-    .describe('Maximum time to wait for page load in seconds')
+    .describe('Maximum time to wait for page navigation in seconds')
     .meta({
-      title: 'Page load timeout',
+      title: 'Navigation timeout',
       ...apifyMeta({ unit: 'seconds', sectionCaption: 'Performance and limits' }),
     }),
 
@@ -423,7 +423,7 @@ export const ContextractorInput = z.object({
     .describe(
       'Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also used as the timeout for waitForSelector and softWaitForSelector.',
     )
-    .meta({ title: 'Dynamic content wait', ...apifyMeta({ unit: 'seconds' }) }),
+    .meta({ title: 'Wait for dynamic content', ...apifyMeta({ unit: 'seconds' }) }),
 
   waitUntil: z
     .enum(['load', 'domcontentloaded', 'networkidle', 'commit'])
@@ -484,8 +484,8 @@ export const ContextractorInput = z.object({
   ignoreHttpsErrors: z
     .boolean()
     .default(false)
-    .describe('Ignore SSL certificate errors. Use at your own risk.')
-    .meta({ title: 'Ignore SSL errors' }),
+    .describe('Ignore HTTPS certificate errors. Use at your own risk.')
+    .meta({ title: 'Ignore HTTPS errors' }),
 });
 
 export type ContextractorInputType = z.infer<typeof ContextractorInput>;

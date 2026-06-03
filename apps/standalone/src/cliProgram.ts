@@ -172,7 +172,7 @@ function addExtractionOptions(cmd: Command): Command {
     )
     .option('--wait-until <event>', 'Page load event: load, domcontentloaded, networkidle, commit')
     .addOption(
-      new Option('--navigation-timeout <secs>', 'Page load timeout in seconds')
+      new Option('--navigation-timeout <secs>', 'Navigation timeout in seconds')
         .argParser(toInt)
         .default(s.navigationTimeoutSecs._def.defaultValue),
     )
@@ -185,7 +185,7 @@ function addExtractionOptions(cmd: Command): Command {
       s.closeCookieModals._def.defaultValue,
     )
     .option('--max-scroll-height <px>', 'Max scroll height in pixels', toInt)
-    .option('--ignore-https-errors', 'Skip SSL certificate verification')
+    .option('--ignore-https-errors', 'Skip HTTPS certificate verification')
     .option('--user-agent <ua>', 'Custom User-Agent string')
     .option(
       '--globs <pattern>',

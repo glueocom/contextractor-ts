@@ -13,7 +13,7 @@ Actor.getInput() → ContextractorInput.safeParse() → [SitemapRequestList.open
                                                                   └── Dataset (metadata + references)
 ```
 
-When `useSitemaps` is `true`, `SitemapRequestList.open()` is called before the crawler is started. It fetches `sitemap.xml` at the origin of each start URL and enqueues matching URLs, filtered by `globs` and `excludes`. The explicit start URLs are still crawled via `crawler.run()`.
+When `useSitemaps` is `true`, `SitemapRequestList.open()` is called before the crawler is started. It fetches `sitemap.xml` at the origin of each start URL and enqueues matching URLs, filtered by `globs` and `exclude`. The explicit start URLs are still crawled via `crawler.run()`.
 
 ## Sinks
 

@@ -61,7 +61,7 @@
       "default": ""
     },
     "keepUrlFragment": {
-      "title": "Keep URL fragments",
+      "title": "Keep URL fragment",
       "type": "boolean",
       "description": "URL fragments (the parts of URL after a #) are not considered when the scraper determines whether a URL has already been visited. Turn this on to treat URLs with different fragments as different pages.",
       "editor": "checkbox",
@@ -110,7 +110,7 @@
       "prefill": {}
     },
     "maxRequestsPerCrawl": {
-      "title": "Max pages",
+      "title": "Max requests per crawl",
       "type": "integer",
       "description": "Maximum number of requests the crawler will handle. Counts handled page outcomes (successes and final failures), including start URLs and pagination pages. The crawler automatically finishes after reaching this number. 0 means unlimited.",
       "editor": "number",
@@ -203,7 +203,7 @@
       "default": true
     },
     "languageCode": {
-      "title": "Target language",
+      "title": "Language",
       "type": "string",
       "description": "Filter extracted content by language code (e.g. \"en\"). Leave empty to accept any language.",
       "editor": "textfield",
@@ -296,9 +296,9 @@
     },
     "navigationTimeoutSecs": {
       "sectionCaption": "Performance and limits",
-      "title": "Page load timeout",
+      "title": "Navigation timeout",
       "type": "integer",
-      "description": "Maximum time to wait for page load in seconds",
+      "description": "Maximum time to wait for page navigation in seconds",
       "editor": "number",
       "default": 60,
       "minimum": 1,
@@ -327,7 +327,7 @@
       "default": ""
     },
     "waitForDynamicContentSecs": {
-      "title": "Dynamic content wait",
+      "title": "Wait for dynamic content",
       "type": "integer",
       "description": "Maximum seconds to wait for dynamic page content to load after navigation. The crawler continues when the network goes idle or this timeout elapses, whichever comes first. 0 disables this wait. Also used as the timeout for waitForSelector and softWaitForSelector.",
       "editor": "number",
@@ -383,9 +383,9 @@
       "default": ""
     },
     "ignoreHttpsErrors": {
-      "title": "Ignore SSL errors",
+      "title": "Ignore HTTPS errors",
       "type": "boolean",
-      "description": "Ignore SSL certificate errors. Use at your own risk.",
+      "description": "Ignore HTTPS certificate errors. Use at your own risk.",
       "editor": "checkbox",
       "default": false
     }
