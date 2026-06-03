@@ -8,14 +8,15 @@ internal consistency**, with general CLI conventions and the wider crawler/scrap
 
 ## RECOMMENDATION
 
-Rename **`--input-file <file>` → `--start-urls-file <path>`** (Commander prop `startUrlsFile`), and
-**keep `-c, --config <path>` unchanged**. This closes the single real placeholder outlier and makes all
-four path-valued flags uniform on `<path>`:
+Rename **`--input-file <file>` → `--start-urls-file <path>`** (Commander prop `startUrlsFile`). This closes
+the single real placeholder outlier and makes all four path-valued flags uniform on `<path>`. The config flag
+keeps its `<path>` placeholder either way; whether to *also* rename `--config` → `--config-file` is a separate
+consistency call (refined lean: **`--config-file`** — see below):
 
 | Flag | Before | After |
 |---|---|---|
 | start-URLs file | `--input-file <file>` | `--start-urls-file <path>` |
-| config | `-c, --config <path>` | `-c, --config <path>` (unchanged) |
+| config | `-c, --config <path>` | `-c, --config <path>` *(or `-c, --config-file <path>` — see below)* |
 | storage dir | `--storage-dir <path>` | unchanged |
 | output dir | `--output-dir <path>` | unchanged |
 
@@ -29,8 +30,10 @@ This is a **CLI-only flag rename — no Zod/schema change** (the flag has no bac
 merges into the existing `startUrls` array).
 
 On the follow-up question of whether to *also* rename `--config` → `--config-file` (for a uniform
-`--<noun>-file` form once `--start-urls-file` exists): **keep `-c, --config <path>`**. `--config-file` is a
-defensible alternative but loses a near-universal idiom — full analysis in
+`--<noun>-file` form once `--start-urls-file` exists): a primary-source survey (below) shows `--config-file`
+is a **mainstream** spelling (17 verified tools incl. pytest, dockerd, mypy, etcd, babel, cypress), so this is
+a genuine **consistency vs most-common-idiom** call. Refined lean: **`-c, --config-file <path>`** for
+uniformity (keep `-c`), though `-c, --config <path>` stays defensible — full analysis in
 [`--config` vs `--config-file`](#--config-vs---config-file) below.
 
 ---
@@ -179,9 +182,10 @@ fact.)*
 
 ## Placeholder consistency & the `--config` decision
 
-- **Keep `-c, --config <path>`** in both name and placeholder. It is a sibling CLI-only flag
-  (`meta-prompt.md:20`), matches the dominant config-flag convention, and is already shipped. The short
-  `-c` differs from git's `-c name=value` but conflicts with nothing in the crawler/scraper space.
+- **The config flag keeps its `<path>` placeholder** regardless of whether its *name* changes (the
+  `--config` vs `--config-file` name decision has its own section below). It is a sibling CLI-only flag
+  (`meta-prompt.md:20`) and is already shipped; the short `-c` differs from git's `-c name=value` but conflicts
+  with nothing in the crawler/scraper space.
 - **The only real outlier is the `<file>` placeholder on `--input-file`.** Give the renamed flag the
   repo-dominant `<path>` → all four path flags (`--config`, `--storage-dir`, `--output-dir`,
   `--start-urls-file`) become uniform. Do **not** flip everything to a `<file>`/`<path>` file-vs-dir split
@@ -191,46 +195,77 @@ fact.)*
 
 ## `--config` vs `--config-file`
 
-**Verdict: keep `-c, --config <path>`.** `--config-file` is internally defensible but is not recommended;
-this is a genuine team-style call since the user raised it.
+**Verdict (revised after a primary-source survey): both spellings are mainstream — pick by consistency.**
+Given this initiative is *about* internal consistency and we are already adopting `--start-urls-file`, I now
+lean **`-c, --config-file <path>`** (keep `-c` as the short alias) so both file-loading flags share one rule:
+`--<noun>-file <path>` = "load `<noun>` from a file." Keeping `-c, --config <path>` stays perfectly defensible
+(it is the single most common spelling). This **corrects an earlier draft that called `--config-file` "rare"** —
+the verified survey below shows it is common.
 
-The trigger: once `--input-file` becomes `--start-urls-file`, should `--config` become `--config-file` so
-both "read settings/URLs from a file" flags share the `--<noun>-file` form?
+The trigger: once `--input-file` becomes `--start-urls-file`, should `--config` become `--config-file` so both
+"read settings/URLs from a file" flags share the `--<noun>-file` form?
 
-### Keep `--config` (recommended)
+### Verified survey — does real software use exactly `--config-file`? (2026-06-03)
 
-- **It is the dominant, universally-recognized config-flag spelling.** Cited: curl `-K, --config <file>`,
-  docker `--config`, wget `--config=FILE`, gau `--config`, and the CLI11 framework's default `set_config("--config")`
-  (cliutils.github.io). A 2026-06-03 web survey concluded "neither `--config` nor `--config-file` has
-  universal dominance … `--config` appears shorter and more concise" (clig.dev / oclif / Go-CLI guides).
-- **The single closest analog keeps it.** wget — a URL downloader that has *both* a URL-list-from-file flag
-  and a config-file flag — spells them `--input-file` + `--config`, **not** `--config-file` (man7.org). Tools
-  that have both flags do **not** make them parallel.
-- **The repo's idiomatic-short-form rule protects it** (`prompt.md:113`), reinforced by the rejected verbose
-  renames `--max-request-retries` / `--respect-robots-txt-file` (`prompt.md:105`). `--config` is the idiomatic
-  short form; `--config-file` adds length without clarity.
-- `-c` is a natural short alias for `--config`. And `--config` is a **top-level, sui-generis concept**, not a
-  peer of the niche `--start-urls-file` bulk-input flag — so the form mismatch is more apparent than real.
+Yes, broadly. A 6-ecosystem web survey with an adversarial verification pass (each claim re-confirmed against
+its authoritative man page / official docs / source) found **17 tools** whose long option is spelled exactly
+`--config-file`:
 
-### Rename to `--config-file` (the alternative)
+| Tool | Flag | Short | Source |
+|---|---|---|---|
+| mypy | `--config-file CONFIG_FILE` | — | mypy.readthedocs.io |
+| pytest | `--config-file=FILE` | `-c` | pytest PR #11036 — added 7.4.0 "to make it clear this flag applies to a custom config file" |
+| mkdocs | `--config-file` | `-f` | mkdocs.org |
+| uv (Astral) | `--config-file` | — | docs.astral.sh/uv |
+| dockerd | `--config-file string` | — | docs.docker.com/reference/cli/dockerd |
+| etcd | `--config-file` | — | etcd.io |
+| @babel/cli | `--config-file [path]` | — | babeljs.io |
+| @babel/node | `--config-file [path]` | — | babeljs.io |
+| cypress | `--config-file` | `-C` | docs.cypress.io |
+| clamd (ClamAV) | `--config-file=FILE` | `-c` | man.archlinux.org |
+| freshclam (ClamAV) | `--config-file=FILE` | `-c` | man.archlinux.org |
+| clamdscan (ClamAV) | `--config-file=FILE` | `-c` | manpages.debian.org |
+| alacritty | `--config-file <CONFIG_FILE>` | `-C` | man.archlinux.org |
+| kafkactl | `--config-file string` | `-C` | deviceinsight.github.io/kafkactl |
+| unicorn (Ruby) | `--config-file CONFIG_FILE` | `-c` | manpages.ubuntu.com |
+| man (man-db) | `--config-file=file` | `-C` | man7.org |
+| git maintenance | `--config-file <path>` | — | git-scm.com |
 
-- **Formal parallelism**: `--start-urls-file <path>` + `--config-file <path>` establishes a teachable rule —
-  `--<noun>-file <path>` = "load `<noun>` from a file" — cleaner than mixing a compound (`--start-urls-file`)
-  with a bare idiom (`--config`).
-- Slightly more explicit that the value is a file (not a directory or inline value).
-- Precedent exists but is **weak and varied**: tools wanting explicitness rarely land on exactly
-  `--config-file` — Prometheus/Alertmanager use `--config.file` (dot, not hyphen; prometheus.io), yt-dlp uses
-  `--config-locations`, kubectl uses `--kubeconfig`. So `--config-file` does not have a strong blessed
-  precedent the way `--config` does.
-- If chosen: spell it `-c, --config-file <path>` (keep `-c` as the short alias), and rename
-  `loadConfigFile(opts.config)` → `opts.configFile`. Still CLI-only (no schema key).
+Adversarially **refuted** (claimed but wrong): jupyter — its real CLI flag is `--config`, not `--config-file`
+(jupyter_core `application.py` alias key is `"config"`).
 
-### Why keep wins
+Two takeaways that matter for the decision:
 
-The wget precedent (the most relevant analog) plus the dominance and idiom-protection of `--config` outweigh
-the parallelism gain. *(This weighting is a judgment call, not a cited fact.)* If the team values a single
-uniform `--<noun>-file` convention above ecosystem idiom, `--config-file` is the consistent choice — and is
-trivial to apply alongside the `--start-urls-file` rename.
+- **`--config-file` is common, not rare.** It spans Python (mypy, pytest, mkdocs, uv), Node (babel, cypress),
+  infra (dockerd, etcd), AV (the ClamAV suite), a Rust app (alacritty), Go (kafkactl), Ruby (unicorn), and core
+  Unix (man, git maintenance). The earlier "rarely lands on `--config-file`" claim was wrong.
+- **Keeping a short alias is well-precedented**: pytest `-c`, the ClamAV trio `-c`, mkdocs `-f`,
+  cypress/alacritty/man `-C`, unicorn `-c` all pair a short flag with `--config-file`. So `-c, --config-file`
+  is a normal, blessed shape — **pytest added `--config-file` *specifically for clarity* while keeping `-c`**,
+  which is exactly this situation.
+
+Still, `--config` / `-c` is the **more common overall** spelling — the survey's variant list is long: curl
+`-K/--config`; caddy / grafana / kubelet / containerd / vector / nats / mongod / rsync / eslint / prettier /
+jest / vite / rollup / webpack all use `--config`; Go single-dash `-config` (consul, vault, nomad, nuclei,
+httpx, katana); Prometheus-lineage `--config.file` (dot). And `--config-file-path` is used by **essentially no
+one** (biome uses `--config-path`) — avoid it.
+
+### The decision
+
+Both are legitimate; the choice is purely **most-common-idiom (`--config`) vs internal uniformity
+(`--config-file`)** — not idiom-vs-obscurity as the earlier draft implied.
+
+- **Lean `--config-file` (refined recommendation):** this repo has repeatedly chosen consistency/clarity over
+  raw popularity (the Crawlee-alignment renames; `--wait-for-dynamic-content` over a shorter form), and the
+  whole point of `cli-defaults-consistency` is uniform, self-documenting flags. Under that lens
+  `--start-urls-file` + `--config-file` (one rule, both `<path>`) wins, with `-c` retained (the pytest model).
+- **Counter-case for keeping `--config`:** it is the single most recognized spelling, `-c` already ships, and
+  the closest *download* analog (wget) uses `--input-file` + `--config`. Choosing this accepts a mild form
+  mismatch with `--start-urls-file`.
+
+If renaming: spell it `-c, --config-file <path>`; rename `loadConfigFile(opts.config)` → `opts.configFile`
+(CLI-only, no schema key); keep `-c` working, and optionally keep `--config` as a hidden deprecation alias for
+one release.
 
 ---
 
